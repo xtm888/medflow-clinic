@@ -1,0 +1,574 @@
+const express = require('express');
+const router = express.Router();
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs').promises;
+const crypto = require('crypto');
+const { protect, authorize } = require('../middleware/auth');
+const Document = require('../models/Document');
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: async (req, file, cb) => {
+    const uploadPath = path.join(__dirname, '..', 'uploads', 'documents');
+    await fs.mkdir(uploadPath, { recursive: true });
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 100 * 1024 * 1024 // 100MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    // Allowed file types
+    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|xls|xlsx|mp3|wav|m4a|webm|mp4|dicom|dcm/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Invalid file type'));
+    }
+  }
+});
+
+// Helper function to calculate file hash
+async function calculateFileHash(filePath) {
+  const fileBuffer = await fs.readFile(filePath);
+  const hashSum = crypto.createHash('sha256');
+  hashSum.update(fileBuffer);
+  return hashSum.digest('hex');
+}
+
+// Helper function to determine document type
+function determineDocumentType(mimeType, filename) {
+  const ext = path.extname(filename).toLowerCase();
+
+  if (mimeType.includes('pdf') || ext === '.pdf') return 'pdf';
+  if (mimeType.includes('image') || ['.jpg', '.jpeg', '.png', '.gif'].includes(ext)) return 'image';
+  if (mimeType.includes('audio') || ['.mp3', '.wav', '.m4a', '.webm'].includes(ext)) return 'audio';
+  if (mimeType.includes('video') || ['.mp4', '.avi', '.mov'].includes(ext)) return 'video';
+  if (mimeType.includes('dicom') || ['.dcm', '.dicom'].includes(ext)) return 'dicom';
+  if (mimeType.includes('text') || ['.txt', '.doc', '.docx'].includes(ext)) return 'text';
+  return 'other';
+}
+
+// @desc    Upload document
+// @route   POST /api/documents/upload
+// @access  Private
+router.post('/upload', protect, upload.single('document'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: 'No file uploaded'
+      });
+    }
+
+    // Calculate file hash for deduplication
+    const fileHash = await calculateFileHash(req.file.path);
+
+    // Check for duplicate
+    const existingDoc = await Document.checkDuplicate(fileHash);
+    if (existingDoc) {
+      // Delete the uploaded file
+      await fs.unlink(req.file.path);
+
+      return res.status(409).json({
+        success: false,
+        error: 'Duplicate document detected',
+        existingDocument: existingDoc._id
+      });
+    }
+
+    // Determine document type
+    const docType = determineDocumentType(req.file.mimetype, req.file.originalname);
+
+    // Create document record
+    const documentData = {
+      title: req.body.title || req.file.originalname,
+      description: req.body.description,
+      category: req.body.category || 'other',
+      subCategory: req.body.subCategory,
+      type: docType,
+      mimeType: req.file.mimetype,
+      file: {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        path: req.file.path,
+        hash: fileHash
+      },
+      patient: req.body.patientId,
+      visit: req.body.visitId,
+      appointment: req.body.appointmentId,
+      tags: req.body.tags ? req.body.tags.split(',') : [],
+      metadata: {
+        dateCreated: new Date(),
+        source: req.body.source || 'upload'
+      },
+      security: {
+        accessLevel: req.body.accessLevel || 'staff',
+        sensitiveData: req.body.sensitiveData === 'true'
+      },
+      createdBy: req.user._id
+    };
+
+    const document = await Document.create(documentData);
+
+    // If it's an audio file, initiate transcription
+    if (docType === 'audio' && req.body.transcribe === 'true') {
+      // Async transcription - don't wait for it
+      document.transcribeAudio().catch(console.error);
+    }
+
+    // If it's a PDF or image, initiate OCR
+    if ((docType === 'pdf' || docType === 'image') && req.body.ocr === 'true') {
+      // Async OCR - don't wait for it
+      document.ocrDocument().catch(console.error);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error uploading document:', error);
+
+    // Clean up uploaded file on error
+    if (req.file && req.file.path) {
+      await fs.unlink(req.file.path).catch(console.error);
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Record audio note
+// @route   POST /api/documents/audio
+// @access  Private
+router.post('/audio', protect, upload.single('audio'), async (req, res) => {
+  try {
+    const documentData = {
+      title: req.body.title || `Audio Note - ${new Date().toLocaleString()}`,
+      description: req.body.description,
+      category: 'audio',
+      subCategory: req.body.subCategory || 'voice-memo',
+      type: 'audio',
+      mimeType: req.file.mimetype,
+      file: {
+        filename: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size,
+        path: req.file.path
+      },
+      audio: {
+        duration: parseFloat(req.body.duration) || 0
+      },
+      patient: req.body.patientId,
+      visit: req.body.visitId,
+      tags: ['audio-note'],
+      metadata: {
+        dateCreated: new Date(),
+        source: 'upload'
+      },
+      createdBy: req.user._id
+    };
+
+    const document = await Document.create(documentData);
+
+    // Initiate transcription
+    if (req.body.transcribe !== 'false') {
+      document.transcribeAudio().catch(console.error);
+    }
+
+    res.status(201).json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error saving audio note:', error);
+
+    if (req.file && req.file.path) {
+      await fs.unlink(req.file.path).catch(console.error);
+    }
+
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Search documents
+// @route   GET /api/documents/search
+// @access  Private
+router.get('/search', protect, async (req, res) => {
+  try {
+    const { q, patientId, visitId, category, dateFrom, dateTo, limit } = req.query;
+
+    if (!q) {
+      return res.status(400).json({
+        success: false,
+        error: 'Search query is required'
+      });
+    }
+
+    const options = {
+      patientId,
+      visitId,
+      category,
+      dateFrom: dateFrom ? new Date(dateFrom) : undefined,
+      dateTo: dateTo ? new Date(dateTo) : undefined,
+      limit: parseInt(limit) || 50
+    };
+
+    const documents = await Document.searchDocuments(q, options);
+
+    res.json({
+      success: true,
+      count: documents.length,
+      data: documents
+    });
+  } catch (error) {
+    console.error('Error searching documents:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get documents by patient
+// @route   GET /api/documents/patient/:patientId
+// @access  Private
+router.get('/patient/:patientId', protect, async (req, res) => {
+  try {
+    const { category, type, limit, offset } = req.query;
+
+    const query = {
+      patient: req.params.patientId,
+      deleted: false
+    };
+
+    if (category) query.category = category;
+    if (type) query.type = type;
+
+    const documents = await Document.find(query)
+      .populate('visit', 'visitDate chiefComplaint')
+      .populate('createdBy', 'firstName lastName')
+      .sort('-createdAt')
+      .limit(parseInt(limit) || 50)
+      .skip(parseInt(offset) || 0);
+
+    const total = await Document.countDocuments(query);
+
+    res.json({
+      success: true,
+      count: documents.length,
+      total,
+      data: documents
+    });
+  } catch (error) {
+    console.error('Error fetching patient documents:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get documents by visit
+// @route   GET /api/documents/visit/:visitId
+// @access  Private
+router.get('/visit/:visitId', protect, async (req, res) => {
+  try {
+    const documents = await Document.getByVisit(req.params.visitId);
+
+    res.json({
+      success: true,
+      count: documents.length,
+      data: documents
+    });
+  } catch (error) {
+    console.error('Error fetching visit documents:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get recent audio notes
+// @route   GET /api/documents/audio/recent/:patientId
+// @access  Private
+router.get('/audio/recent/:patientId', protect, async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const audioNotes = await Document.getRecentAudioNotes(req.params.patientId, limit);
+
+    res.json({
+      success: true,
+      count: audioNotes.length,
+      data: audioNotes
+    });
+  } catch (error) {
+    console.error('Error fetching audio notes:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get document by ID
+// @route   GET /api/documents/:id
+// @access  Private
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id)
+      .populate('patient', 'firstName lastName')
+      .populate('visit', 'visitDate chiefComplaint')
+      .populate('createdBy', 'firstName lastName');
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    // Track view
+    document.trackView().catch(console.error);
+
+    res.json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error fetching document:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Add annotation to image
+// @route   POST /api/documents/:id/annotate
+// @access  Private
+router.post('/:id/annotate', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    if (document.type !== 'image') {
+      return res.status(400).json({
+        success: false,
+        error: 'Annotations can only be added to images'
+      });
+    }
+
+    const annotationData = {
+      ...req.body,
+      createdBy: req.user._id
+    };
+
+    await document.addAnnotation(annotationData);
+
+    res.json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error adding annotation:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Transcribe audio document
+// @route   POST /api/documents/:id/transcribe
+// @access  Private
+router.post('/:id/transcribe', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    if (document.type !== 'audio') {
+      return res.status(400).json({
+        success: false,
+        error: 'Only audio documents can be transcribed'
+      });
+    }
+
+    await document.transcribeAudio(req.body.engine || 'whisper');
+
+    res.json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error transcribing document:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    OCR document
+// @route   POST /api/documents/:id/ocr
+// @access  Private
+router.post('/:id/ocr', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    await document.ocrDocument();
+
+    res.json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error performing OCR:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Share document
+// @route   POST /api/documents/:id/share
+// @access  Private
+router.post('/:id/share', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    const { userId, permission, expiresInDays } = req.body;
+
+    await document.shareWith(userId, permission, expiresInDays);
+
+    res.json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error sharing document:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Update document
+// @route   PUT /api/documents/:id
+// @access  Private
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    // Update allowed fields
+    const updateFields = ['title', 'description', 'category', 'subCategory', 'tags', 'labels', 'status'];
+    updateFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        document[field] = req.body[field];
+      }
+    });
+
+    document.updatedBy = req.user._id;
+    await document.save();
+
+    res.json({
+      success: true,
+      data: document
+    });
+  } catch (error) {
+    console.error('Error updating document:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Delete document (soft delete)
+// @route   DELETE /api/documents/:id
+// @access  Private
+router.delete('/:id', protect, async (req, res) => {
+  try {
+    const document = await Document.findById(req.params.id);
+
+    if (!document || document.deleted) {
+      return res.status(404).json({
+        success: false,
+        error: 'Document not found'
+      });
+    }
+
+    document.deleted = true;
+    document.deletedAt = new Date();
+    document.deletedBy = req.user._id;
+    await document.save();
+
+    res.json({
+      success: true,
+      message: 'Document deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+module.exports = router;
