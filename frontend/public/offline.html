@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedFlow - Offline</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            margin: 1rem;
+        }
+
+        .icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 2rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: pulse 2s infinite;
+        }
+
+        .icon svg {
+            width: 60px;
+            height: 60px;
+            fill: white;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .status {
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 1rem;
+            margin: 2rem 0;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: #718096;
+            font-size: 0.9rem;
+        }
+
+        .status-value {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .online-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            background: #fc8181;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+            animation: blink 1s infinite;
+        }
+
+        .online-indicator.online {
+            background: #48bb78;
+            animation: none;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .retry-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .retry-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .retry-btn:active {
+            transform: scale(0.95);
+        }
+
+        .features {
+            text-align: left;
+            background: #f8f9ff;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-top: 2rem;
+        }
+
+        .features h3 {
+            color: #4a5568;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .features li {
+            padding: 0.5rem 0;
+            color: #2d3748;
+            display: flex;
+            align-items: center;
+        }
+
+        .features li:before {
+            content: "✓";
+            color: #48bb78;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>
+            </svg>
+        </div>
+
+        <h1>You're Offline</h1>
+        <p>Don't worry! MedFlow works offline. Your data is saved locally and will sync automatically when you're back online.</p>
+
+        <div class="status">
+            <div class="status-item">
+                <span class="status-label">Connection Status</span>
+                <span class="status-value">
+                    <span class="online-indicator" id="indicator"></span>
+                    <span id="status-text">Offline</span>
+                </span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Local Storage</span>
+                <span class="status-value" style="color: #48bb78;">Active</span>
+            </div>
+            <div class="status-item">
+                <span class="status-label">Pending Sync Items</span>
+                <span class="status-value" id="pending-count">0</span>
+            </div>
+        </div>
+
+        <button class="retry-btn" onclick="checkConnection()">
+            Check Connection
+        </button>
+
+        <div class="features">
+            <h3>Available Offline Features:</h3>
+            <ul>
+                <li>View patient records</li>
+                <li>Create new appointments</li>
+                <li>Write prescriptions</li>
+                <li>Complete examinations</li>
+                <li>Access medical history</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Check connection status
+        function checkConnection() {
+            fetch('/api/health', { method: 'HEAD' })
+                .then(() => {
+                    // Online
+                    document.getElementById('indicator').classList.add('online');
+                    document.getElementById('status-text').textContent = 'Online';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1000);
+                })
+                .catch(() => {
+                    // Still offline
+                    document.getElementById('indicator').classList.remove('online');
+                    document.getElementById('status-text').textContent = 'Offline';
+                });
+        }
+
+        // Get pending sync count from localStorage
+        function updatePendingCount() {
+            try {
+                const syncQueue = JSON.parse(localStorage.getItem('syncQueue') || '[]');
+                document.getElementById('pending-count').textContent = syncQueue.length;
+            } catch (e) {
+                document.getElementById('pending-count').textContent = '0';
+            }
+        }
+
+        // Auto-check every 5 seconds
+        setInterval(() => {
+            checkConnection();
+            updatePendingCount();
+        }, 5000);
+
+        // Initial check
+        checkConnection();
+        updatePendingCount();
+    </script>
+</body>
+</html>

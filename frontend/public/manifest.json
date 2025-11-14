@@ -1,0 +1,101 @@
+{
+  "name": "MedFlow Medical Management System",
+  "short_name": "MedFlow",
+  "description": "Complete medical management system with offline support and ophthalmology specialization",
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#4F46E5",
+  "background_color": "#ffffff",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "en",
+  "categories": ["medical", "health", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-128.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-152.png",
+      "sizes": "152x152",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Patient",
+      "short_name": "Patient",
+      "description": "Register a new patient",
+      "url": "/patients?action=new",
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Appointments",
+      "short_name": "Appointments",
+      "description": "View today's appointments",
+      "url": "/appointments",
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Queue",
+      "short_name": "Queue",
+      "description": "Patient queue management",
+      "url": "/queue",
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Ophthalmology",
+      "short_name": "Eye Care",
+      "description": "Ophthalmology examinations",
+      "url": "/ophthalmology",
+      "icons": [{ "src": "/icon-96.png", "sizes": "96x96" }]
+    }
+  ],
+  "features": [
+    "offline-capable",
+    "sync-in-background",
+    "push-notifications",
+    "camera-access",
+    "file-upload"
+  ],
+  "prefer_related_applications": false
+}
