@@ -16,7 +16,7 @@ export default function Pharmacy() {
   const outOfStock = medications.filter(m => m.stock === 0).length;
   const lowStock = medications.filter(m => m.stock > 0 && m.stock < m.minimumStock).length;
   const expiringSoon = medications.filter(m =>
-    m.batches.some(b => b.daysUntilExpiry < 60)
+    m.batches?.some(b => b.daysUntilExpiry < 60)
   ).length;
 
   return (

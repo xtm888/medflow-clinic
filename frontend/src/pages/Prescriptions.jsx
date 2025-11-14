@@ -271,7 +271,7 @@ export default function Prescriptions() {
                       {prescription.status === 'dispensed' ? 'Dispensée' :
                        prescription.status === 'pending' ? 'En attente' :
                        prescription.status === 'cancelled' ? 'Annulée' :
-                       prescription.status}
+                       safeString(prescription.status, 'Unknown')}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">
@@ -307,13 +307,13 @@ export default function Prescriptions() {
                   {prescription.diagnosis && (
                     <div className="mt-3 p-2 bg-blue-50 rounded">
                       <p className="text-xs font-medium text-blue-900">Diagnostic:</p>
-                      <p className="text-sm text-blue-800">{prescription.diagnosis}</p>
+                      <p className="text-sm text-blue-800">{safeString(prescription.diagnosis, '')}</p>
                     </div>
                   )}
                   {prescription.instructions && (
                     <div className="mt-2 p-2 bg-yellow-50 rounded">
                       <p className="text-xs font-medium text-yellow-900">Instructions:</p>
-                      <p className="text-sm text-yellow-800">{prescription.instructions}</p>
+                      <p className="text-sm text-yellow-800">{safeString(prescription.instructions, '')}</p>
                     </div>
                   )}
                 </div>
@@ -410,9 +410,9 @@ export default function Prescriptions() {
                     {prescriptionForm.medications.map((med, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">{med.medication}</p>
-                          <p className="text-sm text-gray-600">{med.dosage} - {med.frequency}</p>
-                          <p className="text-xs text-gray-500">Durée: {med.duration} | Qté: {med.quantity}</p>
+                          <p className="font-medium text-gray-900">{safeString(med.medication, '')}</p>
+                          <p className="text-sm text-gray-600">{safeString(med.dosage, '')} - {safeString(med.frequency, '')}</p>
+                          <p className="text-xs text-gray-500">Durée: {safeString(med.duration, '')} | Qté: {typeof med.quantity === 'number' ? med.quantity : 1}</p>
                         </div>
                         <button
                           type="button"
