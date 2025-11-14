@@ -4,6 +4,7 @@ import prescriptionService from '../services/prescriptionService';
 import patientService from '../services/patientService';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/ToastContainer';
+import { normalizeToArray, safeString } from '../utils/apiHelpers';
 
 export default function Prescriptions() {
   const { toasts, success, error: showError, removeToast } = useToast();
@@ -45,8 +46,8 @@ export default function Prescriptions() {
         patientService.getPatients()
       ]);
 
-      setPrescriptions(prescriptionsRes.data || []);
-      setPatients(patientsRes.data || []);
+      setPrescriptions(normalizeToArray(prescriptionsRes));
+      setPatients(normalizeToArray(patientsRes));
     } catch (err) {
       showError('Failed to load data');
       console.error('Error fetching data:', err);
@@ -279,20 +280,24 @@ export default function Prescriptions() {
 
                   {/* Medications List */}
                   <div className="space-y-2">
-                    {prescription.medications?.map((med, idx) => (
+                    {Array.isArray(prescription.medications) && prescription.medications.map((med, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                         <div>
-                          <p className="font-medium text-gray-900">{med.medication || med.name}</p>
-                          <p className="text-sm text-gray-600">{med.dosage}</p>
+                          <p className="font-medium text-gray-900">
+                            {safeString(med.medication, '') || safeString(med.name, '') || 'Medication'}
+                          </p>
+                          <p className="text-sm text-gray-600">{safeString(med.dosage, 'N/A')}</p>
                           <p className="text-xs text-gray-500">
-                            {med.frequency} - Durée: {med.duration}
+                            {safeString(med.frequency, 'N/A')} - Durée: {safeString(med.duration, 'N/A')}
                           </p>
                           {med.instructions && (
-                            <p className="text-xs text-gray-500 italic mt-1">{med.instructions}</p>
+                            <p className="text-xs text-gray-500 italic mt-1">{safeString(med.instructions, '')}</p>
                           )}
                         </div>
                         <div className="text-right">
-                          <p className="text-sm font-semibold text-gray-900">Qté: {med.quantity}</p>
+                          <p className="text-sm font-semibold text-gray-900">
+                            Qté: {typeof med.quantity === 'number' ? med.quantity : 1}
+                          </p>
                         </div>
                       </div>
                     ))}
