@@ -12,6 +12,7 @@ import { fetchPatientAppointments } from '../store/slices/appointmentSlice';
 import { fetchPatientPrescriptions } from '../store/slices/prescriptionSlice';
 import { usePatientUpdates } from '../hooks/useWebSocket';
 import { documentService, billingService } from '../services';
+import { safeString } from '../utils/apiHelpers';
 
 const InfoCard = ({ title, children, icon: Icon }) => (
   <div className="card">
@@ -360,7 +361,7 @@ export default function PatientDetailsConnected() {
                           )}
                           {visit.diagnosis && (
                             <p className="text-sm mt-1">
-                              <span className="font-medium">Diagnosis:</span> {visit.diagnosis}
+                              <span className="font-medium">Diagnosis:</span> {typeof visit.diagnosis === 'object' ? (visit.diagnosis.description || visit.diagnosis.name || safeString(visit.diagnosis, '')) : visit.diagnosis}
                             </p>
                           )}
                         </div>
