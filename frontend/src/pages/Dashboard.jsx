@@ -4,6 +4,7 @@ import { Users, Clock, DollarSign, FileText, TrendingUp, AlertCircle, Calendar, 
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { financialData, queueData } from '../data/mockData';
 import dashboardService from '../services/dashboardService';
+import { formatCurrency, safeFormatNumber, isArray } from '../utils/apiHelpers';
 
 const StatCard = ({ title, value, icon: Icon, trend, trendValue, color = 'blue' }) => {
   const colorVariants = {
@@ -124,7 +125,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="Revenus du jour"
-          value={`$${stats.revenue.toFixed(2)}`}
+          value={formatCurrency(stats.revenue, '$')}
           icon={DollarSign}
           color="green"
         />
@@ -194,7 +195,7 @@ export default function Dashboard() {
             <Clock className="h-5 w-5 text-gray-400" />
           </div>
           <div className="space-y-3">
-            {queueData.filter(q => q.status !== 'COMPLETED').map((patient) => (
+            {isArray(queueData) && queueData.filter(q => q.status !== 'COMPLETED').map((patient) => (
               <div key={patient.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3">
                   <div className={`w-2 h-2 rounded-full ${
@@ -215,7 +216,9 @@ export default function Dashboard() {
                   }`}>
                     {patient.status === 'WAITING' ? 'En attente' : 'En cours'}
                   </span>
-                  <p className="text-sm text-gray-500 mt-1">{patient.estimatedWaitTime} min</p>
+                  <p className="text-sm text-gray-500 mt-1">
+                    {typeof patient.estimatedWaitTime === 'number' ? patient.estimatedWaitTime : 0} min
+                  </p>
                 </div>
               </div>
             ))}

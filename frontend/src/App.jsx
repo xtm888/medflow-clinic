@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { useEffect } from 'react';
 import ProtectedRoute from './components/ProtectedRoute';
 import OfflineIndicator from './components/OfflineIndicator';
+import ErrorBoundary from './components/ErrorBoundary';
 import Login from './pages/Login';
 import MainLayout from './layouts/MainLayout';
 import PatientLayout from './layouts/PatientLayout';
@@ -66,11 +67,12 @@ function App() {
     }
   }, []);
   return (
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
           {/* Login Page */}
           <Route path="/login" element={<Login />} />
 
@@ -128,10 +130,11 @@ function App() {
           draggable
           pauseOnHover
         />
-      </AuthProvider>
-    </BrowserRouter>
-      </PersistGate>
-    </Provider>
+            </AuthProvider>
+          </BrowserRouter>
+        </PersistGate>
+      </Provider>
+    </ErrorBoundary>
   );
 }
 
