@@ -37,6 +37,8 @@ import PatientProfile from './pages/patient/PatientProfile';
 // Public Booking Pages
 import PublicBooking from './pages/PublicBooking';
 import BookingConfirmation from './pages/BookingConfirmation';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import './index.css';
 
 function App() {
@@ -115,6 +117,17 @@ function App() {
           </Route>
         </Routes>
         <OfflineIndicator />
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </AuthProvider>
     </BrowserRouter>
       </PersistGate>
