@@ -160,7 +160,9 @@ export default function Queue() {
   };
 
   // Flatten queues for display
-  const allQueues = Object.values(queues).flat();
+  const allQueues = queues && typeof queues === 'object' && !Array.isArray(queues)
+    ? Object.values(queues).flat()
+    : [];
   const waitingPatients = allQueues.filter(p => p.status === 'checked-in');
   const inProgressPatients = allQueues.filter(p => p.status === 'in-progress');
 

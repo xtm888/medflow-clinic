@@ -6,6 +6,7 @@ import appointmentService from '../services/appointmentService';
 import patientService from '../services/patientService';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/ToastContainer';
+import { normalizeToArray, isArray } from '../utils/apiHelpers';
 
 export default function Appointments() {
   const { toasts, success, error: showError, removeToast } = useToast();
@@ -46,8 +47,8 @@ export default function Appointments() {
         patientService.getPatients()
       ]);
 
-      setAppointments(appointmentsRes.data || []);
-      setPatients(patientsRes.data || []);
+      setAppointments(normalizeToArray(appointmentsRes));
+      setPatients(normalizeToArray(patientsRes));
     } catch (err) {
       showError('Failed to load appointments');
       console.error('Error fetching data:', err);
@@ -634,7 +635,7 @@ export default function Appointments() {
                     required
                   >
                     <option value="">Sélectionner un patient</option>
-                    {patients.map(patient => (
+                    {isArray(patients) && patients.map(patient => (
                       <option key={patient._id || patient.id} value={patient._id || patient.id}>
                         {patient.firstName} {patient.lastName}
                       </option>
