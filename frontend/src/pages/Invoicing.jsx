@@ -253,7 +253,7 @@ export default function Invoicing() {
                   <div className="border-t pt-3">
                     <p className="text-sm font-medium text-gray-700 mb-2">Articles:</p>
                     <div className="space-y-1">
-                      {invoice.items.map((item, idx) => (
+                      {invoice.items?.length > 0 && invoice.items.map((item, idx) => (
                         <div key={idx} className="flex justify-between text-sm bg-white rounded p-2">
                           <span className="text-gray-700">
                             {item.serviceName} <span className="text-gray-500">x {item.quantity}</span>

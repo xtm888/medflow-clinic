@@ -93,7 +93,7 @@ export default function Notifications() {
                 </div>
                 <p className="text-sm text-gray-600 mb-2">{notif.message}</p>
                 <p className="text-xs text-gray-500">
-                  {new Date(notif.sentDate).toLocaleString('fr-FR')} · {notif.type} · {notif.phone || notif.email}
+                  {new Date(notif.sentDate).toLocaleString('fr-FR')} · {notif.type} · {String(notif.phone || notif.email || '')}
                 </p>
               </div>
             </div>
@@ -105,7 +105,7 @@ export default function Notifications() {
       <div className="card">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Rappels programmés</h2>
         <div className="space-y-3">
-          {appointments.filter(a => a.status === 'CONFIRMED').map((apt) => (
+          {Array.isArray(appointments) && appointments.filter(a => a.status === 'CONFIRMED').map((apt) => (
             <div key={apt.id} className="flex items-start justify-between p-4 bg-blue-50 rounded-lg">
               <div className="flex items-center space-x-3">
                 <Clock className="h-5 w-5 text-blue-600" />
