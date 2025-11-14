@@ -60,8 +60,9 @@ backups/
 *.backup
 
 # MongoDB data (if running locally)
-data/
-mongodb-data/
+/data/
+/mongodb-data/
+backend/data/
 
 # Redis dump
 dump.rdb
