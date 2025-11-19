@@ -95,7 +95,7 @@ const appointmentSchema = new mongoose.Schema({
   // Priority
   priority: {
     type: String,
-    enum: ['normal', 'high', 'urgent', 'emergency'],
+    enum: ['normal', 'high', 'urgent', 'emergency', 'vip', 'pregnant', 'elderly'],
     default: 'normal'
   },
 
@@ -326,11 +326,19 @@ const appointmentSchema = new mongoose.Schema({
       ref: 'User'
     },
     reason: String
-  }]
+  }],
+
+  // Optimistic locking - prevents lost updates from concurrent modifications
+  version: {
+    type: Number,
+    default: 0
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },
-  toObject: { virtuals: true }
+  toObject: { virtuals: true },
+  optimisticConcurrency: true,
+  versionKey: 'version'
 });
 
 // Indexes
@@ -358,6 +366,37 @@ appointmentSchema.virtual('isPast').get(function() {
 // Virtual for isFuture
 appointmentSchema.virtual('isFuture').get(function() {
   return new Date(this.date) > new Date();
+});
+
+// CRITICAL: Validate dates to prevent inappropriate future dates
+appointmentSchema.pre('save', function(next) {
+  const now = new Date();
+
+  // Check-in time should not be in the future (can't check in before it happens)
+  if (this.checkInTime && new Date(this.checkInTime) > now) {
+    const error = new Error('Check-in time cannot be in the future');
+    error.name = 'ValidationError';
+    error.statusCode = 400;
+    return next(error);
+  }
+
+  // Cancellation time should not be in the future
+  if (this.cancellation?.cancelledAt && new Date(this.cancellation.cancelledAt) > now) {
+    const error = new Error('Cancellation time cannot be in the future');
+    error.name = 'ValidationError';
+    error.statusCode = 400;
+    return next(error);
+  }
+
+  // Completion time should not be in the future
+  if (this.completedAt && new Date(this.completedAt) > now) {
+    const error = new Error('Completion time cannot be in the future');
+    error.name = 'ValidationError';
+    error.statusCode = 400;
+    return next(error);
+  }
+
+  next();
 });
 
 // Generate appointment ID

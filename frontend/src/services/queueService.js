@@ -20,13 +20,19 @@ export const queueService = {
   /**
    * Check-in patient (add to queue)
    * @param {Object} data - Check-in data
-   * @param {string} data.appointmentId - Appointment ID
+   * @param {string} data.appointmentId - Appointment ID (for existing appointments)
+   * @param {boolean} data.walkIn - True for walk-in patients
+   * @param {Object} data.patientInfo - Patient info for walk-ins (firstName, lastName, phoneNumber)
+   * @param {string} data.reason - Visit reason
    * @param {string} data.priority - Priority level (NORMAL, VIP, PREGNANT, ELDERLY, URGENT)
    * @returns {Promise} Queue entry with queue number
    */
   checkIn: async (data) => {
     const response = await api.post('/queue', {
       appointmentId: data.appointmentId,
+      walkIn: data.walkIn,
+      patientInfo: data.patientInfo,
+      reason: data.reason,
       priority: data.priority || 'NORMAL'
     });
     return response.data;

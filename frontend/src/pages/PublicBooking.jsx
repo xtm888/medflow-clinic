@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Clock, User, Phone, Mail, MessageSquare, Activity, CheckCircle } from 'lucide-react';
-import { services } from '../data/mockData';
+import { Calendar, Clock, User, Phone, Mail, MessageSquare, Activity, CheckCircle, Loader2 } from 'lucide-react';
+import api from '../services/api';
 
 export default function PublicBooking() {
   const navigate = useNavigate();
+  const [services, setServices] = useState([]);
+  const [loadingServices, setLoadingServices] = useState(true);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -18,6 +20,35 @@ export default function PublicBooking() {
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rateLimitWarning, setRateLimitWarning] = useState(false);
+
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      setLoadingServices(true);
+      const response = await api.get('/template-catalog', {
+        params: { type: 'procedure', limit: 100 }
+      }).catch(() => ({ data: { data: [] } }));
+
+      const serviceData = response.data?.data || response.data || [];
+      const transformedServices = serviceData.map(s => ({
+        id: s._id || s.id,
+        name: s.name || s.description || 'Service',
+        category: s.category || 'Consultation',
+        price: s.price || s.fee || 0,
+        duration: s.duration || s.estimatedDuration || 30,
+        description: s.description || s.notes || ''
+      }));
+
+      setServices(transformedServices);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
 
   // Mock rate limiting check (would be done on backend with Redis/DB)
   const checkRateLimit = (phone) => {
@@ -106,17 +137,18 @@ export default function PublicBooking() {
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
       // Mock sending WhatsApp & Email
-      console.log('📱 Sending WhatsApp to:', formData.phone);
-      console.log('📧 Sending Email to:', formData.email);
-      console.log('📅 Booking details:', formData);
+      console.log('Sending WhatsApp to:', formData.phone);
+      console.log('Sending Email to:', formData.email);
+      console.log('Booking details:', formData);
 
       // Save to localStorage for rate limiting (in production, done on backend)
       localStorage.setItem(`booking_${formData.phone}`, Date.now().toString());
 
       // Store booking data for confirmation page
+      const selectedService = services.find(s => s.id === formData.serviceId);
       sessionStorage.setItem('lastBooking', JSON.stringify({
         ...formData,
-        serviceName: services.find(s => s.id === parseInt(formData.serviceId))?.name,
+        serviceName: selectedService?.name,
         submittedAt: new Date().toISOString()
       }));
 
@@ -131,7 +163,7 @@ export default function PublicBooking() {
     }
   };
 
-  const selectedService = services.find(s => s.id === parseInt(formData.serviceId));
+  const selectedService = services.find(s => s.id === formData.serviceId);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50">
@@ -267,18 +299,25 @@ export default function PublicBooking() {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Type de consultation *
             </label>
-            <select
-              value={formData.serviceId}
-              onChange={(e) => setFormData({...formData, serviceId: e.target.value})}
-              className={`input ${errors.serviceId ? 'border-red-500' : ''}`}
-            >
-              <option value="">Sélectionnez un service</option>
-              {services.map(service => (
-                <option key={service.id} value={service.id}>
-                  {service.name} - ${service.price} ({service.duration} min)
-                </option>
-              ))}
-            </select>
+            {loadingServices ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-primary-600" />
+                <span className="ml-2 text-sm text-gray-500">Chargement des services...</span>
+              </div>
+            ) : (
+              <select
+                value={formData.serviceId}
+                onChange={(e) => setFormData({...formData, serviceId: e.target.value})}
+                className={`input ${errors.serviceId ? 'border-red-500' : ''}`}
+              >
+                <option value="">Sélectionnez un service</option>
+                {services.map(service => (
+                  <option key={service.id} value={service.id}>
+                    {service.name} - ${service.price} ({service.duration} min)
+                  </option>
+                ))}
+              </select>
+            )}
             {errors.serviceId && <p className="text-xs text-red-600 mt-1">{errors.serviceId}</p>}
 
             {selectedService && (

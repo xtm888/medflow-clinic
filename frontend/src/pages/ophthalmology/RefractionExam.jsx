@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Eye, ChevronRight, ChevronLeft, Save, Printer, Send, Check, AlertCircle } from 'lucide-react';
+import { Eye, ChevronRight, ChevronLeft, Save, Printer, Send, Check, AlertCircle, Calendar, Copy, FilePlus, Clock, User, FileText, Glasses, ShoppingCart } from 'lucide-react';
 import { calculateSE, vertexCorrection, formatPrescription } from '../../utils/ophthalmologyCalculations';
 import VisualAcuityStep from './components/VisualAcuityStep';
 import ObjectiveRefractionStep from './components/ObjectiveRefractionStep';
@@ -8,10 +8,13 @@ import SubjectiveRefractionStep from './components/SubjectiveRefractionStep';
 import KeratometryStep from './components/KeratometryStep';
 import AdditionalTestsStep from './components/AdditionalTestsStep';
 import PrescriptionStep from './components/PrescriptionStep';
+import NumberInputWithArrows from '../../components/NumberInputWithArrows';
 import ophthalmologyService from '../../services/ophthalmologyService';
 import patientService from '../../services/patientService';
 import { useToast } from '../../hooks/useToast';
 import ToastContainer from '../../components/ToastContainer';
+import DocumentGenerator from '../../components/documents/DocumentGenerator';
+import RefractionComparisonView from '../../components/RefractionComparisonView';
 
 export default function RefractionExam() {
   const [searchParams] = useSearchParams();
@@ -23,6 +26,21 @@ export default function RefractionExam() {
   const [loadingPatient, setLoadingPatient] = useState(true);
   const [currentStep, setCurrentStep] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [showDocumentGenerator, setShowDocumentGenerator] = useState(false);
+  const [showExamSuccessModal, setShowExamSuccessModal] = useState(false);
+  const [savedExamId, setSavedExamId] = useState(null);
+
+  // Refraction history
+  const [refractionHistory, setRefractionHistory] = useState([]);
+  const [loadingHistory, setLoadingHistory] = useState(false);
+  const [selectedHistoryExam, setSelectedHistoryExam] = useState(null);
+  const [currentExamId, setCurrentExamId] = useState(null);
+
+  // TOD/TOG (Intraocular Pressure)
+  const [iop, setIop] = useState({
+    OD: { value: 0, method: 'goldman', time: new Date().toISOString() },
+    OS: { value: 0, method: 'goldman', time: new Date().toISOString() }
+  });
 
   // Load patient data
   useEffect(() => {
@@ -53,6 +71,108 @@ export default function RefractionExam() {
 
     loadPatient();
   }, [patientId]);
+
+  // Load refraction history
+  useEffect(() => {
+    const loadHistory = async () => {
+      if (!patientId) return;
+
+      try {
+        setLoadingHistory(true);
+        const response = await ophthalmologyService.getRefractionHistory(patientId);
+        if (response.data) {
+          setRefractionHistory(response.data);
+        }
+      } catch (err) {
+        console.error('Error loading refraction history:', err);
+        // Don't show error - history is optional
+      } finally {
+        setLoadingHistory(false);
+      }
+    };
+
+    loadHistory();
+  }, [patientId]);
+
+  // Handle copying from previous refraction
+  const handleCopyFromPrevious = async () => {
+    try {
+      setSaving(true);
+      const response = await ophthalmologyService.copyFromPreviousRefraction(patientId);
+      if (response.data) {
+        setCurrentExamId(response.data._id);
+        // Load the copied data into examData
+        loadExamDataFromResponse(response.data);
+        success('Données copiées de l\'examen précédent');
+        // Reload history
+        const historyResponse = await ophthalmologyService.getRefractionHistory(patientId);
+        if (historyResponse.data) {
+          setRefractionHistory(historyResponse.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error copying from previous:', err);
+      showError(err.response?.data?.error || 'Aucun examen précédent trouvé');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Handle creating blank refraction
+  const handleCreateBlank = async () => {
+    try {
+      setSaving(true);
+      const response = await ophthalmologyService.createBlankRefraction(patientId);
+      if (response.data) {
+        setCurrentExamId(response.data._id);
+        success('Nouvelle réfraction vide créée');
+        // Reload history
+        const historyResponse = await ophthalmologyService.getRefractionHistory(patientId);
+        if (historyResponse.data) {
+          setRefractionHistory(historyResponse.data);
+        }
+      }
+    } catch (err) {
+      console.error('Error creating blank refraction:', err);
+      showError('Erreur lors de la création de la réfraction vide');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Load exam data from API response
+  const loadExamDataFromResponse = (exam) => {
+    if (!exam) return;
+
+    setExamData(prevData => ({
+      ...prevData,
+      visualAcuity: exam.visualAcuity || prevData.visualAcuity,
+      objective: exam.refraction?.objective || prevData.objective,
+      subjective: exam.refraction?.subjective || prevData.subjective,
+      keratometry: exam.keratometry || prevData.keratometry,
+      pupilDistance: exam.pupilDistance || prevData.pupilDistance,
+      finalPrescription: exam.refraction?.finalPrescription || prevData.finalPrescription
+    }));
+
+    if (exam.iop) {
+      setIop(exam.iop);
+    }
+  };
+
+  // Handle selecting a historical exam
+  const handleSelectHistoricalExam = async (examId) => {
+    try {
+      setSelectedHistoryExam(examId);
+      const response = await ophthalmologyService.getExam(examId);
+      if (response.data) {
+        loadExamDataFromResponse(response.data);
+      }
+    } catch (err) {
+      console.error('Error loading historical exam:', err);
+      showError('Erreur lors du chargement de l\'examen');
+    }
+  };
+
   const [examData, setExamData] = useState({
     examDate: new Date().toISOString().split('T')[0],
     examiner: 'Dr. Mutombo',
@@ -260,13 +380,11 @@ export default function RefractionExam() {
       // Clear draft from localStorage
       localStorage.removeItem(`exam_${patientId}_draft`);
 
-      // Show success message
+      // Store saved exam ID and show success modal
+      const examId = result.data?._id || result._id;
+      setSavedExamId(examId);
+      setShowExamSuccessModal(true);
       success('Examen sauvegardé avec succès!');
-
-      // Navigate back to ophthalmology dashboard
-      setTimeout(() => {
-        navigate('/ophthalmology');
-      }, 1000);
 
     } catch (err) {
       console.error('Error saving exam:', err);
@@ -306,13 +424,93 @@ export default function RefractionExam() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
 
+      {/* Historical Refraction Sidebar */}
+      <div className="w-72 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+        <div className="p-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+          <h2 className="text-lg font-semibold flex items-center">
+            <Calendar className="w-5 h-5 mr-2" />
+            Réfractions Précédentes
+          </h2>
+        </div>
+
+        <div className="p-3 space-y-2 border-b">
+          <button
+            onClick={handleCopyFromPrevious}
+            disabled={saving || loadingHistory}
+            className="w-full flex items-center justify-center px-3 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            Nouvelle réfraction précédente
+          </button>
+          <button
+            onClick={handleCreateBlank}
+            disabled={saving || loadingHistory}
+            className="w-full flex items-center justify-center px-3 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm font-medium"
+          >
+            <FilePlus className="w-4 h-4 mr-2" />
+            Nouvelle réfraction vide
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto">
+          {loadingHistory ? (
+            <div className="p-4 text-center text-gray-500">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              Chargement...
+            </div>
+          ) : refractionHistory.length === 0 ? (
+            <div className="p-4 text-center text-gray-500 text-sm">
+              Aucune réfraction précédente
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
+              {refractionHistory.map((exam) => (
+                <button
+                  key={exam._id}
+                  onClick={() => handleSelectHistoricalExam(exam._id)}
+                  className={`w-full p-3 rounded-lg text-left transition-all ${
+                    selectedHistoryExam === exam._id
+                      ? 'bg-blue-100 border-2 border-blue-500'
+                      : 'bg-gray-50 border-2 border-transparent hover:bg-gray-100'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-semibold text-gray-900 flex items-center">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {new Date(exam.createdAt).toLocaleDateString('fr-FR')}
+                    </span>
+                    {exam.isPreviousCopy && (
+                      <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">
+                        Copie
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-600 flex items-center">
+                    <User className="w-3 h-3 mr-1" />
+                    {exam.examiner?.firstName} {exam.examiner?.lastName}
+                  </div>
+                  {exam.iop && (
+                    <div className="mt-1 text-xs text-gray-500">
+                      TOD: {exam.iop.OD?.value || 0} | TOG: {exam.iop.OS?.value || 0}
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+
       {/* Header */}
-      <div className="bg-white shadow-sm px-6 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between">
+      <div className="bg-white shadow-sm px-6 py-4 sticky top-0 z-10 border-b">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center">
             <Eye className="w-6 h-6 text-blue-600 mr-3" />
             <div>
@@ -324,12 +522,61 @@ export default function RefractionExam() {
               </p>
             </div>
           </div>
-          <button
-            onClick={() => navigate('/ophthalmology')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
-          >
-            Fermer
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowDocumentGenerator(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              title="Générer un certificat d'acuité visuelle"
+            >
+              <FileText className="w-4 h-4" />
+              Certificat
+            </button>
+            <button
+              onClick={() => navigate('/ophthalmology')}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
+            >
+              Fermer
+            </button>
+          </div>
+        </div>
+
+        {/* TOD/TOG Section */}
+        <div className="flex items-center gap-4 pt-3 border-t">
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">TOD:</span>
+            <NumberInputWithArrows
+              value={iop.OD.value}
+              onChange={(val) => setIop(prev => ({
+                ...prev,
+                OD: { ...prev.OD, value: val }
+              }))}
+              step={1}
+              min={0}
+              max={50}
+              unit="mmHg"
+              precision={0}
+              className="w-32"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">TOG:</span>
+            <NumberInputWithArrows
+              value={iop.OS.value}
+              onChange={(val) => setIop(prev => ({
+                ...prev,
+                OS: { ...prev.OS, value: val }
+              }))}
+              step={1}
+              min={0}
+              max={50}
+              unit="mmHg"
+              precision={0}
+              className="w-32"
+            />
+          </div>
+          <div className="text-xs text-gray-500">
+            Tension Oculaire (Intraocular Pressure)
+          </div>
         </div>
       </div>
 
@@ -366,12 +613,30 @@ export default function RefractionExam() {
       </div>
 
       {/* Step Content */}
-      <div className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6 pb-24 space-y-6">
         <CurrentStepComponent
           data={examData}
           setData={setExamData}
           patient={patient}
+          examId={currentExamId}
+          patientId={patientId}
         />
+
+        {/* Refraction Comparison View - Shows comparison with previous exams */}
+        {patientId && (
+          <RefractionComparisonView
+            patientId={patientId}
+            currentExam={{
+              examDate: examData.examDate,
+              visualAcuity: examData.visualAcuity,
+              objectiveRefraction: examData.objective,
+              subjectiveRefraction: examData.subjective,
+              keratometry: examData.keratometry
+            }}
+            showKeratometry={currentStep >= 5}
+            showVisualAcuity={true}
+          />
+        )}
       </div>
 
       {/* Navigation Footer */}
@@ -419,6 +684,70 @@ export default function RefractionExam() {
             </button>
           )}
         </div>
+      </div>
+
+      {/* Document Generator Modal */}
+      {showDocumentGenerator && patient && (
+        <DocumentGenerator
+          patientId={patientId}
+          visitId={null}
+          onClose={() => setShowDocumentGenerator(false)}
+          onDocumentGenerated={(doc) => {
+            success('Document généré avec succès!');
+            setShowDocumentGenerator(false);
+          }}
+        />
+      )}
+
+      {/* Exam Success Modal - Post-exam actions */}
+      {showExamSuccessModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <Check className="h-6 w-6 text-green-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Examen sauvegardé avec succès!
+              </h3>
+              <p className="text-sm text-gray-500 mb-6">
+                L'examen de réfraction pour {patient?.firstName} {patient?.lastName} a été enregistré.
+              </p>
+
+              <div className="flex flex-col space-y-3">
+                {savedExamId && (
+                  <button
+                    onClick={() => {
+                      setShowExamSuccessModal(false);
+                      navigate(`/ophthalmology/glasses-order/${savedExamId}`);
+                    }}
+                    className="btn btn-primary w-full flex items-center justify-center space-x-2"
+                  >
+                    <Glasses className="h-5 w-5" />
+                    <span>Commander lunettes/lentilles</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowDocumentGenerator(true)}
+                  className="btn btn-secondary w-full flex items-center justify-center space-x-2"
+                >
+                  <FileText className="h-5 w-5" />
+                  <span>Générer ordonnance</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowExamSuccessModal(false);
+                    navigate('/ophthalmology');
+                  }}
+                  className="btn btn-ghost w-full text-gray-600"
+                >
+                  Retour au tableau de bord
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );

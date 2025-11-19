@@ -1,5 +1,6 @@
 const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
+const Counter = require('../models/Counter');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 // @desc    Get all appointments
@@ -400,17 +401,16 @@ exports.rescheduleAppointment = asyncHandler(async (req, res, next) => {
 });
 
 // Helper functions
+// FIXED: Atomic queue number generation using Counter model
+// Prevents race conditions when multiple patients check in simultaneously
 async function generateQueueNumber() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  // Use Counter model's helper to get today's counter ID
+  const counterId = Counter.getTodayQueueCounterId();
 
-  const count = await Appointment.countDocuments({
-    checkInTime: { $gte: today, $lt: tomorrow }
-  });
+  // Get next sequence number atomically (thread-safe)
+  const queueNumber = await Counter.getNextSequence(counterId);
 
-  return count + 1;
+  return queueNumber;
 }
 
 function generateTimeSlots(workingHours, appointments, duration) {

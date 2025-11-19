@@ -186,10 +186,83 @@ const deviceSchema = new mongoose.Schema({
       enum: ['connected', 'disconnected', 'error', 'pending', 'not-configured'],
       default: 'not-configured'
     },
+
+    // Integration method (Phase 1 Enhancement)
+    method: {
+      type: String,
+      enum: ['webhook', 'folder-sync', 'manual', 'api', 'none'],
+      default: 'none'
+    },
+
+    // Webhook integration (for real-time push from devices)
+    webhook: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      url: String, // Full webhook URL for device to push to
+      apiKey: String, // API key for device authentication
+      secret: String, // Secret for HMAC signature verification
+      headers: mongoose.Schema.Types.Mixed, // Custom headers expected from device
+      retryPolicy: {
+        maxAttempts: {
+          type: Number,
+          default: 3
+        },
+        backoffMultiplier: {
+          type: Number,
+          default: 2
+        }
+      },
+      lastWebhookReceived: Date,
+      webhookCount: {
+        type: Number,
+        default: 0
+      }
+    },
+
+    // Folder sync integration (for scheduled polling)
+    folderSync: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      sharedFolderPath: String, // Network path to shared folder
+      filePattern: String, // e.g., '*.csv', '*.dcm', '*.json'
+      fileFormat: {
+        type: String,
+        enum: ['csv', 'json', 'xml', 'txt', 'dicom', 'hl7', 'proprietary']
+      },
+      syncSchedule: {
+        type: String,
+        default: '0 */1 * * *' // Every hour (cron format)
+      },
+      processedFolder: String, // Path to move processed files
+      errorFolder: String, // Path to move files with errors
+      lastFolderSync: Date,
+      filesProcessed: {
+        type: Number,
+        default: 0
+      },
+      filesFailed: {
+        type: Number,
+        default: 0
+      }
+    },
+
     lastConnection: Date,
     lastSync: Date,
+    lastSyncStatus: {
+      type: String,
+      enum: ['success', 'partial', 'failed', 'pending'],
+      default: 'pending'
+    },
     syncFrequency: String, // 'realtime', 'hourly', 'daily', 'manual'
     autoSync: Boolean,
+    consecutiveErrors: {
+      type: Number,
+      default: 0
+    },
     errorLog: [{
       timestamp: Date,
       error: String,

@@ -10,9 +10,18 @@ const {
   getPatientAppointments,
   getPatientPrescriptions,
   uploadPatientDocument,
-  searchPatients
+  searchPatients,
+  getRecentPatients,
+  getPatientVisits,
+  getPatientAllergies,
+  addPatientAllergy,
+  getPatientMedications,
+  addPatientMedication,
+  updatePatientInsurance,
+  getPatientDocuments
 } = require('../controllers/patientController');
 
+const { getPatientBilling } = require('../controllers/billingController');
 const { protect, authorize } = require('../middleware/auth');
 const { logPatientDataAccess, logAction } = require('../middleware/auditLogger');
 
@@ -25,7 +34,9 @@ router
   .get(authorize('admin', 'doctor', 'nurse', 'receptionist', 'ophthalmologist'), getPatients)
   .post(authorize('admin', 'receptionist', 'nurse'), logAction('PATIENT_CREATE'), createPatient);
 
+// Static routes must come before parameterized routes
 router.get('/search', authorize('admin', 'doctor', 'nurse', 'receptionist', 'ophthalmologist'), searchPatients);
+router.get('/recent', authorize('admin', 'doctor', 'nurse', 'receptionist', 'ophthalmologist'), getRecentPatients);
 
 router
   .route('/:id')
@@ -36,6 +47,28 @@ router
 router.get('/:id/history', logPatientDataAccess, getPatientHistory);
 router.get('/:id/appointments', logPatientDataAccess, getPatientAppointments);
 router.get('/:id/prescriptions', logPatientDataAccess, getPatientPrescriptions);
-router.post('/:id/documents', authorize('admin', 'doctor', 'nurse'), uploadPatientDocument);
+router.get('/:id/billing', logPatientDataAccess, getPatientBilling);
+router.get('/:id/visits', logPatientDataAccess, getPatientVisits);
+
+// Documents
+router
+  .route('/:id/documents')
+  .get(logPatientDataAccess, getPatientDocuments)
+  .post(authorize('admin', 'doctor', 'nurse'), uploadPatientDocument);
+
+// Allergies
+router
+  .route('/:id/allergies')
+  .get(logPatientDataAccess, getPatientAllergies)
+  .post(authorize('admin', 'doctor', 'nurse'), logAction('ALLERGY_ADD'), addPatientAllergy);
+
+// Medications
+router
+  .route('/:id/medications')
+  .get(logPatientDataAccess, getPatientMedications)
+  .post(authorize('admin', 'doctor', 'ophthalmologist'), logAction('MEDICATION_ADD'), addPatientMedication);
+
+// Insurance
+router.put('/:id/insurance', authorize('admin', 'receptionist'), logAction('INSURANCE_UPDATE'), updatePatientInsurance);
 
 module.exports = router;

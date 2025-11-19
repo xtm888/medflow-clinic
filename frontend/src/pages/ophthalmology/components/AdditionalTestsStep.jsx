@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Activity, Eye, Move, AlertCircle } from 'lucide-react';
+import { Activity, Eye, Move, AlertCircle, Image as ImageIcon } from 'lucide-react';
+import DeviceImageSelector from '../../../components/DeviceImageSelector';
 
-export default function AdditionalTestsStep({ data, setData }) {
+export default function AdditionalTestsStep({ data, setData, examId, patientId }) {
   const [selectedTest, setSelectedTest] = useState('pupils');
 
   const updatePupils = (eye, param, value) => {
@@ -59,18 +60,20 @@ export default function AdditionalTestsStep({ data, setData }) {
 
       {/* Test Selector */}
       <div className="flex gap-2 mb-6 flex-wrap">
-        {['pupils', 'motility', 'pd', 'covertest'].map(test => (
+        {['pupils', 'motility', 'pd', 'covertest', 'imaging'].map(test => (
           <button
             key={test}
             onClick={() => setSelectedTest(test)}
-            className={`px-4 py-2 rounded-lg transition-colors ${
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
               selectedTest === test ? 'bg-blue-600 text-white' : 'bg-gray-100 hover:bg-gray-200'
             }`}
           >
+            {test === 'imaging' && <ImageIcon className="w-4 h-4" />}
             {test === 'pupils' ? 'Pupilles' :
              test === 'motility' ? 'Motilité' :
              test === 'pd' ? 'Écart Pupillaire' :
-             'Cover Test'}
+             test === 'covertest' ? 'Cover Test' :
+             'Images Appareils'}
           </button>
         ))}
       </div>
@@ -318,6 +321,38 @@ export default function AdditionalTestsStep({ data, setData }) {
                 <option value="hypotropia">Hypotropie</option>
               </select>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Device Imaging */}
+      {selectedTest === 'imaging' && examId && patientId && (
+        <div>
+          <h3 className="font-medium mb-4 flex items-center gap-2">
+            <ImageIcon className="w-5 h-5 text-purple-600" />
+            Images d'Appareils (OCT, Fond d'œil, etc.)
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Visualisez et liez les images capturées par les appareils d'imagerie
+            (OCT, rétinographe, angiographe, etc.) à cet examen.
+          </p>
+          <DeviceImageSelector
+            examId={examId}
+            patientId={patientId}
+            onImageLinked={(image) => {
+              console.log('Image linked:', image);
+            }}
+          />
+        </div>
+      )}
+
+      {selectedTest === 'imaging' && (!examId || !patientId) && (
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5 text-yellow-600" />
+            <span className="text-sm text-yellow-800">
+              Veuillez d'abord créer l'examen pour accéder aux images d'appareils
+            </span>
           </div>
         </div>
       )}

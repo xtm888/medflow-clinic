@@ -1,8 +1,11 @@
-import { useState } from 'react';
-import { Stethoscope, Plus, Search, Edit2, Trash2, DollarSign, Clock, Tag } from 'lucide-react';
-import { services } from '../data/mockData';
+import { useState, useEffect } from 'react';
+import { Stethoscope, Plus, Search, Edit2, Trash2, DollarSign, Clock, Tag, Loader2, AlertCircle } from 'lucide-react';
+import api from '../services/api';
 
 export default function Services() {
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showServiceModal, setShowServiceModal] = useState(false);
@@ -18,6 +21,45 @@ export default function Services() {
     code: ''
   });
 
+  useEffect(() => {
+    fetchServices();
+  }, []);
+
+  const fetchServices = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Try to fetch from template-catalog or billing/fee-schedule
+      const response = await api.get('/template-catalog', {
+        params: { type: 'procedure', limit: 100 }
+      }).catch(() =>
+        api.get('/billing/fee-schedule', { params: { limit: 100 } })
+      );
+
+      const data = response.data?.data || response.data || [];
+
+      // Transform to service format
+      const serviceList = data.map(item => ({
+        id: item._id || item.id,
+        name: item.name || item.description || 'Service',
+        category: item.category || item.type || 'Consultation',
+        price: item.price || item.fee || item.basePrice || 0,
+        duration: item.duration || item.estimatedDuration || 30,
+        department: item.department || item.specialty || 'Général',
+        description: item.description || item.notes || '',
+        code: item.code || item.procedureCode || ''
+      }));
+
+      setServices(serviceList);
+    } catch (err) {
+      console.error('Error fetching services:', err);
+      setError('Erreur lors du chargement des services');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Filter services
   const filteredServices = services.filter(service => {
     const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -29,7 +71,7 @@ export default function Services() {
 
   // Calculate stats
   const totalServices = services.length;
-  const avgPrice = (services.reduce((sum, s) => sum + s.price, 0) / services.length).toFixed(2);
+  const avgPrice = services.length > 0 ? (services.reduce((sum, s) => sum + s.price, 0) / services.length).toFixed(2) : '0.00';
   const categories = [...new Set(services.map(s => s.category))].length;
   const totalRevenuePotential = services.reduce((sum, s) => sum + s.price, 0).toFixed(2);
 
@@ -61,13 +103,19 @@ export default function Services() {
     setShowServiceModal(true);
   };
 
-  const handleSaveService = () => {
-    // This would send to backend
-    console.log(editingService ? 'Updating service:' : 'Creating service:', serviceForm);
-    setShowServiceModal(false);
+  const handleSaveService = async () => {
+    try {
+      // This would send to backend
+      console.log(editingService ? 'Updating service:' : 'Creating service:', serviceForm);
+      setShowServiceModal(false);
+      // Refresh services after save
+      await fetchServices();
+    } catch (err) {
+      console.error('Error saving service:', err);
+    }
   };
 
-  const handleDeleteService = (serviceId) => {
+  const handleDeleteService = async (serviceId) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
       console.log('Deleting service:', serviceId);
       // This would send to backend
@@ -84,6 +132,15 @@ export default function Services() {
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <span className="ml-2 text-gray-600">Chargement des services...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -103,6 +160,21 @@ export default function Services() {
           <span>Nouveau service</span>
         </button>
       </div>
+
+      {error && (
+        <div className="card bg-red-50 border-red-200">
+          <div className="flex items-center text-red-700">
+            <AlertCircle className="h-5 w-5 mr-2" />
+            {error}
+          </div>
+          <button
+            onClick={fetchServices}
+            className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -176,79 +248,79 @@ export default function Services() {
       </div>
 
       {/* Services Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {filteredServices.map((service) => (
-          <div key={service.id} className="card hover:shadow-lg transition">
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
-                  <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
-                  <span className={`badge ${getCategoryColor(service.category)}`}>
-                    {service.category}
-                  </span>
-                </div>
-                {service.description && (
-                  <p className="text-sm text-gray-600 mb-3">{service.description}</p>
-                )}
-              </div>
-
-              <div className="flex space-x-2 ml-4">
-                <button
-                  onClick={() => openEditServiceModal(service)}
-                  className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded transition"
-                >
-                  <Edit2 className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => handleDeleteService(service.id)}
-                  className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
-              <div>
-                <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                  <DollarSign className="h-4 w-4" />
-                  <p className="text-xs">Prix</p>
-                </div>
-                <p className="text-2xl font-bold text-green-600">${service.price.toFixed(2)}</p>
-              </div>
-
-              <div>
-                <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                  <Clock className="h-4 w-4" />
-                  <p className="text-xs">Durée</p>
-                </div>
-                <p className="text-lg font-semibold text-gray-900">{service.duration} min</p>
-              </div>
-
-              <div>
-                <div className="flex items-center space-x-2 text-gray-500 mb-1">
-                  <Stethoscope className="h-4 w-4" />
-                  <p className="text-xs">Département</p>
-                </div>
-                <p className="text-sm font-medium text-gray-700 truncate">{service.department}</p>
-              </div>
-            </div>
-
-            {service.code && (
-              <div className="mt-3 pt-3 border-t border-gray-200">
-                <p className="text-xs text-gray-500">
-                  Code: <span className="font-mono font-semibold text-gray-700">{service.code}</span>
-                </p>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {filteredServices.length === 0 && (
+      {filteredServices.length === 0 ? (
         <div className="card text-center py-12">
           <Stethoscope className="h-12 w-12 text-gray-400 mx-auto mb-3" />
           <p className="text-gray-500">Aucun service trouvé</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filteredServices.map((service) => (
+            <div key={service.id} className="card hover:shadow-lg transition">
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <h3 className="text-lg font-bold text-gray-900">{service.name}</h3>
+                    <span className={`badge ${getCategoryColor(service.category)}`}>
+                      {service.category}
+                    </span>
+                  </div>
+                  {service.description && (
+                    <p className="text-sm text-gray-600 mb-3">{service.description}</p>
+                  )}
+                </div>
+
+                <div className="flex space-x-2 ml-4">
+                  <button
+                    onClick={() => openEditServiceModal(service)}
+                    className="text-blue-600 hover:text-blue-800 p-2 hover:bg-blue-50 rounded transition"
+                  >
+                    <Edit2 className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteService(service.id)}
+                    className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4 pt-3 border-t border-gray-200">
+                <div>
+                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
+                    <DollarSign className="h-4 w-4" />
+                    <p className="text-xs">Prix</p>
+                  </div>
+                  <p className="text-2xl font-bold text-green-600">${service.price.toFixed(2)}</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
+                    <Clock className="h-4 w-4" />
+                    <p className="text-xs">Durée</p>
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">{service.duration} min</p>
+                </div>
+
+                <div>
+                  <div className="flex items-center space-x-2 text-gray-500 mb-1">
+                    <Stethoscope className="h-4 w-4" />
+                    <p className="text-xs">Département</p>
+                  </div>
+                  <p className="text-sm font-medium text-gray-700 truncate">{service.department}</p>
+                </div>
+              </div>
+
+              {service.code && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500">
+                    Code: <span className="font-mono font-semibold text-gray-700">{service.code}</span>
+                  </p>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

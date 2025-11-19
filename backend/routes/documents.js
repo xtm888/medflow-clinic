@@ -6,6 +6,7 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const { protect, authorize } = require('../middleware/auth');
 const Document = require('../models/Document');
+const documentController = require('../controllers/documentController');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -251,8 +252,8 @@ router.get('/search', protect, async (req, res) => {
 
 // @desc    Get documents by patient
 // @route   GET /api/documents/patient/:patientId
-// @access  Private
-router.get('/patient/:patientId', protect, async (req, res) => {
+// @access  Private (Medical staff only)
+router.get('/patient/:patientId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
   try {
     const { category, type, limit, offset } = req.query;
 
@@ -290,8 +291,8 @@ router.get('/patient/:patientId', protect, async (req, res) => {
 
 // @desc    Get documents by visit
 // @route   GET /api/documents/visit/:visitId
-// @access  Private
-router.get('/visit/:visitId', protect, async (req, res) => {
+// @access  Private (Medical staff only)
+router.get('/visit/:visitId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
   try {
     const documents = await Document.getByVisit(req.params.visitId);
 
@@ -311,8 +312,8 @@ router.get('/visit/:visitId', protect, async (req, res) => {
 
 // @desc    Get recent audio notes
 // @route   GET /api/documents/audio/recent/:patientId
-// @access  Private
-router.get('/audio/recent/:patientId', protect, async (req, res) => {
+// @access  Private (Medical staff only)
+router.get('/audio/recent/:patientId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const audioNotes = await Document.getRecentAudioNotes(req.params.patientId, limit);
@@ -541,8 +542,8 @@ router.put('/:id', protect, async (req, res) => {
 
 // @desc    Delete document (soft delete)
 // @route   DELETE /api/documents/:id
-// @access  Private
-router.delete('/:id', protect, async (req, res) => {
+// @access  Private (Admin and document creator only)
+router.delete('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist'), async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
 
@@ -570,5 +571,39 @@ router.delete('/:id', protect, async (req, res) => {
     });
   }
 });
+
+// ============================================================
+// CERFA Document Generation Routes
+// ============================================================
+
+// @desc    Generate prescription PDF
+// @route   POST /api/documents/generate/prescription
+// @access  Private (doctor, ophthalmologist)
+router.post('/generate/prescription', protect, authorize(['doctor', 'ophthalmologist', 'admin']), documentController.generatePrescription);
+
+// @desc    Generate medical certificate PDF
+// @route   POST /api/documents/generate/certificate
+// @access  Private (doctor, ophthalmologist)
+router.post('/generate/certificate', protect, authorize(['doctor', 'ophthalmologist', 'admin']), documentController.generateMedicalCertificate);
+
+// @desc    Generate sick leave certificate PDF
+// @route   POST /api/documents/generate/sick-leave
+// @access  Private (doctor, ophthalmologist)
+router.post('/generate/sick-leave', protect, authorize(['doctor', 'ophthalmologist', 'admin']), documentController.generateSickLeave);
+
+// @desc    Generate invoice PDF
+// @route   POST /api/documents/generate/invoice
+// @access  Private (doctor, receptionist, accountant, admin)
+router.post('/generate/invoice', protect, authorize(['doctor', 'ophthalmologist', 'receptionist', 'accountant', 'admin']), documentController.generateInvoice);
+
+// @desc    Download generated document
+// @route   GET /api/documents/download/:filename
+// @access  Private
+router.get('/download/:filename', protect, documentController.downloadDocument);
+
+// @desc    Delete generated document
+// @route   DELETE /api/documents/delete/:filename
+// @access  Private
+router.delete('/delete/:filename', protect, authorize(['doctor', 'admin']), documentController.deleteDocument);
 
 module.exports = router;

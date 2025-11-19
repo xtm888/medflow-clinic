@@ -1,7 +1,8 @@
 import axios from 'axios';
+import logger from './logger';
 
 // API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
 
 // Create axios instance
 const api = axios.create({
@@ -26,30 +27,56 @@ api.interceptors.request.use(
   }
 );
 
+// Track if we're already redirecting to prevent multiple redirects
+let isRedirectingToLogin = false;
+
+// Function to reset redirect flag (call after successful login)
+export const resetRedirectFlag = () => {
+  isRedirectingToLogin = false;
+};
+
 // Response interceptor to handle errors
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Reset flag on successful response (user is authenticated)
+    if (response.config.url?.includes('/auth/login')) {
+      isRedirectingToLogin = false;
+    }
+    return response;
+  },
   (error) => {
     if (error.response) {
       // Server responded with error status
       if (error.response.status === 401) {
-        // Unauthorized - redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
+        // Unauthorized - redirect to login only if not already redirecting
+        // and not already on login page
+        const isOnLoginPage = window.location.pathname === '/login';
+        if (!isRedirectingToLogin && !isOnLoginPage) {
+          isRedirectingToLogin = true;
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          // Use setTimeout to allow current operations to complete
+          setTimeout(() => {
+            window.location.href = '/login';
+            // Reset flag after redirect to allow future redirects
+            setTimeout(() => {
+              isRedirectingToLogin = false;
+            }, 500);
+          }, 100);
+        }
       } else if (error.response.status === 403) {
         // Forbidden - show permission error
-        console.error('Permission denied');
+        logger.error('Permission denied');
       } else if (error.response.status === 500) {
         // Server error
-        console.error('Server error:', error.response.data);
+        logger.error('Server error:', error.response.data);
       }
     } else if (error.request) {
       // Request made but no response
-      console.error('Network error - no response from server');
+      logger.error('Network error - no response from server');
     } else {
       // Something else happened
-      console.error('Error:', error.message);
+      logger.error('Error:', error.message);
     }
     return Promise.reject(error);
   }

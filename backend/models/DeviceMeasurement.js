@@ -483,8 +483,8 @@ const deviceMeasurementSchema = new mongoose.Schema({
     default: 'complete'
   },
 
-  // Error handling
-  errors: [{
+  // Error handling (renamed from 'errors' to avoid Mongoose warning)
+  errorList: [{
     timestamp: Date,
     type: String,
     message: String,
@@ -528,8 +528,8 @@ deviceMeasurementSchema.pre('save', async function(next) {
   next();
 });
 
-// Methods
-deviceMeasurementSchema.methods.validate = function(userId) {
+// Methods (renamed from 'validate' to avoid Mongoose warning)
+deviceMeasurementSchema.methods.markAsValidated = function(userId) {
   this.validation.status = 'validated';
   this.validation.validatedBy = userId;
   this.validation.validatedAt = new Date();

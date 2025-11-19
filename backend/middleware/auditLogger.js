@@ -8,7 +8,7 @@ exports.auditLogger = async (req, res, next) => {
   // Create audit log entry
   const auditEntry = {
     user: req.user ? req.user._id : null,
-    action: req.method,
+    action: 'DATA_ACCESS', // Default action, will be overridden based on request type
     resource: req.originalUrl,
     ipAddress: req.ip,
     userAgent: req.headers['user-agent'],

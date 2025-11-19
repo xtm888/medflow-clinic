@@ -1,7 +1,7 @@
 // MedFlow Service Worker - Offline First Architecture
-const CACHE_NAME = 'medflow-v1';
-const API_CACHE = 'medflow-api-v1';
-const IMAGE_CACHE = 'medflow-images-v1';
+const CACHE_NAME = 'medflow-v2';
+const API_CACHE = 'medflow-api-v2';
+const IMAGE_CACHE = 'medflow-images-v2';
 
 // Files to cache on install
 const STATIC_CACHE = [

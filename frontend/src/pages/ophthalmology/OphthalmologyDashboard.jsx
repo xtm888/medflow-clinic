@@ -3,72 +3,122 @@ import { useNavigate } from 'react-router-dom';
 import {
   Eye, Users, Calendar, TrendingUp,
   AlertCircle, FileText, Package, Clock,
-  Glasses, Camera, Activity, ChevronRight
+  Glasses, Camera, Activity, ChevronRight, Loader2
 } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PatientSelectorModal from '../../components/PatientSelectorModal';
+import api from '../../services/api';
+
+// Default colors for diagnosis chart
+const DIAGNOSIS_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#6b7280'];
 
 export default function OphthalmologyDashboard() {
   const navigate = useNavigate();
   const [showPatientSelector, setShowPatientSelector] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [stats, setStats] = useState({
+    todayExams: 0,
+    weeklyExams: 0,
+    pendingReports: 0,
+    lowStockMeds: 0,
+    diagnoses: [],
+    recentExams: [],
+    upcomingAppointments: [],
+    equipmentStatus: [],
+    queueCount: 0
+  });
+
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.get('/ophthalmology/dashboard-stats');
+
+      if (response.data?.success) {
+        const data = response.data.data;
+
+        // Add colors to diagnoses
+        const diagnosesWithColors = (data.diagnoses || []).map((d, i) => ({
+          ...d,
+          color: DIAGNOSIS_COLORS[i % DIAGNOSIS_COLORS.length]
+        }));
+
+        setStats({
+          todayExams: data.todayExams || 0,
+          weeklyExams: data.weeklyExams || 0,
+          pendingReports: data.pendingReports || 0,
+          lowStockMeds: data.lowStockMeds || 0,
+          diagnoses: diagnosesWithColors,
+          recentExams: data.recentExams || [],
+          upcomingAppointments: data.upcomingAppointments || [],
+          equipmentStatus: data.equipmentStatus || [],
+          queueCount: data.queueCount || 0
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+      setError('Impossible de charger les statistiques');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectPatient = (patient) => {
     navigate(`/ophthalmology/refraction?patientId=${patient._id || patient.id}`);
   };
 
-  const stats = {
-    todayExams: 12,
-    weeklyExams: 58,
-    pendingReports: 3,
-    lowStockMeds: 4,
+  // Static data that doesn't come from API
+  const revenueData = [
+    { month: 'Jan', revenue: 8500, patients: 120 },
+    { month: 'Fév', revenue: 9200, patients: 135 },
+    { month: 'Mar', revenue: 8800, patients: 128 },
+    { month: 'Avr', revenue: 10500, patients: 145 },
+    { month: 'Mai', revenue: 11200, patients: 158 },
+    { month: 'Juin', revenue: 12300, patients: 165 }
+  ];
 
-    diagnoses: [
-      { name: 'Myopie', count: 35, color: '#3b82f6' },
-      { name: 'Presbytie', count: 28, color: '#10b981' },
-      { name: 'Astigmatisme', count: 22, color: '#f59e0b' },
-      { name: 'Hypermétropie', count: 15, color: '#8b5cf6' },
-      { name: 'Glaucome', count: 12, color: '#ef4444' },
-      { name: 'Cataracte', count: 8, color: '#6b7280' }
-    ],
+  // Generate alerts based on real data
+  const criticalAlerts = [];
+  if (stats.lowStockMeds > 0) {
+    criticalAlerts.push({
+      type: 'medication',
+      message: `${stats.lowStockMeds} médicament(s) en stock critique`,
+      severity: 'high',
+      icon: Package
+    });
+  }
+  if (stats.pendingReports > 0) {
+    criticalAlerts.push({
+      type: 'reports',
+      message: `${stats.pendingReports} rapport(s) en attente`,
+      severity: stats.pendingReports > 5 ? 'high' : 'medium',
+      icon: FileText
+    });
+  }
+  // Add equipment maintenance alerts
+  const maintenanceEquipment = stats.equipmentStatus.filter(e => e.status === 'maintenance');
+  if (maintenanceEquipment.length > 0) {
+    criticalAlerts.push({
+      type: 'equipment',
+      message: `${maintenanceEquipment.length} équipement(s) en maintenance`,
+      severity: 'medium',
+      icon: Camera
+    });
+  }
 
-    revenueData: [
-      { month: 'Jan', revenue: 8500, patients: 120 },
-      { month: 'Fév', revenue: 9200, patients: 135 },
-      { month: 'Mar', revenue: 8800, patients: 128 },
-      { month: 'Avr', revenue: 10500, patients: 145 },
-      { month: 'Mai', revenue: 11200, patients: 158 },
-      { month: 'Juin', revenue: 12300, patients: 165 }
-    ],
-
-    recentExams: [
-      { id: 1, patient: 'Mbuyi Kabongo', time: '09:00', type: 'Réfraction', status: 'completed', doctor: 'Dr. Mutombo' },
-      { id: 2, patient: 'Tshala Mwamba', time: '09:45', type: 'Contrôle Glaucome', status: 'in-progress', doctor: 'Dr. Kabeya' },
-      { id: 3, patient: 'Nkulu Tshisekedi', time: '10:30', type: 'OCT', status: 'scheduled', doctor: 'Dr. Mutombo' },
-      { id: 4, patient: 'Marie Lukusa', time: '11:00', type: 'Champ Visuel', status: 'scheduled', doctor: 'Dr. Kabeya' },
-      { id: 5, patient: 'Jean Ilunga', time: '11:30', type: 'Adaptation Lentilles', status: 'scheduled', doctor: 'Dr. Mutombo' }
-    ],
-
-    criticalAlerts: [
-      { type: 'medication', message: 'Latanoprost stock critique (5 flacons)', severity: 'high', icon: Package },
-      { type: 'equipment', message: 'Calibration autorefractor requise', severity: 'medium', icon: Camera },
-      { type: 'followup', message: '3 patients glaucome en retard de suivi', severity: 'high', icon: Users },
-      { type: 'expiry', message: 'Tropicamide expire dans 15 jours', severity: 'medium', icon: AlertCircle }
-    ],
-
-    upcomingAppointments: [
-      { time: '14:00', patient: 'Sophie Mbemba', type: 'Post-op Cataracte' },
-      { time: '14:30', patient: 'André Tshombe', type: 'Réfraction' },
-      { time: '15:00', patient: 'Claire Mwangi', type: 'Fond d\'œil' },
-      { time: '15:30', patient: 'Paul Kasongo', type: 'OCT Glaucome' }
-    ],
-
-    equipmentStatus: [
-      { name: 'Autorefractor', status: 'operational', lastService: '2024-12-15' },
-      { name: 'OCT Scanner', status: 'operational', lastService: '2024-11-20' },
-      { name: 'Lampe à Fente', status: 'maintenance', lastService: '2024-10-10' },
-      { name: 'Périmètre', status: 'operational', lastService: '2025-01-05' }
-    ]
-  };
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        <span className="ml-2 text-gray-600">Chargement du tableau de bord...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -85,12 +135,12 @@ export default function OphthalmologyDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <button
-          onClick={() => setShowPatientSelector(true)}
+          onClick={() => navigate('/ophthalmology/consultation')}
           className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg hover:shadow-lg transition-shadow flex flex-col items-center"
         >
           <Eye className="w-8 h-8 mb-2" />
-          <span className="font-medium">Nouvel Examen</span>
-          <span className="text-xs opacity-90">Démarrer réfraction</span>
+          <span className="font-medium">Consultation</span>
+          <span className="text-xs opacity-90">Nouvelle visite</span>
         </button>
         <button
           onClick={() => navigate('/queue')}
@@ -98,15 +148,15 @@ export default function OphthalmologyDashboard() {
         >
           <Users className="w-8 h-8 mb-2" />
           <span className="font-medium">File d'Attente</span>
-          <span className="text-xs opacity-90">8 patients</span>
+          <span className="text-xs opacity-90">{stats.queueCount || 0} patients</span>
         </button>
         <button
-          onClick={() => navigate('/ophthalmology/imaging')}
+          onClick={() => setShowPatientSelector(true)}
           className="bg-gradient-to-r from-purple-500 to-purple-600 text-white p-4 rounded-lg hover:shadow-lg transition-shadow flex flex-col items-center"
         >
-          <Camera className="w-8 h-8 mb-2" />
-          <span className="font-medium">Imagerie</span>
-          <span className="text-xs opacity-90">OCT, Fundus</span>
+          <Glasses className="w-8 h-8 mb-2" />
+          <span className="font-medium">Réfraction</span>
+          <span className="text-xs opacity-90">Examen rapide</span>
         </button>
         <button
           onClick={() => navigate('/ophthalmology/pharmacy')}
@@ -190,37 +240,44 @@ export default function OphthalmologyDashboard() {
             </button>
           </div>
           <div className="space-y-3">
-            {stats.recentExams.map(exam => (
-              <div key={exam.id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
-                <div className="flex items-center space-x-4">
-                  <div className="text-sm font-medium text-gray-600 w-16">{exam.time}</div>
-                  <div>
-                    <p className="font-medium text-gray-900">{exam.patient}</p>
-                    <p className="text-sm text-gray-500">{exam.type} • {exam.doctor}</p>
+            {stats.recentExams.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                <Eye className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">Aucun examen aujourd'hui</p>
+              </div>
+            ) : (
+              stats.recentExams.map(exam => (
+                <div key={exam.id} className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm font-medium text-gray-600 w-16">{exam.time}</div>
+                    <div>
+                      <p className="font-medium text-gray-900">{exam.patient}</p>
+                      <p className="text-sm text-gray-500">{exam.type} • {exam.doctor}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      exam.status === 'completed' ? 'bg-green-100 text-green-700' :
+                      exam.status === 'in-progress' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-blue-100 text-blue-700'
+                    }`}>
+                      {exam.status === 'completed' ? 'Terminé' :
+                       exam.status === 'in-progress' ? 'En cours' :
+                       'Programmé'}
+                    </span>
+                    {exam.status !== 'completed' && exam.patientId && (
+                      <button
+                        onClick={() => navigate(`/ophthalmology/refraction?patientId=${exam.patientId}`)}
+                        className="text-blue-600 hover:text-blue-700"
+                        title="Démarrer l'examen"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                    exam.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    exam.status === 'in-progress' ? 'bg-yellow-100 text-yellow-700' :
-                    'bg-blue-100 text-blue-700'
-                  }`}>
-                    {exam.status === 'completed' ? 'Terminé' :
-                     exam.status === 'in-progress' ? 'En cours' :
-                     'Programmé'}
-                  </span>
-                  {exam.status === 'scheduled' && (
-                    <button
-                      onClick={() => navigate(`/ophthalmology/refraction?patientId=${exam.patientId || exam.patient || exam.id}`)}
-                      className="text-blue-600 hover:text-blue-700"
-                      title="Démarrer l'examen"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </div>
 
@@ -231,23 +288,30 @@ export default function OphthalmologyDashboard() {
             Alertes Critiques
           </h3>
           <div className="space-y-3">
-            {stats.criticalAlerts.map((alert, idx) => {
-              const IconComponent = alert.icon;
-              return (
-                <div key={idx} className={`p-3 rounded-lg border-l-4 ${
-                  alert.severity === 'high'
-                    ? 'bg-red-50 border-red-500'
-                    : 'bg-yellow-50 border-yellow-500'
-                }`}>
-                  <div className="flex items-start">
-                    <IconComponent className={`w-4 h-4 mr-2 mt-0.5 ${
-                      alert.severity === 'high' ? 'text-red-600' : 'text-yellow-600'
-                    }`} />
-                    <p className="text-sm text-gray-700">{alert.message}</p>
+            {criticalAlerts.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                <AlertCircle className="w-8 h-8 mx-auto mb-2 text-green-500" />
+                <p className="text-sm">Aucune alerte critique</p>
+              </div>
+            ) : (
+              criticalAlerts.map((alert, idx) => {
+                const IconComponent = alert.icon;
+                return (
+                  <div key={idx} className={`p-3 rounded-lg border-l-4 ${
+                    alert.severity === 'high'
+                      ? 'bg-red-50 border-red-500'
+                      : 'bg-yellow-50 border-yellow-500'
+                  }`}>
+                    <div className="flex items-start">
+                      <IconComponent className={`w-4 h-4 mr-2 mt-0.5 ${
+                        alert.severity === 'high' ? 'text-red-600' : 'text-yellow-600'
+                      }`} />
+                      <p className="text-sm text-gray-700">{alert.message}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
       </div>
@@ -257,38 +321,46 @@ export default function OphthalmologyDashboard() {
         {/* Diagnoses Distribution */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="font-semibold text-lg mb-4">Répartition des Diagnostics</h3>
-          <div className="flex items-center">
-            <ResponsiveContainer width="50%" height={200}>
-              <PieChart>
-                <Pie
-                  data={stats.diagnoses}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={50}
-                  outerRadius={80}
-                  dataKey="count"
-                >
-                  {stats.diagnoses.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="flex-1 ml-4">
-              <div className="space-y-2">
-                {stats.diagnoses.map(diagnosis => (
-                  <div key={diagnosis.name} className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: diagnosis.color }} />
-                      <span className="text-sm text-gray-700">{diagnosis.name}</span>
+          {stats.diagnoses.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <Eye className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+              <p className="text-sm">Aucune donnée de diagnostic disponible</p>
+              <p className="text-xs mt-1">Les statistiques apparaîtront après les premiers examens</p>
+            </div>
+          ) : (
+            <div className="flex items-center">
+              <ResponsiveContainer width="50%" height={200}>
+                <PieChart>
+                  <Pie
+                    data={stats.diagnoses}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    dataKey="count"
+                  >
+                    {stats.diagnoses.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="flex-1 ml-4">
+                <div className="space-y-2">
+                  {stats.diagnoses.map(diagnosis => (
+                    <div key={diagnosis.name} className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        <div className="w-3 h-3 rounded-full mr-2" style={{ backgroundColor: diagnosis.color }} />
+                        <span className="text-sm text-gray-700">{diagnosis.name}</span>
+                      </div>
+                      <span className="text-sm font-medium text-gray-900">{diagnosis.count}</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">{diagnosis.count}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Revenue Chart */}
@@ -330,21 +402,28 @@ export default function OphthalmologyDashboard() {
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="font-semibold text-lg mb-4 flex items-center">
             <Calendar className="w-5 h-5 mr-2 text-purple-600" />
-            Rendez-vous de l'Après-midi
+            Rendez-vous à Venir
           </h3>
           <div className="space-y-2">
-            {stats.upcomingAppointments.map((apt, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
-                <div className="flex items-center">
-                  <span className="text-sm font-medium text-gray-600 w-12">{apt.time}</span>
-                  <div className="ml-3">
-                    <p className="text-sm font-medium text-gray-900">{apt.patient}</p>
-                    <p className="text-xs text-gray-500">{apt.type}</p>
-                  </div>
-                </div>
-                <Glasses className="w-4 h-4 text-gray-400" />
+            {stats.upcomingAppointments.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                <Calendar className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">Aucun rendez-vous prévu</p>
               </div>
-            ))}
+            ) : (
+              stats.upcomingAppointments.map((apt, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2 hover:bg-gray-50 rounded">
+                  <div className="flex items-center">
+                    <span className="text-sm font-medium text-gray-600 w-12">{apt.time}</span>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">{apt.patient}</p>
+                      <p className="text-xs text-gray-500">{apt.type}</p>
+                    </div>
+                  </div>
+                  <Glasses className="w-4 h-4 text-gray-400" />
+                </div>
+              ))
+            )}
           </div>
         </div>
 
@@ -355,21 +434,28 @@ export default function OphthalmologyDashboard() {
             État des Équipements
           </h3>
           <div className="space-y-2">
-            {stats.equipmentStatus.map((equipment, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{equipment.name}</p>
-                  <p className="text-xs text-gray-500">Dernier service: {equipment.lastService}</p>
-                </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                  equipment.status === 'operational'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}>
-                  {equipment.status === 'operational' ? 'Opérationnel' : 'Maintenance'}
-                </span>
+            {stats.equipmentStatus.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                <Activity className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                <p className="text-sm">Aucun équipement enregistré</p>
               </div>
-            ))}
+            ) : (
+              stats.equipmentStatus.map((equipment, idx) => (
+                <div key={idx} className="flex items-center justify-between p-2">
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{equipment.name}</p>
+                    <p className="text-xs text-gray-500">Dernier service: {equipment.lastService || 'N/A'}</p>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    equipment.status === 'operational'
+                      ? 'bg-green-100 text-green-700'
+                      : 'bg-yellow-100 text-yellow-700'
+                  }`}>
+                    {equipment.status === 'operational' ? 'Opérationnel' : 'Maintenance'}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

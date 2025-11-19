@@ -1,21 +1,69 @@
-import { Calendar, Pill, FileText, DollarSign, Clock, AlertCircle, CheckCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Calendar, Pill, FileText, DollarSign, Clock, AlertCircle, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { appointments, prescriptions, invoices } from '../../data/mockData';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import api from '../../services/api';
+import authService from '../../services/authService';
 
 export default function PatientDashboard() {
-  // Mock patient ID - would come from auth context
-  const currentPatientId = 1;
+  const [loading, setLoading] = useState(true);
+  const [currentPatient, setCurrentPatient] = useState(null);
+  const [appointments, setAppointments] = useState([]);
+  const [prescriptions, setPrescriptions] = useState([]);
+  const [invoices, setInvoices] = useState([]);
 
-  // Filter data for current patient
-  const myAppointments = appointments.filter(apt => apt.patientId === currentPatientId);
-  const upcomingAppointments = myAppointments.filter(apt => new Date(apt.date) >= new Date() && apt.status !== 'CANCELLED');
-  const myPrescriptions = prescriptions.filter(rx => rx.patientId === currentPatientId && rx.status !== 'CANCELLED');
-  const activePrescriptions = myPrescriptions.filter(rx => rx.status === 'PENDING' || rx.status === 'DISPENSED');
-  const myInvoices = invoices.filter(inv => inv.patientId === currentPatientId);
-  const unpaidInvoices = myInvoices.filter(inv => inv.balance > 0);
-  const totalBalance = unpaidInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Get current user
+      const userResult = await authService.getCurrentUser();
+      if (userResult.success && userResult.user) {
+        setCurrentPatient(userResult.user);
+        const patientId = userResult.user.patientId || userResult.user._id;
+
+        // Fetch all data in parallel
+        const [appointmentsRes, prescriptionsRes, invoicesRes] = await Promise.all([
+          api.get('/appointments', { params: { patient: patientId, limit: 20 } }).catch(() => ({ data: { data: [] } })),
+          api.get('/prescriptions', { params: { patient: patientId, limit: 20 } }).catch(() => ({ data: { data: [] } })),
+          api.get('/invoices', { params: { patient: patientId, limit: 20 } }).catch(() => ({ data: { data: [] } }))
+        ]);
+
+        setAppointments(appointmentsRes.data?.data || appointmentsRes.data || []);
+        setPrescriptions(prescriptionsRes.data?.data || prescriptionsRes.data || []);
+        setInvoices(invoicesRes.data?.data || invoicesRes.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter data
+  const upcomingAppointments = appointments.filter(apt =>
+    new Date(apt.date || apt.appointmentDate) >= new Date() &&
+    apt.status !== 'CANCELLED' && apt.status !== 'cancelled'
+  );
+  const activePrescriptions = prescriptions.filter(rx =>
+    rx.status === 'PENDING' || rx.status === 'DISPENSED' || rx.status === 'pending' || rx.status === 'dispensed'
+  );
+  const unpaidInvoices = invoices.filter(inv => (inv.balance || 0) > 0);
+  const totalBalance = unpaidInvoices.reduce((sum, inv) => sum + (inv.balance || 0), 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <span className="ml-2 text-gray-600">Chargement du tableau de bord...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -34,7 +82,8 @@ export default function PatientDashboard() {
             <AlertCircle className="h-5 w-5 text-blue-400 mr-3" />
             <div>
               <p className="text-sm font-medium text-blue-800">
-                Prochain rendez-vous: {format(new Date(upcomingAppointments[0].date), 'dd MMMM yyyy', { locale: fr })} à {upcomingAppointments[0].time}
+                Prochain rendez-vous: {format(new Date(upcomingAppointments[0].date || upcomingAppointments[0].appointmentDate), 'dd MMMM yyyy', { locale: fr })}
+                {(upcomingAppointments[0].time || upcomingAppointments[0].startTime) && ` à ${upcomingAppointments[0].time || upcomingAppointments[0].startTime}`}
               </p>
             </div>
           </div>
@@ -115,19 +164,23 @@ export default function PatientDashboard() {
           {upcomingAppointments.length > 0 ? (
             <div className="space-y-3">
               {upcomingAppointments.slice(0, 3).map((apt) => (
-                <div key={apt.id} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div key={apt._id || apt.id} className="p-4 bg-blue-50 rounded-lg border border-blue-100">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">
-                        {format(new Date(apt.date), 'dd MMMM yyyy', { locale: fr })}
+                        {format(new Date(apt.date || apt.appointmentDate), 'dd MMMM yyyy', { locale: fr })}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
                         <Clock className="h-4 w-4 inline mr-1" />
-                        {apt.time} - {apt.duration} minutes
+                        {apt.time || apt.startTime || 'N/A'} - {apt.duration || 30} minutes
                       </p>
-                      <p className="text-sm text-gray-500 mt-1">Salle: {apt.room}</p>
+                      <p className="text-sm text-gray-500 mt-1">
+                        {apt.type || apt.reason || 'Consultation'}
+                      </p>
                     </div>
-                    <span className="badge badge-success">{apt.status === 'CONFIRMED' ? 'Confirmé' : 'En attente'}</span>
+                    <span className="badge badge-success">
+                      {apt.status === 'CONFIRMED' || apt.status === 'confirmed' ? 'Confirmé' : 'En attente'}
+                    </span>
                   </div>
                 </div>
               ))}
@@ -155,23 +208,23 @@ export default function PatientDashboard() {
           {activePrescriptions.length > 0 ? (
             <div className="space-y-3">
               {activePrescriptions.slice(0, 3).map((rx) => (
-                <div key={rx.id} className="p-4 bg-green-50 rounded-lg border border-green-100">
+                <div key={rx._id || rx.id} className="p-4 bg-green-50 rounded-lg border border-green-100">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <p className="font-semibold text-gray-900">
-                        Ordonnance #{rx.id}
+                        Ordonnance #{rx.prescriptionId || rx._id?.slice(-6) || rx.id}
                       </p>
                       <p className="text-sm text-gray-600 mt-1">
-                        {rx.medications.length} médicament(s)
+                        {rx.medications?.length || 0} médicament(s)
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        {format(new Date(rx.date), 'dd MMM yyyy', { locale: fr })}
+                        {format(new Date(rx.date || rx.createdAt), 'dd MMM yyyy', { locale: fr })}
                       </p>
                     </div>
                     <span className={`badge ${
-                      rx.status === 'DISPENSED' ? 'badge-success' : 'badge-warning'
+                      rx.status === 'DISPENSED' || rx.status === 'dispensed' ? 'badge-success' : 'badge-warning'
                     }`}>
-                      {rx.status === 'DISPENSED' ? 'Délivrée' : 'En attente'}
+                      {rx.status === 'DISPENSED' || rx.status === 'dispensed' ? 'Délivrée' : 'En attente'}
                     </span>
                   </div>
                 </div>

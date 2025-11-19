@@ -368,52 +368,121 @@ const patientSlice = createSlice({
         state.error = action.payload;
       })
       // Fetch patient history
+      .addCase(fetchPatientHistory.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchPatientHistory.fulfilled, (state, action) => {
         state.patientHistory = action.payload;
       })
+      .addCase(fetchPatientHistory.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Fetch patient documents
+      .addCase(fetchPatientDocuments.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchPatientDocuments.fulfilled, (state, action) => {
         state.patientDocuments = action.payload;
       })
+      .addCase(fetchPatientDocuments.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Fetch patient appointments
+      .addCase(fetchPatientAppointments.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchPatientAppointments.fulfilled, (state, action) => {
         state.patientAppointments = action.payload;
       })
+      .addCase(fetchPatientAppointments.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Fetch patient prescriptions
+      .addCase(fetchPatientPrescriptions.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchPatientPrescriptions.fulfilled, (state, action) => {
         state.patientPrescriptions = action.payload;
       })
+      .addCase(fetchPatientPrescriptions.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Fetch patient visits
+      .addCase(fetchPatientVisits.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchPatientVisits.fulfilled, (state, action) => {
         state.patientVisits = action.payload;
       })
+      .addCase(fetchPatientVisits.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Fetch patient billing
+      .addCase(fetchPatientBilling.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchPatientBilling.fulfilled, (state, action) => {
         state.patientBilling = action.payload;
       })
+      .addCase(fetchPatientBilling.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Fetch recent patients
+      .addCase(fetchRecentPatients.pending, (state) => {
+        state.error = null;
+      })
       .addCase(fetchRecentPatients.fulfilled, (state, action) => {
         state.recentPatients = action.payload;
       })
+      .addCase(fetchRecentPatients.rejected, (state, action) => {
+        state.error = action.payload;
+      })
       // Add allergy
+      .addCase(addPatientAllergy.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(addPatientAllergy.fulfilled, (state, action) => {
+        state.isLoading = false;
         if (state.currentPatient) {
           state.currentPatient.allergies = state.currentPatient.allergies || [];
           state.currentPatient.allergies.push(action.payload);
         }
       })
+      .addCase(addPatientAllergy.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
       // Add medication
+      .addCase(addPatientMedication.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(addPatientMedication.fulfilled, (state, action) => {
+        state.isLoading = false;
         if (state.currentPatient) {
           state.currentPatient.medications = state.currentPatient.medications || [];
           state.currentPatient.medications.push(action.payload);
         }
       })
+      .addCase(addPatientMedication.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
       // Update insurance
+      .addCase(updatePatientInsurance.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
       .addCase(updatePatientInsurance.fulfilled, (state, action) => {
+        state.isLoading = false;
         if (state.currentPatient) {
           state.currentPatient.insurance = action.payload;
         }
+      })
+      .addCase(updatePatientInsurance.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });

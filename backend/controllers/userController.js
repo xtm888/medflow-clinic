@@ -1,5 +1,6 @@
 const User = require('../models/User');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { escapeRegex } = require('../utils/sanitize');
 
 // @desc    Get all users
 // @route   GET /api/users
@@ -22,12 +23,13 @@ exports.getUsers = asyncHandler(async (req, res, next) => {
   if (isActive !== undefined) query.isActive = isActive === 'true';
 
   if (search) {
+    const sanitizedSearch = escapeRegex(search);
     query.$or = [
-      { firstName: { $regex: search, $options: 'i' } },
-      { lastName: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } },
-      { username: { $regex: search, $options: 'i' } },
-      { employeeId: { $regex: search, $options: 'i' } }
+      { firstName: { $regex: sanitizedSearch, $options: 'i' } },
+      { lastName: { $regex: sanitizedSearch, $options: 'i' } },
+      { email: { $regex: sanitizedSearch, $options: 'i' } },
+      { username: { $regex: sanitizedSearch, $options: 'i' } },
+      { employeeId: { $regex: sanitizedSearch, $options: 'i' } }
     ];
   }
 
@@ -298,5 +300,36 @@ exports.resetUserPassword = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Password reset successfully',
     temporaryPassword: tempPassword // Remove this in production
+  });
+});
+
+// @desc    Get user's prescriptions (for providers)
+// @route   GET /api/users/:id/prescriptions
+// @access  Private
+exports.getUserPrescriptions = asyncHandler(async (req, res, next) => {
+  const Prescription = require('../models/Prescription');
+
+  const { page = 1, limit = 50, status } = req.query;
+
+  const query = { prescriber: req.params.id };
+  if (status) query.status = status;
+
+  const [prescriptions, total] = await Promise.all([
+    Prescription.find(query)
+      .populate('patient', 'firstName lastName patientId')
+      .sort('-createdAt')
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .lean(),
+    Prescription.countDocuments(query)
+  ]);
+
+  res.status(200).json({
+    success: true,
+    count: prescriptions.length,
+    total,
+    page: parseInt(page),
+    pages: Math.ceil(total / parseInt(limit)),
+    data: prescriptions
   });
 });

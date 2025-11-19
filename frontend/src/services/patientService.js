@@ -226,12 +226,67 @@ const patientService = {
   },
 
   // Get patient timeline
-  async getPatientTimeline(id) {
+  async getPatientTimeline(id, params = {}) {
     try {
-      const response = await api.get(`/patients/${id}/timeline`);
+      const response = await api.get(`/patients/${id}/timeline`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching patient timeline:', error);
+      throw error;
+    }
+  },
+
+  // Get complete patient profile (unified patient hub)
+  async getCompleteProfile(id) {
+    try {
+      const response = await api.get(`/patients/${id}/complete-profile`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching complete patient profile:', error);
+      throw error;
+    }
+  },
+
+  // Get patient medical issues
+  async getMedicalIssues(id, params = {}) {
+    try {
+      const response = await api.get(`/patients/${id}/medical-issues`, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching patient medical issues:', error);
+      throw error;
+    }
+  },
+
+  // Update medical issue status
+  async updateMedicalIssue(patientId, issueId, data) {
+    try {
+      const response = await api.put(`/patients/${patientId}/medical-issues/${issueId}`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating medical issue:', error);
+      throw error;
+    }
+  },
+
+  // Get all providers who treated patient
+  async getPatientProviders(id) {
+    try {
+      const response = await api.get(`/patients/${id}/providers`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching patient providers:', error);
+      throw error;
+    }
+  },
+
+  // Get patient audit trail
+  async getPatientAudit(id, params = {}) {
+    try {
+      const response = await api.get(`/patients/${id}/audit`, { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching patient audit trail:', error);
       throw error;
     }
   },

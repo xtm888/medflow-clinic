@@ -8,8 +8,14 @@ const drugSchema = new mongoose.Schema({
     index: true
   },
 
+  genericNameFr: {
+    type: String,
+    index: true
+  },
+
   brandNames: [{
     name: String,
+    nameFr: String,
     manufacturer: String,
     country: String
   }],
@@ -28,6 +34,26 @@ const drugSchema = new mongoose.Schema({
            'antifungal', 'bronchodilator', 'corticosteroid', 'diuretic', 'proton-pump-inhibitor',
            'statin', 'nsaid', 'opioid', 'sedative', 'vitamin', 'supplement', 'vaccine',
            'ophthalmic', 'otic', 'topical', 'other']
+  },
+
+  // French categorization from Care Vision
+  categoryFr: {
+    id: String,
+    name: String,
+    nameEn: String
+  },
+
+  // Storage requirements
+  storage: {
+    temperature: {
+      type: String,
+      enum: ['room_temperature', 'refrigerated', 'frozen', 'controlled_room_temperature']
+    },
+    temperatureRange: String, // e.g., "2-8°C"
+    lightProtection: Boolean,
+    specialInstructions: String,
+    shelfLife: String,
+    afterOpening: String
   },
 
   // Formulations and strengths
@@ -263,8 +289,9 @@ const drugSchema = new mongoose.Schema({
 });
 
 // Indexes
-drugSchema.index({ genericName: 'text', 'brandNames.name': 'text' });
+drugSchema.index({ genericName: 'text', genericNameFr: 'text', 'brandNames.name': 'text', 'brandNames.nameFr': 'text' });
 drugSchema.index({ category: 1 });
+drugSchema.index({ 'categoryFr.id': 1 });
 drugSchema.index({ 'drugClass.primary': 1 });
 drugSchema.index({ active: 1 });
 
@@ -279,7 +306,7 @@ drugSchema.methods.getDosingForIndication = function(indication) {
   );
 };
 
-drugSchema.methods.getOphthal micDosing = function() {
+drugSchema.methods.getOphthalmicDosing = function() {
   if (this.ophthalmicUse && this.ophthalmicUse.dosing) {
     return this.ophthalmicUse.dosing;
   }

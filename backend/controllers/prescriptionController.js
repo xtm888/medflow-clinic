@@ -1,5 +1,8 @@
 const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
+const Visit = require('../models/Visit');
+const PharmacyInventory = require('../models/PharmacyInventory');
+const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 // @desc    Get all prescriptions
@@ -40,7 +43,7 @@ exports.getPrescriptions = asyncHandler(async (req, res, next) => {
     query.prescriber = prescriber;
   } else if (req.user.role === 'doctor' || req.user.role === 'ophthalmologist') {
     // Doctors can only see their own prescriptions
-    query.prescriber = req.user.id;
+    query.prescriber = req.user._id || req.user.id;
   }
 
   // Date range filter
@@ -57,6 +60,7 @@ exports.getPrescriptions = asyncHandler(async (req, res, next) => {
   const prescriptions = await Prescription.find(query)
     .populate('patient', 'firstName lastName patientId')
     .populate('prescriber', 'firstName lastName licenseNumber')
+    .populate('visit', 'visitId visitDate status')
     .limit(limit * 1)
     .skip((page - 1) * limit)
     .sort(sort);
@@ -80,6 +84,7 @@ exports.getPrescription = asyncHandler(async (req, res, next) => {
   const prescription = await Prescription.findById(req.params.id)
     .populate('patient')
     .populate('prescriber', 'firstName lastName licenseNumber department')
+    .populate('visit', 'visitId visitDate status primaryProvider')
     .populate('appointment', 'date type');
 
   if (!prescription) {
@@ -91,7 +96,7 @@ exports.getPrescription = asyncHandler(async (req, res, next) => {
 
   // Add view to history
   prescription.viewHistory.push({
-    viewedBy: req.user.id,
+    viewedBy: req.user._id || req.user.id,
     viewedAt: Date.now(),
     action: 'VIEW'
   });
@@ -107,8 +112,9 @@ exports.getPrescription = asyncHandler(async (req, res, next) => {
 // @route   POST /api/prescriptions
 // @access  Private (Doctor, Ophthalmologist)
 exports.createPrescription = asyncHandler(async (req, res, next) => {
-  req.body.prescriber = req.user.id;
-  req.body.createdBy = req.user.id;
+  const userId = req.user._id || req.user.id;
+  req.body.prescriber = userId;
+  req.body.createdBy = userId;
 
   // Validate patient exists
   const patient = await Patient.findById(req.body.patient);
@@ -140,7 +146,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
         dosage: med.dosage,
         frequency: med.frequency,
         startDate: prescription.dateIssued,
-        prescribedBy: req.user.id,
+        prescribedBy: userId,
         reason: med.indication,
         status: 'active'
       });
@@ -154,15 +160,33 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
       OS: prescription.optical.OS,
       pd: prescription.optical.pd,
       prescribedDate: prescription.dateIssued,
-      prescribedBy: req.user.id
+      prescribedBy: userId
     };
   }
 
   await patient.save();
 
+  // Link prescription to visit if visit ID is provided
+  if (req.body.visit) {
+    try {
+      const visit = await Visit.findById(req.body.visit);
+      if (visit) {
+        // Add prescription to visit's prescriptions array
+        if (!visit.prescriptions.includes(prescription._id)) {
+          visit.prescriptions.push(prescription._id);
+          await visit.save();
+        }
+      }
+    } catch (visitErr) {
+      console.warn('Could not link prescription to visit:', visitErr);
+      // Don't fail the whole request if visit linking fails
+    }
+  }
+
   // Populate for response
   await prescription.populate('patient', 'firstName lastName patientId');
   await prescription.populate('prescriber', 'firstName lastName');
+  await prescription.populate('visit', 'visitId visitDate status');
 
   res.status(201).json({
     success: true,
@@ -174,7 +198,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/prescriptions/:id
 // @access  Private (Doctor, Ophthalmologist)
 exports.updatePrescription = asyncHandler(async (req, res, next) => {
-  req.body.updatedBy = req.user.id;
+  req.body.updatedBy = req.user._id || req.user.id;
 
   // Prevent updating certain fields
   delete req.body.prescriptionId;
@@ -191,7 +215,8 @@ exports.updatePrescription = asyncHandler(async (req, res, next) => {
   }
 
   // Check if user is the prescriber
-  if (prescription.prescriber.toString() !== req.user.id && req.user.role !== 'admin') {
+  const userId = req.user._id || req.user.id;
+  if (prescription.prescriber.toString() !== userId.toString() && req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
       error: 'You can only update your own prescriptions'
@@ -199,7 +224,7 @@ exports.updatePrescription = asyncHandler(async (req, res, next) => {
   }
 
   // Check if prescription is already dispensed
-  if (prescription.status === 'filled' || prescription.status === 'partially-filled') {
+  if (prescription.status === 'dispensed' || prescription.status === 'partial') {
     return res.status(400).json({
       success: false,
       error: 'Cannot update a prescription that has been dispensed'
@@ -229,7 +254,8 @@ exports.cancelPrescription = asyncHandler(async (req, res, next) => {
   }
 
   // Check permissions
-  if (prescription.prescriber.toString() !== req.user.id && req.user.role !== 'admin') {
+  const userId = req.user._id || req.user.id;
+  if (prescription.prescriber.toString() !== userId.toString() && req.user.role !== 'admin') {
     return res.status(403).json({
       success: false,
       error: 'You can only cancel your own prescriptions'
@@ -240,7 +266,7 @@ exports.cancelPrescription = asyncHandler(async (req, res, next) => {
   prescription.cancellation = {
     cancelled: true,
     cancelledAt: Date.now(),
-    cancelledBy: req.user.id,
+    cancelledBy: userId,
     reason: req.body.reason
   };
 
@@ -257,74 +283,225 @@ exports.cancelPrescription = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/prescriptions/:id/dispense
 // @access  Private (Pharmacist, Admin)
 exports.dispensePrescription = asyncHandler(async (req, res, next) => {
-  const prescription = await Prescription.findById(req.params.id);
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  if (!prescription) {
-    return res.status(404).json({
-      success: false,
-      error: 'Prescription not found'
-    });
-  }
+  try {
+    const prescription = await Prescription.findById(req.params.id).session(session);
 
-  // Check if prescription is expired
-  if (prescription.isExpired) {
-    return res.status(400).json({
-      success: false,
-      error: 'Cannot dispense an expired prescription'
-    });
-  }
-
-  // Check if already cancelled
-  if (prescription.status === 'cancelled') {
-    return res.status(400).json({
-      success: false,
-      error: 'Cannot dispense a cancelled prescription'
-    });
-  }
-
-  // Add dispensing record
-  const dispensingRecord = {
-    dispensedBy: req.user.id,
-    dispensedAt: Date.now(),
-    pharmacy: req.body.pharmacy,
-    quantity: req.body.quantity,
-    daysSupply: req.body.daysSupply,
-    lotNumber: req.body.lotNumber,
-    expirationDate: req.body.expirationDate,
-    copayAmount: req.body.copayAmount,
-    totalCost: req.body.totalCost,
-    notes: req.body.notes
-  };
-
-  prescription.dispensing.push(dispensingRecord);
-
-  // Update status based on refills
-  if (prescription.type === 'medication') {
-    const totalDispensed = prescription.dispensing.length;
-    const totalAllowed = prescription.medications[0]?.refills?.allowed || 0;
-
-    if (totalDispensed >= totalAllowed + 1) {
-      prescription.status = 'filled';
-    } else {
-      prescription.status = 'partially-filled';
-      // Update remaining refills
-      prescription.medications.forEach(med => {
-        if (med.refills) {
-          med.refills.remaining = totalAllowed - totalDispensed;
-        }
+    if (!prescription) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        success: false,
+        error: 'Prescription not found'
       });
     }
-  } else {
-    prescription.status = 'filled';
+
+    // Check if prescription is expired
+    if (prescription.isExpired) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot dispense an expired prescription'
+      });
+    }
+
+    // Check if already cancelled
+    if (prescription.status === 'cancelled') {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        error: 'Cannot dispense a cancelled prescription'
+      });
+    }
+
+    // Check if already fully dispensed
+    if (prescription.status === 'dispensed') {
+      await session.abortTransaction();
+      return res.status(400).json({
+        success: false,
+        error: 'Prescription has already been fully dispensed'
+      });
+    }
+
+    // Process inventory deduction for medication prescriptions
+    const inventoryUpdates = [];
+    const insufficientStock = [];
+
+    if (prescription.type === 'medication' && prescription.medications && prescription.medications.length > 0) {
+      for (const medication of prescription.medications) {
+        // Skip if already dispensed
+        if (medication.dispensing?.dispensed) {
+          continue;
+        }
+
+        // Find inventory item by medication name or inventoryItem reference
+        let inventoryItem = null;
+
+        if (medication.inventoryItem) {
+          inventoryItem = await PharmacyInventory.findById(medication.inventoryItem).session(session);
+        }
+
+        // If no direct reference, try to find by medication name
+        if (!inventoryItem && medication.name) {
+          inventoryItem = await PharmacyInventory.findOne({
+            $or: [
+              { 'medication.genericName': { $regex: new RegExp(medication.name, 'i') } },
+              { 'medication.brandName': { $regex: new RegExp(medication.name, 'i') } }
+            ],
+            'inventory.currentStock': { $gt: 0 }
+          }).session(session);
+        }
+
+        if (inventoryItem) {
+          const quantityToDispense = medication.quantity || 1;
+
+          // Check if sufficient stock is available
+          if (inventoryItem.inventory.currentStock < quantityToDispense) {
+            insufficientStock.push({
+              medication: medication.name,
+              required: quantityToDispense,
+              available: inventoryItem.inventory.currentStock
+            });
+          } else {
+            inventoryUpdates.push({
+              inventoryItem,
+              medication,
+              quantity: quantityToDispense
+            });
+          }
+        }
+        // If no inventory item found, we'll still dispense but without inventory deduction
+        // This allows dispensing even when inventory isn't set up for that medication
+      }
+
+      // If any medication has insufficient stock, abort the transaction
+      if (insufficientStock.length > 0) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          success: false,
+          error: 'Insufficient stock for some medications',
+          insufficientStock
+        });
+      }
+
+      // Deduct inventory for each medication
+      for (const update of inventoryUpdates) {
+        const { inventoryItem, medication, quantity } = update;
+
+        // Update inventory stock
+        inventoryItem.inventory.currentStock -= quantity;
+
+        // Update stock status
+        if (inventoryItem.inventory.currentStock <= 0) {
+          inventoryItem.inventory.status = 'out-of-stock';
+        } else if (inventoryItem.inventory.currentStock <= (inventoryItem.inventory.reorderPoint || 10)) {
+          inventoryItem.inventory.status = 'low-stock';
+        }
+
+        // Add to dispensing history
+        if (!inventoryItem.usage) {
+          inventoryItem.usage = { dispensingHistory: [] };
+        }
+        if (!inventoryItem.usage.dispensingHistory) {
+          inventoryItem.usage.dispensingHistory = [];
+        }
+
+        inventoryItem.usage.dispensingHistory.push({
+          date: new Date(),
+          quantity,
+          prescriptionId: prescription._id,
+          patientId: prescription.patient,
+          dispensedBy: req.user._id || req.user.id,
+          lotNumber: req.body.lotNumber
+        });
+
+        // Add transaction record
+        if (!inventoryItem.transactions) {
+          inventoryItem.transactions = [];
+        }
+
+        inventoryItem.transactions.push({
+          type: 'dispensed',
+          quantity,
+          date: new Date(),
+          performedBy: req.user._id || req.user.id,
+          reference: `Prescription ${prescription._id}`,
+          notes: `Dispensed for patient prescription`
+        });
+
+        await inventoryItem.save({ session });
+
+        // Mark medication as dispensed in prescription
+        medication.dispensing = {
+          dispensed: true,
+          dispensedQuantity: quantity,
+          dispensedBy: req.user._id || req.user.id,
+          dispensedAt: new Date()
+        };
+      }
+    }
+
+    // Add dispensing record to prescription
+    const dispensingRecord = {
+      dispensedBy: req.user._id || req.user.id,
+      dispensedAt: Date.now(),
+      pharmacy: req.body.pharmacy,
+      quantity: req.body.quantity,
+      daysSupply: req.body.daysSupply,
+      lotNumber: req.body.lotNumber,
+      expirationDate: req.body.expirationDate,
+      copayAmount: req.body.copayAmount,
+      totalCost: req.body.totalCost,
+      notes: req.body.notes,
+      inventoryDeducted: inventoryUpdates.length > 0
+    };
+
+    prescription.dispensing.push(dispensingRecord);
+
+    // Update status based on refills
+    if (prescription.type === 'medication') {
+      const totalDispensed = prescription.dispensing.length;
+      const totalAllowed = prescription.medications[0]?.refills?.allowed || 0;
+
+      if (totalDispensed >= totalAllowed + 1) {
+        prescription.status = 'dispensed';
+      } else {
+        prescription.status = 'partial';
+        // Update remaining refills
+        prescription.medications.forEach(med => {
+          if (med.refills) {
+            med.refills.remaining = totalAllowed - totalDispensed;
+          }
+        });
+      }
+    } else {
+      prescription.status = 'dispensed';
+    }
+
+    await prescription.save({ session });
+
+    // Commit the transaction
+    await session.commitTransaction();
+
+    res.status(200).json({
+      success: true,
+      message: 'Prescription dispensed successfully',
+      data: prescription,
+      inventoryUpdated: inventoryUpdates.length,
+      inventoryDeductions: inventoryUpdates.map(u => ({
+        medication: u.medication.name,
+        quantity: u.quantity,
+        remainingStock: u.inventoryItem.inventory.currentStock
+      }))
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-
-  await prescription.save();
-
-  res.status(200).json({
-    success: true,
-    message: 'Prescription dispensed successfully',
-    data: prescription
-  });
 });
 
 // @desc    Verify prescription
@@ -361,7 +538,7 @@ exports.verifyPrescription = asyncHandler(async (req, res, next) => {
   // Save verification record
   prescription.verification = {
     required: true,
-    verifiedBy: req.user.id,
+    verifiedBy: req.user._id || req.user.id,
     verifiedAt: Date.now(),
     method: req.body.method || 'manual',
     notes: req.body.notes
@@ -396,7 +573,7 @@ exports.printPrescription = asyncHandler(async (req, res, next) => {
 
   // Add view to history
   prescription.viewHistory.push({
-    viewedBy: req.user.id,
+    viewedBy: req.user._id || req.user.id,
     viewedAt: Date.now(),
     action: 'PRINT'
   });
@@ -431,15 +608,16 @@ exports.renewPrescription = asyncHandler(async (req, res, next) => {
   delete renewalData.viewHistory;
 
   // Update renewal specific fields
-  renewalData.prescriber = req.user.id;
-  renewalData.createdBy = req.user.id;
+  const userId = req.user._id || req.user.id;
+  renewalData.prescriber = userId;
+  renewalData.createdBy = userId;
   renewalData.dateIssued = Date.now();
-  renewalData.status = 'active';
+  renewalData.status = 'pending';
   renewalData.renewal = {
     isRenewal: true,
     originalPrescription: originalPrescription._id,
     renewalApproved: true,
-    renewalApprovedBy: req.user.id,
+    renewalApprovedBy: userId,
     renewalApprovedAt: Date.now()
   };
 

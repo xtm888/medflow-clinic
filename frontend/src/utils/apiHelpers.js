@@ -234,3 +234,85 @@ export const safeId = (item) => {
   if (!item) return null;
   return item._id || item.id || null;
 };
+
+/**
+ * Safe date formatter
+ * Handles null, undefined, and invalid dates gracefully
+ *
+ * @param {*} date - Date to format (string, Date, number, or null)
+ * @param {string} locale - Locale for formatting
+ * @param {Object} options - Intl.DateTimeFormat options
+ * @param {string} fallback - Fallback value for invalid dates
+ * @returns {string} Formatted date or fallback
+ */
+export const formatDate = (date, locale = 'fr-FR', options = {}, fallback = '-') => {
+  if (!date) return fallback;
+
+  try {
+    const dateObj = new Date(date);
+
+    // Check for invalid date
+    if (isNaN(dateObj.getTime())) {
+      return fallback;
+    }
+
+    // Default options
+    const defaultOptions = {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      ...options
+    };
+
+    return dateObj.toLocaleDateString(locale, defaultOptions);
+  } catch (error) {
+    console.warn('Date formatting error:', error, 'for value:', date);
+    return fallback;
+  }
+};
+
+/**
+ * Format date with time
+ *
+ * @param {*} date - Date to format
+ * @param {string} locale - Locale for formatting
+ * @param {string} fallback - Fallback value
+ * @returns {string} Formatted date and time
+ */
+export const formatDateTime = (date, locale = 'fr-FR', fallback = '-') => {
+  return formatDate(date, locale, {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  }, fallback);
+};
+
+/**
+ * Format relative time (e.g., "5 min ago", "2 hours ago")
+ *
+ * @param {*} date - Date to format
+ * @param {string} fallback - Fallback value
+ * @returns {string} Relative time string
+ */
+export const formatRelativeTime = (date, fallback = '-') => {
+  if (!date) return fallback;
+
+  try {
+    const dateObj = new Date(date);
+    if (isNaN(dateObj.getTime())) return fallback;
+
+    const now = new Date();
+    const diffMs = now - dateObj;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 0) return 'à venir';
+    if (diffMins < 1) return 'à l\'instant';
+    if (diffMins < 60) return `${diffMins} min`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h`;
+    return `${Math.floor(diffMins / 1440)}j`;
+  } catch (error) {
+    return fallback;
+  }
+};

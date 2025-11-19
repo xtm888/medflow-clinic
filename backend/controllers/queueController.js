@@ -1,4 +1,7 @@
 const Appointment = require('../models/Appointment');
+const Visit = require('../models/Visit');
+const Patient = require('../models/Patient');
+const Counter = require('../models/Counter');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 // In-memory queue for real-time management
@@ -37,7 +40,7 @@ exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
       checkInTime: apt.checkInTime,
       status: apt.status,
       priority: apt.priority,
-      estimatedWaitTime: calculateEstimatedWaitTime(apt, queues[key])
+      estimatedWaitTime: calculateActualWaitTime(apt.checkInTime)
     });
   });
 
@@ -56,8 +59,105 @@ exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
 // @route   POST /api/queue
 // @access  Private
 exports.addToQueue = asyncHandler(async (req, res, next) => {
-  const { appointmentId, priority } = req.body;
+  const { appointmentId, walkIn, patientInfo, reason, priority } = req.body;
 
+  // Handle walk-in patients (no appointment)
+  if (walkIn && patientInfo) {
+    // Find existing patient by phone or create new one
+    let patient = await Patient.findOne({ phoneNumber: patientInfo.phoneNumber });
+
+    if (!patient) {
+      // Generate patient ID
+      const patientCounter = await Counter.getNextSequence('patientId');
+      const patientId = `PAT-${String(patientCounter).padStart(6, '0')}`;
+
+      patient = await Patient.create({
+        patientId,
+        firstName: patientInfo.firstName,
+        lastName: patientInfo.lastName,
+        phoneNumber: patientInfo.phoneNumber,
+        gender: patientInfo.gender || 'other',
+        dateOfBirth: patientInfo.dateOfBirth || new Date('1990-01-01'),
+        registrationType: 'walk-in',
+        status: 'active'
+      });
+    }
+
+    // Generate queue number
+    const counterId = Counter.getTodayQueueCounterId();
+    const queueNumber = await Counter.getNextSequence(counterId);
+
+    // Generate appointment ID
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const aptCount = await Appointment.countDocuments({
+      date: {
+        $gte: new Date(now.setHours(0, 0, 0, 0)),
+        $lt: new Date(now.setHours(23, 59, 59, 999))
+      }
+    });
+    const appointmentId = `APT${year}${month}${day}${String(aptCount + 1).padStart(4, '0')}`;
+
+    // Calculate start and end times
+    const startTime = new Date();
+    const startTimeStr = `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`;
+    const endTime = new Date(startTime.getTime() + 30 * 60000); // 30 minutes later
+    const endTimeStr = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
+
+    // Create walk-in appointment
+    const appointment = await Appointment.create({
+      appointmentId,
+      patient: patient._id,
+      provider: req.user.id, // Use logged-in user as provider
+      date: new Date(),
+      startTime: startTimeStr,
+      endTime: endTimeStr,
+      type: 'consultation', // 'walk-in' is not valid enum, use 'consultation'
+      source: 'walk-in', // Mark source as walk-in
+      reason: reason || 'Walk-in consultation',
+      status: 'checked-in',
+      checkInTime: Date.now(),
+      queueNumber: queueNumber,
+      priority: priority || 'NORMAL',
+      department: 'general'
+    });
+
+    // Auto-create Visit
+    const visit = await Visit.create({
+      patient: patient._id,
+      appointment: appointment._id,
+      visitDate: Date.now(),
+      visitType: 'consultation', // 'walk-in' is not valid enum
+      primaryProvider: req.user.id, // Required field
+      status: 'in-progress',
+      chiefComplaint: {
+        complaint: reason || 'Walk-in consultation',
+        associatedSymptoms: []
+      }
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: 'Walk-in patient added to queue',
+      data: {
+        queueNumber,
+        patient: {
+          _id: patient._id,
+          firstName: patient.firstName,
+          lastName: patient.lastName,
+          patientId: patient.patientId
+        },
+        appointmentId: appointment._id,
+        visitId: visit._id,
+        position: queueNumber,
+        estimatedWaitTime: queueNumber * 15
+      }
+    });
+  }
+
+  // Handle regular appointment check-in
   const appointment = await Appointment.findById(appointmentId)
     .populate('patient', 'firstName lastName patientId');
 
@@ -75,30 +175,45 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
     });
   }
 
-  // Generate queue number
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const count = await Appointment.countDocuments({
-    checkInTime: { $gte: today, $lt: tomorrow }
-  });
+  // Generate queue number - FIXED: Using atomic Counter to prevent race conditions
+  const counterId = Counter.getTodayQueueCounterId();
+  const queueNumber = await Counter.getNextSequence(counterId);
 
   appointment.status = 'checked-in';
   appointment.checkInTime = Date.now();
-  appointment.queueNumber = count + 1;
+  appointment.queueNumber = queueNumber;
   if (priority) appointment.priority = priority;
 
   await appointment.save();
 
+  // Auto-create Visit on check-in
+  const visitData = {
+    patient: appointment.patient,
+    appointment: appointment._id,
+    visitDate: Date.now(),
+    visitType: mapAppointmentTypeToVisitType(appointment.type),
+    primaryProvider: appointment.provider,
+    status: 'in-progress'
+  };
+
+  // Pre-populate chief complaint from appointment
+  if (appointment.chiefComplaint || appointment.reason) {
+    visitData.chiefComplaint = {
+      complaint: appointment.chiefComplaint || appointment.reason,
+      associatedSymptoms: appointment.symptoms || []
+    };
+  }
+
+  const visit = await Visit.create(visitData);
+
   res.status(200).json({
     success: true,
-    message: 'Patient added to queue',
+    message: 'Patient added to queue and visit created',
     data: {
       queueNumber: appointment.queueNumber,
       position: await getQueuePosition(appointment),
-      estimatedWaitTime: calculateEstimatedWaitTime(appointment)
+      estimatedWaitTime: calculateEstimatedWaitTime(appointment),
+      visitId: visit._id
     }
   });
 });
@@ -268,6 +383,15 @@ exports.getQueueStats = asyncHandler(async (req, res, next) => {
 });
 
 // Helper functions
+function calculateActualWaitTime(checkInTime) {
+  if (!checkInTime) return 0;
+  const now = new Date();
+  const checkIn = new Date(checkInTime);
+  const diffMs = now - checkIn;
+  const diffMinutes = Math.round(diffMs / (1000 * 60));
+  return Math.max(0, diffMinutes); // Ensure non-negative
+}
+
 function calculateEstimatedWaitTime(appointment, queueAhead = []) {
   // Simple estimation: 15 minutes per patient ahead
   const patientsAhead = queueAhead.filter(a => a.status === 'checked-in').length;
@@ -333,4 +457,23 @@ function calculatePeakHours(appointments) {
     }));
 
   return sorted;
+}
+
+function mapAppointmentTypeToVisitType(appointmentType) {
+  const typeMapping = {
+    'consultation': 'consultation',
+    'follow-up': 'follow-up',
+    'emergency': 'emergency',
+    'routine-checkup': 'routine',
+    'vaccination': 'routine',
+    'lab-test': 'routine',
+    'imaging': 'routine',
+    'procedure': 'procedure',
+    'surgery': 'procedure',
+    'ophthalmology': 'consultation',
+    'refraction': 'routine',
+    'telemedicine': 'consultation'
+  };
+
+  return typeMapping[appointmentType] || 'routine';
 }

@@ -1,5 +1,7 @@
 // Role-based permissions and menu access configuration
 
+console.log('🔄 rolePermissions.js loaded - IVT and Pharmacy modules should be available');
+
 export const rolePermissions = {
   admin: {
     menuItems: [
@@ -7,15 +9,10 @@ export const rolePermissions = {
       'patients',
       'queue',
       'appointments',
-      'pharmacy',
-      'prescriptions',
-      'imaging',
+      'clinical',
+      'finance',
       'notifications',
-      'financial',
-      'invoicing',
-      'services',
-      'settings',
-      'ophthalmology'
+      'settings'
     ],
     permissions: [
       'view_all_data',
@@ -37,10 +34,8 @@ export const rolePermissions = {
       'patients',
       'queue',
       'appointments',
-      'prescriptions',
-      'imaging',
-      'notifications',
-      'services'
+      'clinical',
+      'notifications'
     ],
     permissions: [
       'view_patients',
@@ -61,10 +56,9 @@ export const rolePermissions = {
       'patients',
       'queue',
       'appointments',
-      'prescriptions',
-      'imaging',
+      'clinical',
       'notifications',
-      'ophthalmology'
+      'settings'
     ],
     permissions: [
       'view_patients',
@@ -87,7 +81,7 @@ export const rolePermissions = {
       'patients',
       'queue',
       'appointments',
-      'prescriptions',
+      'clinical',
       'notifications'
     ],
     permissions: [
@@ -107,8 +101,8 @@ export const rolePermissions = {
       'patients',
       'queue',
       'appointments',
-      'notifications',
-      'invoicing'
+      'finance',
+      'notifications'
     ],
     permissions: [
       'view_patients',
@@ -124,9 +118,8 @@ export const rolePermissions = {
   pharmacist: {
     menuItems: [
       'dashboard',
-      'pharmacy',
-      'prescriptions',
       'patients',
+      'clinical',
       'notifications'
     ],
     permissions: [
@@ -142,9 +135,9 @@ export const rolePermissions = {
   lab_technician: {
     menuItems: [
       'dashboard',
-      'imaging',
       'patients',
       'queue',
+      'clinical',
       'notifications'
     ],
     permissions: [
@@ -159,9 +152,7 @@ export const rolePermissions = {
   accountant: {
     menuItems: [
       'dashboard',
-      'financial',
-      'invoicing',
-      'services',
+      'finance',
       'notifications'
     ],
     permissions: [
@@ -237,6 +228,12 @@ export const menuConfigurations = {
     icon: 'Image',
     description: 'Medical imaging and lab results'
   },
+  documents: {
+    label: 'Documents',
+    path: '/documents',
+    icon: 'FileText',
+    description: 'Generate medical certificates and letters'
+  },
   notifications: {
     label: 'Notifications',
     path: '/notifications',
@@ -267,15 +264,57 @@ export const menuConfigurations = {
     icon: 'Settings',
     description: 'System settings'
   },
+  // Consolidated Clinical menu with submenus
+  clinical: {
+    label: 'Clinical',
+    path: null,
+    icon: 'Stethoscope',
+    description: 'Clinical modules',
+    subItems: [
+      { label: 'Prescriptions', path: '/prescriptions', icon: 'FileText' },
+      { label: 'Laboratory', path: '/laboratory', icon: 'FlaskConical' },
+      { label: 'Imaging', path: '/imaging', icon: 'Image' },
+      { label: 'Pharmacy', path: '/pharmacy', icon: 'Pill' },
+      { label: 'Ophthalmology', path: '/ophthalmology', icon: 'Eye' },
+      { label: 'IVT', path: '/ivt', icon: 'Syringe' },
+      { label: 'Devices', path: '/devices', icon: 'HardDrive' }
+    ]
+  },
+  // Consolidated Finance menu with submenus
+  finance: {
+    label: 'Finance',
+    path: null,
+    icon: 'DollarSign',
+    description: 'Financial management',
+    subItems: [
+      { label: 'Invoicing', path: '/invoicing', icon: 'Receipt' },
+      { label: 'Financial Reports', path: '/financial', icon: 'BarChart3' },
+      { label: 'Services', path: '/services', icon: 'Briefcase' }
+    ]
+  },
+  // Keep individual items for direct access (legacy support)
   ophthalmology: {
     label: 'Ophthalmology',
     path: '/ophthalmology',
     icon: 'Eye',
-    description: 'Eye care and examinations',
-    subItems: [
-      { label: 'Dashboard', path: '/ophthalmology' },
-      { label: 'Refraction Exam', path: '/ophthalmology/refraction' },
-      { label: 'Ophthalmic Pharmacy', path: '/ophthalmology/pharmacy' }
-    ]
+    description: 'Eye care and examinations'
+  },
+  ivt: {
+    label: 'IVT Injections',
+    path: '/ivt',
+    icon: 'Stethoscope',
+    description: 'Intravitreal injection tracking and management'
+  },
+  'pharmacy-inventory': {
+    label: 'Pharmacy Inventory',
+    path: '/pharmacy-inventory',
+    icon: 'Pill',
+    description: 'Medication inventory and stock management'
+  },
+  devices: {
+    label: 'Devices',
+    path: '/devices',
+    icon: 'HardDrive',
+    description: 'Medical device integration and management'
   }
 };

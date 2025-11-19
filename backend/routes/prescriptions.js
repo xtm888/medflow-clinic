@@ -23,7 +23,7 @@ router
   .route('/')
   .get(getPrescriptions)
   .post(
-    authorize('doctor', 'ophthalmologist'),
+    authorize('doctor', 'ophthalmologist', 'admin'),
     logPrescriptionActivity,
     createPrescription
   );
@@ -32,7 +32,7 @@ router
   .route('/:id')
   .get(logPrescriptionActivity, getPrescription)
   .put(
-    authorize('doctor', 'ophthalmologist'),
+    authorize('doctor', 'ophthalmologist', 'admin'),
     logPrescriptionActivity,
     updatePrescription
   );
@@ -58,11 +58,16 @@ router.post(
   verifyPrescription
 );
 
-router.get('/:id/print', printPrescription);
+router.get(
+  '/:id/print',
+  authorize('doctor', 'ophthalmologist', 'pharmacist', 'admin'),
+  logPrescriptionActivity,
+  printPrescription
+);
 
 router.post(
   '/:id/renew',
-  authorize('doctor', 'ophthalmologist'),
+  authorize('doctor', 'ophthalmologist', 'admin'),
   logPrescriptionActivity,
   renewPrescription
 );

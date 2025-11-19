@@ -252,29 +252,45 @@ class WebSocketService {
 // Create singleton instance
 const websocketService = new WebSocketService();
 
-// Auto-connect when user is authenticated
-const authState = store.getState().auth;
-if (authState.isAuthenticated && authState.token) {
-  websocketService.connect(authState.token);
-}
+// Initialize store subscription - called after store is ready
+let storeInitialized = false;
+export const initWebSocketService = () => {
+  if (storeInitialized) return;
+  storeInitialized = true;
 
-// Listen for auth changes
-let previousAuth = authState.isAuthenticated;
-store.subscribe(() => {
-  const currentAuth = store.getState().auth.isAuthenticated;
-  const token = store.getState().auth.token;
-
-  if (!previousAuth && currentAuth && token) {
-    // User logged in
-    websocketService.connect(token);
-    websocketService.startHeartbeat();
-  } else if (previousAuth && !currentAuth) {
-    // User logged out
-    websocketService.stopHeartbeat();
-    websocketService.disconnect();
+  // Auto-connect when user is authenticated
+  const authState = store.getState().auth;
+  if (authState.isAuthenticated && authState.token) {
+    websocketService.connect(authState.token);
   }
 
-  previousAuth = currentAuth;
-});
+  // Listen for auth changes
+  let previousAuth = authState.isAuthenticated;
+  store.subscribe(() => {
+    const currentAuth = store.getState().auth.isAuthenticated;
+    const token = store.getState().auth.token;
+
+    if (!previousAuth && currentAuth && token) {
+      // User logged in
+      websocketService.connect(token);
+      websocketService.startHeartbeat();
+    } else if (previousAuth && !currentAuth) {
+      // User logged out
+      websocketService.stopHeartbeat();
+      websocketService.disconnect();
+    }
+
+    previousAuth = currentAuth;
+  });
+};
+
+// Defer initialization to avoid circular dependency
+setTimeout(() => {
+  try {
+    initWebSocketService();
+  } catch (e) {
+    console.warn('WebSocket service initialization deferred');
+  }
+}, 0);
 
 export default websocketService;

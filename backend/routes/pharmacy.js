@@ -1,25 +1,29 @@
 const express = require('express');
 const router = express.Router();
-
-// Placeholder controller
-const pharmacyController = {
-  getInventory: (req, res) => res.json({ success: true, data: [] }),
-  getMedication: (req, res) => res.json({ success: true, data: {} }),
-  updateStock: (req, res) => res.json({ success: true, message: 'Stock updated' }),
-  createMedication: (req, res) => res.status(201).json({ success: true, data: {} }),
-  getLowStock: (req, res) => res.json({ success: true, data: [] })
-};
-
+const pharmacyController = require('../controllers/pharmacyController');
 const { protect, authorize } = require('../middleware/auth');
 
 // Protect all routes
 router.use(protect);
 
-// Routes
+// Inventory routes
 router.get('/inventory', pharmacyController.getInventory);
-router.get('/low-stock', authorize('pharmacist', 'admin'), pharmacyController.getLowStock);
-router.post('/medications', authorize('pharmacist', 'admin'), pharmacyController.createMedication);
-router.get('/medications/:id', pharmacyController.getMedication);
-router.put('/medications/:id/stock', authorize('pharmacist', 'admin'), pharmacyController.updateStock);
+router.get('/stats', pharmacyController.getStats);
+router.get('/alerts', pharmacyController.getAlerts);
+router.get('/low-stock', authorize('pharmacist', 'admin', 'ophthalmologist'), pharmacyController.getLowStock);
+router.get('/expiring', authorize('pharmacist', 'admin', 'ophthalmologist'), pharmacyController.getExpiring);
+
+// Medication search for prescribing
+router.get('/search', pharmacyController.searchMedications);
+
+// Medication CRUD routes
+router.post('/inventory', authorize('pharmacist', 'admin'), pharmacyController.createMedication);
+router.get('/inventory/:id', pharmacyController.getMedication);
+router.put('/inventory/:id', authorize('pharmacist', 'admin'), pharmacyController.updateMedication);
+router.post('/inventory/:id/adjust', authorize('pharmacist', 'admin'), pharmacyController.adjustStock);
+
+// Prescription-integrated dispensing routes
+router.post('/reserve', authorize('ophthalmologist', 'admin', 'doctor'), pharmacyController.reserveForPrescription);
+router.post('/dispense', authorize('pharmacist', 'admin', 'nurse'), pharmacyController.dispenseMedication);
 
 module.exports = router;

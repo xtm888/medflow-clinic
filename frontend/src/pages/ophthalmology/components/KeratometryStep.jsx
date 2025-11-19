@@ -1,9 +1,29 @@
 import { useState } from 'react';
-import { Activity, Eye } from 'lucide-react';
+import { Activity, Eye, HardDrive, CheckCircle, History } from 'lucide-react';
 import { calculateKeratometricAstigmatism } from '../../../utils/ophthalmologyCalculations';
+import DeviceMeasurementSelector from '../../../components/DeviceMeasurementSelector';
+import { usePreviousRefraction } from '../../../hooks/usePreviousData';
 
-export default function KeratometryStep({ data, setData }) {
+export default function KeratometryStep({ data, setData, examId, patientId }) {
   const [selectedEye, setSelectedEye] = useState('OD');
+  const [showDeviceImport, setShowDeviceImport] = useState(false);
+
+  // Hook for copy previous functionality
+  const { hasPreviousExam, copyKeratometry, loading: loadingPrevious } = usePreviousRefraction(patientId);
+
+  const handleCopyPrevious = () => {
+    const previousData = copyKeratometry();
+    if (previousData) {
+      setData(prev => ({
+        ...prev,
+        keratometry: {
+          ...prev.keratometry,
+          OD: previousData.OD || prev.keratometry.OD,
+          OS: previousData.OS || prev.keratometry.OS
+        }
+      }));
+    }
+  };
 
   const updateKeratometry = (eye, meridian, param, value) => {
     setData(prev => ({
@@ -33,12 +53,70 @@ export default function KeratometryStep({ data, setData }) {
     return calculateKeratometricAstigmatism(k1, k1Axis, k2, k2Axis);
   };
 
+  const handleMeasurementApplied = (measurement) => {
+    // Handle keratometry measurement import
+    if (measurement.measurementType.toLowerCase() === 'keratometer' ||
+        measurement.measurementType.toLowerCase() === 'keratometry') {
+      const keratometryData = measurement.data.keratometry;
+      if (keratometryData) {
+        setData(prev => ({
+          ...prev,
+          keratometry: {
+            OD: {
+              k1: {
+                power: keratometryData.OD?.k1?.power || 0,
+                axis: keratometryData.OD?.k1?.axis || 0
+              },
+              k2: {
+                power: keratometryData.OD?.k2?.power || 0,
+                axis: keratometryData.OD?.k2?.axis || 0
+              },
+              astigmatism: Math.abs(
+                (keratometryData.OD?.k1?.power || 0) - (keratometryData.OD?.k2?.power || 0)
+              ).toFixed(2)
+            },
+            OS: {
+              k1: {
+                power: keratometryData.OS?.k1?.power || 0,
+                axis: keratometryData.OS?.k1?.axis || 0
+              },
+              k2: {
+                power: keratometryData.OS?.k2?.power || 0,
+                axis: keratometryData.OS?.k2?.axis || 0
+              },
+              astigmatism: Math.abs(
+                (keratometryData.OS?.k1?.power || 0) - (keratometryData.OS?.k2?.power || 0)
+              ).toFixed(2)
+            },
+            sourceDevice: measurement.device?._id,
+            sourceMeasurement: measurement._id,
+            importedAt: measurement.measurementDate
+          }
+        }));
+        setShowDeviceImport(false);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
-      <h2 className="text-xl font-semibold mb-6 flex items-center">
-        <Activity className="w-5 h-5 mr-2 text-blue-600" />
-        Kératométrie
-      </h2>
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-xl font-semibold flex items-center">
+          <Activity className="w-5 h-5 mr-2 text-blue-600" />
+          Kératométrie
+        </h2>
+        {hasPreviousExam && (
+          <button
+            onClick={handleCopyPrevious}
+            disabled={loadingPrevious}
+            className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 border border-gray-300 flex items-center gap-2"
+            title="Copier les valeurs du dernier examen"
+          >
+            <History className="h-4 w-4" />
+            Copier précédent
+          </button>
+        )}
+      </div>
 
       {/* Eye Selector */}
       <div className="flex gap-4 mb-6">
@@ -60,7 +138,42 @@ export default function KeratometryStep({ data, setData }) {
           <Eye className="w-4 h-4 inline mr-2" />
           Œil Gauche (OS)
         </button>
+        {examId && patientId && (
+          <button
+            onClick={() => setShowDeviceImport(!showDeviceImport)}
+            className="ml-auto flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <HardDrive className="w-4 h-4 mr-2" />
+            {showDeviceImport ? 'Masquer' : 'Importer depuis Appareil'}
+          </button>
+        )}
       </div>
+
+      {/* Device Measurement Selector */}
+      {showDeviceImport && examId && patientId && (
+        <div className="mb-6">
+          <DeviceMeasurementSelector
+            examId={examId}
+            patientId={patientId}
+            onMeasurementApplied={handleMeasurementApplied}
+          />
+        </div>
+      )}
+
+      {/* Source Device Indicator */}
+      {data.keratometry.sourceDevice && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-900">
+              Données importées depuis un kératomètre
+            </p>
+            <p className="text-xs text-green-700">
+              Mesure effectuée le: {new Date(data.keratometry.importedAt).toLocaleString('fr-FR')}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Keratometry Values */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

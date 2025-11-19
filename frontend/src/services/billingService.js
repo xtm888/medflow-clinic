@@ -5,7 +5,7 @@ const billingService = {
   // Get all invoices with filters
   async getInvoices(params = {}) {
     try {
-      const response = await api.get('/billing/invoices', { params });
+      const response = await api.get('/invoices', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching invoices:', error);
@@ -16,7 +16,7 @@ const billingService = {
   // Get single invoice
   async getInvoice(id) {
     try {
-      const response = await api.get(`/billing/invoices/${id}`);
+      const response = await api.get(`/invoices/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching invoice:', error);
@@ -27,7 +27,7 @@ const billingService = {
   // Create new invoice
   async createInvoice(invoiceData) {
     try {
-      const response = await api.post('/billing/invoices', invoiceData);
+      const response = await api.post('/invoices', invoiceData);
       return response.data;
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -38,7 +38,7 @@ const billingService = {
   // Update invoice
   async updateInvoice(id, invoiceData) {
     try {
-      const response = await api.put(`/billing/invoices/${id}`, invoiceData);
+      const response = await api.put(`/invoices/${id}`, invoiceData);
       return response.data;
     } catch (error) {
       console.error('Error updating invoice:', error);
@@ -49,7 +49,7 @@ const billingService = {
   // Delete invoice
   async deleteInvoice(id) {
     try {
-      const response = await api.delete(`/billing/invoices/${id}`);
+      const response = await api.delete(`/invoices/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error deleting invoice:', error);
@@ -57,10 +57,10 @@ const billingService = {
     }
   },
 
-  // Get patient billing
+  // Get patient billing (invoices)
   async getPatientBilling(patientId, params = {}) {
     try {
-      const response = await api.get(`/patients/${patientId}/billing`, { params });
+      const response = await api.get(`/invoices/patient/${patientId}`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching patient billing:', error);
@@ -82,7 +82,11 @@ const billingService = {
   // Process payment
   async processPayment(paymentData) {
     try {
-      const response = await api.post('/billing/payments', paymentData);
+      // Payment must be linked to an invoice
+      if (!paymentData.invoiceId) {
+        throw new Error('Invoice ID is required for payment');
+      }
+      const response = await api.post(`/invoices/${paymentData.invoiceId}/payments`, paymentData);
       return response.data;
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -93,7 +97,7 @@ const billingService = {
   // Get payments
   async getPayments(params = {}) {
     try {
-      const response = await api.get('/billing/payments', { params });
+      const response = await api.get('/invoices/payments', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching payments:', error);
@@ -104,7 +108,7 @@ const billingService = {
   // Get payment details
   async getPayment(id) {
     try {
-      const response = await api.get(`/billing/payments/${id}`);
+      const response = await api.get(`/invoices/payments/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching payment:', error);
@@ -115,7 +119,7 @@ const billingService = {
   // Refund payment
   async refundPayment(paymentId, refundData) {
     try {
-      const response = await api.post(`/billing/payments/${paymentId}/refund`, refundData);
+      const response = await api.post(`/invoices/${paymentId}/refund`, refundData);
       return response.data;
     } catch (error) {
       console.error('Error refunding payment:', error);
@@ -214,12 +218,11 @@ const billingService = {
     }
   },
 
-  // Generate invoice PDF
+  // Generate invoice PDF - Note: Returns invoice data for client-side PDF generation
   async generateInvoicePDF(invoiceId) {
     try {
-      const response = await api.get(`/billing/invoices/${invoiceId}/pdf`, {
-        responseType: 'blob'
-      });
+      // Get full invoice data for PDF generation
+      const response = await api.get(`/invoices/${invoiceId}`);
       return response.data;
     } catch (error) {
       console.error('Error generating invoice PDF:', error);
@@ -227,10 +230,10 @@ const billingService = {
     }
   },
 
-  // Send invoice to patient
+  // Send invoice to patient (mark as sent)
   async sendInvoiceToPatient(invoiceId, method = 'email') {
     try {
-      const response = await api.post(`/billing/invoices/${invoiceId}/send`, { method });
+      const response = await api.put(`/invoices/${invoiceId}/send`, { method });
       return response.data;
     } catch (error) {
       console.error('Error sending invoice:', error);

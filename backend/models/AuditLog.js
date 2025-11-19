@@ -48,6 +48,14 @@ const auditLogSchema = new mongoose.Schema({
       'BACKUP_RESTORE',
       'SYSTEM_ERROR',
       'SECURITY_ALERT',
+      'REFRACTION_COPY_FROM_PREVIOUS',
+      'REFRACTION_CREATE_BLANK',
+      'REFRACTION_CREATE',
+      'REFRACTION_UPDATE',
+      'REFRACTION_VIEW',
+      'OPHTHALMOLOGY_EXAM_CREATE',
+      'OPHTHALMOLOGY_EXAM_UPDATE',
+      'OPHTHALMOLOGY_EXAM_VIEW',
       'CUSTOM'
     ]
   },

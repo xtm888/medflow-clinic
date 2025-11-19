@@ -1,31 +1,52 @@
 const express = require('express');
 const router = express.Router();
+const {
+  getInvoices,
+  getInvoice,
+  createInvoice,
+  updateInvoice,
+  addPayment,
+  cancelInvoice,
+  issueRefund,
+  sendReminder,
+  getPatientInvoices,
+  getOverdueInvoices,
+  getInvoiceStats,
+  markAsSent
+} = require('../controllers/invoiceController');
 
-// Placeholder controller
-const invoiceController = {
-  getInvoices: (req, res) => res.json({ success: true, data: [] }),
-  getInvoice: (req, res) => res.json({ success: true, data: {} }),
-  createInvoice: (req, res) => res.status(201).json({ success: true, data: {} }),
-  updateInvoice: (req, res) => res.json({ success: true, data: {} }),
-  markAsPaid: (req, res) => res.json({ success: true, message: 'Invoice marked as paid' })
-};
+const { getPayments, getPatientBilling } = require('../controllers/billingController');
 
 const { protect, authorize } = require('../middleware/auth');
+const { logCriticalOperation } = require('../middleware/auditLogger');
 
 // Protect all routes
 router.use(protect);
 
-// Routes
+// Statistics and reports routes (must be before :id routes)
+router.get('/stats', authorize('admin', 'accountant'), getInvoiceStats);
+router.get('/overdue', authorize('admin', 'accountant', 'receptionist'), getOverdueInvoices);
+router.get('/payments', authorize('admin', 'accountant', 'receptionist'), getPayments);
+
+// Patient-specific invoices
+router.get('/patient/:patientId', getPatientInvoices);
+
+// Main CRUD routes
 router
   .route('/')
-  .get(invoiceController.getInvoices)
-  .post(authorize('admin', 'receptionist'), invoiceController.createInvoice);
+  .get(getInvoices)
+  .post(authorize('admin', 'receptionist', 'accountant'), createInvoice);
 
 router
   .route('/:id')
-  .get(invoiceController.getInvoice)
-  .put(authorize('admin', 'receptionist'), invoiceController.updateInvoice);
+  .get(getInvoice)
+  .put(authorize('admin', 'receptionist', 'accountant'), updateInvoice);
 
-router.put('/:id/pay', authorize('admin', 'receptionist'), invoiceController.markAsPaid);
+// Invoice actions (with audit logging for financial compliance)
+router.post('/:id/payments', authorize('admin', 'receptionist', 'accountant'), logCriticalOperation('PAYMENT_ADD'), addPayment);
+router.put('/:id/cancel', authorize('admin'), logCriticalOperation('INVOICE_CANCEL'), cancelInvoice);
+router.post('/:id/refund', authorize('admin'), logCriticalOperation('INVOICE_REFUND'), issueRefund);
+router.post('/:id/reminder', authorize('admin', 'receptionist'), sendReminder);
+router.put('/:id/send', authorize('admin', 'receptionist'), markAsSent);
 
 module.exports = router;

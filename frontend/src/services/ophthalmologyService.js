@@ -1,4 +1,5 @@
 import api from './apiConfig';
+import logger from './logger';
 
 const ophthalmologyService = {
   // Get all exams
@@ -7,7 +8,7 @@ const ophthalmologyService = {
       const response = await api.get('/ophthalmology/exams', { params });
       return response.data;
     } catch (error) {
-      console.error('Error fetching exams:', error);
+      logger.error('Error fetching exams:', error);
       throw error;
     }
   },
@@ -18,7 +19,7 @@ const ophthalmologyService = {
       const response = await api.get(`/ophthalmology/exams/${id}`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching exam:', error);
+      logger.error('Error fetching exam:', error);
       throw error;
     }
   },
@@ -29,7 +30,7 @@ const ophthalmologyService = {
       const response = await api.post('/ophthalmology/exams', examData);
       return response.data;
     } catch (error) {
-      console.error('Error creating exam:', error);
+      logger.error('Error creating exam:', error);
       throw error;
     }
   },
@@ -40,7 +41,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${id}`, examData);
       return response.data;
     } catch (error) {
-      console.error('Error updating exam:', error);
+      logger.error('Error updating exam:', error);
       throw error;
     }
   },
@@ -51,7 +52,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${id}/complete`);
       return response.data;
     } catch (error) {
-      console.error('Error completing exam:', error);
+      logger.error('Error completing exam:', error);
       throw error;
     }
   },
@@ -62,7 +63,7 @@ const ophthalmologyService = {
       const response = await api.post(`/ophthalmology/exams/${examId}/prescription`);
       return response.data;
     } catch (error) {
-      console.error('Error generating prescription:', error);
+      logger.error('Error generating prescription:', error);
       throw error;
     }
   },
@@ -73,7 +74,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/refraction`, refractionData);
       return response.data;
     } catch (error) {
-      console.error('Error saving refraction data:', error);
+      logger.error('Error saving refraction data:', error);
       throw error;
     }
   },
@@ -84,7 +85,7 @@ const ophthalmologyService = {
       const response = await api.get(`/ophthalmology/patients/${patientId}/history`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching patient exam history:', error);
+      logger.error('Error fetching patient exam history:', error);
       throw error;
     }
   },
@@ -95,7 +96,7 @@ const ophthalmologyService = {
       const response = await api.post(`/ophthalmology/exams/${examId}/fundus-image`, imageData);
       return response.data;
     } catch (error) {
-      console.error('Error uploading fundus image:', error);
+      logger.error('Error uploading fundus image:', error);
       throw error;
     }
   },
@@ -108,7 +109,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/tonometry`, tonometryData);
       return response.data;
     } catch (error) {
-      console.error('Error saving tonometry data:', error);
+      logger.error('Error saving tonometry data:', error);
       throw error;
     }
   },
@@ -119,7 +120,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/visual-acuity`, visualAcuityData);
       return response.data;
     } catch (error) {
-      console.error('Error saving visual acuity data:', error);
+      logger.error('Error saving visual acuity data:', error);
       throw error;
     }
   },
@@ -130,7 +131,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/oct`, octData);
       return response.data;
     } catch (error) {
-      console.error('Error saving OCT results:', error);
+      logger.error('Error saving OCT results:', error);
       throw error;
     }
   },
@@ -141,7 +142,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/visual-field`, visualFieldData);
       return response.data;
     } catch (error) {
-      console.error('Error saving visual field results:', error);
+      logger.error('Error saving visual field results:', error);
       throw error;
     }
   },
@@ -152,7 +153,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/keratometry`, keratometryData);
       return response.data;
     } catch (error) {
-      console.error('Error saving keratometry data:', error);
+      logger.error('Error saving keratometry data:', error);
       throw error;
     }
   },
@@ -163,7 +164,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/biometry`, biometryData);
       return response.data;
     } catch (error) {
-      console.error('Error saving biometry data:', error);
+      logger.error('Error saving biometry data:', error);
       throw error;
     }
   },
@@ -174,7 +175,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/slit-lamp`, slitLampData);
       return response.data;
     } catch (error) {
-      console.error('Error saving slit lamp exam:', error);
+      logger.error('Error saving slit lamp exam:', error);
       throw error;
     }
   },
@@ -185,7 +186,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/fundoscopy`, fundoscopyData);
       return response.data;
     } catch (error) {
-      console.error('Error saving fundoscopy results:', error);
+      logger.error('Error saving fundoscopy results:', error);
       throw error;
     }
   },
@@ -196,7 +197,7 @@ const ophthalmologyService = {
       const response = await api.get(`/ophthalmology/exams/${examId}/device-measurements`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching device measurements:', error);
+      logger.error('Error fetching device measurements:', error);
       throw error;
     }
   },
@@ -210,7 +211,7 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error importing device measurement:', error);
+      logger.error('Error importing device measurement:', error);
       throw error;
     }
   },
@@ -224,7 +225,7 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error calculating IOL power:', error);
+      logger.error('Error calculating IOL power:', error);
       throw error;
     }
   },
@@ -238,7 +239,7 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error generating exam report:', error);
+      logger.error('Error generating exam report:', error);
       throw error;
     }
   },
@@ -251,7 +252,7 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error comparing exams:', error);
+      logger.error('Error comparing exams:', error);
       throw error;
     }
   },
@@ -264,7 +265,7 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching progression analysis:', error);
+      logger.error('Error fetching progression analysis:', error);
       throw error;
     }
   },
@@ -275,7 +276,7 @@ const ophthalmologyService = {
       const response = await api.get(`/ophthalmology/exams/${examId}/recommendations`);
       return response.data;
     } catch (error) {
-      console.error('Error fetching treatment recommendations:', error);
+      logger.error('Error fetching treatment recommendations:', error);
       throw error;
     }
   },
@@ -286,7 +287,7 @@ const ophthalmologyService = {
       const response = await api.put(`/ophthalmology/exams/${examId}/diagnosis`, diagnosisData);
       return response.data;
     } catch (error) {
-      console.error('Error saving diagnosis:', error);
+      logger.error('Error saving diagnosis:', error);
       throw error;
     }
   },
@@ -299,7 +300,7 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error fetching exam templates:', error);
+      logger.error('Error fetching exam templates:', error);
       throw error;
     }
   },
@@ -312,7 +313,86 @@ const ophthalmologyService = {
       });
       return response.data;
     } catch (error) {
-      console.error('Error applying template:', error);
+      logger.error('Error applying template:', error);
+      throw error;
+    }
+  },
+
+  // Get patient's refraction history
+  async getRefractionHistory(patientId, limit = 20) {
+    try {
+      const response = await api.get(`/ophthalmology/patients/${patientId}/refraction-history`, {
+        params: { limit }
+      });
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching refraction history:', error);
+      throw error;
+    }
+  },
+
+  // Copy from previous refraction exam
+  async copyFromPreviousRefraction(patientId) {
+    try {
+      const response = await api.post(`/ophthalmology/patients/${patientId}/copy-previous-refraction`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error copying from previous refraction:', error);
+      throw error;
+    }
+  },
+
+  // Create blank refraction exam
+  async createBlankRefraction(patientId) {
+    try {
+      const response = await api.post(`/ophthalmology/patients/${patientId}/blank-refraction`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error creating blank refraction:', error);
+      throw error;
+    }
+  },
+
+  // Generate refraction summary
+  async generateRefractionSummary(examId) {
+    try {
+      const response = await api.post(`/ophthalmology/exams/${examId}/generate-refraction-summary`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error generating refraction summary:', error);
+      throw error;
+    }
+  },
+
+  // Generate keratometry summary
+  async generateKeratometrySummary(examId) {
+    try {
+      const response = await api.post(`/ophthalmology/exams/${examId}/generate-keratometry-summary`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error generating keratometry summary:', error);
+      throw error;
+    }
+  },
+
+  // Mark prescription as printed
+  async markPrescriptionPrinted(examId) {
+    try {
+      const response = await api.put(`/ophthalmology/exams/${examId}/mark-printed`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error marking prescription as printed:', error);
+      throw error;
+    }
+  },
+
+  // Mark prescription as viewed
+  async markPrescriptionViewed(examId) {
+    try {
+      const response = await api.put(`/ophthalmology/exams/${examId}/mark-viewed`);
+      return response.data;
+    } catch (error) {
+      logger.error('Error marking prescription as viewed:', error);
       throw error;
     }
   }

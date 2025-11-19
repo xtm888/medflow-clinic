@@ -1,12 +1,64 @@
-import { DollarSign, Download, CreditCard } from 'lucide-react';
-import { invoices } from '../../data/mockData';
+import { useState, useEffect } from 'react';
+import { DollarSign, Download, CreditCard, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import api from '../../services/api';
+import authService from '../../services/authService';
 
 export default function PatientBills() {
-  const currentPatientId = 1;
-  const myInvoices = invoices.filter(inv => inv.patientId === currentPatientId);
-  const totalOwed = myInvoices.reduce((sum, inv) => sum + inv.balance, 0);
+  const [invoices, setInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchInvoices();
+  }, []);
+
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+
+      // Get current user
+      const userResult = await authService.getCurrentUser();
+      if (userResult.success && userResult.user) {
+        const patientId = userResult.user.patientId || userResult.user._id;
+
+        const response = await api.get('/invoices', {
+          params: { patient: patientId, limit: 50 }
+        });
+
+        const invoiceData = response.data?.data || response.data || [];
+
+        // Transform invoices
+        const transformedInvoices = invoiceData.map(inv => ({
+          id: inv._id || inv.id,
+          invoiceNumber: inv.invoiceNumber || `INV-${inv._id?.slice(-6) || '000000'}`,
+          date: inv.date || inv.createdAt,
+          total: inv.total || inv.amount || 0,
+          amountPaid: inv.amountPaid || inv.paidAmount || 0,
+          balance: inv.balance ?? ((inv.total || inv.amount || 0) - (inv.amountPaid || inv.paidAmount || 0)),
+          status: (inv.status || 'PENDING').toUpperCase(),
+          items: inv.items || inv.lineItems || []
+        }));
+
+        setInvoices(transformedInvoices);
+      }
+    } catch (err) {
+      console.error('Error fetching invoices:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const totalOwed = invoices.reduce((sum, inv) => sum + inv.balance, 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <span className="ml-2 text-gray-600">Chargement des factures...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -31,7 +83,7 @@ export default function PatientBills() {
 
       {/* Invoices List */}
       <div className="grid grid-cols-1 gap-4">
-        {myInvoices.map((invoice) => (
+        {invoices.map((invoice) => (
           <div
             key={invoice.id}
             className={`card ${
@@ -78,16 +130,18 @@ export default function PatientBills() {
                   </div>
                 </div>
 
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm font-medium text-gray-700">Services:</p>
-                  <ul className="mt-1 space-y-1">
-                    {invoice.items.map((item, idx) => (
-                      <li key={idx} className="text-sm text-gray-600">
-                        • {item.serviceName} - ${item.total.toFixed(2)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                {invoice.items && invoice.items.length > 0 && (
+                  <div className="mt-3 pt-3 border-t">
+                    <p className="text-sm font-medium text-gray-700">Services:</p>
+                    <ul className="mt-1 space-y-1">
+                      {invoice.items.map((item, idx) => (
+                        <li key={idx} className="text-sm text-gray-600">
+                          • {item.serviceName || item.description || 'Service'} - ${(item.total || item.amount || 0).toFixed(2)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col space-y-2 ml-4">
@@ -106,7 +160,7 @@ export default function PatientBills() {
           </div>
         ))}
 
-        {myInvoices.length === 0 && (
+        {invoices.length === 0 && (
           <div className="card text-center py-12">
             <DollarSign className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Aucune facture</p>

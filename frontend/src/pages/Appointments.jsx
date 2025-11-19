@@ -1,18 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, Users, CheckCircle, XCircle, Plus, Search, Filter } from 'lucide-react';
+import { Calendar, Clock, Users, CheckCircle, XCircle, Plus, Search, Filter, UserCheck, Eye } from 'lucide-react';
 import { format, addDays, startOfWeek } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
 import appointmentService from '../services/appointmentService';
 import patientService from '../services/patientService';
+import queueService from '../services/queueService';
+import userService from '../services/userService';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/ToastContainer';
+import EmptyState from '../components/EmptyState';
 import { normalizeToArray, isArray } from '../utils/apiHelpers';
+import { PatientSelector } from '../modules/patient';
 
 export default function Appointments() {
+  const navigate = useNavigate();
   const { toasts, success, error: showError, removeToast } = useToast();
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [actionLoading, setActionLoading] = useState({});
@@ -26,6 +33,8 @@ export default function Appointments() {
   // New appointment form state
   const [newAppointment, setNewAppointment] = useState({
     patient: '',
+    provider: '',
+    department: 'general',
     type: 'consultation',
     date: format(new Date(), 'yyyy-MM-dd'),
     time: '09:00',
@@ -42,13 +51,21 @@ export default function Appointments() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [appointmentsRes, patientsRes] = await Promise.all([
+      const [appointmentsRes, patientsRes, providersRes] = await Promise.all([
         appointmentService.getAppointments(),
-        patientService.getPatients()
+        patientService.getPatients(),
+        userService.getAll({ role: 'doctor,ophthalmologist' })
       ]);
 
       setAppointments(normalizeToArray(appointmentsRes));
       setPatients(normalizeToArray(patientsRes));
+
+      // Filter to only get doctors and ophthalmologists
+      const allUsers = normalizeToArray(providersRes);
+      const providerUsers = allUsers.filter(u =>
+        ['doctor', 'ophthalmologist'].includes(u.role)
+      );
+      setProviders(providerUsers);
     } catch (err) {
       showError('Failed to load appointments');
       console.error('Error fetching data:', err);
@@ -101,8 +118,15 @@ export default function Appointments() {
     return texts[statusLower] || status;
   };
 
-  // Get patient name
-  const getPatientName = (patientId) => {
+  // Get patient name - handles both populated objects and ID references
+  const getPatientName = (patientData) => {
+    // If patient is already populated as an object
+    if (patientData && typeof patientData === 'object' && patientData.firstName) {
+      return `${patientData.firstName || ''} ${patientData.lastName || ''}`.trim();
+    }
+
+    // If patient is an ID, look it up
+    const patientId = typeof patientData === 'object' ? patientData._id : patientData;
     const patient = patients.find(p => p._id === patientId || p.id === patientId);
     if (patient) {
       return `${patient.firstName || ''} ${patient.lastName || ''}`.trim();
@@ -110,35 +134,94 @@ export default function Appointments() {
     return 'Patient inconnu';
   };
 
+  // Get provider name - handles both populated objects and ID references
+  const getProviderName = (providerData) => {
+    // If provider is already populated as an object
+    if (providerData && typeof providerData === 'object') {
+      if (providerData.firstName) {
+        return `Dr. ${providerData.firstName || ''} ${providerData.lastName || ''}`.trim();
+      }
+      if (providerData.name) {
+        return providerData.name;
+      }
+    }
+
+    // If provider is an ID, look it up
+    const providerId = typeof providerData === 'object' ? providerData._id : providerData;
+    const provider = providers.find(p => p._id === providerId || p.id === providerId);
+    if (provider) {
+      return `Dr. ${provider.firstName || ''} ${provider.lastName || ''}`.trim();
+    }
+    return null;
+  };
+
+  // Helper function to calculate end time
+  const calculateEndTime = (startTime, durationMinutes) => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + durationMinutes;
+    const endHours = Math.floor(totalMinutes / 60) % 24;
+    const endMinutes = totalMinutes % 60;
+    return `${String(endHours).padStart(2, '0')}:${String(endMinutes).padStart(2, '0')}`;
+  };
+
   // Create appointment
   const handleBookAppointment = async () => {
+    // Validate all required fields
     if (!newAppointment.patient) {
-      showError('Please select a patient');
+      showError('Veuillez sélectionner un patient');
+      return;
+    }
+    if (!newAppointment.provider) {
+      showError('Veuillez sélectionner un médecin');
+      return;
+    }
+    if (!newAppointment.department) {
+      showError('Veuillez sélectionner un département');
+      return;
+    }
+    if (!newAppointment.date) {
+      showError('Veuillez sélectionner une date');
+      return;
+    }
+    if (!newAppointment.time) {
+      showError('Veuillez sélectionner une heure');
+      return;
+    }
+    if (!newAppointment.reason || newAppointment.reason.trim() === '') {
+      showError('Veuillez indiquer la raison de la visite');
       return;
     }
 
     try {
       setSubmitting(true);
 
+      // Calculate end time from start time and duration
+      const endTime = calculateEndTime(newAppointment.time, newAppointment.duration);
+
       const appointmentData = {
         patient: newAppointment.patient,
+        provider: newAppointment.provider,
+        department: newAppointment.department,
         type: newAppointment.type,
         date: new Date(`${newAppointment.date}T${newAppointment.time}`),
-        time: newAppointment.time,
+        startTime: newAppointment.time,
+        endTime: endTime,
         duration: newAppointment.duration,
         reason: newAppointment.reason,
         notes: newAppointment.notes,
-        status: 'pending'
+        status: 'scheduled'
       };
 
       await appointmentService.createAppointment(appointmentData);
 
-      success('Appointment created successfully!');
+      success('Rendez-vous créé avec succès!');
       setShowBookingModal(false);
 
       // Reset form
       setNewAppointment({
         patient: '',
+        provider: '',
+        department: 'general',
         type: 'consultation',
         date: format(new Date(), 'yyyy-MM-dd'),
         time: '09:00',
@@ -151,7 +234,7 @@ export default function Appointments() {
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to create appointment');
+      showError(err.response?.data?.error || 'Échec de la création du rendez-vous');
       console.error('Error creating appointment:', err);
     } finally {
       setSubmitting(false);
@@ -218,6 +301,30 @@ export default function Appointments() {
     } catch (err) {
       showError(err.response?.data?.error || 'Failed to start appointment');
       console.error('Error starting appointment:', err);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
+    }
+  };
+
+  // Check in patient (add to queue)
+  const handleCheckIn = async (appointmentId, patient) => {
+    try {
+      setActionLoading(prev => ({ ...prev, [appointmentId]: true }));
+
+      // Check if patient should have VIP priority
+      const priority = patient?.vip ? 'VIP' : 'NORMAL';
+
+      await queueService.checkIn({
+        appointmentId,
+        priority
+      });
+
+      success('Patient checked in and added to queue!');
+      fetchData();
+
+    } catch (err) {
+      showError(err.response?.data?.error || 'Failed to check in patient');
+      console.error('Error checking in patient:', err);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
     }
@@ -385,17 +492,14 @@ export default function Appointments() {
       {viewMode === 'list' && (
         <div className="grid grid-cols-1 gap-4">
           {filteredAppointments.length === 0 ? (
-            <div className="card text-center py-12">
-              <Calendar className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No appointments found</h3>
-              <p className="text-gray-500 mb-4">Create your first appointment to get started</p>
-              <button
-                onClick={() => setShowBookingModal(true)}
-                className="btn btn-primary inline-flex items-center space-x-2"
-              >
-                <Plus className="h-5 w-5" />
-                <span>Create Appointment</span>
-              </button>
+            <div className="card">
+              <EmptyState
+                type="appointments"
+                customAction={{
+                  label: 'Nouveau rendez-vous',
+                  onClick: () => setShowBookingModal(true)
+                }}
+              />
             </div>
           ) : (
             filteredAppointments.map((apt) => {
@@ -435,7 +539,7 @@ export default function Appointments() {
                         <div>
                           <p className="text-gray-500">Médecin</p>
                           <p className="font-semibold text-gray-900">
-                            {apt.doctor?.name || apt.provider?.name || 'Non assigné'}
+                            {getProviderName(apt.doctor) || getProviderName(apt.provider) || 'Non assigné'}
                           </p>
                         </div>
 
@@ -466,6 +570,19 @@ export default function Appointments() {
                     <div className="flex flex-col space-y-2 ml-4">
                       {(apt.status === 'confirmed' || apt.status === 'CONFIRMED') && (
                         <>
+                          {format(new Date(apt.date), 'yyyy-MM-dd') === today && (
+                            <button
+                              onClick={() => {
+                                const patient = patients.find(p => p._id === apt.patient || p.id === apt.patient);
+                                handleCheckIn(aptId, patient);
+                              }}
+                              disabled={actionLoading[aptId]}
+                              className="btn btn-success text-sm px-4 py-2 flex items-center justify-center gap-2"
+                            >
+                              <UserCheck className="h-4 w-4" />
+                              {actionLoading[aptId] ? 'Loading...' : 'Check In'}
+                            </button>
+                          )}
                           <button
                             onClick={() => handleStart(aptId)}
                             disabled={actionLoading[aptId]}
@@ -501,7 +618,16 @@ export default function Appointments() {
                         </>
                       )}
                       {(apt.status === 'completed' || apt.status === 'COMPLETED') && (
-                        <button className="btn btn-secondary text-sm px-4 py-2">
+                        <button
+                          onClick={() => {
+                            const patientId = typeof apt.patient === 'object' ? apt.patient._id : apt.patient;
+                            if (patientId) {
+                              navigate(`/patients/${patientId}`);
+                            }
+                          }}
+                          className="btn btn-secondary text-sm px-4 py-2 flex items-center gap-2"
+                        >
+                          <Eye className="h-4 w-4" />
                           Voir détails
                         </button>
                       )}
@@ -628,18 +754,56 @@ export default function Appointments() {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Patient *
                   </label>
+                  <PatientSelector
+                    mode="dropdown"
+                    value={patients.find(p => (p._id || p.id) === newAppointment.patient) || null}
+                    onChange={(patient) => setNewAppointment({
+                      ...newAppointment,
+                      patient: patient ? (patient._id || patient.id) : ''
+                    })}
+                    placeholder="Rechercher un patient..."
+                    showCreateButton={false}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Médecin *
+                  </label>
                   <select
-                    value={newAppointment.patient}
-                    onChange={(e) => setNewAppointment({...newAppointment, patient: e.target.value})}
+                    value={newAppointment.provider}
+                    onChange={(e) => setNewAppointment({...newAppointment, provider: e.target.value})}
                     className="input"
                     required
                   >
-                    <option value="">Sélectionner un patient</option>
-                    {isArray(patients) && patients.map(patient => (
-                      <option key={patient._id || patient.id} value={patient._id || patient.id}>
-                        {patient.firstName} {patient.lastName}
+                    <option value="">Sélectionner un médecin</option>
+                    {isArray(providers) && providers.map(provider => (
+                      <option key={provider._id || provider.id} value={provider._id || provider.id}>
+                        Dr. {provider.firstName} {provider.lastName}
+                        {provider.specialization ? ` - ${provider.specialization}` : ''}
                       </option>
                     ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Département *
+                  </label>
+                  <select
+                    value={newAppointment.department}
+                    onChange={(e) => setNewAppointment({...newAppointment, department: e.target.value})}
+                    className="input"
+                    required
+                  >
+                    <option value="general">Général</option>
+                    <option value="ophthalmology">Ophtalmologie</option>
+                    <option value="pediatrics">Pédiatrie</option>
+                    <option value="cardiology">Cardiologie</option>
+                    <option value="orthopedics">Orthopédie</option>
+                    <option value="emergency">Urgences</option>
+                    <option value="laboratory">Laboratoire</option>
+                    <option value="radiology">Radiologie</option>
                   </select>
                 </div>
 
@@ -656,7 +820,11 @@ export default function Appointments() {
                     <option value="consultation">Consultation</option>
                     <option value="follow-up">Suivi</option>
                     <option value="emergency">Urgence</option>
-                    <option value="check-up">Bilan de santé</option>
+                    <option value="routine-checkup">Bilan de santé</option>
+                    <option value="ophthalmology">Ophtalmologie</option>
+                    <option value="refraction">Réfraction</option>
+                    <option value="lab-test">Analyse de laboratoire</option>
+                    <option value="imaging">Imagerie</option>
                   </select>
                 </div>
 
@@ -716,7 +884,7 @@ export default function Appointments() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Raison de la visite
+                    Raison de la visite *
                   </label>
                   <input
                     type="text"
@@ -724,6 +892,7 @@ export default function Appointments() {
                     onChange={(e) => setNewAppointment({...newAppointment, reason: e.target.value})}
                     className="input"
                     placeholder="Ex: Contrôle annuel"
+                    required
                   />
                 </div>
               </div>

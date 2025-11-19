@@ -19,9 +19,16 @@ class ErrorBoundary extends Component {
     // Log error to console in development
     console.error('ErrorBoundary caught an error:', error, errorInfo);
 
+    // Check if this is a React hooks/HMR error
+    const isHMRError = error?.message?.includes('useContext') ||
+                       error?.message?.includes('useState') ||
+                       error?.message?.includes('useEffect') ||
+                       error?.message?.includes('reading \'use');
+
     this.setState({
       error,
-      errorInfo
+      errorInfo,
+      isHMRError
     });
 
     // In production, you could send this to an error reporting service
@@ -34,8 +41,14 @@ class ErrorBoundary extends Component {
     this.setState({
       hasError: false,
       error: null,
-      errorInfo: null
+      errorInfo: null,
+      isHMRError: false
     });
+  };
+
+  handleHardRefresh = () => {
+    // Clear cache and do a hard refresh
+    window.location.reload(true);
   };
 
   handleGoHome = () => {
@@ -52,11 +65,13 @@ class ErrorBoundary extends Component {
             </div>
 
             <h1 className="text-2xl font-bold text-gray-900 text-center mb-2">
-              Oops! Something went wrong
+              {this.state.isHMRError ? 'Module Loading Error' : 'Oops! Something went wrong'}
             </h1>
 
             <p className="text-gray-600 text-center mb-6">
-              Don't worry, your data is safe. The application encountered an unexpected error.
+              {this.state.isHMRError
+                ? 'A module failed to load properly. This usually resolves with a page refresh.'
+                : 'Don\'t worry, your data is safe. The application encountered an unexpected error.'}
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -76,22 +91,33 @@ class ErrorBoundary extends Component {
               </div>
             )}
 
-            <div className="flex gap-3">
-              <button
-                onClick={this.handleReset}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Try Again
-              </button>
+            <div className="flex flex-col gap-3">
+              {this.state.isHMRError && (
+                <button
+                  onClick={this.handleHardRefresh}
+                  className="w-full flex items-center justify-center gap-2 bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh Page
+                </button>
+              )}
+              <div className="flex gap-3">
+                <button
+                  onClick={this.handleReset}
+                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Try Again
+                </button>
 
-              <button
-                onClick={this.handleGoHome}
-                className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
-              >
-                <Home className="w-4 h-4" />
-                Go Home
-              </button>
+                <button
+                  onClick={this.handleGoHome}
+                  className="flex-1 flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  <Home className="w-4 h-4" />
+                  Go Home
+                </button>
+              </div>
             </div>
 
             <p className="text-xs text-gray-500 text-center mt-6">

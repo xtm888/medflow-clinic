@@ -1,5 +1,25 @@
 const Patient = require('../models/Patient');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { escapeRegex } = require('../utils/sanitize');
+
+// Helper function to find patient by either MongoDB ObjectId or patientId
+const findPatientById = async (id) => {
+  // Check if id is a valid MongoDB ObjectId (24-character hex string)
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+
+  let patient = null;
+
+  if (isObjectId) {
+    patient = await Patient.findById(id);
+  }
+
+  // If not found by _id or not a valid ObjectId, try finding by patientId
+  if (!patient) {
+    patient = await Patient.findOne({ patientId: id });
+  }
+
+  return patient;
+};
 
 // @desc    Get all patients
 // @route   GET /api/patients
@@ -20,14 +40,15 @@ exports.getPatients = asyncHandler(async (req, res, next) => {
     query.status = status;
   }
 
-  // Search functionality
+  // Search functionality (sanitize input to prevent NoSQL injection)
   if (search) {
+    const sanitizedSearch = escapeRegex(search);
     query.$or = [
-      { firstName: { $regex: search, $options: 'i' } },
-      { lastName: { $regex: search, $options: 'i' } },
-      { patientId: { $regex: search, $options: 'i' } },
-      { phoneNumber: { $regex: search, $options: 'i' } },
-      { email: { $regex: search, $options: 'i' } }
+      { firstName: { $regex: sanitizedSearch, $options: 'i' } },
+      { lastName: { $regex: sanitizedSearch, $options: 'i' } },
+      { patientId: { $regex: sanitizedSearch, $options: 'i' } },
+      { phoneNumber: { $regex: sanitizedSearch, $options: 'i' } },
+      { email: { $regex: sanitizedSearch, $options: 'i' } }
     ];
   }
 
@@ -53,10 +74,27 @@ exports.getPatients = asyncHandler(async (req, res, next) => {
 // @route   GET /api/patients/:id
 // @access  Private
 exports.getPatient = asyncHandler(async (req, res, next) => {
-  const patient = await Patient.findById(req.params.id)
-    .populate('appointments', 'date type status provider')
-    .populate('prescriptions', 'dateIssued type status medications')
-    .populate('createdBy updatedBy', 'firstName lastName');
+  const { id } = req.params;
+  let patient;
+
+  // Check if id is a valid MongoDB ObjectId (24-character hex string)
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+
+  if (isObjectId) {
+    // Try finding by MongoDB _id first
+    patient = await Patient.findById(id)
+      .populate('appointments', 'date type status provider')
+      .populate('prescriptions', 'dateIssued type status medications')
+      .populate('createdBy updatedBy', 'firstName lastName');
+  }
+
+  // If not found by _id or not a valid ObjectId, try finding by patientId
+  if (!patient) {
+    patient = await Patient.findOne({ patientId: id })
+      .populate('appointments', 'date type status provider')
+      .populate('prescriptions', 'dateIssued type status medications')
+      .populate('createdBy updatedBy', 'firstName lastName');
+  }
 
   if (!patient) {
     return res.status(404).json({
@@ -89,6 +127,7 @@ exports.createPatient = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/patients/:id
 // @access  Private (Admin, Doctor, Nurse)
 exports.updatePatient = asyncHandler(async (req, res, next) => {
+  const { id } = req.params;
   req.body.updatedBy = req.user.id;
 
   // Prevent updating certain fields
@@ -96,14 +135,33 @@ exports.updatePatient = asyncHandler(async (req, res, next) => {
   delete req.body.createdAt;
   delete req.body.createdBy;
 
-  const patient = await Patient.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
-      new: true,
-      runValidators: true
-    }
-  );
+  let patient;
+
+  // Check if id is a valid MongoDB ObjectId
+  const isObjectId = /^[0-9a-fA-F]{24}$/.test(id);
+
+  if (isObjectId) {
+    patient = await Patient.findByIdAndUpdate(
+      id,
+      req.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+  }
+
+  // If not found by _id or not a valid ObjectId, try finding by patientId
+  if (!patient) {
+    patient = await Patient.findOneAndUpdate(
+      { patientId: id },
+      req.body,
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+  }
 
   if (!patient) {
     return res.status(404).json({
@@ -122,7 +180,7 @@ exports.updatePatient = asyncHandler(async (req, res, next) => {
 // @route   DELETE /api/patients/:id
 // @access  Private (Admin only)
 exports.deletePatient = asyncHandler(async (req, res, next) => {
-  const patient = await Patient.findById(req.params.id);
+  const patient = await findPatientById(req.params.id);
 
   if (!patient) {
     return res.status(404).json({
@@ -146,22 +204,26 @@ exports.deletePatient = asyncHandler(async (req, res, next) => {
 // @route   GET /api/patients/:id/history
 // @access  Private
 exports.getPatientHistory = asyncHandler(async (req, res, next) => {
-  const patient = await Patient.findById(req.params.id)
-    .select('medicalHistory medications vitalSigns ophthalmology')
-    .populate('medications.prescribedBy', 'firstName lastName');
+  // First find the patient to get the MongoDB _id
+  const patientRef = await findPatientById(req.params.id);
 
-  if (!patient) {
+  if (!patientRef) {
     return res.status(404).json({
       success: false,
       error: 'Patient not found'
     });
   }
 
+  // Now get the full patient with populated fields
+  const patient = await Patient.findById(patientRef._id)
+    .select('medicalHistory medications vitalSigns ophthalmology')
+    .populate('medications.prescribedBy', 'firstName lastName');
+
   res.status(200).json({
     success: true,
     data: {
       medicalHistory: patient.medicalHistory,
-      currentMedications: patient.medications.filter(med => med.status === 'active'),
+      currentMedications: patient.medications ? patient.medications.filter(med => med.status === 'active') : [],
       vitalSigns: patient.vitalSigns,
       ophthalmology: patient.ophthalmology
     }
@@ -174,7 +236,17 @@ exports.getPatientHistory = asyncHandler(async (req, res, next) => {
 exports.getPatientAppointments = asyncHandler(async (req, res, next) => {
   const Appointment = require('../models/Appointment');
 
-  const appointments = await Appointment.find({ patient: req.params.id })
+  // First resolve the patient ID to get the MongoDB _id
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  const appointments = await Appointment.find({ patient: patient._id })
     .populate('provider', 'firstName lastName specialization')
     .sort('-date');
 
@@ -191,7 +263,17 @@ exports.getPatientAppointments = asyncHandler(async (req, res, next) => {
 exports.getPatientPrescriptions = asyncHandler(async (req, res, next) => {
   const Prescription = require('../models/Prescription');
 
-  const prescriptions = await Prescription.find({ patient: req.params.id })
+  // First resolve the patient ID to get the MongoDB _id
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  const prescriptions = await Prescription.find({ patient: patient._id })
     .populate('prescriber', 'firstName lastName')
     .sort('-dateIssued');
 
@@ -246,34 +328,36 @@ exports.searchPatients = asyncHandler(async (req, res, next) => {
     });
   }
 
+  // Sanitize input to prevent NoSQL injection
+  const sanitizedQ = escapeRegex(q);
   let query;
 
   switch (field) {
     case 'name':
       query = {
         $or: [
-          { firstName: { $regex: q, $options: 'i' } },
-          { lastName: { $regex: q, $options: 'i' } }
+          { firstName: { $regex: sanitizedQ, $options: 'i' } },
+          { lastName: { $regex: sanitizedQ, $options: 'i' } }
         ]
       };
       break;
     case 'id':
-      query = { patientId: { $regex: q, $options: 'i' } };
+      query = { patientId: { $regex: sanitizedQ, $options: 'i' } };
       break;
     case 'phone':
-      query = { phoneNumber: { $regex: q, $options: 'i' } };
+      query = { phoneNumber: { $regex: sanitizedQ, $options: 'i' } };
       break;
     case 'email':
-      query = { email: { $regex: q, $options: 'i' } };
+      query = { email: { $regex: sanitizedQ, $options: 'i' } };
       break;
     default:
       query = {
         $or: [
-          { firstName: { $regex: q, $options: 'i' } },
-          { lastName: { $regex: q, $options: 'i' } },
-          { patientId: { $regex: q, $options: 'i' } },
-          { phoneNumber: { $regex: q, $options: 'i' } },
-          { email: { $regex: q, $options: 'i' } }
+          { firstName: { $regex: sanitizedQ, $options: 'i' } },
+          { lastName: { $regex: sanitizedQ, $options: 'i' } },
+          { patientId: { $regex: sanitizedQ, $options: 'i' } },
+          { phoneNumber: { $regex: sanitizedQ, $options: 'i' } },
+          { email: { $regex: sanitizedQ, $options: 'i' } }
         ]
       };
   }
@@ -286,5 +370,207 @@ exports.searchPatients = asyncHandler(async (req, res, next) => {
     success: true,
     count: patients.length,
     data: patients
+  });
+});
+
+// @desc    Get recent patients
+// @route   GET /api/patients/recent
+// @access  Private
+exports.getRecentPatients = asyncHandler(async (req, res, next) => {
+  const limit = parseInt(req.query.limit) || 10;
+
+  const patients = await Patient.find({ status: 'active' })
+    .sort({ updatedAt: -1 })
+    .limit(limit)
+    .select('patientId firstName lastName dateOfBirth phoneNumber lastVisit');
+
+  res.status(200).json({
+    success: true,
+    count: patients.length,
+    data: patients
+  });
+});
+
+// @desc    Get patient visits
+// @route   GET /api/patients/:id/visits
+// @access  Private
+exports.getPatientVisits = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  const Visit = require('../models/Visit');
+  const visits = await Visit.find({ patient: patient._id })
+    .populate('primaryProvider', 'firstName lastName')
+    .sort({ visitDate: -1 })
+    .select('visitId visitDate visitType status chiefComplaint diagnoses primaryProvider');
+
+  res.status(200).json({
+    success: true,
+    count: visits.length,
+    data: visits
+  });
+});
+
+// @desc    Get patient allergies
+// @route   GET /api/patients/:id/allergies
+// @access  Private
+exports.getPatientAllergies = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: patient.allergies || []
+  });
+});
+
+// @desc    Add patient allergy
+// @route   POST /api/patients/:id/allergies
+// @access  Private
+exports.addPatientAllergy = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  const allergyData = {
+    allergen: req.body.allergen,
+    reaction: req.body.reaction,
+    severity: req.body.severity || 'mild',
+    onsetDate: req.body.onsetDate,
+    notes: req.body.notes,
+    status: req.body.status || 'active'
+  };
+
+  patient.allergies = patient.allergies || [];
+  patient.allergies.push(allergyData);
+  await patient.save();
+
+  res.status(201).json({
+    success: true,
+    data: allergyData
+  });
+});
+
+// @desc    Get patient medications
+// @route   GET /api/patients/:id/medications
+// @access  Private
+exports.getPatientMedications = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: patient.medications || []
+  });
+});
+
+// @desc    Add patient medication
+// @route   POST /api/patients/:id/medications
+// @access  Private
+exports.addPatientMedication = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  const medicationData = {
+    name: req.body.name,
+    dosage: req.body.dosage,
+    frequency: req.body.frequency,
+    route: req.body.route,
+    startDate: req.body.startDate || new Date(),
+    endDate: req.body.endDate,
+    prescribedBy: req.user._id || req.user.id,
+    reason: req.body.reason,
+    status: req.body.status || 'active'
+  };
+
+  patient.medications = patient.medications || [];
+  patient.medications.push(medicationData);
+  await patient.save();
+
+  res.status(201).json({
+    success: true,
+    data: medicationData
+  });
+});
+
+// @desc    Update patient insurance
+// @route   PUT /api/patients/:id/insurance
+// @access  Private
+exports.updatePatientInsurance = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  patient.insurance = {
+    ...patient.insurance,
+    ...req.body,
+    updatedAt: new Date()
+  };
+
+  await patient.save();
+
+  res.status(200).json({
+    success: true,
+    data: patient.insurance
+  });
+});
+
+// @desc    Get patient documents
+// @route   GET /api/patients/:id/documents
+// @access  Private
+exports.getPatientDocuments = asyncHandler(async (req, res, next) => {
+  const patient = await findPatientById(req.params.id);
+
+  if (!patient) {
+    return res.status(404).json({
+      success: false,
+      error: 'Patient not found'
+    });
+  }
+
+  const Document = require('../models/Document');
+  const documents = await Document.find({ patient: patient._id, deleted: false })
+    .populate('createdBy', 'firstName lastName')
+    .sort({ createdAt: -1 })
+    .select('title type category createdAt file.originalName file.size');
+
+  res.status(200).json({
+    success: true,
+    count: documents.length,
+    data: documents
   });
 });

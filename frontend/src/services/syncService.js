@@ -283,6 +283,7 @@ class SyncService {
 
   // Helper: Get local item
   async getLocalItem(entity, id) {
+    if (!databaseService.db) return null;
     const table = databaseService.db[entity];
     if (!table) return null;
     return await table.get(id);
@@ -290,6 +291,7 @@ class SyncService {
 
   // Helper: Update local ID
   async updateLocalId(entity, oldId, newId) {
+    if (!databaseService.db) return;
     const table = databaseService.db[entity];
     if (!table) return;
 

@@ -159,7 +159,7 @@ const prescriptionService = {
   // Dispense prescription
   async dispensePrescription(id, dispensingData) {
     try {
-      const response = await api.post(`/prescriptions/${id}/dispense`, dispensingData);
+      const response = await api.put(`/prescriptions/${id}/dispense`, dispensingData);
       return response.data;
     } catch (error) {
       console.error('Error dispensing prescription:', error);
@@ -211,10 +211,10 @@ const prescriptionService = {
     }
   },
 
-  // Search drugs
+  // Search drugs (uses pharmacy inventory)
   async searchDrugs(query) {
     try {
-      const response = await api.get('/drugs/search', {
+      const response = await api.get('/pharmacy/search', {
         params: { q: query }
       });
       return response.data;
@@ -224,10 +224,10 @@ const prescriptionService = {
     }
   },
 
-  // Get drug details
+  // Get drug details (uses pharmacy inventory)
   async getDrugDetails(drugId) {
     try {
-      const response = await api.get(`/drugs/${drugId}`);
+      const response = await api.get(`/pharmacy/inventory/${drugId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching drug details:', error);

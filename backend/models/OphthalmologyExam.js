@@ -5,7 +5,7 @@ const ophthalmologyExamSchema = new mongoose.Schema({
   examId: {
     type: String,
     unique: true,
-    required: true
+    required: false // Auto-generated in pre-save hook
   },
 
   // Patient and Provider
@@ -191,6 +191,20 @@ const ophthalmologyExamSchema = new mongoose.Schema({
           cylinder: Number,
           axis: Number,
           confidence: Number
+        },
+        // Device source tracking
+        sourceDevice: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'Device'
+        },
+        sourceMeasurement: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'DeviceMeasurement'
+        },
+        importedAt: Date,
+        importedBy: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'User'
         }
       },
       retinoscopy: {
@@ -213,13 +227,15 @@ const ophthalmologyExamSchema = new mongoose.Schema({
         sphere: Number,
         cylinder: Number,
         axis: Number,
-        va: String
+        va: String,
+        parinaud: String  // Near vision (P2, P3, etc.)
       },
       OS: {
         sphere: Number,
         cylinder: Number,
         axis: Number,
-        va: String
+        va: String,
+        parinaud: String
       },
       add: Number,
       vertexDistance: Number,
@@ -233,7 +249,8 @@ const ophthalmologyExamSchema = new mongoose.Schema({
         add: Number,
         prism: String,
         base: String,
-        va: String
+        va: String,
+        parinaud: String
       },
       OS: {
         sphere: Number,
@@ -242,7 +259,8 @@ const ophthalmologyExamSchema = new mongoose.Schema({
         add: Number,
         prism: String,
         base: String,
-        va: String
+        va: String,
+        parinaud: String
       },
       pd: {
         distance: Number,
@@ -251,6 +269,21 @@ const ophthalmologyExamSchema = new mongoose.Schema({
           OD: Number,
           OS: Number
         }
+      },
+      // Prescription status and lens types
+      prescriptionStatus: {
+        status: {
+          type: String,
+          enum: ['prescribed', 'not_prescribed', 'renewed', 'external', 'pending'],
+          default: 'pending'
+        },
+        lensTypes: [{
+          type: String,
+          enum: ['far', 'near', 'two_pairs', 'progressive', 'bifocal', 'varifocal']
+        }],
+        prescribedAt: Date,
+        printedAt: Date,
+        viewedAt: Date
       }
     }
   },
@@ -283,7 +316,21 @@ const ophthalmologyExamSchema = new mongoose.Schema({
       cylinder: Number,
       axis: Number
     },
-    method: String // manual, auto-k, topography
+    method: String, // manual, auto-k, topography
+    // Device source tracking
+    sourceDevice: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Device'
+    },
+    sourceMeasurement: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'DeviceMeasurement'
+    },
+    importedAt: Date,
+    importedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
   },
 
   // Pupils
@@ -680,11 +727,101 @@ const ophthalmologyExamSchema = new mongoose.Schema({
     takenAt: Date
   }],
 
+  // Device Integration - Link to device measurements and images
+  deviceMeasurements: [{
+    measurement: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'DeviceMeasurement'
+    },
+    device: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Device'
+    },
+    measurementType: String, // 'autorefractor', 'tonometer', 'keratometer', 'oct'
+    linkedAt: {
+      type: Date,
+      default: Date.now
+    },
+    linkedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    appliedToExam: {
+      type: Boolean,
+      default: false
+    }
+  }],
+
+  deviceImages: [{
+    image: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'DeviceImage'
+    },
+    device: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Device'
+    },
+    imageType: String, // 'OCT', 'fundus', 'topography', etc.
+    linkedAt: {
+      type: Date,
+      default: Date.now
+    },
+    linkedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  }],
+
   // Notes
   notes: {
     clinical: String,
     technician: String,
     internal: String
+  },
+
+  // Historical Tracking
+  previousExams: [{
+    type: mongoose.Schema.ObjectId,
+    ref: 'OphthalmologyExam'
+  }],
+  copiedFrom: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'OphthalmologyExam'
+  },
+  isPreviousCopy: {
+    type: Boolean,
+    default: false
+  },
+
+  // Comments and Documentation
+  comments: {
+    standardTemplate: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'CommentTemplate'
+    },
+    customComment: String,
+    personalNotes: String, // Perso field from screenshot
+    adaptationNotes: String
+  },
+
+  // Generated Summaries
+  summaries: {
+    refraction: {
+      text: String,
+      generatedAt: Date,
+      generatedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      }
+    },
+    keratometry: {
+      text: String,
+      generatedAt: Date,
+      generatedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      }
+    }
   },
 
   // Billing
@@ -698,7 +835,7 @@ const ophthalmologyExamSchema = new mongoose.Schema({
   // Status
   status: {
     type: String,
-    enum: ['in-progress', 'completed', 'reviewed', 'amended'],
+    enum: ['in-progress', 'in_progress', 'completed', 'reviewed', 'amended'],
     default: 'in-progress'
   },
   completedAt: Date,
@@ -787,6 +924,417 @@ ophthalmologyExamSchema.methods.generatePrescription = async function() {
   await this.save();
 
   return prescription;
+};
+
+// Static method: Copy from previous exam
+ophthalmologyExamSchema.statics.copyFromPrevious = async function(patientId, userId) {
+  try {
+    const previousExam = await this.findOne({
+      patient: patientId,
+      status: { $in: ['completed', 'reviewed'] }
+    })
+    .sort({ createdAt: -1 });
+
+    if (!previousExam) {
+      return null;
+    }
+
+    const newExam = new this({
+      patient: patientId,
+      examiner: userId,
+      examType: 'refraction',
+      copiedFrom: previousExam._id,
+      isPreviousCopy: true,
+
+      // Copy refraction data
+      refraction: {
+        objective: previousExam.refraction?.objective,
+        subjective: previousExam.refraction?.subjective,
+        finalPrescription: previousExam.refraction?.finalPrescription
+      },
+
+      // Copy keratometry
+      keratometry: previousExam.keratometry,
+
+      // Copy visual acuity baseline
+      visualAcuity: previousExam.visualAcuity,
+
+      // Copy current correction (becomes previous)
+      currentCorrection: previousExam.currentCorrection,
+
+      // Copy IOP baseline
+      iop: previousExam.iop
+    });
+
+    // Update previous exam's history
+    if (!previousExam.previousExams) {
+      previousExam.previousExams = [];
+    }
+    previousExam.previousExams.push(newExam._id);
+    await previousExam.save();
+
+    return newExam;
+  } catch (error) {
+    console.error('Error copying from previous exam:', error);
+    throw error;
+  }
+};
+
+// Static method: Get patient's refraction history
+ophthalmologyExamSchema.statics.getRefractionHistory = async function(patientId, limit = 20) {
+  return await this.find({
+    patient: patientId,
+    examType: 'refraction',
+    status: { $in: ['completed', 'reviewed'] }
+  })
+  .select('examId createdAt examiner refraction.finalPrescription iop copiedFrom isPreviousCopy')
+  .populate('examiner', 'firstName lastName')
+  .sort({ createdAt: -1 })
+  .limit(limit);
+};
+
+// Instance method: Generate refraction summary
+ophthalmologyExamSchema.methods.generateRefractionSummary = function() {
+  const fp = this.refraction?.finalPrescription;
+  if (!fp) return null;
+
+  const formatEye = (eye, eyeLabel) => {
+    const data = fp[eye];
+    if (!data) return '';
+
+    let summary = `${eyeLabel}: `;
+
+    // Sphere
+    if (data.sphere !== undefined && data.sphere !== null) {
+      summary += `Sphère ${data.sphere >= 0 ? '+' : ''}${data.sphere.toFixed(2)} `;
+    }
+
+    // Cylinder
+    if (data.cylinder !== undefined && data.cylinder !== null && data.cylinder !== 0) {
+      summary += `Cylindre ${data.cylinder >= 0 ? '+' : ''}${data.cylinder.toFixed(2)} `;
+      if (data.axis !== undefined && data.axis !== null) {
+        summary += `Axe ${data.axis}° `;
+      }
+    }
+
+    // Visual Acuity
+    if (data.va) {
+      summary += `AV: ${data.va} `;
+    }
+
+    // Addition
+    if (data.add !== undefined && data.add !== null && data.add !== 0) {
+      summary += `Addition: +${data.add.toFixed(2)} `;
+    }
+
+    // Parinaud
+    if (data.parinaud) {
+      summary += `Parinaud: ${data.parinaud} `;
+    }
+
+    // Prism
+    if (data.prism) {
+      summary += `Prisme: ${data.prism} Base ${data.base || ''} `;
+    }
+
+    return summary.trim();
+  };
+
+  let summary = `RÉFRACTION DU ${new Date(this.createdAt).toLocaleDateString('fr-FR')}\n\n`;
+
+  summary += formatEye('OD', 'OD (Œil Droit)') + '\n';
+  summary += formatEye('OS', 'OG (Œil Gauche)') + '\n\n';
+
+  // PD if available
+  if (fp.pd?.distance) {
+    summary += `Écart pupillaire de loin: ${fp.pd.distance} mm\n`;
+  }
+  if (fp.pd?.near) {
+    summary += `Écart pupillaire de près: ${fp.pd.near} mm\n`;
+  }
+
+  // IOP if available
+  if (this.iop?.OD?.value || this.iop?.OS?.value) {
+    summary += `\nTension oculaire:\n`;
+    if (this.iop.OD?.value) {
+      summary += `TOD: ${this.iop.OD.value} mmHg `;
+    }
+    if (this.iop.OS?.value) {
+      summary += `TOG: ${this.iop.OS.value} mmHg`;
+    }
+    summary += '\n';
+  }
+
+  // Add custom comments
+  if (this.comments?.customComment) {
+    summary += `\nCommentaires: ${this.comments.customComment}\n`;
+  }
+
+  this.summaries = this.summaries || {};
+  this.summaries.refraction = {
+    text: summary,
+    generatedAt: new Date()
+  };
+
+  return summary;
+};
+
+// Instance method: Generate keratometry summary
+ophthalmologyExamSchema.methods.generateKeratometrySummary = function() {
+  const kerato = this.keratometry;
+  if (!kerato || (!kerato.OD && !kerato.OS)) return null;
+
+  let summary = `KÉRATOMÉTRIE DU ${new Date(this.createdAt).toLocaleDateString('fr-FR')}\n\n`;
+
+  const formatEyeKerato = (eye, eyeLabel) => {
+    const data = kerato[eye];
+    if (!data) return '';
+
+    let text = `${eyeLabel}:\n`;
+
+    if (data.k1?.power) {
+      text += `  K1: ${data.k1.power.toFixed(2)} D`;
+      if (data.k1.axis) text += ` @ ${data.k1.axis}°`;
+      text += '\n';
+    }
+
+    if (data.k2?.power) {
+      text += `  K2: ${data.k2.power.toFixed(2)} D`;
+      if (data.k2.axis) text += ` @ ${data.k2.axis}°`;
+      text += '\n';
+    }
+
+    if (data.average) {
+      text += `  K moyen: ${data.average.toFixed(2)} D\n`;
+    }
+
+    if (data.cylinder) {
+      text += `  Cylindre cornéen: ${data.cylinder.toFixed(2)} D`;
+      if (data.axis) text += ` @ ${data.axis}°`;
+      text += '\n';
+    }
+
+    return text;
+  };
+
+  summary += formatEyeKerato('OD', 'OD (Œil Droit)') + '\n';
+  summary += formatEyeKerato('OS', 'OG (Œil Gauche)') + '\n';
+
+  if (kerato.method) {
+    summary += `Méthode: ${kerato.method}\n`;
+  }
+
+  this.summaries = this.summaries || {};
+  this.summaries.keratometry = {
+    text: summary,
+    generatedAt: new Date()
+  };
+
+  return summary;
+};
+
+// Instance method: Mark prescription as printed
+ophthalmologyExamSchema.methods.markPrescriptionPrinted = function() {
+  if (!this.refraction?.finalPrescription?.prescriptionStatus) {
+    this.refraction.finalPrescription.prescriptionStatus = {};
+  }
+  this.refraction.finalPrescription.prescriptionStatus.printedAt = new Date();
+  return this.save();
+};
+
+// Instance method: Mark prescription as viewed
+ophthalmologyExamSchema.methods.markPrescriptionViewed = function() {
+  if (!this.refraction?.finalPrescription?.prescriptionStatus) {
+    this.refraction.finalPrescription.prescriptionStatus = {};
+  }
+  this.refraction.finalPrescription.prescriptionStatus.viewedAt = new Date();
+  return this.save();
+};
+
+// Instance method: Link device measurement to exam
+ophthalmologyExamSchema.methods.linkDeviceMeasurement = async function(measurementId, deviceId, userId) {
+  const DeviceMeasurement = mongoose.model('DeviceMeasurement');
+  const measurement = await DeviceMeasurement.findById(measurementId);
+
+  if (!measurement) {
+    throw new Error('Measurement not found');
+  }
+
+  // Add to deviceMeasurements array if not already linked
+  const alreadyLinked = this.deviceMeasurements.some(
+    dm => dm.measurement.toString() === measurementId.toString()
+  );
+
+  if (!alreadyLinked) {
+    this.deviceMeasurements.push({
+      measurement: measurementId,
+      device: deviceId,
+      measurementType: measurement.measurementType,
+      linkedAt: new Date(),
+      linkedBy: userId,
+      appliedToExam: false
+    });
+    await this.save();
+  }
+
+  return this;
+};
+
+// Instance method: Apply device measurement data to exam fields
+ophthalmologyExamSchema.methods.applyDeviceMeasurement = async function(measurementId, userId) {
+  const DeviceMeasurement = mongoose.model('DeviceMeasurement');
+  const measurement = await DeviceMeasurement.findById(measurementId).populate('device');
+
+  if (!measurement) {
+    throw new Error('Measurement not found');
+  }
+
+  // Apply based on measurement type
+  switch (measurement.measurementType.toLowerCase()) {
+    case 'autorefractor':
+    case 'auto-refractor':
+      if (measurement.data.refraction) {
+        this.refraction = this.refraction || { objective: {} };
+        this.refraction.objective.autorefractor = {
+          OD: measurement.data.refraction.OD || {},
+          OS: measurement.data.refraction.OS || {},
+          sourceDevice: measurement.device._id,
+          sourceMeasurement: measurement._id,
+          importedAt: new Date(),
+          importedBy: userId
+        };
+      }
+      break;
+
+    case 'keratometer':
+    case 'keratometry':
+      if (measurement.data.keratometry) {
+        this.keratometry = {
+          OD: measurement.data.keratometry.OD || {},
+          OS: measurement.data.keratometry.OS || {},
+          method: 'auto-k',
+          sourceDevice: measurement.device._id,
+          sourceMeasurement: measurement._id,
+          importedAt: new Date(),
+          importedBy: userId
+        };
+      }
+      break;
+
+    case 'tonometer':
+    case 'tonometry':
+      if (measurement.data.iop) {
+        this.iop = this.iop || {};
+        if (measurement.data.iop.OD) {
+          this.iop.OD = {
+            value: measurement.data.iop.OD.value,
+            time: measurement.measurementDate,
+            method: measurement.device.model || 'device'
+          };
+        }
+        if (measurement.data.iop.OS) {
+          this.iop.OS = {
+            value: measurement.data.iop.OS.value,
+            time: measurement.measurementDate,
+            method: measurement.device.model || 'device'
+          };
+        }
+      }
+      break;
+  }
+
+  // Mark as applied
+  const linkedMeasurement = this.deviceMeasurements.find(
+    dm => dm.measurement.toString() === measurementId.toString()
+  );
+  if (linkedMeasurement) {
+    linkedMeasurement.appliedToExam = true;
+  }
+
+  await this.save();
+  return this;
+};
+
+// Instance method: Link device image to exam
+ophthalmologyExamSchema.methods.linkDeviceImage = async function(imageId, deviceId, userId) {
+  const DeviceImage = mongoose.model('DeviceImage');
+  const image = await DeviceImage.findById(imageId);
+
+  if (!image) {
+    throw new Error('Image not found');
+  }
+
+  // Add to deviceImages array if not already linked
+  const alreadyLinked = this.deviceImages.some(
+    di => di.image.toString() === imageId.toString()
+  );
+
+  if (!alreadyLinked) {
+    this.deviceImages.push({
+      image: imageId,
+      device: deviceId,
+      imageType: image.imageType,
+      linkedAt: new Date(),
+      linkedBy: userId
+    });
+    await this.save();
+  }
+
+  return this;
+};
+
+// Instance method: Get all linked device measurements with details
+ophthalmologyExamSchema.methods.getDeviceMeasurements = async function() {
+  await this.populate({
+    path: 'deviceMeasurements.measurement',
+    populate: { path: 'device' }
+  });
+
+  await this.populate({
+    path: 'deviceMeasurements.linkedBy',
+    select: 'firstName lastName'
+  });
+
+  return this.deviceMeasurements;
+};
+
+// Instance method: Get all linked device images with details
+ophthalmologyExamSchema.methods.getDeviceImages = async function() {
+  await this.populate({
+    path: 'deviceImages.image',
+    populate: { path: 'device' }
+  });
+
+  await this.populate({
+    path: 'deviceImages.linkedBy',
+    select: 'firstName lastName'
+  });
+
+  return this.deviceImages;
+};
+
+// Static method: Get available device measurements for a patient/exam
+ophthalmologyExamSchema.statics.getAvailableDeviceMeasurements = async function(patientId, examDate) {
+  const DeviceMeasurement = mongoose.model('DeviceMeasurement');
+
+  // Get measurements from 24 hours before exam to 1 hour after
+  const startDate = new Date(examDate);
+  startDate.setHours(startDate.getHours() - 24);
+
+  const endDate = new Date(examDate);
+  endDate.setHours(endDate.getHours() + 1);
+
+  const measurements = await DeviceMeasurement.find({
+    patient: patientId,
+    measurementDate: {
+      $gte: startDate,
+      $lte: endDate
+    }
+  })
+  .populate('device')
+  .sort({ measurementDate: -1 });
+
+  return measurements;
 };
 
 module.exports = mongoose.model('OphthalmologyExam', ophthalmologyExamSchema);

@@ -9,7 +9,8 @@ const {
   updateUserRole,
   activateUser,
   deactivateUser,
-  resetUserPassword
+  resetUserPassword,
+  getUserPrescriptions
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
@@ -35,5 +36,6 @@ router.put('/:id/role', logCriticalOperation('USER_ROLE_CHANGE'), updateUserRole
 router.put('/:id/activate', logAction('USER_ACTIVATE'), activateUser);
 router.put('/:id/deactivate', logAction('USER_DEACTIVATE'), deactivateUser);
 router.post('/:id/reset-password', logAction('PASSWORD_RESET'), resetUserPassword);
+router.get('/:id/prescriptions', getUserPrescriptions);
 
 module.exports = router;

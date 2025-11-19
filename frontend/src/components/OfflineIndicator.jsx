@@ -134,39 +134,50 @@ export default function OfflineIndicator() {
     return 'Online';
   };
 
+  // Get dot color for header badge
+  const getDotColor = () => {
+    if (!isOnline) return 'bg-gray-400';
+    if (syncStatus === 'syncing') return 'bg-blue-500 animate-pulse';
+    if (syncStatus === 'error' || conflicts > 0) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
   return (
     <>
-      {/* Main Indicator */}
-      <div className="fixed bottom-4 right-4 z-50">
+      {/* Header Badge - Small dot + text */}
+      <div className="relative">
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-full text-white shadow-lg transition-all duration-300 ${getStatusColor()}`}
+          className="flex items-center space-x-1.5 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+          title={`Status: ${getStatusText()}`}
         >
-          {getStatusIcon()}
-          <span className="text-sm font-medium">{getStatusText()}</span>
+          <span className={`w-2.5 h-2.5 rounded-full ${getDotColor()}`}></span>
+          <span className="text-xs font-medium text-gray-600 hidden sm:inline">
+            {isOnline ? 'En ligne' : 'Hors ligne'}
+          </span>
         </button>
 
-        {/* Details Panel */}
+        {/* Details Panel - Opens as dropdown */}
         {showDetails && (
-          <div className="absolute bottom-full right-0 mb-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden">
-            <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-              <h3 className="text-lg font-semibold">Connection Status</h3>
+          <div className="absolute top-full right-0 mt-2 w-72 bg-white rounded-lg shadow-xl border border-gray-200 overflow-hidden z-50">
+            <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+              <h3 className="text-sm font-semibold">Status de connexion</h3>
             </div>
 
-            <div className="p-4 space-y-3">
+            <div className="p-3 space-y-2">
               {/* Online Status */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Connection</span>
-                <div className="flex items-center space-x-2">
+                <span className="text-xs text-gray-600">Connexion</span>
+                <div className="flex items-center space-x-1.5">
                   {isOnline ? (
                     <>
-                      <Wifi className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium text-green-600">Online</span>
+                      <Wifi className="h-3.5 w-3.5 text-green-500" />
+                      <span className="text-xs font-medium text-green-600">En ligne</span>
                     </>
                   ) : (
                     <>
-                      <WifiOff className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-600">Offline</span>
+                      <WifiOff className="h-3.5 w-3.5 text-gray-500" />
+                      <span className="text-xs font-medium text-gray-600">Hors ligne</span>
                     </>
                   )}
                 </div>
@@ -174,18 +185,18 @@ export default function OfflineIndicator() {
 
               {/* Last Sync */}
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Last Sync</span>
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">{formatLastSync()}</span>
+                <span className="text-xs text-gray-600">Derniere sync</span>
+                <div className="flex items-center space-x-1.5">
+                  <Clock className="h-3.5 w-3.5 text-gray-400" />
+                  <span className="text-xs font-medium text-gray-700">{formatLastSync()}</span>
                 </div>
               </div>
 
               {/* Pending Operations */}
               {pendingOperations > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Pending Changes</span>
-                  <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+                  <span className="text-xs text-gray-600">En attente</span>
+                  <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
                     {pendingOperations}
                   </span>
                 </div>
@@ -194,8 +205,8 @@ export default function OfflineIndicator() {
               {/* Conflicts */}
               {conflicts > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Conflicts to Resolve</span>
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
+                  <span className="text-xs text-gray-600">Conflits</span>
+                  <span className="px-1.5 py-0.5 bg-yellow-100 text-yellow-700 text-xs font-medium rounded-full">
                     {conflicts}
                   </span>
                 </div>
@@ -206,21 +217,19 @@ export default function OfflineIndicator() {
                 <button
                   onClick={handleSync}
                   disabled={syncStatus === 'syncing'}
-                  className="w-full flex items-center justify-center space-x-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="w-full flex items-center justify-center space-x-1.5 px-3 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs rounded-md hover:from-blue-700 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
-                  <RefreshCw className={`h-4 w-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3.5 w-3.5 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                   <span className="font-medium">
-                    {syncStatus === 'syncing' ? 'Syncing...' : 'Sync Now'}
+                    {syncStatus === 'syncing' ? 'Sync...' : 'Synchroniser'}
                   </span>
                 </button>
               )}
 
               {/* Offline Message */}
               {!isOnline && (
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm text-gray-600">
-                    You can continue working offline. Your changes will be saved locally and synced when you're back online.
-                  </p>
+                <div className="p-2 bg-gray-50 rounded text-xs text-gray-600">
+                  Vos modifications seront synchronisees une fois reconnecte.
                 </div>
               )}
             </div>
@@ -228,11 +237,11 @@ export default function OfflineIndicator() {
         )}
       </div>
 
-      {/* Toast Notification */}
+      {/* Toast Notification for Offline */}
       {!isOnline && (
-        <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-2 px-4 z-50 animate-slide-down">
-          <p className="text-sm font-medium">
-            You{"'"}re currently offline. Changes will sync when connection is restored.
+        <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-1.5 px-4 z-50">
+          <p className="text-xs font-medium">
+            Mode hors ligne - Les modifications seront synchronisees automatiquement
           </p>
         </div>
       )}

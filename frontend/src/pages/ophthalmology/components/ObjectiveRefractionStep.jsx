@@ -1,10 +1,30 @@
 import { useState } from 'react';
-import { Camera, Eye, Upload, RotateCw } from 'lucide-react';
+import { Camera, Eye, Upload, RotateCw, HardDrive, CheckCircle, History } from 'lucide-react';
 import { calculateSE, formatPrescription } from '../../../utils/ophthalmologyCalculations';
+import DeviceMeasurementSelector from '../../../components/DeviceMeasurementSelector';
+import { usePreviousRefraction } from '../../../hooks/usePreviousData';
 
-export default function ObjectiveRefractionStep({ data, setData }) {
+export default function ObjectiveRefractionStep({ data, setData, examId, patientId }) {
   const [selectedDevice, setSelectedDevice] = useState('autorefractor');
   const [manualEntry, setManualEntry] = useState(false);
+  const [showDeviceImport, setShowDeviceImport] = useState(false);
+
+  // Hook for copy previous functionality
+  const { hasPreviousExam, copyObjectiveRefraction, loading: loadingPrevious } = usePreviousRefraction(patientId);
+
+  const handleCopyPrevious = () => {
+    const previousData = copyObjectiveRefraction();
+    if (previousData) {
+      setData(prev => ({
+        ...prev,
+        objective: {
+          ...prev.objective,
+          OD: previousData.OD || prev.objective.OD,
+          OS: previousData.OS || prev.objective.OS
+        }
+      }));
+    }
+  };
 
   const devices = [
     { id: 'autorefractor', name: 'Autorefracteur', model: 'Topcon KR-8900' },
@@ -61,6 +81,39 @@ export default function ObjectiveRefractionStep({ data, setData }) {
     }));
   };
 
+  const handleMeasurementApplied = (measurement) => {
+    // Reload the exam data to get the updated values with device-sourced data
+    // For now, we'll manually update the form data from the measurement
+    if (measurement.measurementType.toLowerCase() === 'autorefractor' ||
+        measurement.measurementType.toLowerCase() === 'auto-refractor') {
+      const refractionData = measurement.data.refraction;
+      if (refractionData) {
+        setData(prev => ({
+          ...prev,
+          objective: {
+            ...prev.objective,
+            OD: {
+              sphere: refractionData.OD?.sphere || 0,
+              cylinder: refractionData.OD?.cylinder || 0,
+              axis: refractionData.OD?.axis || 0
+            },
+            OS: {
+              sphere: refractionData.OS?.sphere || 0,
+              cylinder: refractionData.OS?.cylinder || 0,
+              axis: refractionData.OS?.axis || 0
+            },
+            method: 'autorefractor',
+            device: measurement.device?.name || 'Device',
+            sourceDevice: measurement.device?._id,
+            sourceMeasurement: measurement._id,
+            timestamp: measurement.measurementDate
+          }
+        }));
+        setShowDeviceImport(false);
+      }
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <h2 className="text-xl font-semibold mb-6 flex items-center">
@@ -109,16 +162,53 @@ export default function ObjectiveRefractionStep({ data, setData }) {
       {/* Autorefractor Controls */}
       {selectedDevice === 'autorefractor' && (
         <div className="mb-6">
-          <button
-            onClick={performAutorefraction}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            <RotateCw className="w-4 h-4 mr-2" />
-            Effectuer la Mesure
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={performAutorefraction}
+              className="flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              <RotateCw className="w-4 h-4 mr-2" />
+              Effectuer la Mesure
+            </button>
+            {examId && patientId && (
+              <button
+                onClick={() => setShowDeviceImport(!showDeviceImport)}
+                className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                <HardDrive className="w-4 h-4 mr-2" />
+                {showDeviceImport ? 'Masquer' : 'Importer depuis Appareil'}
+              </button>
+            )}
+          </div>
           <p className="text-sm text-gray-500 mt-2">
-            Cliquez pour simuler une mesure d'autoréfraction
+            {showDeviceImport ? 'Sélectionnez une mesure pour l\'importer' : 'Cliquez pour simuler une mesure ou importer depuis un appareil'}
           </p>
+        </div>
+      )}
+
+      {/* Device Measurement Selector */}
+      {showDeviceImport && examId && patientId && (
+        <div className="mb-6">
+          <DeviceMeasurementSelector
+            examId={examId}
+            patientId={patientId}
+            onMeasurementApplied={handleMeasurementApplied}
+          />
+        </div>
+      )}
+
+      {/* Source Device Indicator */}
+      {data.objective.sourceDevice && (
+        <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
+          <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-green-900">
+              Données importées depuis: {data.objective.device}
+            </p>
+            <p className="text-xs text-green-700">
+              Mesure effectuée le: {new Date(data.objective.timestamp).toLocaleString('fr-FR')}
+            </p>
+          </div>
         </div>
       )}
 
@@ -275,16 +365,23 @@ export default function ObjectiveRefractionStep({ data, setData }) {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
+        {hasPreviousExam && (
+          <button
+            onClick={handleCopyPrevious}
+            disabled={loadingPrevious}
+            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 border border-gray-300 flex items-center gap-2"
+            title="Copier les valeurs du dernier examen"
+          >
+            <History className="h-4 w-4" />
+            Copier précédent
+          </button>
+        )}
         <button
           onClick={copyToSubjective}
           className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
         >
           Copier vers Réfraction Subjective
-        </button>
-        <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-          <Upload className="w-4 h-4 inline mr-2" />
-          Importer Résultats
         </button>
       </div>
 

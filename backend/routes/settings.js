@@ -1,21 +1,49 @@
 const express = require('express');
 const router = express.Router();
-
-// Placeholder controller
-const settingsController = {
-  getSettings: (req, res) => res.json({ success: true, data: {} }),
-  updateSettings: (req, res) => res.json({ success: true, data: {} })
-};
+const {
+  getSettings,
+  updateSettings,
+  updateTwilioSettings,
+  testTwilioConnection,
+  getProfile,
+  updateProfile,
+  changePassword,
+  getNotificationPreferences,
+  updateNotificationPreferences
+} = require('../controllers/settingsController');
 
 const { protect, authorize } = require('../middleware/auth');
+const { logAction } = require('../middleware/auditLogger');
 
 // Protect all routes
 router.use(protect);
 
-// Routes
+// Clinic settings (admin only for updates)
 router
   .route('/')
-  .get(settingsController.getSettings)
-  .put(authorize('admin'), settingsController.updateSettings);
+  .get(getSettings)
+  .put(authorize('admin'), logAction('SETTINGS_UPDATE'), updateSettings);
+
+// Twilio configuration (admin only)
+router
+  .route('/twilio')
+  .put(authorize('admin'), logAction('TWILIO_CONFIG_UPDATE'), updateTwilioSettings);
+
+router.post('/twilio/test', authorize('admin'), testTwilioConnection);
+
+// User profile (any authenticated user)
+router
+  .route('/profile')
+  .get(getProfile)
+  .put(logAction('PROFILE_UPDATE'), updateProfile);
+
+// Password change
+router.put('/password', logAction('PASSWORD_CHANGE'), changePassword);
+
+// Notification preferences
+router
+  .route('/notifications')
+  .get(getNotificationPreferences)
+  .put(updateNotificationPreferences);
 
 module.exports = router;

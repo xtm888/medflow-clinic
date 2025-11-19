@@ -7,7 +7,6 @@ import {
   Pill,
   FileText,
   Image,
-  Bell,
   DollarSign,
   Receipt,
   Stethoscope,
@@ -17,11 +16,28 @@ import {
   Activity,
   Eye,
   Briefcase,
-  LogOut
+  LogOut,
+  HardDrive,
+  ChevronDown,
+  ChevronRight,
+  FlaskConical,
+  BarChart3,
+  Syringe,
+  Bell
 } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { usePatient } from '../contexts/PatientContext';
 import { getAccessibleMenuItems, menuConfigurations } from '../config/rolePermissions';
+import NotificationBell from '../components/NotificationBell';
+import OfflineIndicator from '../components/OfflineIndicator';
+import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp';
+import GlobalSearch from '../components/GlobalSearch';
+import QuickActionsFAB from '../components/QuickActionsFAB';
+import PatientQuickSearch from '../components/PatientQuickSearch';
+import PatientContextPanel from '../components/PatientContextPanel';
+// GlobalActionBar removed - using context-aware actions in PatientDetail instead
+import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
 
 const iconMap = {
   LayoutDashboard,
@@ -31,38 +47,124 @@ const iconMap = {
   Pill,
   FileText,
   Image,
-  Bell,
   DollarSign,
   Receipt,
   Stethoscope,
   Settings,
   Eye,
-  Briefcase
+  Briefcase,
+  HardDrive,
+  FlaskConical,
+  BarChart3,
+  Syringe,
+  Bell
 };
 
 export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [showGlobalSearch, setShowGlobalSearch] = useState(false);
+  const [expandedMenus, setExpandedMenus] = useState({});
   const { user, logout } = useAuth();
+  const { hasPatient } = usePatient();
+
+  // Toggle submenu expansion
+  const toggleSubmenu = (menuName) => {
+    setExpandedMenus(prev => ({
+      ...prev,
+      [menuName]: !prev[menuName]
+    }));
+  };
+
+  // Auto-expand menus when their sub-items are active
+  useEffect(() => {
+    if (!user) return;
+
+    const accessibleItems = getAccessibleMenuItems(user.role);
+    const menusToExpand = {};
+
+    accessibleItems.forEach(itemKey => {
+      const config = menuConfigurations[itemKey];
+      if (config?.subItems?.length > 0) {
+        const hasActiveSubItem = config.subItems.some(sub => location.pathname === sub.path);
+        if (hasActiveSubItem) {
+          menusToExpand[itemKey] = true;
+        }
+      }
+    });
+
+    if (Object.keys(menusToExpand).length > 0) {
+      setExpandedMenus(prev => ({
+        ...prev,
+        ...menusToExpand
+      }));
+    }
+  }, [location.pathname, user]);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    // Navigation shortcuts
+    'ctrl+h': () => navigate('/dashboard'),
+    'ctrl+p': () => navigate('/patients'),
+    'ctrl+q': () => navigate('/queue'),
+    'ctrl+a': () => navigate('/appointments'),
+
+    // Search shortcuts
+    'ctrl+f': () => setShowGlobalSearch(true),
+    'ctrl+k': () => setShowGlobalSearch(true),
+
+    // Help shortcuts
+    'f1': () => setShowShortcutsHelp(true),
+    '?': () => setShowShortcutsHelp(true),
+    'shift+/': () => setShowShortcutsHelp(true),
+  }, true, [navigate]);
 
   // Get navigation items based on user role
   const navigation = useMemo(() => {
     if (!user) return [];
 
     const accessibleItems = getAccessibleMenuItems(user.role);
-    return accessibleItems.map(itemKey => {
+    console.log('👤 User role:', user.role);
+    console.log('📋 Accessible menu items:', accessibleItems);
+
+    const navItems = accessibleItems.map(itemKey => {
       const config = menuConfigurations[itemKey];
-      if (!config) return null;
+      if (!config) {
+        console.warn(`⚠️ No config found for menu item: ${itemKey}`);
+        return null;
+      }
 
       const IconComponent = iconMap[config.icon] || Activity;
+
+      // Handle items with submenus
+      if (config.subItems && config.subItems.length > 0) {
+        return {
+          name: config.label,
+          href: config.path,
+          icon: IconComponent,
+          description: config.description,
+          key: itemKey,
+          subItems: config.subItems.map(sub => ({
+            name: sub.label,
+            href: sub.path,
+            icon: iconMap[sub.icon] || Activity
+          }))
+        };
+      }
+
       return {
         name: config.label,
         href: config.path,
         icon: IconComponent,
-        description: config.description
+        description: config.description,
+        key: itemKey
       };
     }).filter(item => item !== null);
+
+    console.log('🔗 Generated navigation items:', navItems.map(n => n.name));
+    return navItems;
   }, [user]);
 
   const handleLogout = async () => {
@@ -113,7 +215,61 @@ export default function MainLayout() {
           </div>
           <nav className="flex-1 px-3 space-y-1">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = item.href && location.pathname === item.href;
+              const hasSubItems = item.subItems && item.subItems.length > 0;
+              const isExpanded = expandedMenus[item.key];
+              const isSubItemActive = hasSubItems && item.subItems.some(sub => location.pathname === sub.href);
+
+              if (hasSubItems) {
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => toggleSubmenu(item.key)}
+                      className={`${
+                        isSubItemActive
+                          ? 'bg-primary-700 text-white'
+                          : 'text-primary-100 hover:bg-primary-700/50 hover:text-white'
+                      } group flex items-center justify-between w-full px-3 py-3 text-sm font-medium rounded-lg transition-all duration-200`}
+                    >
+                      <div className="flex items-center">
+                        <item.icon
+                          className={`${
+                            isSubItemActive ? 'text-white' : 'text-primary-200 group-hover:text-white'
+                          } mr-3 flex-shrink-0 h-5 w-5`}
+                        />
+                        {item.name}
+                      </div>
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4 text-primary-200" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4 text-primary-200" />
+                      )}
+                    </button>
+                    {isExpanded && (
+                      <div className="mt-1 ml-4 space-y-1">
+                        {item.subItems.map((subItem) => {
+                          const isSubActive = location.pathname === subItem.href;
+                          return (
+                            <Link
+                              key={subItem.name}
+                              to={subItem.href}
+                              className={`${
+                                isSubActive
+                                  ? 'bg-primary-600 text-white'
+                                  : 'text-primary-200 hover:bg-primary-700/50 hover:text-white'
+                              } group flex items-center px-3 py-2 text-sm rounded-lg transition-all duration-200`}
+                            >
+                              <subItem.icon className="mr-3 flex-shrink-0 h-4 w-4" />
+                              {subItem.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.name}
@@ -173,7 +329,58 @@ export default function MainLayout() {
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = item.href && location.pathname === item.href;
+              const hasSubItems = item.subItems && item.subItems.length > 0;
+              const isExpanded = expandedMenus[item.key];
+              const isSubItemActive = hasSubItems && item.subItems.some(sub => location.pathname === sub.href);
+
+              if (hasSubItems) {
+                return (
+                  <div key={item.name}>
+                    <button
+                      onClick={() => toggleSubmenu(item.key)}
+                      className={`${
+                        isSubItemActive
+                          ? 'bg-primary-700 text-white'
+                          : 'text-primary-100 hover:bg-primary-700/50 hover:text-white'
+                      } group flex items-center justify-between w-full px-3 py-3 text-sm font-medium rounded-lg`}
+                    >
+                      <div className="flex items-center">
+                        <item.icon className="mr-3 flex-shrink-0 h-5 w-5" />
+                        {item.name}
+                      </div>
+                      {isExpanded ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
+                    {isExpanded && (
+                      <div className="mt-1 ml-4 space-y-1">
+                        {item.subItems.map((subItem) => {
+                          const isSubActive = location.pathname === subItem.href;
+                          return (
+                            <Link
+                              key={subItem.name}
+                              to={subItem.href}
+                              onClick={() => setSidebarOpen(false)}
+                              className={`${
+                                isSubActive
+                                  ? 'bg-primary-600 text-white'
+                                  : 'text-primary-200 hover:bg-primary-700/50 hover:text-white'
+                              } group flex items-center px-3 py-2 text-sm rounded-lg`}
+                            >
+                              <subItem.icon className="mr-3 flex-shrink-0 h-4 w-4" />
+                              {subItem.name}
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={item.name}
@@ -213,7 +420,15 @@ export default function MainLayout() {
       </div>
 
       {/* Main content */}
-      <div className="lg:pl-64 flex flex-col flex-1">
+      <div className="lg:pl-64 flex flex-1">
+        {/* Patient Context Panel - shows when patient is selected */}
+        {hasPatient && (
+          <div className="hidden lg:block flex-shrink-0">
+            <PatientContextPanel />
+          </div>
+        )}
+
+        <div className="flex flex-col flex-1">
         {/* Top bar */}
         <div className="sticky top-0 z-10 flex-shrink-0 flex h-16 bg-white shadow-sm lg:shadow-none">
           <button
@@ -223,30 +438,14 @@ export default function MainLayout() {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1 px-4 flex justify-between items-center">
-            <div className="flex-1 flex">
-              <form className="w-full flex md:ml-0" action="#" method="GET">
-                <label htmlFor="search-field" className="sr-only">Search</label>
-                <div className="relative w-full text-gray-400 focus-within:text-gray-600">
-                  <div className="absolute inset-y-0 left-0 flex items-center pointer-events-none pl-3">
-                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                  </div>
-                  <input
-                    id="search-field"
-                    className="block w-full h-full pl-10 pr-3 py-2 border-transparent text-gray-900 placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-0 focus:border-transparent sm:text-sm"
-                    placeholder="Search patients, appointments..."
-                    type="search"
-                  />
-                </div>
-              </form>
+            <div className="flex-1 flex max-w-xl">
+              <PatientQuickSearch className="w-full" />
             </div>
-            <div className="ml-4 flex items-center md:ml-6 space-x-4">
-              <button className="p-2 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 relative">
-                <Bell className="h-6 w-6" />
-                <span className="absolute top-1 right-1 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
-              </button>
-              <div className="h-8 w-px bg-gray-200"></div>
+            <div className="ml-4 flex items-center md:ml-6 space-x-3">
+              <OfflineIndicator />
+              <div className="h-6 w-px bg-gray-200"></div>
+              <NotificationBell />
+              <div className="h-6 w-px bg-gray-200"></div>
               <div className="flex items-center space-x-3">
                 <div className="text-right hidden md:block">
                   <p className="text-sm font-medium text-gray-700">{getUserFullName()}</p>
@@ -271,7 +470,23 @@ export default function MainLayout() {
         <main className="flex-1 py-6 px-4 sm:px-6 lg:px-8">
           <Outlet />
         </main>
+        </div>
       </div>
+
+      {/* Keyboard Shortcuts Help */}
+      <KeyboardShortcutsHelp
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
+      />
+
+      {/* Global Search */}
+      <GlobalSearch
+        isOpen={showGlobalSearch}
+        onClose={() => setShowGlobalSearch(false)}
+      />
+
+      {/* Quick Actions FAB */}
+      <QuickActionsFAB />
     </div>
   );
 }

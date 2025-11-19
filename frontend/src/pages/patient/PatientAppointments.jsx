@@ -1,8 +1,8 @@
-import { Calendar, Clock, Plus } from 'lucide-react';
+import { Calendar, Clock, Plus, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { services, patients } from '../../data/mockData';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import api from '../../services/api';
 import appointmentService from '../../services/appointmentService';
 import authService from '../../services/authService';
 import { useToast } from '../../hooks/useToast';
@@ -12,6 +12,7 @@ export default function PatientAppointments() {
   const { toasts, success, error: showError, removeToast } = useToast();
   const [currentPatient, setCurrentPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
+  const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -23,7 +24,7 @@ export default function PatientAppointments() {
   });
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
-  // Fetch current user and appointments
+  // Fetch current user, appointments, and services
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -34,17 +35,28 @@ export default function PatientAppointments() {
         if (userResult.success) {
           setCurrentPatient(userResult.user);
 
-          // Fetch patient appointments (assuming the API supports this)
-          // You might need to adjust based on your backend API
-          try {
-            const aptResponse = await appointmentService.getAppointments({
+          // Fetch patient appointments and services in parallel
+          const [aptResponse, servicesResponse] = await Promise.all([
+            appointmentService.getAppointments({
               patient: userResult.user._id
-            });
-            setAppointments(aptResponse.data || []);
-          } catch (err) {
-            // If no appointments endpoint, use empty array
-            setAppointments([]);
-          }
+            }).catch(() => ({ data: [] })),
+            api.get('/template-catalog', {
+              params: { type: 'procedure', limit: 100 }
+            }).catch(() => ({ data: { data: [] } }))
+          ]);
+
+          setAppointments(aptResponse.data || []);
+
+          // Transform services
+          const serviceData = servicesResponse.data?.data || servicesResponse.data || [];
+          const transformedServices = serviceData.map(s => ({
+            id: s._id || s.id,
+            name: s.name || s.description || 'Service',
+            category: s.category || 'Consultation',
+            price: s.price || s.fee || 0,
+            duration: s.duration || s.estimatedDuration || 30
+          }));
+          setServices(transformedServices);
         }
       } catch (err) {
         showError('Failed to load patient data');

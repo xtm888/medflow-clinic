@@ -15,9 +15,17 @@
     @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
   }
 
-  /* Button variants */
+  /* Button variants - Touch-friendly sizes */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply px-6 py-3 rounded-lg font-medium text-base transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-sm hover:shadow-md;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 rounded-lg font-bold text-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 shadow-md hover:shadow-lg;
+  }
+
+  .btn-sm {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2;
   }
 
   .btn-primary {
@@ -34,6 +42,14 @@
 
   .btn-danger {
     @apply bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+
+  .btn-warning {
+    @apply bg-orange-600 text-white hover:bg-orange-700 focus:ring-orange-500;
+  }
+
+  .btn-info {
+    @apply bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500;
   }
 
   /* Input styles */

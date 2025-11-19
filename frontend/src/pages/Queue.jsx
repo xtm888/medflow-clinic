@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Clock, User, AlertCircle, CheckCircle, Play, XCircle, ArrowUp } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Clock, User, AlertCircle, CheckCircle, Play, XCircle, ArrowUp, FileText } from 'lucide-react';
 import {
   fetchQueue,
   checkInPatient,
@@ -11,6 +12,9 @@ import {
 } from '../store/slices/queueSlice';
 import { useToast } from '../hooks/useToast';
 import ToastContainer from '../components/ToastContainer';
+import DocumentGenerator from '../components/documents/DocumentGenerator';
+import EmptyState from '../components/EmptyState';
+import { PatientSelector } from '../modules/patient';
 
 const getPriorityColor = (priority) => {
   switch (priority) {
@@ -33,8 +37,15 @@ const getWaitTimeColor = (minutes) => {
   return 'text-red-600 animate-pulse';
 };
 
+const getWaitTimeBarColor = (minutes) => {
+  if (minutes < 15) return 'border-l-8 border-green-500 bg-green-50/30';
+  if (minutes < 30) return 'border-l-8 border-orange-500 bg-orange-50/30';
+  return 'border-l-8 border-red-500 bg-red-50/30 animate-pulse';
+};
+
 export default function Queue() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { queues, stats, loading, error } = useSelector(state => state.queue);
   const { toasts, success, error: showError, removeToast } = useToast();
 
@@ -46,6 +57,18 @@ export default function Queue() {
     priority: 'NORMAL',
     assignedDoctor: ''
   });
+  const [showWalkInModal, setShowWalkInModal] = useState(false);
+  const [selectedWalkInPatient, setSelectedWalkInPatient] = useState(null);
+  const [walkInForm, setWalkInForm] = useState({
+    firstName: '',
+    lastName: '',
+    phoneNumber: '',
+    reason: '',
+    priority: 'NORMAL'
+  });
+  const [showDocumentGenerator, setShowDocumentGenerator] = useState(false);
+  const [selectedPatientForDoc, setSelectedPatientForDoc] = useState(null);
+  const [sortBy, setSortBy] = useState('priority');
 
   // Fetch queue on mount and every 30 seconds
   useEffect(() => {
@@ -101,6 +124,87 @@ export default function Queue() {
     }
   };
 
+  // Handle walk-in patient submit
+  const handleWalkIn = async (e) => {
+    e.preventDefault();
+
+    // If existing patient selected, use their info
+    if (selectedWalkInPatient) {
+      if (!walkInForm.reason) {
+        showError('Veuillez indiquer la raison de la visite');
+        return;
+      }
+
+      try {
+        await dispatch(checkInPatient({
+          walkIn: true,
+          patientId: selectedWalkInPatient._id || selectedWalkInPatient.id,
+          patientInfo: {
+            firstName: selectedWalkInPatient.firstName,
+            lastName: selectedWalkInPatient.lastName,
+            phoneNumber: selectedWalkInPatient.phoneNumber || selectedWalkInPatient.phone
+          },
+          reason: walkInForm.reason,
+          priority: walkInForm.priority
+        })).unwrap();
+
+        success('Patient sans RDV ajouté à la file!');
+        setShowWalkInModal(false);
+        setSelectedWalkInPatient(null);
+        setWalkInForm({
+          firstName: '',
+          lastName: '',
+          phoneNumber: '',
+          reason: '',
+          priority: 'NORMAL'
+        });
+
+        dispatch(fetchQueue());
+        dispatch(fetchQueueStats());
+      } catch (err) {
+        showError(err || 'Échec d\'ajout du patient');
+      }
+      return;
+    }
+
+    // New patient - validate all fields
+    if (!walkInForm.firstName || !walkInForm.lastName || !walkInForm.phoneNumber || !walkInForm.reason) {
+      showError('Veuillez remplir tous les champs requis');
+      return;
+    }
+
+    try {
+      // Create walk-in patient directly in queue
+      await dispatch(checkInPatient({
+        walkIn: true,
+        patientInfo: {
+          firstName: walkInForm.firstName,
+          lastName: walkInForm.lastName,
+          phoneNumber: walkInForm.phoneNumber
+        },
+        reason: walkInForm.reason,
+        priority: walkInForm.priority
+      })).unwrap();
+
+      success('Patient sans RDV ajouté à la file!');
+      setShowWalkInModal(false);
+      setSelectedWalkInPatient(null);
+      setWalkInForm({
+        firstName: '',
+        lastName: '',
+        phoneNumber: '',
+        reason: '',
+        priority: 'NORMAL'
+      });
+
+      // Refresh queue
+      dispatch(fetchQueue());
+      dispatch(fetchQueueStats());
+    } catch (err) {
+      showError(err || 'Échec d\'ajout du patient');
+    }
+  };
+
   // Handle call patient
   const handleCallPatient = async (queueEntry) => {
     const roomNumber = prompt('Enter room number:');
@@ -113,7 +217,7 @@ export default function Queue() {
         roomNumber
       })).unwrap();
 
-      success(`${queueEntry.patient.firstName} called to room ${roomNumber}`);
+      success(`${queueEntry.patient?.firstName || 'Patient'} called to room ${roomNumber}`);
       dispatch(fetchQueue());
       dispatch(fetchQueueStats());
     } catch (err) {
@@ -141,6 +245,30 @@ export default function Queue() {
     }
   };
 
+  // Start visit for patient
+  const handleStartVisit = async (queueEntry) => {
+    try {
+      // Update appointment status to in-progress
+      await dispatch(updateQueueStatus({
+        id: queueEntry.appointmentId,
+        status: 'in-progress'
+      })).unwrap();
+
+      // Navigate to visit page - use patient._id and pass appointment ID
+      const patientId = queueEntry.patient?._id || queueEntry.patient?.id;
+      const appointmentId = queueEntry.appointmentId || queueEntry._id;
+
+      if (patientId) {
+        // Pass appointment ID as query param so visit can be linked
+        navigate(`/visits/new/${patientId}?appointmentId=${appointmentId}`);
+      } else {
+        showError('Patient ID not available');
+      }
+    } catch (err) {
+      showError(err || 'Failed to start visit');
+    }
+  };
+
   // Call next patient automatically
   const handleCallNext = async (department = null) => {
     try {
@@ -163,7 +291,43 @@ export default function Queue() {
   const allQueues = queues && typeof queues === 'object' && !Array.isArray(queues)
     ? Object.values(queues).flat()
     : [];
-  const waitingPatients = allQueues.filter(p => p.status === 'checked-in');
+
+  // Priority order for sorting
+  const priorityOrder = {
+    'URGENT': 0,
+    'VIP': 1,
+    'PREGNANT': 2,
+    'ELDERLY': 3,
+    'NORMAL': 4
+  };
+
+  // Sort waiting patients based on selected sort method
+  const sortPatients = (patients) => {
+    const sorted = [...patients];
+    const getTime = (dateStr) => {
+      if (!dateStr) return 0;
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? 0 : date.getTime();
+    };
+
+    switch (sortBy) {
+      case 'priority':
+        return sorted.sort((a, b) => {
+          const priorityDiff = (priorityOrder[a.priority] || 4) - (priorityOrder[b.priority] || 4);
+          if (priorityDiff !== 0) return priorityDiff;
+          // If same priority, sort by arrival time
+          return getTime(a.checkInTime) - getTime(b.checkInTime);
+        });
+      case 'arrival':
+        return sorted.sort((a, b) => getTime(a.checkInTime) - getTime(b.checkInTime));
+      case 'waitTime':
+        return sorted.sort((a, b) => (b.estimatedWaitTime || 0) - (a.estimatedWaitTime || 0));
+      default:
+        return sorted;
+    }
+  };
+
+  const waitingPatients = sortPatients(allQueues.filter(p => p.status === 'checked-in'));
   const inProgressPatients = allQueues.filter(p => p.status === 'in-progress');
 
   if (loading && allQueues.length === 0) {
@@ -205,6 +369,13 @@ export default function Queue() {
           >
             <User className="h-5 w-5" />
             <span>Enregistrer arrivée</span>
+          </button>
+          <button
+            onClick={() => setShowWalkInModal(true)}
+            className="btn btn-success flex items-center space-x-2"
+          >
+            <User className="h-5 w-5" />
+            <span>Patient sans RDV</span>
           </button>
         </div>
       </div>
@@ -257,26 +428,27 @@ export default function Queue() {
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900">Patients en attente</h2>
-            <select className="input w-48">
-              <option>Trier par priorité</option>
-              <option>Trier par heure d'arrivée</option>
-              <option>Trier par temps d'attente</option>
+            <select
+              className="input w-48"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="priority">Trier par priorité</option>
+              <option value="arrival">Trier par heure d'arrivée</option>
+              <option value="waitTime">Trier par temps d'attente</option>
             </select>
           </div>
 
           {waitingPatients.length === 0 ? (
-            <div className="card text-center py-12">
-              <Clock className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-              <p className="text-gray-500 text-lg">Aucun patient en attente</p>
+            <div className="card">
+              <EmptyState type="queue" />
             </div>
           ) : (
             <div className="space-y-3">
               {waitingPatients.map((patient) => (
                 <div
                   key={patient.appointmentId}
-                  className={`card hover:shadow-lg transition-all duration-200 ${
-                    patient.estimatedWaitTime > 30 ? 'ring-2 ring-red-400' : ''
-                  }`}
+                  className={`card hover:shadow-lg transition-all duration-200 ${getWaitTimeBarColor(patient.estimatedWaitTime || 0)}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 flex-1">
@@ -289,7 +461,7 @@ export default function Queue() {
                       <div className="flex-1">
                         <div className="flex items-center space-x-2 mb-1">
                           <h3 className="text-lg font-semibold text-gray-900">
-                            {patient.patient.firstName} {patient.patient.lastName}
+                            {patient.patient?.firstName || 'N/A'} {patient.patient?.lastName || ''}
                           </h3>
                           {patient.priority !== 'NORMAL' && (
                             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(patient.priority)}`}>
@@ -300,7 +472,7 @@ export default function Queue() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">ID: {patient.patient.patientId}</p>
+                        <p className="text-sm text-gray-600">ID: {patient.patient?.patientId || 'N/A'}</p>
                         {patient.provider && (
                           <p className="text-sm text-gray-500 mt-1">
                             Médecin: Dr. {patient.provider.firstName} {patient.provider.lastName}
@@ -318,10 +490,12 @@ export default function Queue() {
                           <span className="text-sm text-gray-500">min</span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
-                          Arrivé à {new Date(patient.checkInTime).toLocaleTimeString('fr-FR', {
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
+                          Arrivé à {patient.checkInTime
+                            ? new Date(patient.checkInTime).toLocaleTimeString('fr-FR', {
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })
+                            : '-'}
                         </p>
                       </div>
                     </div>
@@ -329,17 +503,30 @@ export default function Queue() {
                     {/* Actions */}
                     <div className="flex flex-col space-y-2 ml-4">
                       <button
+                        onClick={() => handleStartVisit(patient)}
+                        className="btn btn-primary text-xs px-3 py-1.5 flex items-center space-x-1"
+                        disabled={loading}
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span>Commencer</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setSelectedPatientForDoc(patient);
+                          setShowDocumentGenerator(true);
+                        }}
+                        className="btn btn-secondary text-xs px-3 py-1.5 flex items-center space-x-1"
+                        title="Générer un certificat ou document"
+                      >
+                        <FileText className="h-3 w-3" />
+                        <span>Certificat</span>
+                      </button>
+                      <button
                         onClick={() => handleCallPatient(patient)}
                         className="btn btn-success text-xs px-3 py-1.5"
                         disabled={loading}
                       >
                         Appeler
-                      </button>
-                      <button
-                        className="btn btn-secondary text-xs px-3 py-1.5"
-                        disabled={loading}
-                      >
-                        Modifier
                       </button>
                     </div>
                   </div>
@@ -375,10 +562,10 @@ export default function Queue() {
                         <div className="flex items-center space-x-2 mb-1">
                           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                           <h3 className="font-semibold text-green-900">
-                            {patient.patient.firstName} {patient.patient.lastName}
+                            {patient.patient?.firstName || 'N/A'} {patient.patient?.lastName || ''}
                           </h3>
                         </div>
-                        <p className="text-sm text-green-700">ID: {patient.patient.patientId}</p>
+                        <p className="text-sm text-green-700">ID: {patient.patient?.patientId || 'N/A'}</p>
                         {patient.roomNumber && (
                           <p className="text-sm text-green-600 mt-1">Salle {patient.roomNumber}</p>
                         )}
@@ -388,13 +575,23 @@ export default function Queue() {
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleComplete(patient)}
-                        className="btn btn-success text-xs"
-                        disabled={loading}
-                      >
-                        Terminer
-                      </button>
+                      <div className="flex flex-col space-y-2">
+                        <button
+                          onClick={() => handleStartVisit(patient)}
+                          className="btn btn-primary text-xs px-3 py-1 flex items-center space-x-1"
+                          disabled={loading}
+                        >
+                          <FileText className="h-3 w-3" />
+                          <span>Ouvrir</span>
+                        </button>
+                        <button
+                          onClick={() => handleComplete(patient)}
+                          className="btn btn-success text-xs"
+                          disabled={loading}
+                        >
+                          Terminer
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -534,6 +731,196 @@ export default function Queue() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Walk-In Patient Modal */}
+      {showWalkInModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">Patient sans RDV</h2>
+              <button
+                onClick={() => {
+                  setShowWalkInModal(false);
+                  setSelectedWalkInPatient(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleWalkIn} className="p-6 space-y-4">
+              {/* Patient Search */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rechercher un patient existant
+                </label>
+                <PatientSelector
+                  mode="dropdown"
+                  value={selectedWalkInPatient}
+                  onChange={(patient) => {
+                    setSelectedWalkInPatient(patient);
+                    if (patient) {
+                      setWalkInForm({
+                        ...walkInForm,
+                        firstName: patient.firstName || '',
+                        lastName: patient.lastName || '',
+                        phoneNumber: patient.phoneNumber || patient.phone || ''
+                      });
+                    }
+                  }}
+                  placeholder="Rechercher par nom ou téléphone..."
+                  showCreateButton={false}
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Recherchez un patient existant ou entrez les informations ci-dessous
+                </p>
+              </div>
+
+              {/* Show selected patient info or manual entry */}
+              {selectedWalkInPatient ? (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium text-blue-900">
+                        {selectedWalkInPatient.firstName} {selectedWalkInPatient.lastName}
+                      </p>
+                      <p className="text-sm text-blue-700">
+                        ID: {selectedWalkInPatient.patientId || 'N/A'}
+                      </p>
+                      {selectedWalkInPatient.phoneNumber && (
+                        <p className="text-sm text-blue-600">
+                          Tél: {selectedWalkInPatient.phoneNumber}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedWalkInPatient(null);
+                        setWalkInForm({
+                          ...walkInForm,
+                          firstName: '',
+                          lastName: '',
+                          phoneNumber: ''
+                        });
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm"
+                    >
+                      Changer
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="border-t pt-4">
+                    <p className="text-sm font-medium text-gray-700 mb-3">
+                      Ou créer un nouveau patient:
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Prénom <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={walkInForm.firstName}
+                          onChange={(e) => setWalkInForm({...walkInForm, firstName: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Nom <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={walkInForm.lastName}
+                          onChange={(e) => setWalkInForm({...walkInForm, lastName: e.target.value})}
+                          className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Téléphone <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      value={walkInForm.phoneNumber}
+                      onChange={(e) => setWalkInForm({...walkInForm, phoneNumber: e.target.value})}
+                      className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="+243 81 234 5678"
+                    />
+                  </div>
+                </>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Raison de la visite <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  value={walkInForm.reason}
+                  onChange={(e) => setWalkInForm({...walkInForm, reason: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  rows="3"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Priorité
+                </label>
+                <select
+                  value={walkInForm.priority}
+                  onChange={(e) => setWalkInForm({...walkInForm, priority: e.target.value})}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="NORMAL">Normal</option>
+                  <option value="VIP">VIP</option>
+                  <option value="URGENT">Urgent</option>
+                  <option value="ELDERLY">Personne âgée</option>
+                  <option value="PREGNANT">Femme enceinte</option>
+                </select>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowWalkInModal(false)}
+                  className="btn btn-secondary"
+                >
+                  Annuler
+                </button>
+                <button type="submit" className="btn btn-success">
+                  Ajouter à la file
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Document Generator Modal */}
+      {showDocumentGenerator && selectedPatientForDoc && selectedPatientForDoc.patient && (
+        <DocumentGenerator
+          patientId={selectedPatientForDoc.patient?._id || selectedPatientForDoc.patient?.id}
+          visitId={selectedPatientForDoc.visit?._id}
+          onClose={() => {
+            setShowDocumentGenerator(false);
+            setSelectedPatientForDoc(null);
+          }}
+          onDocumentGenerated={(doc) => {
+            success('Document généré avec succès!');
+            setShowDocumentGenerator(false);
+            setSelectedPatientForDoc(null);
+          }}
+        />
       )}
     </div>
   );

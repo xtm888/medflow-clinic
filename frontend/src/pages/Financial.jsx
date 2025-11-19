@@ -1,10 +1,124 @@
-import { DollarSign, TrendingUp, CreditCard, FileText, Download } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, TrendingUp, CreditCard, FileText, Download, Loader2, AlertCircle } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { financialData } from '../data/mockData';
+import { format } from 'date-fns';
+import { fr } from 'date-fns/locale';
+import billingService from '../services/billingService';
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function Financial() {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [financialData, setFinancialData] = useState({
+    today: { revenue: 0, transactions: 0 },
+    thisMonth: { revenue: 0, pending: 0 },
+    monthlyTrends: [],
+    revenueByService: []
+  });
+
+  useEffect(() => {
+    fetchFinancialData();
+  }, []);
+
+  const fetchFinancialData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await billingService.getBillingStatistics();
+      const data = response.data || response;
+
+      setFinancialData({
+        today: data.today || { revenue: 0, transactions: 0 },
+        thisMonth: data.thisMonth || { revenue: 0, pending: 0 },
+        monthlyTrends: data.monthlyTrends || [],
+        revenueByService: data.revenueByService || []
+      });
+    } catch (err) {
+      console.error('Error fetching financial data:', err);
+      setError('Erreur lors du chargement des données financières');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleExportReport = () => {
+    // Generate CSV data
+    const today = format(new Date(), 'dd-MM-yyyy');
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+
+    // Header
+    csvContent += "Rapport Financier - " + today + "\n\n";
+
+    // Summary section
+    csvContent += "RÉSUMÉ\n";
+    csvContent += "Revenus aujourd'hui," + (financialData.today.revenue || 0).toFixed(2) + "\n";
+    csvContent += "Transactions aujourd'hui," + (financialData.today.transactions || 0) + "\n";
+    csvContent += "Revenus ce mois," + (financialData.thisMonth.revenue || 0).toFixed(2) + "\n";
+    csvContent += "Créances en attente," + (financialData.thisMonth.pending || 0).toFixed(2) + "\n\n";
+
+    // Revenue by service
+    if (financialData.revenueByService.length > 0) {
+      csvContent += "REVENUS PAR SERVICE\n";
+      csvContent += "Service,Nombre d'actes,Revenu total,Revenu moyen,% du total\n";
+
+      const total = financialData.revenueByService.reduce((sum, s) => sum + (s.amount || 0), 0);
+
+      financialData.revenueByService.forEach(service => {
+        const percent = total > 0 ? ((service.amount || 0) / total) * 100 : 0;
+        const average = service.count > 0 ? (service.amount || 0) / service.count : 0;
+        csvContent += `${service.service},${service.count || 0},${(service.amount || 0).toFixed(2)},${average.toFixed(2)},${percent.toFixed(1)}%\n`;
+      });
+      csvContent += "\n";
+    }
+
+    // Monthly trends
+    if (financialData.monthlyTrends.length > 0) {
+      csvContent += "ÉVOLUTION MENSUELLE\n";
+      csvContent += "Mois,Revenus\n";
+      financialData.monthlyTrends.forEach(month => {
+        csvContent += `${month.month},${(month.revenue || 0).toFixed(2)}\n`;
+      });
+    }
+
+    // Create download link
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `rapport_financier_${today}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+        <span className="ml-2 text-gray-600">Chargement des données financières...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="card bg-red-50 border-red-200">
+        <div className="flex items-center text-red-700">
+          <AlertCircle className="h-5 w-5 mr-2" />
+          {error}
+        </div>
+        <button
+          onClick={fetchFinancialData}
+          className="mt-2 text-sm text-red-600 hover:text-red-800 underline"
+        >
+          Réessayer
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -14,7 +128,10 @@ export default function Financial() {
             Suivi des revenus, facturation et analyses financières
           </p>
         </div>
-        <button className="btn btn-primary flex items-center space-x-2">
+        <button
+          onClick={handleExportReport}
+          className="btn btn-primary flex items-center space-x-2"
+        >
           <Download className="h-5 w-5" />
           <span>Exporter rapport</span>
         </button>
@@ -26,8 +143,8 @@ export default function Financial() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-blue-100">Revenus aujourd'hui</p>
-              <p className="text-4xl font-bold mt-2">${financialData.today.revenue.toFixed(2)}</p>
-              <p className="text-sm text-blue-100 mt-2">{financialData.today.transactions} transactions</p>
+              <p className="text-4xl font-bold mt-2">${(financialData.today.revenue || 0).toFixed(2)}</p>
+              <p className="text-sm text-blue-100 mt-2">{financialData.today.transactions || 0} transactions</p>
             </div>
             <DollarSign className="h-16 w-16 text-blue-300 opacity-50" />
           </div>
@@ -37,7 +154,7 @@ export default function Financial() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-green-100">Revenus ce mois</p>
-              <p className="text-4xl font-bold mt-2">${financialData.thisMonth.revenue.toFixed(2)}</p>
+              <p className="text-4xl font-bold mt-2">${(financialData.thisMonth.revenue || 0).toFixed(2)}</p>
               <div className="flex items-center space-x-2 mt-2">
                 <TrendingUp className="h-4 w-4" />
                 <span className="text-sm text-green-100">+12% vs mois dernier</span>
@@ -51,7 +168,7 @@ export default function Financial() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-orange-100">Créances en attente</p>
-              <p className="text-4xl font-bold mt-2">${financialData.thisMonth.pending.toFixed(2)}</p>
+              <p className="text-4xl font-bold mt-2">${(financialData.thisMonth.pending || 0).toFixed(2)}</p>
               <p className="text-sm text-orange-100 mt-2">À recouvrer</p>
             </div>
             <CreditCard className="h-16 w-16 text-orange-300 opacity-50" />
@@ -64,63 +181,81 @@ export default function Financial() {
         {/* Revenue Trend */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Évolution mensuelle</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={financialData.monthlyTrends}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="month" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#0ea5e9"
-                strokeWidth={3}
-                name="Revenus ($)"
-                dot={{ fill: '#0ea5e9', r: 4 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {financialData.monthlyTrends.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={financialData.monthlyTrends}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  stroke="#0ea5e9"
+                  strokeWidth={3}
+                  name="Revenus ($)"
+                  dot={{ fill: '#0ea5e9', r: 4 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-500">
+              Aucune donnée disponible
+            </div>
+          )}
         </div>
 
         {/* Revenue by Service */}
         <div className="card">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Revenus par service</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={financialData.revenueByService}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ service, percent }) => `${service} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="amount"
-              >
-                {financialData.revenueByService.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {financialData.revenueByService.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={financialData.revenueByService}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ service, percent }) => `${service} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="amount"
+                >
+                  {financialData.revenueByService.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-500">
+              Aucune donnée disponible
+            </div>
+          )}
         </div>
 
         {/* Service Details */}
         <div className="card lg:col-span-2">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Détails par service</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={financialData.revenueByService}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="service" stroke="#6b7280" />
-              <YAxis stroke="#6b7280" />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="amount" fill="#0ea5e9" name="Revenu ($)" />
-              <Bar dataKey="count" fill="#10b981" name="Nombre d'actes" />
-            </BarChart>
-          </ResponsiveContainer>
+          {financialData.revenueByService.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={financialData.revenueByService}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="service" stroke="#6b7280" />
+                <YAxis stroke="#6b7280" />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="amount" fill="#0ea5e9" name="Revenu ($)" />
+                <Bar dataKey="count" fill="#10b981" name="Nombre d'actes" />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="h-[300px] flex items-center justify-center text-gray-500">
+              Aucune donnée disponible
+            </div>
+          )}
         </div>
       </div>
 
@@ -151,31 +286,39 @@ export default function Financial() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {financialData.revenueByService.map((service) => {
-                const total = financialData.revenueByService.reduce((sum, s) => sum + s.amount, 0);
-                const percent = (service.amount / total) * 100;
-                const average = service.amount / service.count;
+              {financialData.revenueByService.length > 0 ? (
+                financialData.revenueByService.map((service) => {
+                  const total = financialData.revenueByService.reduce((sum, s) => sum + (s.amount || 0), 0);
+                  const percent = total > 0 ? ((service.amount || 0) / total) * 100 : 0;
+                  const average = service.count > 0 ? (service.amount || 0) / service.count : 0;
 
-                return (
-                  <tr key={service.service} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {service.service}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {service.count}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
-                      ${service.amount.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      ${average.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                      {percent.toFixed(1)}%
-                    </td>
-                  </tr>
-                );
-              })}
+                  return (
+                    <tr key={service.service} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {service.service}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {service.count || 0}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                        ${(service.amount || 0).toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        ${average.toFixed(2)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        {percent.toFixed(1)}%
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                    Aucune donnée de service disponible
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
