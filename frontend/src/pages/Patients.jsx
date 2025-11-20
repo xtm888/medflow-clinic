@@ -12,6 +12,7 @@ export default function Patients() {
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('name');
   const [showWizard, setShowWizard] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -70,25 +71,48 @@ export default function Patients() {
     return '';
   };
 
-  // Filter patients based on search and priority
-  const filteredPatients = patients.filter(patient => {
-    // Search filter
-    const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.toLowerCase();
-    const phone = patient.phoneNumber || patient.phone || '';
-    const patientId = patient.patientId || '';
-    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
-      phone.includes(searchTerm) ||
-      patientId.toLowerCase().includes(searchTerm.toLowerCase());
+  // Filter and sort patients based on search, priority, and sort order
+  const filteredPatients = patients
+    .filter(patient => {
+      // Search filter
+      const fullName = `${patient.firstName || ''} ${patient.lastName || ''}`.toLowerCase();
+      const phone = patient.phoneNumber || patient.phone || '';
+      const patientId = patient.patientId || '';
+      const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
+        phone.includes(searchTerm) ||
+        patientId.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Priority filter
-    let matchesPriority = true;
-    if (priorityFilter !== 'all') {
-      const patientPriority = patient.priority || patient.patientType || 'normal';
-      matchesPriority = patientPriority.toUpperCase() === priorityFilter;
-    }
+      // Priority filter
+      let matchesPriority = true;
+      if (priorityFilter !== 'all') {
+        const patientPriority = patient.priority || patient.patientType || 'normal';
+        matchesPriority = patientPriority.toUpperCase() === priorityFilter;
+      }
 
-    return matchesSearch && matchesPriority;
-  });
+      return matchesSearch && matchesPriority;
+    })
+    .sort((a, b) => {
+      // Sort logic
+      switch (sortBy) {
+        case 'name':
+          const nameA = `${a.lastName || ''} ${a.firstName || ''}`.toLowerCase();
+          const nameB = `${b.lastName || ''} ${b.firstName || ''}`.toLowerCase();
+          return nameA.localeCompare(nameB);
+
+        case 'lastVisit':
+          const dateA = a.lastVisit ? new Date(a.lastVisit) : new Date(0);
+          const dateB = b.lastVisit ? new Date(b.lastVisit) : new Date(0);
+          return dateB - dateA; // Most recent first
+
+        case 'nextAppointment':
+          const apptA = a.nextAppointment ? new Date(a.nextAppointment) : new Date('9999-12-31');
+          const apptB = b.nextAppointment ? new Date(b.nextAppointment) : new Date('9999-12-31');
+          return apptA - apptB; // Soonest first
+
+        default:
+          return 0;
+      }
+    });
 
   // Handle wizard submission
   const handleWizardSubmit = async (patientData) => {
@@ -152,10 +176,14 @@ export default function Patients() {
               <option value="PREGNANT">Femmes enceintes</option>
               <option value="ELDERLY">Personnes âgées</option>
             </select>
-            <select className="input">
-              <option>Trier par nom</option>
-              <option>Dernière visite</option>
-              <option>Prochain RDV</option>
+            <select
+              className="input"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+            >
+              <option value="name">Trier par nom</option>
+              <option value="lastVisit">Dernière visite</option>
+              <option value="nextAppointment">Prochain RDV</option>
             </select>
           </div>
         </div>

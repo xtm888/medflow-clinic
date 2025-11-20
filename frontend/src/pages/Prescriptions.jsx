@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { FileText, Plus, Printer, Check, AlertTriangle, Link } from 'lucide-react';
 import prescriptionService from '../services/prescriptionService';
 import { toast } from 'react-toastify';
@@ -8,7 +8,7 @@ import { normalizeToArray, safeString } from '../utils/apiHelpers';
 import DocumentGenerator from '../components/documents/DocumentGenerator';
 
 export default function Prescriptions() {
-
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [prescriptions, setPrescriptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -189,11 +189,9 @@ export default function Prescriptions() {
           </p>
         </div>
         <button
-          onClick={() => {
-            toast.info('Pour créer une prescription, sélectionnez un patient et créez ou ouvrez une visite');
-            window.location.href = '/patients';
-          }}
+          onClick={() => navigate('/patients')}
           className="btn btn-primary flex items-center space-x-2"
+          title="Select a patient, then create a consultation to add prescriptions"
         >
           <Plus className="h-5 w-5" />
           <span>Nouvelle Prescription</span>

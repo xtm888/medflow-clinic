@@ -222,6 +222,16 @@ export default function Queue() {
       toast.success(`${queueEntry.patient?.firstName || 'Patient'} called to room ${roomNumber}`);
       dispatch(fetchQueue());
       dispatch(fetchQueueStats());
+
+      // Auto-navigate to consultation if visitId exists
+      if (queueEntry.visitId) {
+        toast.info('Opening consultation...');
+        navigate(`/ophthalmology/consultation/${queueEntry.patient._id}?visitId=${queueEntry.visitId}`);
+      } else if (queueEntry.patient?._id) {
+        // If no visit yet, navigate to new visit creation
+        toast.info('Creating new consultation...');
+        navigate(`/visits/new/${queueEntry.patient._id}`);
+      }
     } catch (err) {
       toast.error(err || 'Failed to call patient');
     }
