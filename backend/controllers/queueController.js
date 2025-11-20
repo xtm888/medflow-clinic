@@ -24,7 +24,6 @@ exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
   })
     .populate('patient', 'firstName lastName patientId')
     .populate('provider', 'firstName lastName')
-    .populate('visit', 'visitId status')
     .sort('queueNumber');
 
   // Group by department/provider
