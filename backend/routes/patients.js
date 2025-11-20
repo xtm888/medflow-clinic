@@ -12,7 +12,7 @@ const {
   uploadPatientDocument,
   searchPatients,
   getRecentPatients,
-  // getPatientVisits, // DEPRECATED - removed, now redirects to /api/visits/patient/:id
+  getPatientVisits,
   getPatientAllergies,
   addPatientAllergy,
   getPatientMedications,
@@ -47,6 +47,7 @@ router
 router.get('/:id/history', logPatientDataAccess, getPatientHistory);
 router.get('/:id/appointments', logPatientDataAccess, getPatientAppointments);
 router.get('/:id/prescriptions', logPatientDataAccess, getPatientPrescriptions);
+router.get('/:id/visits', logPatientDataAccess, getPatientVisits);
 router.get('/:id/billing', logPatientDataAccess, getPatientBilling);
 
 // Documents
