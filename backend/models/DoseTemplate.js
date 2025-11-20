@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const optionSchema = new mongoose.Schema({
   value: {
@@ -79,8 +80,8 @@ doseTemplateSchema.index({ medicationForm: 1, isActive: 1 });
 // Generate template ID
 doseTemplateSchema.pre('save', async function(next) {
   if (!this.templateId) {
-    const count = await this.constructor.countDocuments();
-    this.templateId = `DOSE${String(count + 1).padStart(6, '0')}`;
+    const sequence = await Counter.getNextSequence('doseTemplate');
+    this.templateId = `DOSE${String(sequence).padStart(6, '0')}`;
   }
   next();
 });

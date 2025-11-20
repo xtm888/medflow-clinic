@@ -264,7 +264,7 @@ const invoiceSchema = new mongoose.Schema({
 });
 
 // Indexes for efficient queries
-invoiceSchema.index({ invoiceId: 1 });
+invoiceSchema.index({ invoiceId: 1 }, { unique: true });
 invoiceSchema.index({ patient: 1, dateIssued: -1 });
 invoiceSchema.index({ status: 1, dueDate: 1 });
 invoiceSchema.index({ 'insurance.claimStatus': 1 });

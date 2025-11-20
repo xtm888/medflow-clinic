@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const medicationInProtocolSchema = new mongoose.Schema({
   medicationTemplate: {
@@ -140,8 +141,8 @@ treatmentProtocolSchema.index({ usageCount: -1 });
 // Generate protocol ID
 treatmentProtocolSchema.pre('save', async function(next) {
   if (!this.protocolId) {
-    const count = await this.constructor.countDocuments();
-    this.protocolId = `PROT${String(count + 1).padStart(6, '0')}`;
+    const sequence = await Counter.getNextSequence('treatmentProtocol');
+    this.protocolId = `PROT${String(sequence).padStart(6, '0')}`;
   }
   next();
 });

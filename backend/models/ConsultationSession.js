@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 /**
  * ConsultationSession Model
@@ -221,10 +222,11 @@ consultationSessionSchema.index({ createdAt: -1 });
 // Generate session ID
 consultationSessionSchema.pre('save', async function(next) {
   if (!this.sessionId) {
-    const count = await this.constructor.countDocuments();
+    const counterId = Counter.getDailyCounterId('consultation');
+    const sequence = await Counter.getNextSequence(counterId);
     const date = new Date();
     const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-    this.sessionId = `CONS-${dateStr}-${String(count + 1).padStart(4, '0')}`;
+    this.sessionId = `CONS-${dateStr}-${String(sequence).padStart(4, '0')}`;
   }
   next();
 });

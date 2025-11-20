@@ -518,7 +518,7 @@ const visitSchema = new mongoose.Schema({
 
 // Indexes
 visitSchema.index({ patient: 1, visitDate: -1 });
-visitSchema.index({ visitId: 1 });
+visitSchema.index({ visitId: 1 }, { unique: true, sparse: true });
 visitSchema.index({ primaryProvider: 1, visitDate: -1 });
 visitSchema.index({ status: 1 });
 visitSchema.index({ 'appointment': 1 });

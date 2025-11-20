@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const deviceSchema = new mongoose.Schema({
   // Device identification
@@ -449,8 +450,9 @@ deviceSchema.index({ 'integration.status': 1 });
 deviceSchema.pre('save', async function(next) {
   if (this.isNew && !this.deviceId) {
     const prefix = this.type.substring(0, 3).toUpperCase();
-    const count = await mongoose.model('Device').countDocuments();
-    this.deviceId = `${prefix}${(count + 1).toString().padStart(4, '0')}`;
+    const counterId = `device-${prefix}`;
+    const sequence = await Counter.getNextSequence(counterId);
+    this.deviceId = `${prefix}${sequence.toString().padStart(4, '0')}`;
   }
 
   // Calculate next calibration date

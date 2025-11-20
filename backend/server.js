@@ -39,6 +39,7 @@ const alertScheduler = require('./services/alertScheduler');
 const deviceSyncScheduler = require('./services/deviceSyncScheduler');
 const reservationCleanupScheduler = require('./services/reservationCleanupScheduler');
 const websocketService = require('./services/websocketService');
+const Counter = require('./models/Counter');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -154,6 +155,19 @@ mongoose.connect(mongoUri, {
   // Start reservation cleanup scheduler (CRITICAL: prevents stock lockup)
   reservationCleanupScheduler.start();
 
+  // Schedule counter cleanup job (runs weekly to remove old counters)
+  const counterCleanupInterval = setInterval(async () => {
+    try {
+      const deletedCount = await Counter.cleanupOldCounters(90);
+      console.log(`✅ Counter cleanup: Removed ${deletedCount} old counter records`);
+    } catch (error) {
+      console.error('❌ Counter cleanup error:', error);
+    }
+  }, 7 * 24 * 60 * 60 * 1000); // Weekly (7 days)
+
+  // Store cleanup interval for graceful shutdown
+  global.counterCleanupInterval = counterCleanupInterval;
+
   // Create HTTP server
   const server = http.createServer(app);
 
@@ -182,6 +196,12 @@ process.on('SIGINT', async () => {
   alertScheduler.stop();
   deviceSyncScheduler.stop();
   reservationCleanupScheduler.stop();
+
+  // Stop counter cleanup interval
+  if (global.counterCleanupInterval) {
+    clearInterval(global.counterCleanupInterval);
+  }
+
   await mongoose.connection.close();
   process.exit(0);
 });

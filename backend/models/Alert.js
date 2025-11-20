@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 /**
  * Alert Model
@@ -198,10 +199,11 @@ alertSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
 // Generate alert ID
 alertSchema.pre('save', async function(next) {
   if (!this.alertId) {
-    const count = await this.constructor.countDocuments();
+    const counterId = Counter.getDailyCounterId('alert');
+    const sequence = await Counter.getNextSequence(counterId);
     const date = new Date();
     const dateStr = date.toISOString().split('T')[0].replace(/-/g, '');
-    this.alertId = `ALERT-${dateStr}-${String(count + 1).padStart(6, '0')}`;
+    this.alertId = `ALERT-${dateStr}-${String(sequence).padStart(6, '0')}`;
   }
   next();
 });

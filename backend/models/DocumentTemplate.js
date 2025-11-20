@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const documentTemplateSchema = new mongoose.Schema({
   // Identification
@@ -158,8 +159,8 @@ documentTemplateSchema.index({ tags: 1 });
 // Generate template ID
 documentTemplateSchema.pre('save', async function(next) {
   if (!this.templateId) {
-    const count = await this.constructor.countDocuments();
-    this.templateId = `TPL${String(count + 1).padStart(4, '0')}`;
+    const sequence = await Counter.getNextSequence('documentTemplate');
+    this.templateId = `TPL${String(sequence).padStart(4, '0')}`;
   }
   next();
 });

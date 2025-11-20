@@ -461,7 +461,7 @@ patientSchema.virtual('bmi').get(function() {
 });
 
 // Indexes
-patientSchema.index({ patientId: 1 });
+patientSchema.index({ patientId: 1 }, { unique: true, sparse: true });
 patientSchema.index({ nationalId: 1 });
 patientSchema.index({ 'firstName': 1, 'lastName': 1 });
 patientSchema.index({ phoneNumber: 1 });

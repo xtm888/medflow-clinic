@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const glassesOrderSchema = new mongoose.Schema({
   // Order identification
@@ -222,11 +223,12 @@ const glassesOrderSchema = new mongoose.Schema({
 // Generate order number before saving
 glassesOrderSchema.pre('save', async function(next) {
   if (!this.orderNumber) {
-    const count = await mongoose.model('GlassesOrder').countDocuments();
+    const counterId = Counter.getMonthlyCounterId('glassesOrder');
+    const sequence = await Counter.getNextSequence(counterId);
     const date = new Date();
     const year = date.getFullYear().toString().slice(-2);
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    this.orderNumber = `GO-${year}${month}-${(count + 1).toString().padStart(4, '0')}`;
+    this.orderNumber = `GO-${year}${month}-${sequence.toString().padStart(4, '0')}`;
   }
 
   // Calculate totals

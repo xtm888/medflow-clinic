@@ -348,7 +348,7 @@ appointmentSchema.index({ provider: 1, date: 1, status: 1 });
 appointmentSchema.index({ date: 1, startTime: 1 });
 appointmentSchema.index({ status: 1 });
 appointmentSchema.index({ type: 1, department: 1 });
-appointmentSchema.index({ appointmentId: 1 });
+appointmentSchema.index({ appointmentId: 1 }, { unique: true });
 
 // Virtual for isToday
 appointmentSchema.virtual('isToday').get(function() {

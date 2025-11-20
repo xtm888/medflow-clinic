@@ -466,7 +466,7 @@ const prescriptionSchema = new mongoose.Schema({
 // Indexes
 prescriptionSchema.index({ patient: 1, dateIssued: -1 });
 prescriptionSchema.index({ prescriber: 1, status: 1 });
-prescriptionSchema.index({ prescriptionId: 1 });
+prescriptionSchema.index({ prescriptionId: 1 }, { unique: true, sparse: true });
 prescriptionSchema.index({ type: 1, status: 1 });
 prescriptionSchema.index({ validUntil: 1 });
 

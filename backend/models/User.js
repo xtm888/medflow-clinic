@@ -211,6 +211,7 @@ userSchema.virtual('fullName').get(function() {
 userSchema.index({ email: 1, username: 1 });
 userSchema.index({ role: 1, department: 1 });
 userSchema.index({ createdAt: -1 });
+userSchema.index({ employeeId: 1 }, { unique: true, sparse: true });
 
 // Encrypt password before saving
 userSchema.pre('save', async function(next) {
