@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Calendar, Clock, User, FileText, X } from 'lucide-react';
-import PatientSelector from './PatientSelector';
+import PatientSelector from '../modules/patient/PatientSelector';
 
 /**
  * Shared Appointment Booking Form Component
