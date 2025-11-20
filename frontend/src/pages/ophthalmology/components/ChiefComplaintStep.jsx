@@ -46,6 +46,7 @@ const ASSOCIATED_SYMPTOMS = [
 
 export default function ChiefComplaintStep({ data = {}, onChange, readOnly = false }) {
   const [motifs, setMotifs] = useState([]);
+  const [durationOptions, setDurationOptions] = useState([]);
   const [loadingMotifs, setLoadingMotifs] = useState(false);
 
   // Local state for complaint data
@@ -60,7 +61,7 @@ export default function ChiefComplaintStep({ data = {}, onChange, readOnly = fal
     notes: data?.notes || ''
   };
 
-  // Fetch consultation motifs
+  // Fetch consultation motifs and duration options
   useEffect(() => {
     const fetchMotifs = async () => {
       setLoadingMotifs(true);
@@ -68,7 +69,16 @@ export default function ChiefComplaintStep({ data = {}, onChange, readOnly = fal
         const response = await api.get('/template-catalog/pathologies', {
           params: { category: 'MOTIF DE CONSULTATION' }
         });
-        setMotifs(response.data?.data || []);
+        const data = response.data?.data || [];
+
+        // Separate motifs (names) from duration options (descriptions)
+        const motifNames = data.filter(item => item.fieldType !== 'description');
+        const durations = data
+          .filter(item => item.fieldType === 'description' && item.name?.toLowerCase().includes('depuis'))
+          .map(item => item.name);
+
+        setMotifs(motifNames);
+        setDurationOptions(durations);
       } catch (error) {
         console.error('Failed to fetch motifs:', error);
       } finally {
@@ -149,12 +159,33 @@ export default function ChiefComplaintStep({ data = {}, onChange, readOnly = fal
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Durée
           </label>
+          {/* Duration Quick-Pick Buttons */}
+          {durationOptions.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {durationOptions.map((duration) => (
+                <button
+                  key={duration}
+                  type="button"
+                  onClick={() => updateField('duration', duration)}
+                  className={`px-3 py-1.5 text-sm rounded-full border transition ${
+                    complaint.duration === duration
+                      ? 'bg-blue-100 text-blue-800 border-blue-300 font-medium'
+                      : 'bg-white border-gray-200 hover:bg-gray-50'
+                  }`}
+                  disabled={readOnly}
+                >
+                  {duration}
+                </button>
+              ))}
+            </div>
+          )}
+          {/* Custom Duration Input */}
           <input
             type="text"
             value={complaint.duration}
             onChange={(e) => updateField('duration', e.target.value)}
             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Ex: Depuis 3 jours"
+            placeholder="Ou saisir une durée personnalisée..."
             disabled={readOnly}
           />
         </div>
