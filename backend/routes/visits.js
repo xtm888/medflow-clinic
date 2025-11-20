@@ -501,47 +501,8 @@ router.post('/:id/invoice', protect, authorize('admin', 'doctor', 'ophthalmologi
   }
 });
 
-// @desc    Add prescription to visit
-// @route   POST /api/visits/:id/prescriptions
-// @access  Private
-router.post('/:id/prescriptions', protect, authorize('admin', 'doctor', 'ophthalmologist'), async (req, res) => {
-  try {
-    const visit = await Visit.findById(req.params.id);
-
-    if (!visit) {
-      return res.status(404).json({
-        success: false,
-        error: 'Visit not found'
-      });
-    }
-
-    const Prescription = require('../models/Prescription');
-
-    // Create the prescription
-    const prescription = await Prescription.create({
-      ...req.body,
-      visit: visit._id,
-      patient: visit.patient,
-      prescriber: req.user._id,
-      createdBy: req.user._id,
-      updatedBy: req.user._id
-    });
-
-    // Link to visit
-    await visit.addPrescription(prescription._id);
-
-    res.status(201).json({
-      success: true,
-      data: prescription
-    });
-  } catch (error) {
-    console.error('Error adding prescription:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// NOTE: Prescription creation moved to /api/prescriptions endpoint
+// Use POST /api/prescriptions with visitId in body instead
 
 // @desc    Get complete visit summary
 // @route   GET /api/visits/:id/summary
