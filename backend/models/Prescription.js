@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const prescriptionSchema = new mongoose.Schema({
   // Identification
@@ -535,13 +536,6 @@ prescriptionSchema.pre('save', async function(next) {
     const date = new Date();
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
-    const count = await this.constructor.countDocuments({
-      dateIssued: {
-        $gte: new Date(year, date.getMonth(), 1),
-        $lt: new Date(year, date.getMonth() + 1, 1)
-      }
-    });
-
     const typePrefix = {
       'medication': 'MED',
       'optical': 'OPT',
@@ -551,7 +545,9 @@ prescriptionSchema.pre('save', async function(next) {
     };
 
     const prefix = typePrefix[this.type] || 'RX';
-    this.prescriptionId = `${prefix}${year}${month}${String(count + 1).padStart(5, '0')}`;
+    const counterId = `prescription-${prefix}-${year}${month}`;
+    const sequence = await Counter.getNextSequence(counterId);
+    this.prescriptionId = `${prefix}${year}${month}${String(sequence).padStart(5, '0')}`;
   }
 
   // Set default validity period if not specified
