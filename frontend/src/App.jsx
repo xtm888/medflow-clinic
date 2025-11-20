@@ -33,12 +33,10 @@ const Financial = lazy(() => import('./pages/Financial'));
 const Invoicing = lazy(() => import('./pages/Invoicing'));
 const Services = lazy(() => import('./pages/Services'));
 const Settings = lazy(() => import('./pages/Settings'));
-const PatientVisit = lazy(() => import('./pages/PatientVisit'));
 const DocumentGeneration = lazy(() => import('./pages/DocumentGeneration'));
 const Laboratory = lazy(() => import('./pages/Laboratory'));
 // Ophthalmology Pages
 const OphthalmologyDashboard = lazy(() => import('./pages/ophthalmology/OphthalmologyDashboard'));
-const RefractionExam = lazy(() => import('./pages/ophthalmology/RefractionExam'));
 const GlassesOrder = lazy(() => import('./pages/ophthalmology/GlassesOrder'));
 const NewConsultation = lazy(() => import('./pages/ophthalmology/NewConsultation'));
 // IVT Pages
@@ -54,7 +52,6 @@ const DeviceDetail = lazy(() => import('./pages/DeviceDetail'));
 const DeviceImport = lazy(() => import('./pages/DeviceImport'));
 const DeviceStatusDashboard = lazy(() => import('./pages/DeviceStatusDashboard'));
 const PatientDetail = lazy(() => import('./pages/PatientDetail'));
-const PatientSummary = lazy(() => import('./pages/PatientSummary'));
 // Patient Portal Pages
 const PatientLogin = lazy(() => import('./pages/patient/PatientLogin'));
 const PatientDashboard = lazy(() => import('./pages/patient/PatientDashboard'));
@@ -115,7 +112,6 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="patients" element={<Patients />} />
               <Route path="patients/:patientId" element={<PatientDetail />} />
-              <Route path="patients/:patientId/summary" element={<PatientSummary />} />
               <Route path="queue" element={<Queue />} />
               <Route path="appointments" element={<Appointments />} />
               <Route path="prescriptions" element={<Prescriptions />} />
@@ -129,12 +125,12 @@ function App() {
               <Route path="settings" element={<Settings />} />
               <Route path="documents" element={<DocumentGeneration />} />
               {/* Visit Routes */}
-              <Route path="visits/:id" element={<PatientVisit />} />
-              <Route path="visits/new/:patientId" element={<PatientVisit />} />
+              <Route path="visits/:id" element={<NewConsultation />} />
+              <Route path="visits/new/:patientId" element={<NewConsultation />} />
               {/* Ophthalmology Routes */}
               <Route path="ophthalmology" element={<OphthalmologyDashboard />} />
               <Route path="ophthalmology/consultation" element={<NewConsultation />} />
-              <Route path="ophthalmology/refraction" element={<RefractionExam />} />
+              <Route path="ophthalmology/refraction" element={<NewConsultation />} />
               <Route path="ophthalmology/glasses-order/:examId" element={<GlassesOrder />} />
               {/* IVT Routes */}
               <Route path="ivt" element={<IVTDashboard />} />
