@@ -3,7 +3,7 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const {
   getCompleteProfile,
-  getTimeline,
+  // getTimeline, // DEPRECATED - removed, now redirects to /api/visits/timeline/:id
   getMedicalIssues,
   updateMedicalIssue,
   getProviders,
@@ -21,7 +21,14 @@ router.get('/:id/complete-profile', authorize('admin', 'doctor', 'ophthalmologis
 // @desc    Get patient timeline
 // @route   GET /api/patients/:id/timeline
 // @access  Private (Medical staff only)
-router.get('/:id/timeline', authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), getTimeline);
+// DEPRECATED: Redirect to /api/visits/timeline/:patientId (uses Visit.getTimeline() model method)
+router.get('/:id/timeline', (req, res) => {
+  res.setHeader('X-API-Warn', 'DEPRECATED: Use /api/visits/timeline/:patientId instead');
+  res.setHeader('X-Deprecation-Date', '2025-01-01');
+  res.setHeader('X-Sunset-Date', '2025-06-01');
+  console.warn(`[DEPRECATED] GET /api/patients/${req.params.id}/timeline → Use /api/visits/timeline/${req.params.id}`);
+  res.redirect(307, `/api/visits/timeline/${req.params.id}`);
+});
 
 // @desc    Get patient medical issues
 // @route   GET /api/patients/:id/medical-issues

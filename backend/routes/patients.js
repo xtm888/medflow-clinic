@@ -12,7 +12,7 @@ const {
   uploadPatientDocument,
   searchPatients,
   getRecentPatients,
-  getPatientVisits,
+  // getPatientVisits, // DEPRECATED - removed, now redirects to /api/visits/patient/:id
   getPatientAllergies,
   addPatientAllergy,
   getPatientMedications,
@@ -48,7 +48,15 @@ router.get('/:id/history', logPatientDataAccess, getPatientHistory);
 router.get('/:id/appointments', logPatientDataAccess, getPatientAppointments);
 router.get('/:id/prescriptions', logPatientDataAccess, getPatientPrescriptions);
 router.get('/:id/billing', logPatientDataAccess, getPatientBilling);
-router.get('/:id/visits', logPatientDataAccess, getPatientVisits);
+
+// DEPRECATED: Redirect to /api/visits/patient/:patientId (better implementation with pagination)
+router.get('/:id/visits', (req, res) => {
+  res.setHeader('X-API-Warn', 'DEPRECATED: Use /api/visits/patient/:patientId instead');
+  res.setHeader('X-Deprecation-Date', '2025-01-01');
+  res.setHeader('X-Sunset-Date', '2025-06-01');
+  console.warn(`[DEPRECATED] GET /api/patients/${req.params.id}/visits → Use /api/visits/patient/${req.params.id}`);
+  res.redirect(307, `/api/visits/patient/${req.params.id}`);
+});
 
 // Documents
 router
