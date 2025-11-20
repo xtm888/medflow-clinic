@@ -10,8 +10,8 @@
  * This can replace the complex PatientVisit.jsx with a cleaner implementation
  */
 
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   ClinicalWorkflow,
   ophthalmologyWorkflowConfig,
@@ -21,6 +21,7 @@ import {
 } from '@modules/clinical';
 import { PatientSelector } from '@modules/patient';
 import consultationSessionService from '@services/consultationSessionService';
+import patientService from '@services/patientService';
 
 // Import existing step components
 import VisualAcuityStep from './components/VisualAcuityStep';
@@ -56,8 +57,29 @@ const stepComponents = {
 
 export default function NewConsultation() {
   const navigate = useNavigate();
+  const { patientId } = useParams(); // Get patientId from URL
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [workflowType, setWorkflowType] = useState('full'); // 'full', 'followup', 'refraction'
+  const [loadingPatient, setLoadingPatient] = useState(false);
+
+  // Load patient from URL params if available
+  useEffect(() => {
+    if (patientId && !selectedPatient) {
+      loadPatientFromUrl();
+    }
+  }, [patientId]);
+
+  const loadPatientFromUrl = async () => {
+    try {
+      setLoadingPatient(true);
+      const patient = await patientService.getPatientById(patientId);
+      setSelectedPatient(patient);
+    } catch (error) {
+      console.error('Error loading patient:', error);
+    } finally {
+      setLoadingPatient(false);
+    }
+  };
 
   // Get workflow config based on type
   const getWorkflowConfig = () => {
