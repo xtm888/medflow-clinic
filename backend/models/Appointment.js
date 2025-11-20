@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const appointmentSchema = new mongoose.Schema({
   // Identification
@@ -406,13 +407,9 @@ appointmentSchema.pre('save', async function(next) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
-    const count = await this.constructor.countDocuments({
-      date: {
-        $gte: new Date(date.setHours(0, 0, 0, 0)),
-        $lt: new Date(date.setHours(23, 59, 59, 999))
-      }
-    });
-    this.appointmentId = `APT${year}${month}${day}${String(count + 1).padStart(4, '0')}`;
+    const counterId = `appointment-${year}${month}${day}`;
+    const sequence = await Counter.getNextSequence(counterId);
+    this.appointmentId = `APT${year}${month}${day}${String(sequence).padStart(4, '0')}`;
   }
 
   // Add to status history
