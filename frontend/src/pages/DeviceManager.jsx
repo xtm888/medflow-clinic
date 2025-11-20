@@ -188,8 +188,6 @@ const DeviceManager = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
-
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>

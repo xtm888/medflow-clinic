@@ -210,7 +210,6 @@ const DeviceImport = () => {
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">

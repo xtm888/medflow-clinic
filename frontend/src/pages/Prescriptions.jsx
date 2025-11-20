@@ -545,7 +545,6 @@ export default function Prescriptions() {
   return (
     <div className="space-y-6">
       {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       <div className="flex items-center justify-between">
         <div>

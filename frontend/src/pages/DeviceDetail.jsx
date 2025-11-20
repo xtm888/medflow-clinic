@@ -208,7 +208,6 @@ const DeviceDetail = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Header */}
       <div className="flex items-center justify-between mb-6">

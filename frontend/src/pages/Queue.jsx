@@ -91,7 +91,7 @@ export default function Queue() {
       toast.error(error);
       dispatch(clearQueueError());
     }
-  }, [error, showError, dispatch]);
+  }, [error, dispatch]);
 
   // Handle check-in submit
   const handleCheckIn = async (e) => {
@@ -349,7 +349,6 @@ export default function Queue() {
   return (
     <div className="space-y-6">
       {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
 
       {/* Header */}

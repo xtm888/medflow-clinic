@@ -95,7 +95,7 @@ export default function Settings() {
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
-      showError('Erreur lors du chargement des paramètres');
+      toast.error('Erreur lors du chargement des paramètres');
     } finally {
       setLoading(false);
     }
@@ -105,7 +105,7 @@ export default function Settings() {
     try {
       setSaving(true);
       await settingsService.updateProfile(profile);
-      showSuccess('Profil mis à jour avec succès');
+      toast.success('Profil mis à jour avec succès');
 
       // Update localStorage
       const { user } = useAuth();
@@ -117,7 +117,7 @@ export default function Settings() {
       }));
     } catch (error) {
       console.error('Error saving profile:', error);
-      showError(error.response?.data?.error || 'Erreur lors de la sauvegarde du profil');
+      toast.error(error.response?.data?.error || 'Erreur lors de la sauvegarde du profil');
     } finally {
       setSaving(false);
     }
@@ -127,10 +127,10 @@ export default function Settings() {
     try {
       setSaving(true);
       await settingsService.updateSettings({ clinic });
-      showSuccess('Informations de la clinique mises à jour');
+      toast.success('Informations de la clinique mises à jour');
     } catch (error) {
       console.error('Error saving clinic settings:', error);
-      showError(error.response?.data?.error || 'Erreur lors de la sauvegarde');
+      toast.error(error.response?.data?.error || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -140,10 +140,10 @@ export default function Settings() {
     try {
       setSaving(true);
       await settingsService.updateSettings({ notifications });
-      showSuccess('Préférences de notification mises à jour');
+      toast.success('Préférences de notification mises à jour');
     } catch (error) {
       console.error('Error saving notifications:', error);
-      showError(error.response?.data?.error || 'Erreur lors de la sauvegarde');
+      toast.error(error.response?.data?.error || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -153,10 +153,10 @@ export default function Settings() {
     try {
       setSaving(true);
       await settingsService.updateTwilioSettings(twilio);
-      showSuccess('Configuration Twilio mise à jour');
+      toast.success('Configuration Twilio mise à jour');
     } catch (error) {
       console.error('Error saving Twilio settings:', error);
-      showError(error.response?.data?.error || 'Erreur lors de la sauvegarde');
+      toast.error(error.response?.data?.error || 'Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -166,10 +166,10 @@ export default function Settings() {
     try {
       setSaving(true);
       await settingsService.testTwilioConnection();
-      showSuccess('Connexion Twilio réussie');
+      toast.success('Connexion Twilio réussie');
     } catch (error) {
       console.error('Error testing Twilio:', error);
-      showError(error.response?.data?.error || 'Erreur de connexion Twilio');
+      toast.error(error.response?.data?.error || 'Erreur de connexion Twilio');
     } finally {
       setSaving(false);
     }
@@ -177,23 +177,23 @@ export default function Settings() {
 
   const handleChangePassword = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      showError('Les mots de passe ne correspondent pas');
+      toast.error('Les mots de passe ne correspondent pas');
       return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      showError('Le mot de passe doit contenir au moins 8 caractères');
+      toast.error('Le mot de passe doit contenir au moins 8 caractères');
       return;
     }
 
     try {
       setSaving(true);
       await settingsService.changePassword(passwordData.currentPassword, passwordData.newPassword);
-      showSuccess('Mot de passe modifié avec succès');
+      toast.success('Mot de passe modifié avec succès');
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (error) {
       console.error('Error changing password:', error);
-      showError(error.response?.data?.error || 'Erreur lors du changement de mot de passe');
+      toast.error(error.response?.data?.error || 'Erreur lors du changement de mot de passe');
     } finally {
       setSaving(false);
     }
@@ -273,16 +273,16 @@ export default function Settings() {
                         const file = e.target.files[0];
                         if (file) {
                           if (file.size > 2 * 1024 * 1024) {
-                            showError('La taille du fichier ne doit pas dépasser 2MB');
+                            toast.error('La taille du fichier ne doit pas dépasser 2MB');
                             return;
                           }
                           try {
                             const formData = new FormData();
                             formData.append('photo', file);
                             await settingsService.uploadProfilePhoto(formData);
-                            showSuccess('Photo de profil mise à jour');
+                            toast.success('Photo de profil mise à jour');
                           } catch (err) {
-                            showError('Erreur lors du téléchargement de la photo');
+                            toast.error('Erreur lors du téléchargement de la photo');
                           }
                         }
                       }}

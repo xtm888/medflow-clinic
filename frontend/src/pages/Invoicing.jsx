@@ -1240,7 +1240,6 @@ export default function Invoicing() {
       )}
 
       {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }

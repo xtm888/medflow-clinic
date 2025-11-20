@@ -49,7 +49,6 @@ export default function DocumentGenerationPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Toast Notifications */}
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
 
       {/* Header */}
       <div className="mb-6">
