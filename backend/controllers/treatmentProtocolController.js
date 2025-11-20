@@ -195,12 +195,22 @@ exports.updateTreatmentProtocol = async (req, res) => {
       });
     }
 
-    // Update fields
-    Object.assign(protocol, req.body);
+    // Update fields (whitelist to prevent field injection)
+    const allowedFields = [
+      'name', 'description', 'medications', 'category',
+      'tags', 'notes', 'dosageInstructions', 'duration',
+      'frequency', 'indications', 'contraindications'
+    ];
+
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        protocol[field] = req.body[field];
+      }
+    });
 
     // Only admins can change isSystemWide
-    if (req.body.isSystemWide !== undefined && req.user.role !== 'admin') {
-      protocol.isSystemWide = false;
+    if (req.body.isSystemWide !== undefined && req.user.role === 'admin') {
+      protocol.isSystemWide = req.body.isSystemWide;
     }
 
     await protocol.save();

@@ -255,6 +255,23 @@ exports.completeAppointment = asyncHandler(async (req, res, next) => {
 
   await appointment.save();
 
+  // If appointment has linked visit, complete the visit too (cascade)
+  if (appointment.visit) {
+    const Visit = require('../models/Visit');
+    const visit = await Visit.findById(appointment.visit);
+
+    if (visit && visit.status !== 'completed') {
+      // Complete the visit (triggers invoice generation, inventory reservation)
+      try {
+        await visit.completeVisit(req.user.id);
+        console.log(`Visit ${visit.visitId} auto-completed from appointment completion`);
+      } catch (err) {
+        console.error('Error auto-completing visit:', err);
+        // Don't fail appointment completion if visit completion fails
+      }
+    }
+  }
+
   // Update patient's last visit
   await Patient.findByIdAndUpdate(appointment.patient, {
     lastVisit: Date.now()

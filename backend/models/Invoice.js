@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const crypto = require('crypto');
 
 const invoiceSchema = new mongoose.Schema({
   invoiceId: {
@@ -334,7 +335,7 @@ invoiceSchema.pre('save', async function(next) {
 
 // Method to add payment
 invoiceSchema.methods.addPayment = async function(paymentData, userId, session = null) {
-  const paymentId = `PAY${Date.now()}${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+  const paymentId = `PAY${Date.now()}${crypto.randomBytes(6).toString('hex').toUpperCase()}`;
 
   const payment = {
     paymentId,
@@ -386,6 +387,18 @@ invoiceSchema.methods.issueRefund = async function(amount, userId, reason, metho
     reason,
     method
   };
+
+  // Create negative payment record for audit trail
+  const refundPaymentId = `REF${Date.now()}${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
+  this.payments.push({
+    paymentId: refundPaymentId,
+    amount: -amount,  // Negative for refund
+    method: method || 'refund',
+    date: new Date(),
+    reference: `Refund: ${reason}`,
+    notes: reason,
+    receivedBy: userId
+  });
 
   this.summary.amountPaid -= amount;
   this.summary.amountDue += amount;

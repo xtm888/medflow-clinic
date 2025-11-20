@@ -38,6 +38,16 @@ const patientSchema = new mongoose.Schema({
     enum: ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-']
   },
 
+  // Photo
+  photoPath: {
+    type: String,
+    default: null
+  },
+  photoUrl: {
+    type: String,
+    default: null
+  },
+
   // Contact Information
   phoneNumber: {
     type: String,

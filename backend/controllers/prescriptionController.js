@@ -262,6 +262,41 @@ exports.cancelPrescription = asyncHandler(async (req, res, next) => {
     });
   }
 
+  // Release reserved inventory if prescription was ready/reserved
+  if (prescription.status === 'ready' || prescription.status === 'reserved') {
+    const PharmacyInventory = require('../models/PharmacyInventory');
+
+    for (const medication of prescription.medications) {
+      if (medication.inventoryId) {
+        const inventory = await PharmacyInventory.findById(medication.inventoryId);
+
+        if (inventory && inventory.reservations) {
+          // Find reservation for this prescription
+          const reservationIndex = inventory.reservations.findIndex(
+            r => r.reference && r.reference.toString() === prescription._id.toString()
+          );
+
+          if (reservationIndex !== -1) {
+            const reservation = inventory.reservations[reservationIndex];
+
+            // Add reserved quantity back to available stock
+            inventory.inventory.currentStock += reservation.quantity;
+
+            // Remove reservation
+            inventory.reservations.splice(reservationIndex, 1);
+
+            // Update status if no more reservations
+            if (inventory.status === 'reserved' && inventory.reservations.length === 0) {
+              inventory.status = 'available';
+            }
+
+            await inventory.save();
+          }
+        }
+      }
+    }
+  }
+
   prescription.status = 'cancelled';
   prescription.cancellation = {
     cancelled: true,

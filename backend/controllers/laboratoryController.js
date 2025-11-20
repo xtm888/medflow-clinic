@@ -11,26 +11,26 @@ exports.getAllTests = asyncHandler(async (req, res) => {
   const { status, patientId, dateFrom, dateTo } = req.query;
   const query = {};
 
-  if (status) query['laboratoryTests.status'] = status;
+  if (status) query['laboratoryOrders.status'] = status;
   if (patientId) query.patient = patientId;
   if (dateFrom || dateTo) {
-    query['laboratoryTests.orderedAt'] = {};
-    if (dateFrom) query['laboratoryTests.orderedAt'].$gte = new Date(dateFrom);
-    if (dateTo) query['laboratoryTests.orderedAt'].$lte = new Date(dateTo);
+    query['laboratoryOrders.orderedAt'] = {};
+    if (dateFrom) query['laboratoryOrders.orderedAt'].$gte = new Date(dateFrom);
+    if (dateTo) query['laboratoryOrders.orderedAt'].$lte = new Date(dateTo);
   }
 
   const visits = await Visit.find(query)
     .populate('patient', 'firstName lastName patientId')
     .populate('primaryProvider', 'firstName lastName')
-    .select('laboratoryTests visitDate')
+    .select('laboratoryOrders visitDate')
     .sort('-visitDate')
     .lean();
 
   // Flatten laboratory tests from all visits
   const tests = [];
   visits.forEach(visit => {
-    if (visit.laboratoryTests && visit.laboratoryTests.length > 0) {
-      visit.laboratoryTests.forEach(test => {
+    if (visit.laboratoryOrders && visit.laboratoryOrders.length > 0) {
+      visit.laboratoryOrders.forEach(test => {
         tests.push({
           ...test,
           patient: visit.patient,
@@ -97,10 +97,10 @@ exports.orderTests = asyncHandler(async (req, res) => {
     notes: test.notes || ''
   }));
 
-  if (!visit.laboratoryTests) {
-    visit.laboratoryTests = [];
+  if (!visit.laboratoryOrders) {
+    visit.laboratoryOrders = [];
   }
-  visit.laboratoryTests.push(...labTests);
+  visit.laboratoryOrders.push(...labTests);
   await visit.save();
 
   // Create notification for lab technician
@@ -143,7 +143,7 @@ exports.updateTestResults = asyncHandler(async (req, res) => {
   }
 
   // Find the specific test
-  const test = visit.laboratoryTests.id(testId);
+  const test = visit.laboratoryOrders.id(testId);
   if (!test) {
     return res.status(404).json({
       success: false,
@@ -226,19 +226,19 @@ exports.updateTestResults = asyncHandler(async (req, res) => {
 // @access  Private
 exports.getPendingTests = asyncHandler(async (req, res) => {
   const visits = await Visit.find({
-    'laboratoryTests.status': { $in: ['ordered', 'in-progress'] }
+    'laboratoryOrders.status': { $in: ['ordered', 'in-progress'] }
   })
     .populate('patient', 'firstName lastName patientId dateOfBirth gender')
     .populate('primaryProvider', 'firstName lastName')
-    .select('laboratoryTests visitDate')
+    .select('laboratoryOrders visitDate')
     .sort('-visitDate')
     .lean();
 
   // Extract pending tests
   const pendingTests = [];
   visits.forEach(visit => {
-    if (visit.laboratoryTests) {
-      visit.laboratoryTests
+    if (visit.laboratoryOrders) {
+      visit.laboratoryOrders
         .filter(test => ['ordered', 'in-progress'].includes(test.status))
         .forEach(test => {
           pendingTests.push({
@@ -300,16 +300,16 @@ exports.getStatistics = asyncHandler(async (req, res) => {
 
   // Get today's statistics
   const todayVisits = await Visit.find({
-    'laboratoryTests.orderedAt': { $gte: today, $lt: tomorrow }
-  }).select('laboratoryTests');
+    'laboratoryOrders.orderedAt': { $gte: today, $lt: tomorrow }
+  }).select('laboratoryOrders');
 
   let todayOrdered = 0;
   let todayCompleted = 0;
   let todayPending = 0;
 
   todayVisits.forEach(visit => {
-    if (visit.laboratoryTests) {
-      visit.laboratoryTests.forEach(test => {
+    if (visit.laboratoryOrders) {
+      visit.laboratoryOrders.forEach(test => {
         if (test.orderedAt >= today) {
           todayOrdered++;
           if (test.status === 'completed') todayCompleted++;
@@ -321,13 +321,13 @@ exports.getStatistics = asyncHandler(async (req, res) => {
 
   // Get all pending tests count
   const allPendingVisits = await Visit.find({
-    'laboratoryTests.status': { $in: ['ordered', 'in-progress'] }
-  }).select('laboratoryTests');
+    'laboratoryOrders.status': { $in: ['ordered', 'in-progress'] }
+  }).select('laboratoryOrders');
 
   let totalPending = 0;
   allPendingVisits.forEach(visit => {
-    if (visit.laboratoryTests) {
-      totalPending += visit.laboratoryTests.filter(t =>
+    if (visit.laboratoryOrders) {
+      totalPending += visit.laboratoryOrders.filter(t =>
         t.status === 'ordered' || t.status === 'in-progress'
       ).length;
     }
@@ -336,12 +336,12 @@ exports.getStatistics = asyncHandler(async (req, res) => {
   // Get test categories distribution
   const categories = {};
   const allVisits = await Visit.find({
-    laboratoryTests: { $exists: true, $ne: [] }
-  }).select('laboratoryTests');
+    laboratoryOrders: { $exists: true, $ne: [] }
+  }).select('laboratoryOrders');
 
   allVisits.forEach(visit => {
-    if (visit.laboratoryTests) {
-      visit.laboratoryTests.forEach(test => {
+    if (visit.laboratoryOrders) {
+      visit.laboratoryOrders.forEach(test => {
         const category = test.category || 'general';
         categories[category] = (categories[category] || 0) + 1;
       });
@@ -371,10 +371,10 @@ exports.generateReport = asyncHandler(async (req, res) => {
   const visit = await Visit.findById(req.params.visitId)
     .populate('patient', 'firstName lastName patientId dateOfBirth gender address phoneNumber')
     .populate('primaryProvider', 'firstName lastName title')
-    .populate('laboratoryTests.performedBy', 'firstName lastName')
+    .populate('laboratoryOrders.performedBy', 'firstName lastName')
     .lean();
 
-  if (!visit || !visit.laboratoryTests || visit.laboratoryTests.length === 0) {
+  if (!visit || !visit.laboratoryOrders || visit.laboratoryOrders.length === 0) {
     return res.status(404).json({
       success: false,
       error: 'No laboratory tests found for this visit'
@@ -382,7 +382,7 @@ exports.generateReport = asyncHandler(async (req, res) => {
   }
 
   // Filter completed tests only
-  const completedTests = visit.laboratoryTests.filter(test => test.status === 'completed');
+  const completedTests = visit.laboratoryOrders.filter(test => test.status === 'completed');
 
   if (completedTests.length === 0) {
     return res.status(400).json({
