@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const User = require('../models/User');
+const Counter = require('../models/Counter');
 const sendEmail = require('../utils/sendEmail');
 const { generateToken, sendTokenResponse } = require('../utils/tokenUtils');
 
@@ -541,8 +542,10 @@ exports.enableTwoFactor = async (req, res, next) => {
 };
 
 // Helper function to generate employee ID
+// Uses atomic Counter to prevent race conditions
 async function generateEmployeeId() {
-  const count = await User.countDocuments();
   const year = new Date().getFullYear();
-  return `EMP${year}${String(count + 1).padStart(5, '0')}`;
+  const counterId = `employee-${year}`;
+  const sequence = await Counter.getNextSequence(counterId);
+  return `EMP${year}${String(sequence).padStart(5, '0')}`;
 }
