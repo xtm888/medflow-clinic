@@ -30,12 +30,10 @@ export default function Services() {
       setLoading(true);
       setError(null);
 
-      // Try to fetch from template-catalog or billing/fee-schedule
-      const response = await api.get('/template-catalog', {
-        params: { type: 'procedure', limit: 100 }
-      }).catch(() =>
-        api.get('/billing/fee-schedule', { params: { limit: 100 } })
-      );
+      // Fetch from billing/fee-schedule
+      const response = await api.get('/billing/fee-schedule', {
+        params: { limit: 100 }
+      });
 
       const data = response.data?.data || response.data || [];
 

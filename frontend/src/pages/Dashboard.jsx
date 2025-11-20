@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, Clock, DollarSign, FileText, TrendingUp, AlertCircle, Calendar, Activity } from 'lucide-react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useAuth } from '../contexts/AuthContext';
 import dashboardService from '../services/dashboardService';
 import billingService from '../services/billingService';
 import queueService from '../services/queueService';
@@ -52,6 +53,9 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, color = 'blue' 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#8b5cf6'];
 
 export default function Dashboard() {
+  // Get user from auth context
+  const { user } = useAuth();
+
   const [stats, setStats] = useState({
     todayPatients: 0,
     waitingNow: 0,
@@ -84,20 +88,15 @@ export default function Dashboard() {
   useEffect(() => {
     fetchDashboardData();
 
-    // Get user role from localStorage
-    try {
-      const { user } = useAuth();
-      if (user.role) {
-        setUserRole(user.role);
-      }
-    } catch (err) {
-      console.error('Error getting user role:', err);
+    // Set user role from auth context
+    if (user?.role) {
+      setUserRole(user.role);
     }
 
     // Refresh stats every minute
     const interval = setInterval(fetchDashboardData, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const fetchDashboardData = async () => {
     try {
