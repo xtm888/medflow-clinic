@@ -78,7 +78,7 @@ export default function ClinicalWorkflow({
 
       try {
         setLoadingHistory(true);
-        const response = await ophthalmologyService.getPatientExams(pid, { limit: 10 });
+        const response = await ophthalmologyService.getPatientExamHistory(pid);
         setPreviousExams(response.data || response || []);
       } catch (error) {
         console.error('Error loading previous exams:', error);
