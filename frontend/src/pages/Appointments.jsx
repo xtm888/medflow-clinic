@@ -10,7 +10,7 @@ import userService from '../services/userService';
 import { toast } from 'react-toastify';
 import EmptyState from '../components/EmptyState';
 import { normalizeToArray, isArray } from '../utils/apiHelpers';
-import { PatientSelector } from '../modules/patient';
+import AppointmentBookingForm from '../components/AppointmentBookingForm';
 
 export default function Appointments() {
   const navigate = useNavigate();
@@ -28,19 +28,6 @@ export default function Appointments() {
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-
-  // New appointment form state
-  const [newAppointment, setNewAppointment] = useState({
-    patient: '',
-    provider: '',
-    department: 'general',
-    type: 'consultation',
-    date: format(new Date(), 'yyyy-MM-dd'),
-    time: '09:00',
-    duration: 30,
-    reason: '',
-    notes: ''
-  });
 
   // Fetch data on mount
   useEffect(() => {
@@ -164,70 +151,28 @@ export default function Appointments() {
   };
 
   // Create appointment
-  const handleBookAppointment = async () => {
-    // Validate all required fields
-    if (!newAppointment.patient) {
-      toast.error('Veuillez sélectionner un patient');
-      return;
-    }
-    if (!newAppointment.provider) {
-      toast.error('Veuillez sélectionner un médecin');
-      return;
-    }
-    if (!newAppointment.department) {
-      toast.error('Veuillez sélectionner un département');
-      return;
-    }
-    if (!newAppointment.date) {
-      toast.error('Veuillez sélectionner une date');
-      return;
-    }
-    if (!newAppointment.time) {
-      toast.error('Veuillez sélectionner une heure');
-      return;
-    }
-    if (!newAppointment.reason || newAppointment.reason.trim() === '') {
-      toast.error('Veuillez indiquer la raison de la visite');
-      return;
-    }
-
+  const handleBookAppointment = async (formData) => {
     try {
-      setSubmitting(true);
-
       // Calculate end time from start time and duration
-      const endTime = calculateEndTime(newAppointment.time, newAppointment.duration);
+      const endTime = calculateEndTime(formData.time, formData.duration);
 
       const appointmentData = {
-        patient: newAppointment.patient,
-        provider: newAppointment.provider,
-        department: newAppointment.department,
-        type: newAppointment.type,
-        date: new Date(`${newAppointment.date}T${newAppointment.time}`),
-        startTime: newAppointment.time,
+        patient: formData.patient._id || formData.patient,
+        provider: formData.provider,
+        department: formData.department,
+        type: formData.type,
+        date: new Date(`${formData.date}T${formData.time}`),
+        startTime: formData.time,
         endTime: endTime,
-        duration: newAppointment.duration,
-        reason: newAppointment.reason,
-        notes: newAppointment.notes,
+        duration: formData.duration,
+        reason: formData.reason,
+        notes: formData.notes,
         status: 'scheduled'
       };
 
       await appointmentService.createAppointment(appointmentData);
 
       toast.success('Rendez-vous créé avec succès!');
-      setShowBookingModal(false);
-
-      // Reset form
-      setNewAppointment({
-        patient: '',
-        provider: '',
-        department: 'general',
-        type: 'consultation',
-        date: format(new Date(), 'yyyy-MM-dd'),
-        time: '09:00',
-        duration: 30,
-        reason: '',
-        notes: ''
-      });
 
       // Refresh appointments
       fetchData();
@@ -235,8 +180,7 @@ export default function Appointments() {
     } catch (err) {
       toast.error(err.response?.data?.error || 'Échec de la création du rendez-vous');
       console.error('Error creating appointment:', err);
-    } finally {
-      setSubmitting(false);
+      throw err; // Re-throw so the component can handle it
     }
   };
 
@@ -731,203 +675,12 @@ export default function Appointments() {
       )}
 
       {/* Booking Modal */}
-      {showBookingModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">Nouveau rendez-vous</h2>
-                <button
-                  onClick={() => setShowBookingModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <XCircle className="h-6 w-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Patient *
-                  </label>
-                  <PatientSelector
-                    mode="dropdown"
-                    value={patients.find(p => (p._id || p.id) === newAppointment.patient) || null}
-                    onChange={(patient) => setNewAppointment({
-                      ...newAppointment,
-                      patient: patient ? (patient._id || patient.id) : ''
-                    })}
-                    placeholder="Rechercher un patient..."
-                    showCreateButton={false}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Médecin *
-                  </label>
-                  <select
-                    value={newAppointment.provider}
-                    onChange={(e) => setNewAppointment({...newAppointment, provider: e.target.value})}
-                    className="input"
-                    required
-                  >
-                    <option value="">Sélectionner un médecin</option>
-                    {isArray(providers) && providers.map(provider => (
-                      <option key={provider._id || provider.id} value={provider._id || provider.id}>
-                        Dr. {provider.firstName} {provider.lastName}
-                        {provider.specialization ? ` - ${provider.specialization}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Département *
-                  </label>
-                  <select
-                    value={newAppointment.department}
-                    onChange={(e) => setNewAppointment({...newAppointment, department: e.target.value})}
-                    className="input"
-                    required
-                  >
-                    <option value="general">Général</option>
-                    <option value="ophthalmology">Ophtalmologie</option>
-                    <option value="pediatrics">Pédiatrie</option>
-                    <option value="cardiology">Cardiologie</option>
-                    <option value="orthopedics">Orthopédie</option>
-                    <option value="emergency">Urgences</option>
-                    <option value="laboratory">Laboratoire</option>
-                    <option value="radiology">Radiologie</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Type de consultation *
-                  </label>
-                  <select
-                    value={newAppointment.type}
-                    onChange={(e) => setNewAppointment({...newAppointment, type: e.target.value})}
-                    className="input"
-                    required
-                  >
-                    <option value="consultation">Consultation</option>
-                    <option value="follow-up">Suivi</option>
-                    <option value="emergency">Urgence</option>
-                    <option value="routine-checkup">Bilan de santé</option>
-                    <option value="ophthalmology">Ophtalmologie</option>
-                    <option value="refraction">Réfraction</option>
-                    <option value="lab-test">Analyse de laboratoire</option>
-                    <option value="imaging">Imagerie</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date *
-                  </label>
-                  <input
-                    type="date"
-                    value={newAppointment.date}
-                    onChange={(e) => setNewAppointment({...newAppointment, date: e.target.value})}
-                    className="input"
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Heure *
-                  </label>
-                  <select
-                    value={newAppointment.time}
-                    onChange={(e) => setNewAppointment({...newAppointment, time: e.target.value})}
-                    className="input"
-                    required
-                  >
-                    <option value="09:00">09:00</option>
-                    <option value="09:30">09:30</option>
-                    <option value="10:00">10:00</option>
-                    <option value="10:30">10:30</option>
-                    <option value="11:00">11:00</option>
-                    <option value="11:30">11:30</option>
-                    <option value="14:00">14:00</option>
-                    <option value="14:30">14:30</option>
-                    <option value="15:00">15:00</option>
-                    <option value="15:30">15:30</option>
-                    <option value="16:00">16:00</option>
-                    <option value="16:30">16:30</option>
-                    <option value="17:00">17:00</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Durée (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    value={newAppointment.duration}
-                    onChange={(e) => setNewAppointment({...newAppointment, duration: parseInt(e.target.value)})}
-                    className="input"
-                    min="15"
-                    step="15"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Raison de la visite *
-                  </label>
-                  <input
-                    type="text"
-                    value={newAppointment.reason}
-                    onChange={(e) => setNewAppointment({...newAppointment, reason: e.target.value})}
-                    className="input"
-                    placeholder="Ex: Contrôle annuel"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Notes
-                </label>
-                <textarea
-                  value={newAppointment.notes}
-                  onChange={(e) => setNewAppointment({...newAppointment, notes: e.target.value})}
-                  className="input"
-                  rows="3"
-                  placeholder="Notes supplémentaires..."
-                />
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={() => setShowBookingModal(false)}
-                className="btn btn-secondary"
-                disabled={submitting}
-              >
-                Annuler
-              </button>
-              <button
-                onClick={handleBookAppointment}
-                className="btn btn-primary"
-                disabled={submitting}
-              >
-                {submitting ? 'Création en cours...' : 'Confirmer le rendez-vous'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AppointmentBookingForm
+        isOpen={showBookingModal}
+        onClose={() => setShowBookingModal(false)}
+        onSubmit={handleBookAppointment}
+        mode="staff"
+      />
     </div>
   );
 }
