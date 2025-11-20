@@ -349,48 +349,6 @@ exports.adjustStock = async (req, res) => {
 };
 
 // Dispense medication (integrated with prescription system)
-exports.dispenseMedication = async (req, res) => {
-  try {
-    const { prescriptionId, medicationIndex, notes } = req.body;
-    const Prescription = require('../models/Prescription');
-
-    if (!prescriptionId || medicationIndex === undefined) {
-      return res.status(400).json({
-        success: false,
-        message: 'Prescription ID and medication index are required'
-      });
-    }
-
-    const prescription = await Prescription.findById(prescriptionId);
-
-    if (!prescription) {
-      return res.status(404).json({
-        success: false,
-        message: 'Prescription not found'
-      });
-    }
-
-    // Use the prescription's dispenseMedication method
-    const result = await prescription.dispenseMedication(
-      medicationIndex,
-      req.user._id,
-      notes
-    );
-
-    res.json({
-      success: true,
-      message: 'Medication dispensed successfully',
-      data: result
-    });
-  } catch (error) {
-    console.error('Error dispensing medication:', error);
-    res.status(400).json({
-      success: false,
-      message: 'Error dispensing medication',
-      error: error.message
-    });
-  }
-};
 
 // Reserve inventory for prescription
 exports.reserveForPrescription = async (req, res) => {

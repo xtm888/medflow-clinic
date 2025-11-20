@@ -24,6 +24,5 @@ router.post('/inventory/:id/adjust', authorize('pharmacist', 'admin'), pharmacyC
 
 // Prescription-integrated dispensing routes
 router.post('/reserve', authorize('ophthalmologist', 'admin', 'doctor'), pharmacyController.reserveForPrescription);
-router.post('/dispense', authorize('pharmacist', 'admin', 'nurse'), pharmacyController.dispenseMedication);
 
 module.exports = router;
