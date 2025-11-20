@@ -137,9 +137,6 @@ export default function PublicBooking() {
       await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate network delay
 
       // Mock sending WhatsApp & Email
-      console.log('Sending WhatsApp to:', formData.phone);
-      console.log('Sending Email to:', formData.email);
-      console.log('Booking details:', formData);
 
       // Save to localStorage for rate limiting (in production, done on backend)
       localStorage.setItem(`booking_${formData.phone}`, Date.now().toString());

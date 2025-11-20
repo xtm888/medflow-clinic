@@ -287,7 +287,6 @@ const fileUtils = {
 
         if (now - stats.mtimeMs > maxAge) {
           await fs.promises.unlink(filepath);
-          console.log(`Deleted old temp file: ${file}`);
         }
       }
     } catch (error) {

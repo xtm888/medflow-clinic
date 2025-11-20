@@ -4,6 +4,7 @@ import {
   Clock, Calendar, User, Pill, Eye, Download, Send, History,
   Settings, ChevronDown, ChevronRight, Shield, Info
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import api from '../../services/apiConfig';
 
 export default function EnhancedPrescription({ patientId }) {
@@ -171,8 +172,14 @@ export default function EnhancedPrescription({ patientId }) {
   };
 
   const showNotification = (message, type = 'info') => {
-    // This would integrate with your notification system
-    console.log(`${type}: ${message}`);
+    // Integrated with toast notification system
+    if (type === 'success') {
+      toast.success(message);
+    } else if (type === 'error') {
+      toast.error(message);
+    } else {
+      toast.info(message);
+    }
   };
 
   const toggleExpand = (prescriptionId) => {

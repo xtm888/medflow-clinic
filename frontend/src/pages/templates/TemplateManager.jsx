@@ -105,7 +105,6 @@ export default function TemplateManager() {
           date: new Date().toLocaleDateString()
         }
       });
-      console.log('Template applied:', response.data.data);
       // Handle the applied template data (e.g., populate form fields)
     } catch (error) {
       console.error('Error applying template:', error);

@@ -372,7 +372,6 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
             examId={examId}
             patientId={patientId}
             onImageLinked={(image) => {
-              console.log('Image linked:', image);
             }}
           />
         </div>

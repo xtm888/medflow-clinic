@@ -431,7 +431,6 @@ export default function PatientDetail() {
               providers={providers}
               onProviderClick={(provider) => {
                 // Could navigate to provider profile or filter timeline
-                console.log('Provider clicked:', provider);
               }}
             />
           </div>

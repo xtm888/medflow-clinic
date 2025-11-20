@@ -117,7 +117,6 @@ export default function Services() {
 
   const handleDeleteService = async (serviceId) => {
     if (confirm('Êtes-vous sûr de vouloir supprimer ce service ?')) {
-      console.log('Deleting service:', serviceId);
       // This would send to backend
     }
   };

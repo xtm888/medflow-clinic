@@ -1,7 +1,5 @@
 // Role-based permissions and menu access configuration
 
-console.log('🔄 rolePermissions.js loaded - IVT and Pharmacy modules should be available');
-
 export const rolePermissions = {
   admin: {
     menuItems: [

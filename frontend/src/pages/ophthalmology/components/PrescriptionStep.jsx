@@ -351,7 +351,6 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
 
   // Handle prescription completion
   const handlePrescriptionComplete = (medications) => {
-    console.log('Prescription complete:', medications);
     // Save to data or backend
   };
 

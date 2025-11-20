@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Check, AlertTriangle, Code, Eye, Merge } from 'lucide-react';
+import { toast } from 'react-toastify';
 import syncService from '../services/syncService';
 import databaseService from '../services/database';
 
@@ -70,8 +71,14 @@ export default function ConflictResolver({ isOpen, onClose }) {
   };
 
   const showNotification = (message, type = 'success') => {
-    // You can integrate with your notification system here
-    console.log(`${type}: ${message}`);
+    // Integrated with toast notification system
+    if (type === 'success') {
+      toast.success(message);
+    } else if (type === 'error') {
+      toast.error(message);
+    } else {
+      toast.info(message);
+    }
   };
 
   const handleMergedDataChange = (field, value) => {

@@ -180,7 +180,6 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
 
   const handleShare = async (docId) => {
     // Implement share functionality
-    console.log('Share document:', docId);
   };
 
   const formatFileSize = (bytes) => {

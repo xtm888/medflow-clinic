@@ -126,8 +126,6 @@ export default function MainLayout() {
     if (!user) return [];
 
     const accessibleItems = getAccessibleMenuItems(user.role);
-    console.log('👤 User role:', user.role);
-    console.log('📋 Accessible menu items:', accessibleItems);
 
     const navItems = accessibleItems.map(itemKey => {
       const config = menuConfigurations[itemKey];
@@ -163,7 +161,6 @@ export default function MainLayout() {
       };
     }).filter(item => item !== null);
 
-    console.log('🔗 Generated navigation items:', navItems.map(n => n.name));
     return navItems;
   }, [user]);
 

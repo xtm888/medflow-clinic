@@ -62,23 +62,37 @@ exports.getInventory = async (req, res) => {
 // Get inventory statistics
 exports.getStats = async (req, res) => {
   try {
-    const [totalItems, lowStockItems, expiringItems] = await Promise.all([
+    const [totalItems, lowStockItems, expiringItems, valueResult] = await Promise.all([
       PharmacyInventory.countDocuments(),
-      PharmacyInventory.countDocuments({ status: 'low-stock' }),
+      PharmacyInventory.countDocuments({ 'inventory.status': 'low-stock' }),
       PharmacyInventory.countDocuments({
         'batches.expirationDate': {
           $lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
         },
         'batches.status': 'active'
-      })
+      }),
+      // Use aggregation pipeline to calculate total value efficiently
+      PharmacyInventory.aggregate([
+        {
+          $project: {
+            itemValue: {
+              $multiply: [
+                { $ifNull: ['$inventory.currentStock', 0] },
+                { $ifNull: ['$pricing.sellingPrice', 0] }
+              ]
+            }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalValue: { $sum: '$itemValue' }
+          }
+        }
+      ])
     ]);
 
-    const medications = await PharmacyInventory.find().lean();
-    const totalValue = medications.reduce((sum, med) => {
-      const stock = med.inventory?.currentStock || 0;
-      const price = med.pricing?.sellingPrice || 0;
-      return sum + (stock * price);
-    }, 0);
+    const totalValue = valueResult.length > 0 ? valueResult[0].totalValue : 0;
 
     res.json({
       totalItems,
