@@ -8,8 +8,6 @@ const {
   getFeeSchedule,
   getBillingCodes,
   searchBillingCodes,
-  applyDiscount,
-  writeOff,
   getPaymentMethods,
   getPatientBilling,
   getPayments
@@ -34,9 +32,5 @@ router.get('/codes/search', authorize('admin', 'accountant', 'receptionist'), se
 
 // Payment methods
 router.get('/payment-methods', authorize('admin', 'accountant', 'receptionist'), getPaymentMethods);
-
-// Invoice-specific billing actions
-router.post('/invoices/:id/apply-discount', authorize('admin'), logCriticalOperation('DISCOUNT_APPLY'), applyDiscount);
-router.post('/invoices/:id/write-off', authorize('admin'), logCriticalOperation('WRITE_OFF'), writeOff);
 
 module.exports = router;

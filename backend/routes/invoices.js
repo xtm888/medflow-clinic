@@ -15,7 +15,7 @@ const {
   markAsSent
 } = require('../controllers/invoiceController');
 
-const { getPayments, getPatientBilling } = require('../controllers/billingController');
+const { getPayments, getPatientBilling, applyDiscount, writeOff } = require('../controllers/billingController');
 
 const { protect, authorize } = require('../middleware/auth');
 const { logCriticalOperation } = require('../middleware/auditLogger');
@@ -48,5 +48,7 @@ router.put('/:id/cancel', authorize('admin'), logCriticalOperation('INVOICE_CANC
 router.post('/:id/refund', authorize('admin'), logCriticalOperation('INVOICE_REFUND'), issueRefund);
 router.post('/:id/reminder', authorize('admin', 'receptionist'), sendReminder);
 router.put('/:id/send', authorize('admin', 'receptionist'), markAsSent);
+router.post('/:id/apply-discount', authorize('admin'), logCriticalOperation('DISCOUNT_APPLY'), applyDiscount);
+router.post('/:id/write-off', authorize('admin'), logCriticalOperation('WRITE_OFF'), writeOff);
 
 module.exports = router;
