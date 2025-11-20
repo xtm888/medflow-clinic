@@ -72,7 +72,7 @@ export default function NewConsultation() {
   const loadPatientFromUrl = async () => {
     try {
       setLoadingPatient(true);
-      const patient = await patientService.getPatientById(patientId);
+      const patient = await patientService.getPatient(patientId);
       setSelectedPatient(patient);
     } catch (error) {
       console.error('Error loading patient:', error);
