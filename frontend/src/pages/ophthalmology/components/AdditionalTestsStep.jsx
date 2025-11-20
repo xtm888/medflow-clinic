@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Activity, Eye, Move, AlertCircle, Image as ImageIcon } from 'lucide-react';
 import DeviceImageSelector from '../../../components/DeviceImageSelector';
 
-export default function AdditionalTestsStep({ data, setData, examId, patientId }) {
+export default function AdditionalTestsStep({ data, onChange, examId, patientId }) {
   const [selectedTest, setSelectedTest] = useState('pupils');
 
   // Initialize data structures if not present
@@ -38,7 +38,7 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
   }
 
   const updatePupils = (eye, param, value) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       pupils: {
         ...prev.pupils,
@@ -51,7 +51,7 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
   };
 
   const updateMotility = (param, value) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       motility: {
         ...prev.motility,
@@ -61,7 +61,7 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
   };
 
   const updateCoverTest = (distance, value) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       motility: {
         ...prev.motility,
@@ -74,7 +74,7 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
   };
 
   const updatePD = (param, value) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       pupilDistance: {
         ...prev.pupilDistance,

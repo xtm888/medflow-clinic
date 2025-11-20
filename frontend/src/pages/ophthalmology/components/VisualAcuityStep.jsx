@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function VisualAcuityStep({ data = {}, setData }) {
+export default function VisualAcuityStep({ data = {}, onChange }) {
   const [selectedEye, setSelectedEye] = useState('OD');
   const [testDistance, setTestDistance] = useState('distance');
 
@@ -29,7 +29,7 @@ export default function VisualAcuityStep({ data = {}, setData }) {
   ];
 
   const updateVA = (eye, test, type, value) => {
-    setData(prev => {
+    onChange(prev => {
       // Ensure structure exists
       const updatedData = { ...prev };
       if (!updatedData.visualAcuity) {

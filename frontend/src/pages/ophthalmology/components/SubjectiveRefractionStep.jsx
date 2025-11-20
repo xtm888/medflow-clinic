@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Minus, RotateCw, Check, Eye } from 'lucide-react';
 import { calculateSE, validateRefraction, formatPrescription } from '../../../utils/ophthalmologyCalculations';
 
-export default function SubjectiveRefractionStep({ data, setData }) {
+export default function SubjectiveRefractionStep({ data, onChange }) {
   const [selectedEye, setSelectedEye] = useState('OD');
   const [refinementStep, setRefinementStep] = useState('sphere');
   const [validationErrors, setValidationErrors] = useState([]);
@@ -24,7 +24,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
   // Start with objective refraction values
   useEffect(() => {
     if (data.objective?.OD?.sphere !== 0 || data.objective?.OS?.sphere !== 0) {
-      setData(prev => ({
+      onChange(prev => ({
         ...prev,
         subjective: {
           ...prev.subjective,
@@ -46,7 +46,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
       newValue = ((currentValue + increment + 180) % 180) || 1;
     }
 
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       subjective: {
         ...prev.subjective,
@@ -68,7 +68,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
 
   // Cross Cylinder Refinement
   const performCrossCylinder = (eye) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       subjective: {
         ...prev.subjective,
@@ -85,7 +85,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
 
   // Duochrome/Red-Green Test
   const updateDuochrome = (eye, preference) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       subjective: {
         ...prev.subjective,
@@ -301,7 +301,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
           </label>
           <select
             value={data.subjective[selectedEye].va}
-            onChange={(e) => setData(prev => ({
+            onChange={(e) => onChange(prev => ({
               ...prev,
               subjective: {
                 ...prev.subjective,
@@ -362,7 +362,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
           <label className="text-sm">Œil Dominant:</label>
           <select
             value={data.subjective?.binocular.dominantEye}
-            onChange={(e) => setData(prev => ({
+            onChange={(e) => onChange(prev => ({
               ...prev,
               subjective: {
                 ...prev.subjective,
@@ -378,7 +378,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
             <option value="OS">Œil Gauche</option>
           </select>
           <button
-            onClick={() => setData(prev => ({
+            onClick={() => onChange(prev => ({
               ...prev,
               subjective: {
                 ...prev.subjective,

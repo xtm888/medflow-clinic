@@ -8,7 +8,7 @@ import ophthalmologyService from '../../../services/ophthalmologyService';
 import QuickTreatmentBuilder from '../../../components/QuickTreatmentBuilder';
 import MedicationTemplateSelector from '../../../components/MedicationTemplateSelector';
 
-export default function PrescriptionStep({ data, setData, patient, patientId }) {
+export default function PrescriptionStep({ data, onChange, patient, patientId }) {
   const navigate = useNavigate();
   const [prescriptionType, setPrescriptionType] = useState('glasses');
   const [selectedProducts, setSelectedProducts] = useState([]);
@@ -324,7 +324,7 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
       prescription.recommendations.push('Astigmatisme élevé - Verres toriques recommandés');
     }
 
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       finalPrescription: prescription
     }));
@@ -1000,7 +1000,7 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
             rows="3"
             placeholder="Recommandations supplémentaires..."
             value={data.finalPrescription.recommendations.join('\n')}
-            onChange={(e) => setData(prev => ({
+            onChange={(e) => onChange(prev => ({
               ...prev,
               finalPrescription: {
                 ...prev.finalPrescription,

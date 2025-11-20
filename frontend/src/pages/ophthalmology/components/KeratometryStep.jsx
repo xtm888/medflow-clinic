@@ -4,7 +4,7 @@ import { calculateKeratometricAstigmatism } from '../../../utils/ophthalmologyCa
 import DeviceMeasurementSelector from '../../../components/DeviceMeasurementSelector';
 import { usePreviousRefraction } from '../../../hooks/usePreviousData';
 
-export default function KeratometryStep({ data, setData, examId, patientId }) {
+export default function KeratometryStep({ data, onChange, examId, patientId }) {
   const [selectedEye, setSelectedEye] = useState('OD');
   const [showDeviceImport, setShowDeviceImport] = useState(false);
 
@@ -32,7 +32,7 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
   const handleCopyPrevious = () => {
     const previousData = copyKeratometry();
     if (previousData) {
-      setData(prev => ({
+      onChange(prev => ({
         ...prev,
         keratometry: {
           ...(prev.keratometry || {}),
@@ -44,7 +44,7 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
   };
 
   const updateKeratometry = (eye, meridian, param, value) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       keratometry: {
         ...(prev.keratometry || {}),
@@ -77,7 +77,7 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
         measurement.measurementType.toLowerCase() === 'keratometry') {
       const keratometryData = measurement.data.keratometry;
       if (keratometryData) {
-        setData(prev => ({
+        onChange(prev => ({
           ...prev,
           keratometry: {
             OD: {

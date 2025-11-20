@@ -4,7 +4,7 @@ import { calculateSE, formatPrescription } from '../../../utils/ophthalmologyCal
 import DeviceMeasurementSelector from '../../../components/DeviceMeasurementSelector';
 import { usePreviousRefraction } from '../../../hooks/usePreviousData';
 
-export default function ObjectiveRefractionStep({ data, setData, examId, patientId }) {
+export default function ObjectiveRefractionStep({ data, onChange, examId, patientId }) {
   const [selectedDevice, setSelectedDevice] = useState('autorefractor');
   const [manualEntry, setManualEntry] = useState(false);
   const [showDeviceImport, setShowDeviceImport] = useState(false);
@@ -27,7 +27,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
   const handleCopyPrevious = () => {
     const previousData = copyObjectiveRefraction();
     if (previousData) {
-      setData(prev => ({
+      onChange(prev => ({
         ...prev,
         objective: {
           ...prev.objective,
@@ -45,7 +45,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
   ];
 
   const updateValue = (eye, param, value) => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       objective: {
         ...prev.objective,
@@ -72,7 +72,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
       }
     };
 
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       objective: {
         ...prev.objective,
@@ -83,7 +83,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
   };
 
   const copyToSubjective = () => {
-    setData(prev => ({
+    onChange(prev => ({
       ...prev,
       subjective: {
         ...prev.subjective,
@@ -100,7 +100,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
         measurement.measurementType.toLowerCase() === 'auto-refractor') {
       const refractionData = measurement.data.refraction;
       if (refractionData) {
-        setData(prev => ({
+        onChange(prev => ({
           ...prev,
           objective: {
             ...prev.objective,
@@ -145,7 +145,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
               onClick={() => {
                 setSelectedDevice(device.id);
                 setManualEntry(device.id === 'manual');
-                setData(prev => ({
+                onChange(prev => ({
                   ...prev,
                   objective: {
                     ...prev.objective,
@@ -338,7 +338,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
             min="1"
             max="10"
             value={data.objective?.confidence || 7}
-            onChange={(e) => setData(prev => ({
+            onChange={(e) => onChange(prev => ({
               ...prev,
               objective: {
                 ...prev.objective,
