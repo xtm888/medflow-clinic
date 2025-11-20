@@ -149,81 +149,8 @@ exports.getCompleteProfile = async (req, res) => {
   }
 };
 
-/**
- * Get patient timeline (chronological events)
- * GET /api/patients/:id/timeline
- */
-exports.getTimeline = async (req, res) => {
-  try {
-    const paramId = req.params.id;
-    const { limit = 50, offset = 0, type } = req.query;
-
-    // Resolve patient ID - could be ObjectId or patientId string (e.g., PAT-000001)
-    let patient;
-    const mongoose = require('mongoose');
-    if (mongoose.Types.ObjectId.isValid(paramId)) {
-      patient = await Patient.findById(paramId);
-    }
-    if (!patient) {
-      // Try finding by patientId string
-      patient = await Patient.findOne({ patientId: paramId });
-    }
-    if (!patient) {
-      return res.status(404).json({
-        success: false,
-        error: 'Patient not found'
-      });
-    }
-
-    const patientId = patient._id;
-
-    const [visits, prescriptions, examinations] = await Promise.all([
-      Visit.find({ patient: patientId })
-        .populate('primaryProvider', 'firstName lastName specialization')
-        .sort({ visitDate: -1 }),
-      Prescription.find({ patient: patientId })
-        .populate('prescriber', 'firstName lastName specialization')
-        .sort({ prescriptionDate: -1 }),
-      OphthalmologyExam.find({ patient: patientId })
-        .populate('examiner', 'firstName lastName specialization')
-        .sort({ createdAt: -1 })
-    ]);
-
-    // Extract lab orders
-    const labOrders = visits.flatMap(visit =>
-      (visit.laboratoryOrders || []).map(lab => ({
-        ...lab.toObject(),
-        visitDate: visit.visitDate
-      }))
-    );
-
-    let timeline = buildPatientTimeline(visits, prescriptions, examinations, labOrders);
-
-    // Filter by type if specified
-    if (type) {
-      timeline = timeline.filter(event => event.type === type);
-    }
-
-    // Paginate
-    const paginatedTimeline = timeline.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
-
-    res.json({
-      success: true,
-      data: paginatedTimeline,
-      pagination: {
-        total: timeline.length,
-        offset: parseInt(offset),
-        limit: parseInt(limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching patient timeline:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
+// NOTE: getTimeline was moved to /api/visits/timeline/:patientId (visits.js)
+// The comprehensive timeline implementation is now in the visits route
 
 /**
  * Get patient's medical issues (conditions)

@@ -72,8 +72,18 @@ export default function PublicBooking() {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.firstName.trim()) newErrors.firstName = 'Prénom requis';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Nom requis';
+    // Name validation
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = 'Prénom requis';
+    } else if (formData.firstName.trim().length < 2) {
+      newErrors.firstName = 'Le prénom doit contenir au moins 2 caractères';
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = 'Nom requis';
+    } else if (formData.lastName.trim().length < 2) {
+      newErrors.lastName = 'Le nom doit contenir au moins 2 caractères';
+    }
 
     // Phone validation (Congo format)
     const phoneRegex = /^\+?243[0-9]{9}$/;
@@ -96,14 +106,25 @@ export default function PublicBooking() {
     if (!formData.email.trim()) {
       newErrors.email = 'Email requis';
     } else if (!emailRegex.test(formData.email)) {
-      newErrors.email = 'Email invalide';
+      newErrors.email = 'Format email invalide';
     }
 
-    if (!formData.serviceId) newErrors.serviceId = 'Service requis';
+    if (!formData.serviceId) newErrors.serviceId = 'Veuillez sélectionner un service';
     if (!formData.preferredDate) newErrors.preferredDate = 'Date requise';
     if (!formData.preferredTime) newErrors.preferredTime = 'Heure requise';
 
     setErrors(newErrors);
+
+    // Focus on first error field
+    if (Object.keys(newErrors).length > 0) {
+      const firstErrorField = Object.keys(newErrors)[0];
+      const element = document.querySelector(`[name="${firstErrorField}"]`);
+      if (element) {
+        element.focus();
+        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -229,13 +250,19 @@ export default function PublicBooking() {
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="text"
+                  name="firstName"
                   value={formData.firstName}
                   onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-                  className={`input pl-10 ${errors.firstName ? 'border-red-500' : ''}`}
+                  className={`input pl-10 ${errors.firstName ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                   placeholder="Jean"
+                  aria-label="Prénom"
+                  aria-invalid={!!errors.firstName}
+                  aria-describedby={errors.firstName ? 'firstName-error' : undefined}
+                  autoFocus
+                  required
                 />
               </div>
-              {errors.firstName && <p className="text-xs text-red-600 mt-1">{errors.firstName}</p>}
+              {errors.firstName && <p id="firstName-error" className="text-xs text-red-600 mt-1" role="alert">{errors.firstName}</p>}
             </div>
 
             <div>
@@ -244,12 +271,17 @@ export default function PublicBooking() {
               </label>
               <input
                 type="text"
+                name="lastName"
                 value={formData.lastName}
                 onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-                className={`input ${errors.lastName ? 'border-red-500' : ''}`}
+                className={`input ${errors.lastName ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                 placeholder="Dupont"
+                aria-label="Nom de famille"
+                aria-invalid={!!errors.lastName}
+                aria-describedby={errors.lastName ? 'lastName-error' : undefined}
+                required
               />
-              {errors.lastName && <p className="text-xs text-red-600 mt-1">{errors.lastName}</p>}
+              {errors.lastName && <p id="lastName-error" className="text-xs text-red-600 mt-1" role="alert">{errors.lastName}</p>}
             </div>
           </div>
 
@@ -263,14 +295,19 @@ export default function PublicBooking() {
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="tel"
+                  name="phone"
                   value={formData.phone}
                   onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                  className={`input pl-10 ${errors.phone ? 'border-red-500' : ''}`}
+                  className={`input pl-10 ${errors.phone ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                   placeholder="+243 81 234 5678"
+                  aria-label="Numéro de téléphone WhatsApp"
+                  aria-invalid={!!errors.phone}
+                  aria-describedby={errors.phone ? 'phone-error' : 'phone-help'}
+                  required
                 />
               </div>
-              {errors.phone && <p className="text-xs text-red-600 mt-1">{errors.phone}</p>}
-              <p className="text-xs text-gray-500 mt-1">Vodacom, Airtel, Orange ou Africell - Confirmation via WhatsApp</p>
+              {errors.phone && <p id="phone-error" className="text-xs text-red-600 mt-1" role="alert">{errors.phone}</p>}
+              <p id="phone-help" className="text-xs text-gray-500 mt-1">Vodacom, Airtel, Orange ou Africell - Confirmation via WhatsApp</p>
             </div>
 
             <div>
@@ -281,13 +318,18 @@ export default function PublicBooking() {
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="email"
+                  name="email"
                   value={formData.email}
                   onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  className={`input pl-10 ${errors.email ? 'border-red-500' : ''}`}
+                  className={`input pl-10 ${errors.email ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                   placeholder="jean.dupont@email.com"
+                  aria-label="Adresse email"
+                  aria-invalid={!!errors.email}
+                  aria-describedby={errors.email ? 'email-error' : undefined}
+                  required
                 />
               </div>
-              {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
+              {errors.email && <p id="email-error" className="text-xs text-red-600 mt-1" role="alert">{errors.email}</p>}
             </div>
           </div>
 
@@ -303,25 +345,30 @@ export default function PublicBooking() {
               </div>
             ) : (
               <select
+                name="serviceId"
                 value={formData.serviceId}
                 onChange={(e) => setFormData({...formData, serviceId: e.target.value})}
-                className={`input ${errors.serviceId ? 'border-red-500' : ''}`}
+                className={`input ${errors.serviceId ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                aria-label="Type de consultation"
+                aria-invalid={!!errors.serviceId}
+                aria-describedby={errors.serviceId ? 'serviceId-error' : undefined}
+                required
               >
                 <option value="">Sélectionnez un service</option>
                 {services.map(service => (
                   <option key={service.id} value={service.id}>
-                    {service.name} - ${service.price} ({service.duration} min)
+                    {service.name} - {service.price.toLocaleString('fr-CD')} FC ({service.duration} min)
                   </option>
                 ))}
               </select>
             )}
-            {errors.serviceId && <p className="text-xs text-red-600 mt-1">{errors.serviceId}</p>}
+            {errors.serviceId && <p id="serviceId-error" className="text-xs text-red-600 mt-1" role="alert">{errors.serviceId}</p>}
 
             {selectedService && (
               <div className="mt-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-gray-700">
                   <strong>Durée:</strong> {selectedService.duration} minutes •
-                  <strong className="ml-2">Tarif:</strong> ${selectedService.price}
+                  <strong className="ml-2">Tarif:</strong> {selectedService.price.toLocaleString('fr-CD')} FC
                 </p>
                 {selectedService.description && (
                   <p className="text-xs text-gray-600 mt-1">{selectedService.description}</p>
@@ -340,13 +387,18 @@ export default function PublicBooking() {
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <input
                   type="date"
+                  name="preferredDate"
                   value={formData.preferredDate}
                   onChange={(e) => setFormData({...formData, preferredDate: e.target.value})}
-                  className={`input pl-10 ${errors.preferredDate ? 'border-red-500' : ''}`}
+                  className={`input pl-10 ${errors.preferredDate ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                   min={new Date().toISOString().split('T')[0]}
+                  aria-label="Date souhaitée"
+                  aria-invalid={!!errors.preferredDate}
+                  aria-describedby={errors.preferredDate ? 'preferredDate-error' : undefined}
+                  required
                 />
               </div>
-              {errors.preferredDate && <p className="text-xs text-red-600 mt-1">{errors.preferredDate}</p>}
+              {errors.preferredDate && <p id="preferredDate-error" className="text-xs text-red-600 mt-1" role="alert">{errors.preferredDate}</p>}
             </div>
 
             <div>
@@ -356,9 +408,14 @@ export default function PublicBooking() {
               <div className="relative">
                 <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
                 <select
+                  name="preferredTime"
                   value={formData.preferredTime}
                   onChange={(e) => setFormData({...formData, preferredTime: e.target.value})}
-                  className={`input pl-10 ${errors.preferredTime ? 'border-red-500' : ''}`}
+                  className={`input pl-10 ${errors.preferredTime ? 'border-red-500 ring-2 ring-red-200' : ''}`}
+                  aria-label="Heure souhaitée"
+                  aria-invalid={!!errors.preferredTime}
+                  aria-describedby={errors.preferredTime ? 'preferredTime-error' : 'time-help'}
+                  required
                 >
                   <option value="">Choisir l'heure</option>
                   <option value="09:00">09:00</option>
@@ -376,8 +433,8 @@ export default function PublicBooking() {
                   <option value="17:00">17:00</option>
                 </select>
               </div>
-              {errors.preferredTime && <p className="text-xs text-red-600 mt-1">{errors.preferredTime}</p>}
-              <p className="text-xs text-gray-500 mt-1">Sous réserve de disponibilité</p>
+              {errors.preferredTime && <p id="preferredTime-error" className="text-xs text-red-600 mt-1" role="alert">{errors.preferredTime}</p>}
+              <p id="time-help" className="text-xs text-gray-500 mt-1">Sous réserve de disponibilité</p>
             </div>
           </div>
 
