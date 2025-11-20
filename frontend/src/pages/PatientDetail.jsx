@@ -530,7 +530,10 @@ export default function PatientDetail() {
             <div className="text-center py-8">
               <Image className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 mb-4">Imagerie medicale</p>
-              <button className="btn btn-primary">
+              <button
+                onClick={() => toast.info('Fonctionnalite d\'imagerie medicale en cours de developpement')}
+                className="btn btn-primary"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Ajouter une image
               </button>
@@ -545,11 +548,17 @@ export default function PatientDetail() {
               <Eye className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 mb-4">Examens ophtalmologiques</p>
               <div className="flex justify-center gap-2">
-                <button className="btn btn-primary">
+                <button
+                  onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+                  className="btn btn-primary"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle refraction
                 </button>
-                <button className="btn btn-secondary">
+                <button
+                  onClick={() => toast.info('Fonctionnalite IVT en cours de developpement')}
+                  className="btn btn-secondary"
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Nouvelle IVT
                 </button>
@@ -564,7 +573,10 @@ export default function PatientDetail() {
             <div className="text-center py-8">
               <Calendar className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 mb-4">Rendez-vous</p>
-              <button className="btn btn-primary">
+              <button
+                onClick={() => navigate(`/appointments?patientId=${patientId}`)}
+                className="btn btn-primary"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Prendre un RDV
               </button>
@@ -578,7 +590,10 @@ export default function PatientDetail() {
             <div className="text-center py-8">
               <FlaskConical className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 mb-4">Resultats de laboratoire</p>
-              <button className="btn btn-primary">
+              <button
+                onClick={() => navigate(`/laboratory?patientId=${patientId}`)}
+                className="btn btn-primary"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Demander un examen
               </button>
@@ -592,7 +607,10 @@ export default function PatientDetail() {
             <div className="text-center py-8">
               <CreditCard className="h-12 w-12 mx-auto text-gray-300 mb-4" />
               <p className="text-gray-500 mb-4">Facturation et paiements</p>
-              <button className="btn btn-primary">
+              <button
+                onClick={() => toast.info('Fonctionnalite de facturation en cours de developpement')}
+                className="btn btn-primary"
+              >
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvelle facture
               </button>
@@ -623,7 +641,10 @@ export default function PatientDetail() {
               <Plus className="h-4 w-4 mr-2" />
               Nouvelle ordonnance
             </button>
-            <button className="btn btn-secondary">
+            <button
+              onClick={() => window.print()}
+              className="btn btn-secondary"
+            >
               <Printer className="h-4 w-4 mr-2" />
               Imprimer historique
             </button>
@@ -642,11 +663,17 @@ export default function PatientDetail() {
         )}
         {activeTab === 'exams' && (
           <>
-            <button className="btn btn-primary">
+            <button
+              onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+              className="btn btn-primary"
+            >
               <Plus className="h-4 w-4 mr-2" />
               Nouvel examen
             </button>
-            <button className="btn btn-secondary">
+            <button
+              onClick={() => handleTabChange('timeline')}
+              className="btn btn-secondary"
+            >
               Voir progression
             </button>
           </>
