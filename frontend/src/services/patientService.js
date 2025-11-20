@@ -228,7 +228,7 @@ const patientService = {
   // Get patient timeline
   async getPatientTimeline(id, params = {}) {
     try {
-      const response = await api.get(`/patients/${id}/timeline`, { params });
+      const response = await api.get(`/visits/timeline/${id}`, { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching patient timeline:', error);

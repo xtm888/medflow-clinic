@@ -24,7 +24,8 @@ export default function AppointmentBookingForm({
   onSubmit,
   initialData = {},
   mode = 'staff', // 'staff', 'patient', 'public'
-  patientId = null
+  patientId = null,
+  providers = []
 }) {
   const [formData, setFormData] = useState({
     patient: patientId || initialData.patient || null,
@@ -109,8 +110,11 @@ export default function AppointmentBookingForm({
                   required
                 >
                   <option value="">Select Provider</option>
-                  <option value="dr-smith">Dr. Smith</option>
-                  <option value="dr-jones">Dr. Jones</option>
+                  {providers.map(provider => (
+                    <option key={provider._id} value={provider._id}>
+                      {provider.firstName} {provider.lastName} - {provider.specialization || provider.role}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}

@@ -680,6 +680,7 @@ export default function Appointments() {
         onClose={() => setShowBookingModal(false)}
         onSubmit={handleBookAppointment}
         mode="staff"
+        providers={providers}
       />
     </div>
   );
