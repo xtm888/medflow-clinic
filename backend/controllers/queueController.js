@@ -202,6 +202,10 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
 
   const visit = await Visit.create(visitData);
 
+  // Link visit back to appointment (bidirectional relationship)
+  appointment.visit = visit._id;
+  await appointment.save();
+
   res.status(200).json({
     success: true,
     message: 'Patient added to queue and visit created',
