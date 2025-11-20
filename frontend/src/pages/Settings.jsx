@@ -58,7 +58,7 @@ export default function Settings() {
 
     // Check if user is admin
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const { user } = useAuth();
       setIsAdmin(user.role === 'admin');
     } catch (err) {
       console.error('Error getting user role:', err);
@@ -108,7 +108,7 @@ export default function Settings() {
       showSuccess('Profil mis à jour avec succès');
 
       // Update localStorage
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const { user } = useAuth();
       localStorage.setItem('user', JSON.stringify({
         ...user,
         firstName: profile.firstName,

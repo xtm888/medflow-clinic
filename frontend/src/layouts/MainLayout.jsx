@@ -34,7 +34,7 @@ import OfflineIndicator from '../components/OfflineIndicator';
 import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp';
 import GlobalSearch from '../components/GlobalSearch';
 import QuickActionsFAB from '../components/QuickActionsFAB';
-import PatientQuickSearch from '../components/PatientQuickSearch';
+import { PatientSelector } from '../modules/patient';
 import PatientContextPanel from '../components/PatientContextPanel';
 // GlobalActionBar removed - using context-aware actions in PatientDetail instead
 import useKeyboardShortcuts from '../hooks/useKeyboardShortcuts';
@@ -439,7 +439,7 @@ export default function MainLayout() {
           </button>
           <div className="flex-1 px-4 flex justify-between items-center">
             <div className="flex-1 flex max-w-xl">
-              <PatientQuickSearch className="w-full" />
+              <PatientSelector mode="search" className="w-full" />
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-3">
               <OfflineIndicator />

@@ -1,3 +1,4 @@
+import { useAuth } from '../contexts/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { hasMenuAccess, hasPermission } from '../config/rolePermissions';
 
@@ -21,9 +22,6 @@ export default function RoleGuard({
 
   // Get user from localStorage
   let user = null;
-  try {
-    user = JSON.parse(localStorage.getItem('user') || '{}');
-  } catch (err) {
     console.error('Error parsing user:', err);
   }
 

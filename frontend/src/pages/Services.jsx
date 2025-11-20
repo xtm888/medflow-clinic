@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Stethoscope, Plus, Search, Edit2, Trash2, DollarSign, Clock, Tag, Loader2, AlertCircle } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 export default function Services() {
   const [services, setServices] = useState([]);

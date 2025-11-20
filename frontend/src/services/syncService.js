@@ -1,6 +1,6 @@
 // Sync Service - Manages data synchronization between offline and online
 import databaseService from './database';
-import api from './api';
+import api from './apiConfig';
 
 class SyncService {
   constructor() {

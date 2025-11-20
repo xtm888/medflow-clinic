@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PatientSelectorModal from '../../components/PatientSelectorModal';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 // Default colors for diagnosis chart
 const DIAGNOSIS_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#6b7280'];

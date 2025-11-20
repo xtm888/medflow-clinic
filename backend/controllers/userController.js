@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Counter = require('../models/Counter');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { escapeRegex } = require('../utils/sanitize');
 
@@ -78,10 +79,11 @@ exports.getUser = asyncHandler(async (req, res, next) => {
 exports.createUser = asyncHandler(async (req, res, next) => {
   req.body.createdBy = req.user.id;
 
-  // Generate employee ID
-  const count = await User.countDocuments();
+  // Generate employee ID using Counter (atomic)
   const year = new Date().getFullYear();
-  req.body.employeeId = `EMP${year}${String(count + 1).padStart(5, '0')}`;
+  const empCounterId = `employee-${year}`;
+  const sequence = await Counter.getNextSequence(empCounterId);
+  req.body.employeeId = `EMP${year}${String(sequence).padStart(5, '0')}`;
 
   const user = await User.create(req.body);
 

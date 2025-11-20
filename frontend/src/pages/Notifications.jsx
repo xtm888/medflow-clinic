@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Bell, MessageSquare, Mail, Phone, CheckCircle2, XCircle, Clock, Loader2, AlertCircle } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 export default function Notifications() {
   const [notifications, setNotifications] = useState([]);

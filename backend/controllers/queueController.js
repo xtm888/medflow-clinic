@@ -87,18 +87,14 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
     const counterId = Counter.getTodayQueueCounterId();
     const queueNumber = await Counter.getNextSequence(counterId);
 
-    // Generate appointment ID
+    // Generate appointment ID using Counter (atomic)
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const day = String(now.getDate()).padStart(2, '0');
-    const aptCount = await Appointment.countDocuments({
-      date: {
-        $gte: new Date(now.setHours(0, 0, 0, 0)),
-        $lt: new Date(now.setHours(23, 59, 59, 999))
-      }
-    });
-    const appointmentId = `APT${year}${month}${day}${String(aptCount + 1).padStart(4, '0')}`;
+    const aptCounterId = `appointment-${year}${month}${day}`;
+    const sequence = await Counter.getNextSequence(aptCounterId);
+    const appointmentId = `APT${year}${month}${day}${String(sequence).padStart(4, '0')}`;
 
     // Calculate start and end times
     const startTime = new Date();
@@ -120,7 +116,7 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
       status: 'checked-in',
       checkInTime: Date.now(),
       queueNumber: queueNumber,
-      priority: priority || 'NORMAL',
+      priority: priority ? priority.toLowerCase() : 'normal',
       department: 'general'
     });
 
@@ -222,7 +218,12 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/queue/:id
 // @access  Private
 exports.updateQueueStatus = asyncHandler(async (req, res, next) => {
-  const { status } = req.body;
+  let { status, priority } = req.body;
+
+  // Convert priority to lowercase if provided
+  if (priority) {
+    priority = priority.toLowerCase();
+  }
 
   const appointment = await Appointment.findById(req.params.id);
 
@@ -235,6 +236,11 @@ exports.updateQueueStatus = asyncHandler(async (req, res, next) => {
 
   const oldStatus = appointment.status;
   appointment.status = status;
+
+  // Update priority if provided (with conversion to lowercase)
+  if (priority) {
+    appointment.priority = priority;
+  }
 
   // Track consultation times
   if (status === 'in-progress' && oldStatus === 'checked-in') {

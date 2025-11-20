@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import { Clock, User, AlertCircle, CheckCircle, Play, XCircle, ArrowUp, FileText } from 'lucide-react';
 import {
   fetchQueue,
@@ -10,22 +11,24 @@ import {
   fetchQueueStats,
   clearQueueError
 } from '../store/slices/queueSlice';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
 import DocumentGenerator from '../components/documents/DocumentGenerator';
 import EmptyState from '../components/EmptyState';
 import { PatientSelector } from '../modules/patient';
 
 const getPriorityColor = (priority) => {
   switch (priority) {
-    case 'VIP':
+    case 'vip':
       return 'bg-purple-100 text-purple-800 border-purple-300';
-    case 'PREGNANT':
+    case 'pregnant':
       return 'bg-pink-100 text-pink-800 border-pink-300';
-    case 'URGENT':
+    case 'urgent':
       return 'bg-red-100 text-red-800 border-red-300';
-    case 'ELDERLY':
+    case 'elderly':
       return 'bg-blue-100 text-blue-800 border-blue-300';
+    case 'emergency':
+      return 'bg-red-100 text-red-800 border-red-300';
+    case 'high':
+      return 'bg-orange-100 text-orange-800 border-orange-300';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-300';
   }
@@ -47,14 +50,13 @@ export default function Queue() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { queues, stats, loading, error } = useSelector(state => state.queue);
-  const { toasts, success, error: showError, removeToast } = useToast();
 
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [checkInForm, setCheckInForm] = useState({
     patientSearch: '',
     appointmentId: '',
     consultationType: 'consultation',
-    priority: 'NORMAL',
+    priority: 'normal',
     assignedDoctor: ''
   });
   const [showWalkInModal, setShowWalkInModal] = useState(false);
@@ -64,7 +66,7 @@ export default function Queue() {
     lastName: '',
     phoneNumber: '',
     reason: '',
-    priority: 'NORMAL'
+    priority: 'normal'
   });
   const [showDocumentGenerator, setShowDocumentGenerator] = useState(false);
   const [selectedPatientForDoc, setSelectedPatientForDoc] = useState(null);
@@ -86,7 +88,7 @@ export default function Queue() {
   // Show error toast
   useEffect(() => {
     if (error) {
-      showError(error);
+      toast.error(error);
       dispatch(clearQueueError());
     }
   }, [error, showError, dispatch]);
@@ -96,23 +98,23 @@ export default function Queue() {
     e.preventDefault();
 
     if (!checkInForm.appointmentId) {
-      showError('Please enter an appointment ID');
+      toast.error('Please enter an appointment ID');
       return;
     }
 
     try {
       await dispatch(checkInPatient({
         appointmentId: checkInForm.appointmentId,
-        priority: checkInForm.priority
+        priority: checkInForm.priority.toLowerCase() // Ensure lowercase
       })).unwrap();
 
-      success('Patient checked in successfully!');
+      toast.success('Patient checked in successfully!');
       setShowCheckInModal(false);
       setCheckInForm({
         patientSearch: '',
         appointmentId: '',
         consultationType: 'consultation',
-        priority: 'NORMAL',
+        priority: 'normal',
         assignedDoctor: ''
       });
 
@@ -120,7 +122,7 @@ export default function Queue() {
       dispatch(fetchQueue());
       dispatch(fetchQueueStats());
     } catch (err) {
-      showError(err || 'Failed to check in patient');
+      toast.error(err || 'Failed to check in patient');
     }
   };
 
@@ -131,7 +133,7 @@ export default function Queue() {
     // If existing patient selected, use their info
     if (selectedWalkInPatient) {
       if (!walkInForm.reason) {
-        showError('Veuillez indiquer la raison de la visite');
+        toast.error('Veuillez indiquer la raison de la visite');
         return;
       }
 
@@ -148,7 +150,7 @@ export default function Queue() {
           priority: walkInForm.priority
         })).unwrap();
 
-        success('Patient sans RDV ajouté à la file!');
+        toast.success('Patient sans RDV ajouté à la file!');
         setShowWalkInModal(false);
         setSelectedWalkInPatient(null);
         setWalkInForm({
@@ -156,20 +158,20 @@ export default function Queue() {
           lastName: '',
           phoneNumber: '',
           reason: '',
-          priority: 'NORMAL'
+          priority: 'normal'
         });
 
         dispatch(fetchQueue());
         dispatch(fetchQueueStats());
       } catch (err) {
-        showError(err || 'Échec d\'ajout du patient');
+        toast.error(err || 'Échec d\'ajout du patient');
       }
       return;
     }
 
     // New patient - validate all fields
     if (!walkInForm.firstName || !walkInForm.lastName || !walkInForm.phoneNumber || !walkInForm.reason) {
-      showError('Veuillez remplir tous les champs requis');
+      toast.error('Veuillez remplir tous les champs requis');
       return;
     }
 
@@ -183,10 +185,10 @@ export default function Queue() {
           phoneNumber: walkInForm.phoneNumber
         },
         reason: walkInForm.reason,
-        priority: walkInForm.priority
+        priority: walkInForm.priority.toLowerCase() // Ensure lowercase
       })).unwrap();
 
-      success('Patient sans RDV ajouté à la file!');
+      toast.success('Patient sans RDV ajouté à la file!');
       setShowWalkInModal(false);
       setSelectedWalkInPatient(null);
       setWalkInForm({
@@ -194,14 +196,14 @@ export default function Queue() {
         lastName: '',
         phoneNumber: '',
         reason: '',
-        priority: 'NORMAL'
+        priority: 'normal'
       });
 
       // Refresh queue
       dispatch(fetchQueue());
       dispatch(fetchQueueStats());
     } catch (err) {
-      showError(err || 'Échec d\'ajout du patient');
+      toast.error(err || 'Échec d\'ajout du patient');
     }
   };
 
@@ -217,11 +219,11 @@ export default function Queue() {
         roomNumber
       })).unwrap();
 
-      success(`${queueEntry.patient?.firstName || 'Patient'} called to room ${roomNumber}`);
+      toast.success(`${queueEntry.patient?.firstName || 'Patient'} called to room ${roomNumber}`);
       dispatch(fetchQueue());
       dispatch(fetchQueueStats());
     } catch (err) {
-      showError(err || 'Failed to call patient');
+      toast.error(err || 'Failed to call patient');
     }
   };
 
@@ -237,11 +239,11 @@ export default function Queue() {
         status: 'completed'
       })).unwrap();
 
-      success('Consultation completed');
+      toast.success('Consultation completed');
       dispatch(fetchQueue());
       dispatch(fetchQueueStats());
     } catch (err) {
-      showError(err || 'Failed to complete consultation');
+      toast.error(err || 'Failed to complete consultation');
     }
   };
 
@@ -262,10 +264,10 @@ export default function Queue() {
         // Pass appointment ID as query param so visit can be linked
         navigate(`/visits/new/${patientId}?appointmentId=${appointmentId}`);
       } else {
-        showError('Patient ID not available');
+        toast.error('Patient ID not available');
       }
     } catch (err) {
-      showError(err || 'Failed to start visit');
+      toast.error(err || 'Failed to start visit');
     }
   };
 
@@ -278,12 +280,12 @@ export default function Queue() {
       })).unwrap();
 
       if (result.data) {
-        success(`Next patient: ${result.data.patient.firstName} ${result.data.patient.lastName}`);
+        toast.success(`Next patient: ${result.data.patient.firstName} ${result.data.patient.lastName}`);
         dispatch(fetchQueue());
         dispatch(fetchQueueStats());
       }
     } catch (err) {
-      showError(err || 'No patients in queue');
+      toast.error(err || 'No patients in queue');
     }
   };
 
@@ -294,11 +296,13 @@ export default function Queue() {
 
   // Priority order for sorting
   const priorityOrder = {
-    'URGENT': 0,
-    'VIP': 1,
-    'PREGNANT': 2,
-    'ELDERLY': 3,
-    'NORMAL': 4
+    'emergency': 0,
+    'urgent': 1,
+    'vip': 2,
+    'pregnant': 3,
+    'elderly': 4,
+    'high': 5,
+    'normal': 6
   };
 
   // Sort waiting patients based on selected sort method
@@ -341,10 +345,12 @@ export default function Queue() {
     );
   }
 
+
   return (
     <div className="space-y-6">
       {/* Toast Notifications */}
       <ToastContainer toasts={toasts} removeToast={removeToast} />
+
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -463,12 +469,15 @@ export default function Queue() {
                           <h3 className="text-lg font-semibold text-gray-900">
                             {patient.patient?.firstName || 'N/A'} {patient.patient?.lastName || ''}
                           </h3>
-                          {patient.priority !== 'NORMAL' && (
+                          {patient.priority !== 'normal' && (
                             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getPriorityColor(patient.priority)}`}>
-                              {patient.priority === 'VIP' ? 'VIP' :
-                               patient.priority === 'PREGNANT' ? 'Enceinte' :
-                               patient.priority === 'URGENT' ? 'Urgent' :
-                               'Âgé'}
+                              {patient.priority === 'vip' ? 'VIP' :
+                               patient.priority === 'pregnant' ? 'Enceinte' :
+                               patient.priority === 'urgent' ? 'Urgent' :
+                               patient.priority === 'elderly' ? 'Âgé' :
+                               patient.priority === 'emergency' ? 'Urgence' :
+                               patient.priority === 'high' ? 'Priorité' :
+                               patient.priority}
                             </span>
                           )}
                         </div>
@@ -618,14 +627,14 @@ export default function Queue() {
                 </div>
               )}
 
-              {waitingPatients.filter(p => p.priority !== 'NORMAL').length > 0 && (
+              {waitingPatients.filter(p => p.priority !== 'normal').length > 0 && (
                 <div className="card bg-blue-50 border-blue-200">
                   <div className="flex items-start space-x-3">
                     <ArrowUp className="h-5 w-5 text-blue-500 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="font-semibold text-blue-900">Haute priorité</p>
                       <p className="text-sm text-blue-700 mt-1">
-                        {waitingPatients.filter(p => p.priority !== 'NORMAL').length} patient(s)
+                        {waitingPatients.filter(p => p.priority !== 'normal').length} patient(s)
                         avec priorité élevée
                       </p>
                     </div>
@@ -703,11 +712,13 @@ export default function Queue() {
                     priority: e.target.value
                   })}
                 >
-                  <option value="NORMAL">Normal</option>
-                  <option value="VIP">VIP</option>
-                  <option value="PREGNANT">Femme enceinte</option>
-                  <option value="ELDERLY">Personne âgée</option>
-                  <option value="URGENT">Urgent</option>
+                  <option value="normal">Normal</option>
+                  <option value="vip">VIP</option>
+                  <option value="pregnant">Femme enceinte</option>
+                  <option value="elderly">Personne âgée</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">Haute priorité</option>
+                  <option value="emergency">Urgence</option>
                 </select>
               </div>
 
@@ -881,11 +892,13 @@ export default function Queue() {
                   onChange={(e) => setWalkInForm({...walkInForm, priority: e.target.value})}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
-                  <option value="NORMAL">Normal</option>
-                  <option value="VIP">VIP</option>
-                  <option value="URGENT">Urgent</option>
-                  <option value="ELDERLY">Personne âgée</option>
-                  <option value="PREGNANT">Femme enceinte</option>
+                  <option value="normal">Normal</option>
+                  <option value="vip">VIP</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="elderly">Personne âgée</option>
+                  <option value="pregnant">Femme enceinte</option>
+                  <option value="high">Haute priorité</option>
+                  <option value="emergency">Urgence</option>
                 </select>
               </div>
 
@@ -916,7 +929,7 @@ export default function Queue() {
             setSelectedPatientForDoc(null);
           }}
           onDocumentGenerated={(doc) => {
-            success('Document généré avec succès!');
+            toast.success('Document généré avec succès!');
             setShowDocumentGenerator(false);
             setSelectedPatientForDoc(null);
           }}

@@ -4,7 +4,7 @@ import {
   Tag, Clock, Users, CheckCircle, AlertCircle, Star, StarOff,
   Grid, List, Download, Upload, Settings
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 import TemplateBuilder from './TemplateBuilder';
 import TemplatePreview from './TemplatePreview';
 

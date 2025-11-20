@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, User, Calendar, FileText, Clock, Home, X, TrendingUp, ChevronRight } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 const QUICK_ACTIONS = [
   { id: 'dashboard', label: 'Tableau de bord', icon: Home, path: '/dashboard', category: 'Navigation' },

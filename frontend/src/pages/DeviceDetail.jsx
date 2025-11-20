@@ -22,13 +22,12 @@ import {
   EyeOff
 } from 'lucide-react';
 import deviceService from '../services/deviceService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 const DeviceDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   const [device, setDevice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -108,7 +107,7 @@ const DeviceDetail = () => {
         }
       });
     } catch (err) {
-      showError('Failed to load device');
+      toast.error('Failed to load device');
       console.error(err);
     } finally {
       setLoading(false);
@@ -129,10 +128,10 @@ const DeviceDetail = () => {
 
     try {
       await deviceService.updateDevice(id, formData);
-      success('Device updated successfully');
+      toast.success('Device updated successfully');
       await loadDevice();
     } catch (err) {
-      showError(`Failed to update device: ${err.response?.data?.message || err.message}`);
+      toast.error(`Failed to update device: ${err.response?.data?.message || err.message}`);
     } finally {
       setSaving(false);
     }
@@ -143,13 +142,13 @@ const DeviceDetail = () => {
 
     try {
       const response = await deviceService.syncDeviceFolder(id);
-      success(
+      toast.success(
         `Sync completed: ${response.recordsProcessed} processed, ${response.recordsFailed} failed`
       );
       await loadDevice();
       await loadStats();
     } catch (err) {
-      showError(`Sync failed: ${err.response?.data?.message || err.message}`);
+      toast.error(`Sync failed: ${err.response?.data?.message || err.message}`);
     } finally {
       setSyncing(false);
     }
@@ -170,15 +169,15 @@ const DeviceDetail = () => {
           }
         }
       }));
-      success('Webhook credentials generated');
+      toast.success('Webhook credentials generated');
     } catch (err) {
-      showError('Failed to generate webhook credentials');
+      toast.error('Failed to generate webhook credentials');
     }
   };
 
   const copyToClipboard = (text, label) => {
     navigator.clipboard.writeText(text);
-    success(`${label} copied to clipboard`);
+    toast.success(`${label} copied to clipboard`);
   };
 
   const handleInputChange = (path, value) => {

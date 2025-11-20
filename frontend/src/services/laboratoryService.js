@@ -2,10 +2,54 @@ import api from './apiConfig';
 
 // Laboratory service for lab test ordering and results
 const laboratoryService = {
-  // Get all laboratory templates
+  // Get all laboratory tests
+  async getAllTests(params = {}) {
+    try {
+      const response = await api.get('/laboratory/tests', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lab tests:', error);
+      throw error;
+    }
+  },
+
+  // Order new laboratory tests
+  async orderTests(testData) {
+    try {
+      const response = await api.post('/laboratory/tests', testData);
+      return response.data;
+    } catch (error) {
+      console.error('Error ordering lab tests:', error);
+      throw error;
+    }
+  },
+
+  // Update test results
+  async updateTestResults(visitId, testId, resultData) {
+    try {
+      const response = await api.put(`/laboratory/tests/${visitId}/${testId}`, resultData);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating test results:', error);
+      throw error;
+    }
+  },
+
+  // Get pending laboratory tests
+  async getPendingTests() {
+    try {
+      const response = await api.get('/laboratory/pending');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching pending tests:', error);
+      throw error;
+    }
+  },
+
+  // Get laboratory templates
   async getTemplates(params = {}) {
     try {
-      const response = await api.get('/template-catalog/laboratories', { params });
+      const response = await api.get('/laboratory/templates', { params });
       return response.data;
     } catch (error) {
       console.error('Error fetching lab templates:', error);
@@ -13,10 +57,43 @@ const laboratoryService = {
     }
   },
 
+  // Create new laboratory template
+  async createTemplate(templateData) {
+    try {
+      const response = await api.post('/laboratory/templates', templateData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating lab template:', error);
+      throw error;
+    }
+  },
+
+  // Get laboratory statistics
+  async getStatistics() {
+    try {
+      const response = await api.get('/laboratory/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching lab statistics:', error);
+      throw error;
+    }
+  },
+
+  // Generate laboratory report
+  async generateReport(visitId) {
+    try {
+      const response = await api.get(`/laboratory/report/${visitId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error generating lab report:', error);
+      throw error;
+    }
+  },
+
   // Get templates by category
   async getTemplatesByCategory(category) {
     try {
-      const response = await api.get('/template-catalog/laboratories', {
+      const response = await api.get('/laboratory/templates', {
         params: { category }
       });
       return response.data;
@@ -29,7 +106,7 @@ const laboratoryService = {
   // Search templates
   async searchTemplates(query) {
     try {
-      const response = await api.get('/template-catalog/laboratories', {
+      const response = await api.get('/laboratory/templates', {
         params: { search: query }
       });
       return response.data;
@@ -39,10 +116,10 @@ const laboratoryService = {
     }
   },
 
-  // Create lab order for patient
+  // Create lab order for patient (wrapper for orderTests)
   async createOrder(orderData) {
     try {
-      const response = await api.post('/visits/lab-orders', orderData);
+      const response = await api.post('/laboratory/tests', orderData);
       return response.data;
     } catch (error) {
       console.error('Error creating lab order:', error);
@@ -53,7 +130,9 @@ const laboratoryService = {
   // Get patient lab orders
   async getPatientOrders(patientId, params = {}) {
     try {
-      const response = await api.get(`/patients/${patientId}/lab-orders`, { params });
+      const response = await api.get('/laboratory/tests', {
+        params: { patientId, ...params }
+      });
       return response.data;
     } catch (error) {
       console.error('Error fetching patient lab orders:', error);
@@ -61,10 +140,10 @@ const laboratoryService = {
     }
   },
 
-  // Get lab order details
-  async getOrder(orderId) {
+  // Get lab order details (using generate report)
+  async getOrder(visitId) {
     try {
-      const response = await api.get(`/visits/lab-orders/${orderId}`);
+      const response = await api.get(`/laboratory/report/${visitId}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching lab order:', error);
@@ -73,9 +152,9 @@ const laboratoryService = {
   },
 
   // Update lab order status
-  async updateOrderStatus(orderId, status, notes = '') {
+  async updateOrderStatus(visitId, testId, status, notes = '') {
     try {
-      const response = await api.put(`/visits/lab-orders/${orderId}/status`, {
+      const response = await api.put(`/laboratory/tests/${visitId}/${testId}`, {
         status,
         notes
       });
@@ -87,9 +166,12 @@ const laboratoryService = {
   },
 
   // Add results to lab order
-  async addResults(orderId, results) {
+  async addResults(visitId, testId, results) {
     try {
-      const response = await api.post(`/visits/lab-orders/${orderId}/results`, { results });
+      const response = await api.put(`/laboratory/tests/${visitId}/${testId}`, {
+        results,
+        status: 'completed'
+      });
       return response.data;
     } catch (error) {
       console.error('Error adding lab results:', error);
@@ -97,23 +179,15 @@ const laboratoryService = {
     }
   },
 
-  // Get pending lab orders
+  // Get pending lab orders (alias)
   async getPending() {
-    try {
-      const response = await api.get('/visits/lab-orders', {
-        params: { status: 'pending' }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching pending lab orders:', error);
-      throw error;
-    }
+    return this.getPendingTests();
   },
 
   // Get completed lab orders
   async getCompleted(params = {}) {
     try {
-      const response = await api.get('/visits/lab-orders', {
+      const response = await api.get('/laboratory/tests', {
         params: { status: 'completed', ...params }
       });
       return response.data;
@@ -124,9 +198,12 @@ const laboratoryService = {
   },
 
   // Cancel lab order
-  async cancelOrder(orderId, reason) {
+  async cancelOrder(visitId, testId, reason) {
     try {
-      const response = await api.put(`/visits/lab-orders/${orderId}/cancel`, { reason });
+      const response = await api.put(`/laboratory/tests/${visitId}/${testId}`, {
+        status: 'cancelled',
+        notes: reason
+      });
       return response.data;
     } catch (error) {
       console.error('Error cancelling lab order:', error);
@@ -137,8 +214,12 @@ const laboratoryService = {
   // Get lab categories
   async getCategories() {
     try {
-      const response = await api.get('/template-catalog/laboratories/categories');
-      return response.data;
+      const templates = await this.getTemplates();
+      const categories = [...new Set(templates.data?.map(t => t.category) || [])];
+      return {
+        success: true,
+        data: categories
+      };
     } catch (error) {
       console.error('Error fetching lab categories:', error);
       throw error;
@@ -148,7 +229,7 @@ const laboratoryService = {
   // Get common lab panels (quick order)
   async getCommonPanels() {
     try {
-      const response = await api.get('/template-catalog/laboratories', {
+      const response = await api.get('/laboratory/templates', {
         params: { isPanel: true }
       });
       return response.data;
@@ -159,11 +240,21 @@ const laboratoryService = {
   },
 
   // Print lab order
-  async printOrder(orderId) {
+  async printOrder(visitId) {
     try {
-      const response = await api.get(`/visits/lab-orders/${orderId}/print`, {
+      const response = await api.get(`/laboratory/report/${visitId}`, {
         responseType: 'blob'
       });
+
+      // Create a blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `lab-report-${visitId}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+
       return response.data;
     } catch (error) {
       console.error('Error printing lab order:', error);

@@ -29,8 +29,8 @@ function PatientContextPanel() {
   const email = selectedPatient.email || '-';
   const profession = selectedPatient.profession || selectedPatient.occupation || '-';
   const bloodType = selectedPatient.bloodGroup || selectedPatient.bloodType || '-';
-  const priority = selectedPatient.priority || selectedPatient.patientType || 'NORMAL';
-  const isVip = priority === 'VIP' || selectedPatient.vip;
+  const priority = selectedPatient.priority || selectedPatient.patientType || 'normal';
+  const isVip = priority === 'vip' || selectedPatient.vip;
 
   // Get allergies
   const allergies = selectedPatient.medicalHistory?.allergies || selectedPatient.allergies || [];
@@ -159,16 +159,16 @@ function PatientContextPanel() {
 
         {/* Priority & Blood Type */}
         <div className="px-4 py-3 border-b border-gray-100 flex items-center space-x-2">
-          {priority !== 'NORMAL' && (
+          {priority !== 'normal' && (
             <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-              priority === 'VIP' ? 'bg-purple-100 text-purple-800' :
-              priority === 'PREGNANT' ? 'bg-pink-100 text-pink-800' :
-              priority === 'ELDERLY' ? 'bg-blue-100 text-blue-800' :
+              priority === 'vip' ? 'bg-purple-100 text-purple-800' :
+              priority === 'pregnant' ? 'bg-pink-100 text-pink-800' :
+              priority === 'elderly' ? 'bg-blue-100 text-blue-800' :
               'bg-gray-100 text-gray-800'
             }`}>
-              {priority === 'VIP' ? 'VIP' :
-               priority === 'PREGNANT' ? 'Enceinte' :
-               priority === 'ELDERLY' ? 'Personne âgée' :
+              {priority === 'vip' ? 'VIP' :
+               priority === 'pregnant' ? 'Enceinte' :
+               priority === 'elderly' ? 'Personne âgée' :
                priority}
             </span>
           )}

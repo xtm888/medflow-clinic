@@ -2,11 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { FileText, Search, User } from 'lucide-react';
 import DocumentGenerator from '../components/documents/DocumentGenerator';
 import patientService from '../services/patientService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 export default function DocumentGenerationPage() {
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +24,7 @@ export default function DocumentGenerationPage() {
       setPatients(response.data || []);
     } catch (error) {
       console.error('Error loading patients:', error);
-      showError('Erreur lors du chargement des patients');
+      toast.error('Erreur lors du chargement des patients');
     } finally {
       setLoading(false);
     }
@@ -182,7 +181,7 @@ export default function DocumentGenerationPage() {
             setSelectedPatient(null);
           }}
           onDocumentGenerated={(doc) => {
-            success('Document généré avec succès!');
+            toast.success('Document généré avec succès!');
             setShowDocumentGenerator(false);
             setSelectedPatient(null);
           }}

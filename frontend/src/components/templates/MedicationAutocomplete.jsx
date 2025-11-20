@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 const MedicationAutocomplete = ({ onSelect, value, placeholder = "Rechercher un médicament..." }) => {
   const [searchTerm, setSearchTerm] = useState(value || '');

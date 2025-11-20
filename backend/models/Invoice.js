@@ -288,10 +288,12 @@ invoiceSchema.virtual('isOverdue').get(function() {
 // Pre-save hook to generate invoice ID
 invoiceSchema.pre('save', async function(next) {
   if (!this.invoiceId) {
-    const count = await this.constructor.countDocuments();
+    const Counter = require('./Counter');
     const year = new Date().getFullYear();
     const month = String(new Date().getMonth() + 1).padStart(2, '0');
-    this.invoiceId = `INV${year}${month}${String(count + 1).padStart(6, '0')}`;
+    const invCounterId = `invoice-${year}${month}`;
+    const sequence = await Counter.getNextSequence(invCounterId);
+    this.invoiceId = `INV${year}${month}${String(sequence).padStart(6, '0')}`;
   }
 
   // Set due date if not provided (default 30 days)

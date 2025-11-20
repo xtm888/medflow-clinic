@@ -7,8 +7,7 @@ import {
 } from 'lucide-react';
 import patientService from '../services/patientService';
 import prescriptionService from '../services/prescriptionService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 import { normalizeToArray, safeString } from '../utils/apiHelpers';
 import DocumentGenerator from '../components/documents/DocumentGenerator';
 import PatientTimeline from '../components/PatientTimeline';
@@ -17,7 +16,7 @@ import { ProviderList } from '../components/ProviderBadge';
 export default function PatientDetail() {
   const { patientId } = useParams();
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState(null);
@@ -55,7 +54,7 @@ export default function PatientDetail() {
       await loadTabData('overview');
 
     } catch (err) {
-      showError('Erreur lors du chargement du patient');
+      toast.error('Erreur lors du chargement du patient');
       console.error('Error loading patient:', err);
     } finally {
       setLoading(false);
@@ -662,7 +661,7 @@ export default function PatientDetail() {
           patientId={patientId}
           onClose={() => setShowDocumentGenerator(false)}
           onDocumentGenerated={(doc) => {
-            success('Document genere avec succes!');
+            toast.success('Document genere avec succes!');
             setShowDocumentGenerator(false);
           }}
         />

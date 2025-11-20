@@ -5,7 +5,7 @@ import {
   Folder, Grid, List, ChevronRight, X, Play, Pause,
   Square, Volume2, FileAudio
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 import AudioRecorder from './AudioRecorder';
 import DocumentViewer from './DocumentViewer';
 

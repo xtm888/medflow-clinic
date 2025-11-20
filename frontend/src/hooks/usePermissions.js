@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
 import { hasPermission, hasMenuAccess, getAccessibleMenuItems, rolePermissions } from '../config/rolePermissions';
 
 /**
@@ -16,14 +17,7 @@ import { hasPermission, hasMenuAccess, getAccessibleMenuItems, rolePermissions }
  * }
  */
 export function usePermissions() {
-  const user = useMemo(() => {
-    try {
-      return JSON.parse(localStorage.getItem('user') || '{}');
-    } catch (err) {
-      console.error('Error parsing user:', err);
-      return {};
-    }
-  }, []);
+  const { user } = useAuth();
 
   const userRole = user?.role || null;
 

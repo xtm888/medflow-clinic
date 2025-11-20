@@ -119,7 +119,7 @@ const visitSchema = new mongoose.Schema({
       },
       temperature: {
         type: Number,
-        min: [30, 'Temperature must be at least 30°C'],
+        min: [0, 'Temperature must be at least 0°C'],
         max: [45, 'Temperature must not exceed 45°C']
       },
       respiratoryRate: {
@@ -129,7 +129,7 @@ const visitSchema = new mongoose.Schema({
       },
       oxygenSaturation: {
         type: Number,
-        min: [50, 'Oxygen saturation must be at least 50%'],
+        min: [0, 'Oxygen saturation must be at least 0%'],
         max: [100, 'Oxygen saturation must not exceed 100%']
       },
       weight: {
@@ -788,12 +788,12 @@ visitSchema.methods.generateInvoice = async function(userId) {
   // 1. Add consultation/visit fee
   const consultationFee = this.visitType === 'initial' ? 15000 : 10000; // CFA
   items.push({
-    type: 'consultation',
+    category: 'consultation',
     description: `Consultation - ${this.visitType}`,
     code: 'CONS-001',
     quantity: 1,
     unitPrice: consultationFee,
-    total: consultationFee,
+    subtotal: consultationFee,
     provider: this.primaryProvider
   });
   subtotal += consultationFee;
@@ -803,12 +803,12 @@ visitSchema.methods.generateInvoice = async function(userId) {
     if (act.status === 'completed') {
       const actPrice = 5000; // Default price, should be from settings/pricing
       items.push({
-        type: 'procedure',
+        category: 'procedure',
         description: act.actName || act.actType,
         code: act.actCode,
         quantity: 1,
         unitPrice: actPrice,
-        total: actPrice,
+        subtotal: actPrice,
         provider: act.provider
       });
       subtotal += actPrice;
@@ -826,12 +826,12 @@ visitSchema.methods.generateInvoice = async function(userId) {
           const medPrice = med.pricing?.totalCost || 0;
           if (medPrice > 0) {
             items.push({
-              type: 'medication',
+              category: 'medication',
               description: med.name || med.genericName,
               code: med.drug?.toString() || 'MED-001',
               quantity: med.quantity,
               unitPrice: med.pricing?.unitPrice || 0,
-              total: medPrice,
+              subtotal: medPrice,
               prescription: prescriptionId
             });
             subtotal += medPrice;
@@ -848,15 +848,22 @@ visitSchema.methods.generateInvoice = async function(userId) {
   const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
-  // 5. Create invoice
+  // 5. Generate invoice ID
+  const invoiceCount = await Invoice.countDocuments() + 1;
+  const invoiceId = `INV-${new Date().getFullYear()}-${String(invoiceCount).padStart(6, '0')}`;
+
+  // 6. Create invoice
   const invoice = await Invoice.create({
+    invoiceId,
     patient: this.patient,
     visit: this._id,
     items,
-    subtotal,
-    tax,
-    total,
-    amountDue: total,
+    summary: {
+      subtotal,
+      tax,
+      total,
+      amountDue: total
+    },
     currency: 'CFA',
     status: 'draft',
     issueDate: new Date(),

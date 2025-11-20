@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { FileText, DollarSign, AlertCircle, CheckCircle, Clock, Download, Send, Plus, Search, Filter, Loader2, Eye, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import api from '../services/api';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import api from '../services/apiConfig';
+import { toast } from 'react-toastify';
 
 export default function Invoicing() {
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   const [invoices, setInvoices] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -355,10 +354,10 @@ export default function Invoicing() {
       // Show success modal with options
       setCreatedInvoice(newInvoice);
       setShowSuccessModal(true);
-      success('Facture créée avec succès!');
+      toast.success('Facture créée avec succès!');
     } catch (err) {
       console.error('Error creating invoice:', err);
-      showError('Erreur lors de la création de la facture');
+      toast.error('Erreur lors de la création de la facture');
     } finally {
       setCreating(false);
     }

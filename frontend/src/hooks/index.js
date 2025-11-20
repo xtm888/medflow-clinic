@@ -13,7 +13,6 @@ export { default as usePreviousData } from './usePreviousData';
 export { default as useRedux } from './useRedux';
 
 // UI & Interaction
-export { default as useToast } from './useToast';
 export { default as useAutoSave } from './useAutoSave';
 export { default as useKeyboardShortcuts } from './useKeyboardShortcuts';
 export { default as useTabProgression } from './useTabProgression';

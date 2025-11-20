@@ -21,7 +21,7 @@ import {
   Area,
   AreaChart
 } from 'recharts';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 const AnalyticsDashboard = () => {
   const [dateRange, setDateRange] = useState('month');

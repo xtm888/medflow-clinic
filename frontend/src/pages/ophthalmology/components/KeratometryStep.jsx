@@ -8,6 +8,24 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
   const [selectedEye, setSelectedEye] = useState('OD');
   const [showDeviceImport, setShowDeviceImport] = useState(false);
 
+  // Initialize keratometry data structure if not present
+  if (!data.keratometry) {
+    data.keratometry = {
+      OD: {
+        k1: { power: 44.00, axis: 180 },
+        k2: { power: 44.00, axis: 90 },
+        astigmatism: 0
+      },
+      OS: {
+        k1: { power: 44.00, axis: 180 },
+        k2: { power: 44.00, axis: 90 },
+        astigmatism: 0
+      },
+      sourceDevice: null,
+      timestamp: null
+    };
+  }
+
   // Hook for copy previous functionality
   const { hasPreviousExam, copyKeratometry, loading: loadingPrevious } = usePreviousRefraction(patientId);
 
@@ -17,9 +35,9 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
       setData(prev => ({
         ...prev,
         keratometry: {
-          ...prev.keratometry,
-          OD: previousData.OD || prev.keratometry.OD,
-          OS: previousData.OS || prev.keratometry.OS
+          ...(prev.keratometry || {}),
+          OD: previousData.OD || prev.keratometry?.OD || { k1: { power: 44.00, axis: 180 }, k2: { power: 44.00, axis: 90 }, astigmatism: 0 },
+          OS: previousData.OS || prev.keratometry?.OS || { k1: { power: 44.00, axis: 180 }, k2: { power: 44.00, axis: 90 }, astigmatism: 0 }
         }
       }));
     }
@@ -29,15 +47,15 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
     setData(prev => ({
       ...prev,
       keratometry: {
-        ...prev.keratometry,
+        ...(prev.keratometry || {}),
         [eye]: {
-          ...prev.keratometry[eye],
+          ...(prev.keratometry?.[eye] || {}),
           [meridian]: {
-            ...prev.keratometry[eye][meridian],
+            ...(prev.keratometry?.[eye]?.[meridian] || {}),
             [param]: parseFloat(value) || 0
           },
           astigmatism: Math.abs(
-            (prev.keratometry[eye].k1.power || 0) - (prev.keratometry[eye].k2.power || 0)
+            (prev.keratometry?.[eye]?.k1?.power || 0) - (prev.keratometry?.[eye]?.k2?.power || 0)
           ).toFixed(2)
         }
       }
@@ -45,10 +63,10 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
   };
 
   const calculateAstigmatism = (eye) => {
-    const k1 = data.keratometry[eye].k1.power;
-    const k2 = data.keratometry[eye].k2.power;
-    const k1Axis = data.keratometry[eye].k1.axis;
-    const k2Axis = data.keratometry[eye].k2.axis;
+    const k1 = data.keratometry?.[eye]?.k1?.power || 0;
+    const k2 = data.keratometry?.[eye]?.k2?.power || 0;
+    const k1Axis = data.keratometry?.[eye]?.k1?.axis || 0;
+    const k2Axis = data.keratometry?.[eye]?.k2?.axis || 0;
 
     return calculateKeratometricAstigmatism(k1, k1Axis, k2, k2Axis);
   };
@@ -161,7 +179,7 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
       )}
 
       {/* Source Device Indicator */}
-      {data.keratometry.sourceDevice && (
+      {data.keratometry?.sourceDevice && (
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
           <div className="flex-1">
@@ -169,7 +187,7 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
               Données importées depuis un kératomètre
             </p>
             <p className="text-xs text-green-700">
-              Mesure effectuée le: {new Date(data.keratometry.importedAt).toLocaleString('fr-FR')}
+              Mesure effectuée le: {new Date(data.keratometry?.importedAt || Date.now()).toLocaleString('fr-FR')}
             </p>
           </div>
         </div>
@@ -295,19 +313,19 @@ export default function KeratometryStep({ data, setData, examId, patientId }) {
           <tbody>
             <tr className="border-b">
               <td className="px-4 py-2 font-medium">OD</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OD.k1.power}</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OD.k1.axis}°</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OD.k2.power}</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OD.k2.axis}°</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OD.astigmatism}D</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OD.k1.power}</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OD.k1.axis}°</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OD.k2.power}</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OD.k2.axis}°</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OD.astigmatism}D</td>
             </tr>
             <tr className="border-b">
               <td className="px-4 py-2 font-medium">OS</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OS.k1.power}</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OS.k1.axis}°</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OS.k2.power}</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OS.k2.axis}°</td>
-              <td className="px-4 py-2 text-center">{data.keratometry.OS.astigmatism}D</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OS.k1.power}</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OS.k1.axis}°</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OS.k2.power}</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OS.k2.axis}°</td>
+              <td className="px-4 py-2 text-center">{data.keratometry?.OS.astigmatism}D</td>
             </tr>
           </tbody>
         </table>

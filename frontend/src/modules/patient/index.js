@@ -10,7 +10,6 @@
 
 // Components
 export { default as PatientSelector, getPatientDisplayName, getPatientInitials } from './PatientSelector';
-export { default as PatientForm } from './PatientForm';
 
 // Hooks
 export {

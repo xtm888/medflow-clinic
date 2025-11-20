@@ -11,15 +11,14 @@ import PrescriptionStep from './components/PrescriptionStep';
 import NumberInputWithArrows from '../../components/NumberInputWithArrows';
 import ophthalmologyService from '../../services/ophthalmologyService';
 import patientService from '../../services/patientService';
-import { useToast } from '../../hooks/useToast';
-import ToastContainer from '../../components/ToastContainer';
+import { toast } from 'react-toastify';
 import DocumentGenerator from '../../components/documents/DocumentGenerator';
 import RefractionComparisonView from '../../components/RefractionComparisonView';
 
 export default function RefractionExam() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
   const patientId = searchParams.get('patientId');
 
   const [patient, setPatient] = useState(null);
@@ -46,7 +45,7 @@ export default function RefractionExam() {
   useEffect(() => {
     const loadPatient = async () => {
       if (!patientId) {
-        showError('Aucun patient sélectionné. Redirection...');
+        toast.error('Aucun patient sélectionné. Redirection...');
         setTimeout(() => navigate('/ophthalmology'), 2000);
         return;
       }
@@ -57,12 +56,12 @@ export default function RefractionExam() {
         if (response.data) {
           setPatient(response.data);
         } else {
-          showError('Patient non trouvé. Redirection...');
+          toast.error('Patient non trouvé. Redirection...');
           setTimeout(() => navigate('/ophthalmology'), 2000);
         }
       } catch (err) {
         console.error('Error loading patient:', err);
-        showError('Erreur lors du chargement du patient. Redirection...');
+        toast.error('Erreur lors du chargement du patient. Redirection...');
         setTimeout(() => navigate('/ophthalmology'), 2000);
       } finally {
         setLoadingPatient(false);
@@ -103,7 +102,7 @@ export default function RefractionExam() {
         setCurrentExamId(response.data._id);
         // Load the copied data into examData
         loadExamDataFromResponse(response.data);
-        success('Données copiées de l\'examen précédent');
+        toast.success('Données copiées de l\'examen précédent');
         // Reload history
         const historyResponse = await ophthalmologyService.getRefractionHistory(patientId);
         if (historyResponse.data) {
@@ -112,7 +111,7 @@ export default function RefractionExam() {
       }
     } catch (err) {
       console.error('Error copying from previous:', err);
-      showError(err.response?.data?.error || 'Aucun examen précédent trouvé');
+      toast.error(err.response?.data?.error || 'Aucun examen précédent trouvé');
     } finally {
       setSaving(false);
     }
@@ -125,7 +124,7 @@ export default function RefractionExam() {
       const response = await ophthalmologyService.createBlankRefraction(patientId);
       if (response.data) {
         setCurrentExamId(response.data._id);
-        success('Nouvelle réfraction vide créée');
+        toast.success('Nouvelle réfraction vide créée');
         // Reload history
         const historyResponse = await ophthalmologyService.getRefractionHistory(patientId);
         if (historyResponse.data) {
@@ -134,7 +133,7 @@ export default function RefractionExam() {
       }
     } catch (err) {
       console.error('Error creating blank refraction:', err);
-      showError('Erreur lors de la création de la réfraction vide');
+      toast.error('Erreur lors de la création de la réfraction vide');
     } finally {
       setSaving(false);
     }
@@ -169,7 +168,7 @@ export default function RefractionExam() {
       }
     } catch (err) {
       console.error('Error loading historical exam:', err);
-      showError('Erreur lors du chargement de l\'examen');
+      toast.error('Erreur lors du chargement de l\'examen');
     }
   };
 
@@ -384,11 +383,11 @@ export default function RefractionExam() {
       const examId = result.data?._id || result._id;
       setSavedExamId(examId);
       setShowExamSuccessModal(true);
-      success('Examen sauvegardé avec succès!');
+      toast.success('Examen sauvegardé avec succès!');
 
     } catch (err) {
       console.error('Error saving exam:', err);
-      showError(err.response?.data?.error || 'Échec de la sauvegarde de l\'examen. Veuillez réessayer.');
+      toast.error(err.response?.data?.error || 'Échec de la sauvegarde de l\'examen. Veuillez réessayer.');
     } finally {
       setSaving(false);
     }
@@ -693,7 +692,7 @@ export default function RefractionExam() {
           visitId={null}
           onClose={() => setShowDocumentGenerator(false)}
           onDocumentGenerated={(doc) => {
-            success('Document généré avec succès!');
+            toast.success('Document généré avec succès!');
             setShowDocumentGenerator(false);
           }}
         />

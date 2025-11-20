@@ -3,7 +3,7 @@ import {
   Calendar, Clock, User, FileText, Activity, ChevronDown, ChevronRight,
   Stethoscope, Pill, Eye, Heart, Brain, Thermometer, AlertCircle
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 export default function VisitTimeline({ patientId }) {
   const [timeline, setTimeline] = useState([]);

@@ -7,15 +7,29 @@ export default function SubjectiveRefractionStep({ data, setData }) {
   const [refinementStep, setRefinementStep] = useState('sphere');
   const [validationErrors, setValidationErrors] = useState([]);
 
+  // Initialize subjective data structure if not present
+  if (!data.subjective) {
+    data.subjective = {
+      OD: { sphere: 0, cylinder: 0, axis: 0, va: '' },
+      OS: { sphere: 0, cylinder: 0, axis: 0, va: '' },
+      add: 0,
+      binocular: { balanced: false },
+      crossCylinder: {
+        OD: { refined: false },
+        OS: { refined: false }
+      }
+    };
+  }
+
   // Start with objective refraction values
   useEffect(() => {
-    if (data.objective.OD.sphere !== 0 || data.objective.OS.sphere !== 0) {
+    if (data.objective?.OD?.sphere !== 0 || data.objective?.OS?.sphere !== 0) {
       setData(prev => ({
         ...prev,
         subjective: {
           ...prev.subjective,
-          OD: { ...prev.objective.OD, va: '' },
-          OS: { ...prev.objective.OS, va: '' }
+          OD: { ...(prev.objective?.OD || { sphere: 0, cylinder: 0, axis: 0 }), va: '' },
+          OS: { ...(prev.objective?.OS || { sphere: 0, cylinder: 0, axis: 0 }), va: '' }
         }
       }));
     }
@@ -23,7 +37,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
 
   // Update refraction value
   const updateValue = (eye, parameter, increment) => {
-    const currentValue = parseFloat(data.subjective[eye][parameter]) || 0;
+    const currentValue = parseFloat(data.subjective?.[eye]?.[parameter]) || 0;
     let newValue;
 
     if (parameter === 'sphere' || parameter === 'cylinder') {
@@ -231,7 +245,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
               +5°
             </button>
           </div>
-          {data.subjective.crossCylinder[selectedEye].refined && (
+          {data.subjective?.crossCylinder?.[selectedEye]?.refined && (
             <div className="text-xs text-green-600 mt-1">
               <Check className="w-3 h-3 inline mr-1" />
               Affiné
@@ -347,7 +361,7 @@ export default function SubjectiveRefractionStep({ data, setData }) {
         <div className="flex items-center gap-4">
           <label className="text-sm">Œil Dominant:</label>
           <select
-            value={data.subjective.binocular.dominantEye}
+            value={data.subjective?.binocular.dominantEye}
             onChange={(e) => setData(prev => ({
               ...prev,
               subjective: {
@@ -375,12 +389,12 @@ export default function SubjectiveRefractionStep({ data, setData }) {
               }
             }))}
             className={`px-3 py-1 rounded ${
-              data.subjective.binocular.balanced
+              data.subjective?.binocular.balanced
                 ? 'bg-green-600 text-white'
                 : 'bg-gray-200 hover:bg-gray-300'
             }`}
           >
-            {data.subjective.binocular.balanced ? 'Équilibré' : 'Équilibrer'}
+            {data.subjective?.binocular.balanced ? 'Équilibré' : 'Équilibrer'}
           </button>
         </div>
       </div>

@@ -20,8 +20,7 @@ import {
   Filter
 } from 'lucide-react';
 import deviceService from '../services/deviceService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 /**
  * DeviceStatusDashboard Component
@@ -31,7 +30,7 @@ import ToastContainer from '../components/ToastContainer';
  */
 const DeviceStatusDashboard = () => {
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   // Data state
   const [devices, setDevices] = useState([]);
@@ -120,7 +119,7 @@ const DeviceStatusDashboard = () => {
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
-      showError('Failed to load dashboard data');
+      toast.error('Failed to load dashboard data');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -129,7 +128,7 @@ const DeviceStatusDashboard = () => {
 
   const handleRefresh = () => {
     loadDashboardData();
-    success('Dashboard refreshed');
+    toast.success('Dashboard refreshed');
   };
 
   const getFilteredDevices = () => {

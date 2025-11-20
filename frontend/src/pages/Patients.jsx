@@ -4,12 +4,11 @@ import { useNavigate } from 'react-router-dom';
 import PatientRegistrationWizard from '../components/PatientRegistrationWizard';
 import EmptyState from '../components/EmptyState';
 import patientService from '../services/patientService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 export default function Patients() {
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
   const [patients, setPatients] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [priorityFilter, setPriorityFilter] = useState('all');
@@ -29,7 +28,7 @@ export default function Patients() {
     } catch (err) {
       console.error('Error fetching patients:', err);
       setError('Erreur lors du chargement des patients');
-      showError('Erreur lors du chargement des patients');
+      toast.error('Erreur lors du chargement des patients');
     } finally {
       setLoading(false);
     }
@@ -84,7 +83,7 @@ export default function Patients() {
     // Priority filter
     let matchesPriority = true;
     if (priorityFilter !== 'all') {
-      const patientPriority = patient.priority || patient.patientType || 'NORMAL';
+      const patientPriority = patient.priority || patient.patientType || 'normal';
       matchesPriority = patientPriority.toUpperCase() === priorityFilter;
     }
 
@@ -96,13 +95,13 @@ export default function Patients() {
     try {
       setLoading(true);
       await patientService.createPatient(patientData);
-      success('✓ Patient créé avec succès!');
+      toast.success('✓ Patient créé avec succès!');
       setShowWizard(false);
       // Reload patient list
       await fetchPatients();
     } catch (error) {
       console.error('Error creating patient:', error);
-      showError('Erreur lors de la création du patient');
+      toast.error('Erreur lors de la création du patient');
     } finally {
       setLoading(false);
     }
@@ -241,8 +240,8 @@ export default function Patients() {
                     const phone = patient.phoneNumber || patient.phone || 'N/A';
                     const email = patient.email || 'N/A';
                     const bloodType = patient.bloodGroup || patient.bloodType || 'N/A';
-                    const priority = patient.priority || patient.patientType || 'NORMAL';
-                    const isVip = priority === 'VIP' || patient.vip;
+                    const priority = patient.priority || patient.patientType || 'normal';
+                    const isVip = priority === 'vip' || patient.vip;
                     const lastVisit = patient.lastVisit || patient.lastVisitDate;
                     const nextAppointment = patient.nextAppointment || patient.nextAppointmentDate;
                     const allergies = patient.medicalHistory?.allergies || patient.allergies || [];
@@ -288,14 +287,14 @@ export default function Patients() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            priority === 'VIP' ? 'bg-purple-100 text-purple-800' :
-                            priority === 'PREGNANT' ? 'bg-pink-100 text-pink-800' :
-                            priority === 'ELDERLY' ? 'bg-blue-100 text-blue-800' :
+                            priority === 'vip' ? 'bg-purple-100 text-purple-800' :
+                            priority === 'pregnant' ? 'bg-pink-100 text-pink-800' :
+                            priority === 'elderly' ? 'bg-blue-100 text-blue-800' :
                             'bg-gray-100 text-gray-800'
                           }`}>
-                            {priority === 'VIP' ? 'VIP' :
-                             priority === 'PREGNANT' ? 'Enceinte' :
-                             priority === 'ELDERLY' ? 'Âgé' :
+                            {priority === 'vip' ? 'VIP' :
+                             priority === 'pregnant' ? 'Enceinte' :
+                             priority === 'elderly' ? 'Âgé' :
                              'Normal'}
                           </span>
                         </td>

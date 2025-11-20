@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Image as ImageIcon, Eye, Download, ZoomIn, Loader2, AlertCircle, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 export default function Imaging() {
   const navigate = useNavigate();

@@ -7,8 +7,7 @@ import {
 import patientService from '../services/patientService';
 import ophthalmologyService from '../services/ophthalmologyService';
 import prescriptionService from '../services/prescriptionService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 import LoadingSpinner from '../components/LoadingSpinner';
 
 export default function PatientSummary() {
@@ -54,7 +53,7 @@ export default function PatientSummary() {
       setVisits(visitsRes.data || visitsRes || []);
     } catch (err) {
       console.error('Error loading patient data:', err);
-      showError('Erreur lors du chargement des données');
+      toast.error('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
     }

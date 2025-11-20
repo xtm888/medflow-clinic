@@ -4,8 +4,8 @@ import { authService } from '../../services';
 // Initial state
 const initialState = {
   user: null,
-  token: localStorage.getItem('token'),
-  refreshToken: localStorage.getItem('refreshToken'),
+  token: null,
+  refreshToken: null,
   isAuthenticated: false,
   isLoading: false,
   error: null,

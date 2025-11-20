@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, FileText, Download, Printer, Calendar, ClipboardList, Receipt } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 const DOCUMENT_TYPES = [
   { value: 'prescription', label: 'Ordonnance', icon: FileText },

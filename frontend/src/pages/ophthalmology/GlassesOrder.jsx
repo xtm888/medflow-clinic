@@ -8,13 +8,12 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ophthalmologyService from '../../services/ophthalmologyService';
 import glassesOrderService from '../../services/glassesOrderService';
-import { useToast } from '../../hooks/useToast';
-import ToastContainer from '../../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 export default function GlassesOrder() {
   const { examId } = useParams();
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,7 +90,7 @@ export default function GlassesOrder() {
         }
       ]);
     } catch (err) {
-      showError('Erreur lors du chargement de l\'examen');
+      toast.error('Erreur lors du chargement de l\'examen');
       console.error('Error fetching exam:', err);
     } finally {
       setLoading(false);
@@ -153,7 +152,7 @@ export default function GlassesOrder() {
     e.preventDefault();
 
     if (!exam) {
-      showError('Données d\'examen manquantes');
+      toast.error('Données d\'examen manquantes');
       return;
     }
 
@@ -196,7 +195,7 @@ export default function GlassesOrder() {
 
       const result = await glassesOrderService.createOrder(orderData);
 
-      success('Commande créée avec succès!');
+      toast.success('Commande créée avec succès!');
 
       // Navigate to order details or back to ophthalmology
       setTimeout(() => {
@@ -204,7 +203,7 @@ export default function GlassesOrder() {
       }, 1500);
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Erreur lors de la création de la commande');
+      toast.error(err.response?.data?.error || 'Erreur lors de la création de la commande');
       console.error('Error creating order:', err);
     } finally {
       setSaving(false);

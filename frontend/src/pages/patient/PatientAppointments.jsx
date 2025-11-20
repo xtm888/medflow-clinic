@@ -2,14 +2,13 @@ import { Calendar, Clock, Plus, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 import appointmentService from '../../services/appointmentService';
 import authService from '../../services/authService';
-import { useToast } from '../../hooks/useToast';
-import ToastContainer from '../../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 export default function PatientAppointments() {
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
   const [currentPatient, setCurrentPatient] = useState(null);
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
@@ -59,7 +58,7 @@ export default function PatientAppointments() {
           setServices(transformedServices);
         }
       } catch (err) {
-        showError('Failed to load patient data');
+        toast.error('Failed to load patient data');
       } finally {
         setLoading(false);
       }
@@ -90,7 +89,7 @@ export default function PatientAppointments() {
     e.preventDefault();
 
     if (!currentPatient) {
-      showError('Patient information not loaded');
+      toast.error('Patient information not loaded');
       return;
     }
 
@@ -113,7 +112,7 @@ export default function PatientAppointments() {
       await appointmentService.createAppointment(appointmentData);
 
       setBookingSuccess(true);
-      success('Appointment request submitted successfully!');
+      toast.success('Appointment request submitted successfully!');
 
       // Refresh appointments list
       const aptResponse = await appointmentService.getAppointments({
@@ -122,7 +121,7 @@ export default function PatientAppointments() {
       setAppointments(aptResponse.data || []);
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to book appointment');
+      toast.error(err.response?.data?.error || 'Failed to book appointment');
     } finally {
       setBookingLoading(false);
     }
@@ -140,7 +139,7 @@ export default function PatientAppointments() {
         cancelledBy: currentPatient._id
       });
 
-      success('Appointment cancelled successfully');
+      toast.success('Appointment cancelled successfully');
 
       // Refresh appointments
       const aptResponse = await appointmentService.getAppointments({
@@ -149,7 +148,7 @@ export default function PatientAppointments() {
       setAppointments(aptResponse.data || []);
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to cancel appointment');
+      toast.error(err.response?.data?.error || 'Failed to cancel appointment');
     }
   };
 

@@ -3,7 +3,7 @@ import { Calendar, Pill, FileText, DollarSign, Clock, AlertCircle, Loader2 } fro
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 import authService from '../../services/authService';
 
 export default function PatientDashboard() {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Pill, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 import authService from '../../services/authService';
 
 export default function PatientPrescriptions() {

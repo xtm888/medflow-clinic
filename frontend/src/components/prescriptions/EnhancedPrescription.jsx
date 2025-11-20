@@ -4,7 +4,7 @@ import {
   Clock, Calendar, User, Pill, Eye, Download, Send, History,
   Settings, ChevronDown, ChevronRight, Shield, Info
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 export default function EnhancedPrescription({ patientId }) {
   const [prescriptions, setPrescriptions] = useState([]);

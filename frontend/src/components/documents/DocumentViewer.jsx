@@ -4,7 +4,7 @@ import {
   RotateCw, FileText, Tag, Clock, User, Calendar, Volume2,
   Play, Pause, MessageSquare, Eye
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 const DocumentViewer = ({ document, onClose, onUpdate }) => {
   const [doc, setDoc] = useState(document);

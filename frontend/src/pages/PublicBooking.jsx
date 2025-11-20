@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar, Clock, User, Phone, Mail, MessageSquare, Activity, CheckCircle, Loader2 } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 export default function PublicBooking() {
   const navigate = useNavigate();

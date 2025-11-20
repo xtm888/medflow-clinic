@@ -138,7 +138,7 @@ async function seedPharmacyInventory() {
 
     // Get all drugs from Drug collection
     console.log('Fetching medications from Drug collection...');
-    const drugs = await Drug.find({ active: true }).lean();
+    const drugs = await Drug.find({ isActive: true }).lean();
     console.log(`Found ${drugs.length} active medications`);
 
     let totalCreated = 0;

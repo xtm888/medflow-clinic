@@ -14,6 +14,28 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showVertexCorrection, setShowVertexCorrection] = useState(false);
 
+  // Initialize data structures if not present
+  if (!data.subjective) {
+    data.subjective = {
+      OD: { sphere: 0, cylinder: 0, axis: 0, va: '' },
+      OS: { sphere: 0, cylinder: 0, axis: 0, va: '' },
+      add: 0,
+      binocular: { balanced: false }
+    };
+  }
+
+  if (!data.pupilDistance) {
+    data.pupilDistance = {
+      binocular: 63,
+      OD: 31.5,
+      OS: 31.5
+    };
+  }
+
+  if (!data.finalPrescription) {
+    data.finalPrescription = {};
+  }
+
   // New state for prescription status and lens types
   const [prescriptionStatus, setPrescriptionStatus] = useState('pending');
   const [selectedLensTypes, setSelectedLensTypes] = useState([]);
@@ -250,19 +272,19 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
 
   // Apply vertex correction for contact lenses
   const getContactLensPrescription = () => {
-    const odSphere = parseFloat(data.subjective.OD.sphere);
-    const osSphere = parseFloat(data.subjective.OS.sphere);
+    const odSphere = parseFloat(data.subjective?.OD?.sphere || 0);
+    const osSphere = parseFloat(data.subjective?.OS?.sphere || 0);
 
     return {
       OD: {
         sphere: vertexCorrection(odSphere, 0), // 0mm vertex distance for contacts
-        cylinder: data.subjective.OD.cylinder,
-        axis: data.subjective.OD.axis
+        cylinder: data.subjective?.OD.cylinder,
+        axis: data.subjective?.OD.axis
       },
       OS: {
         sphere: vertexCorrection(osSphere, 0),
-        cylinder: data.subjective.OS.cylinder,
-        axis: data.subjective.OS.axis
+        cylinder: data.subjective?.OS.cylinder,
+        axis: data.subjective?.OS.axis
       }
     };
   };
@@ -271,8 +293,8 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
   const generatePrescription = () => {
     const prescription = {
       ...data.finalPrescription,
-      OD: { ...data.subjective.OD },
-      OS: { ...data.subjective.OS },
+      OD: { ...(data.subjective?.OD || { sphere: 0, cylinder: 0, axis: 0 }) },
+      OS: { ...(data.subjective?.OS || { sphere: 0, cylinder: 0, axis: 0 }) },
       add: readingAdd?.recommended || 0,
       prescriptionType,
 
@@ -725,7 +747,7 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
                     <span className="font-mono text-lg">{formatPrescription(data.subjective).OD}</span>
                   </div>
                   <div className="text-sm text-gray-500 ml-12">
-                    AV: {data.subjective.OD.va || 'N/A'}
+                    AV: {data.subjective?.OD.va || 'N/A'}
                   </div>
                 </div>
                 <div>
@@ -734,7 +756,7 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
                     <span className="font-mono text-lg">{formatPrescription(data.subjective).OS}</span>
                   </div>
                   <div className="text-sm text-gray-500 ml-12">
-                    AV: {data.subjective.OS.va || 'N/A'}
+                    AV: {data.subjective?.OS.va || 'N/A'}
                   </div>
                 </div>
               </div>
@@ -754,9 +776,9 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="flex items-center">
                   <span className="font-medium text-gray-700">ÉP:</span>
-                  <span className="ml-3 font-mono">{data.pupilDistance.binocular}mm</span>
+                  <span className="ml-3 font-mono">{data.pupilDistance?.binocular}mm</span>
                   <span className="text-sm text-gray-500 ml-3">
-                    (OD: {data.pupilDistance.OD}mm | OS: {data.pupilDistance.OS}mm)
+                    (OD: {data.pupilDistance?.OD}mm | OS: {data.pupilDistance?.OS}mm)
                   </span>
                 </div>
               </div>
@@ -773,7 +795,7 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
             </h4>
 
             {/* Vertex Correction Notice */}
-            {(Math.abs(data.subjective.OD.sphere) > 4 || Math.abs(data.subjective.OS.sphere) > 4) && (
+            {(Math.abs(data.subjective?.OD.sphere) > 4 || Math.abs(data.subjective?.OS.sphere) > 4) && (
               <div className="mb-3 p-2 bg-yellow-50 rounded border border-yellow-200">
                 <label className="flex items-center text-sm">
                   <input
@@ -1088,31 +1110,31 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
                     <tr>
                       <td className="border border-gray-300 px-4 py-2 font-medium">OD (Droit)</td>
                       <td className="border border-gray-300 px-4 py-2 text-center font-mono">
-                        {data.subjective.OD.sphere >= 0 ? '+' : ''}{data.subjective.OD.sphere}
+                        {data.subjective?.OD.sphere >= 0 ? '+' : ''}{data.subjective?.OD.sphere}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-center font-mono">
-                        {data.subjective.OD.cylinder >= 0 ? '+' : ''}{data.subjective.OD.cylinder}
+                        {data.subjective?.OD.cylinder >= 0 ? '+' : ''}{data.subjective?.OD.cylinder}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-center font-mono">
-                        {data.subjective.OD.axis}°
+                        {data.subjective?.OD.axis}°
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-center">
-                        {data.subjective.OD.va || 'N/A'}
+                        {data.subjective?.OD.va || 'N/A'}
                       </td>
                     </tr>
                     <tr>
                       <td className="border border-gray-300 px-4 py-2 font-medium">OG (Gauche)</td>
                       <td className="border border-gray-300 px-4 py-2 text-center font-mono">
-                        {data.subjective.OS.sphere >= 0 ? '+' : ''}{data.subjective.OS.sphere}
+                        {data.subjective?.OS.sphere >= 0 ? '+' : ''}{data.subjective?.OS.sphere}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-center font-mono">
-                        {data.subjective.OS.cylinder >= 0 ? '+' : ''}{data.subjective.OS.cylinder}
+                        {data.subjective?.OS.cylinder >= 0 ? '+' : ''}{data.subjective?.OS.cylinder}
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-center font-mono">
-                        {data.subjective.OS.axis}°
+                        {data.subjective?.OS.axis}°
                       </td>
                       <td className="border border-gray-300 px-4 py-2 text-center">
-                        {data.subjective.OS.va || 'N/A'}
+                        {data.subjective?.OS.va || 'N/A'}
                       </td>
                     </tr>
                   </tbody>
@@ -1125,8 +1147,8 @@ export default function PrescriptionStep({ data, setData, patient, patientId }) 
                 )}
 
                 <div className="mt-3">
-                  <p><strong>Écart pupillaire:</strong> {data.pupilDistance.binocular}mm
-                    (OD: {data.pupilDistance.OD}mm, OG: {data.pupilDistance.OS}mm)</p>
+                  <p><strong>Écart pupillaire:</strong> {data.pupilDistance?.binocular}mm
+                    (OD: {data.pupilDistance?.OD}mm, OG: {data.pupilDistance?.OS}mm)</p>
                 </div>
               </div>
 

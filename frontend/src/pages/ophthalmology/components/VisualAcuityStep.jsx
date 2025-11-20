@@ -1,9 +1,24 @@
 import { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 
-export default function VisualAcuityStep({ data, setData }) {
+export default function VisualAcuityStep({ data = {}, setData }) {
   const [selectedEye, setSelectedEye] = useState('OD');
   const [testDistance, setTestDistance] = useState('distance');
+
+  // Initialize visual acuity data structure if not present
+  if (!data || !data.visualAcuity) {
+    if (!data) data = {};
+    data.visualAcuity = {
+      distance: {
+        OD: { unaided: '', pinhole: '', corrected: '' },
+        OS: { unaided: '', pinhole: '', corrected: '' }
+      },
+      near: {
+        OD: { unaided: '', corrected: '' },
+        OS: { unaided: '', corrected: '' }
+      }
+    };
+  }
 
   // Snellen chart values
   const snellenValues = [
@@ -14,19 +29,34 @@ export default function VisualAcuityStep({ data, setData }) {
   ];
 
   const updateVA = (eye, test, type, value) => {
-    setData(prev => ({
-      ...prev,
-      visualAcuity: {
-        ...prev.visualAcuity,
-        [test]: {
-          ...prev.visualAcuity[test],
-          [eye]: {
-            ...prev.visualAcuity[test][eye],
-            [type]: value
+    setData(prev => {
+      // Ensure structure exists
+      const updatedData = { ...prev };
+      if (!updatedData.visualAcuity) {
+        updatedData.visualAcuity = {
+          distance: {
+            OD: { unaided: '', pinhole: '', corrected: '' },
+            OS: { unaided: '', pinhole: '', corrected: '' }
+          },
+          near: {
+            OD: { unaided: '', corrected: '' },
+            OS: { unaided: '', corrected: '' }
           }
-        }
+        };
       }
-    }));
+      if (!updatedData.visualAcuity[test]) {
+        updatedData.visualAcuity[test] = {
+          OD: test === 'distance' ? { unaided: '', pinhole: '', corrected: '' } : { unaided: '', corrected: '' },
+          OS: test === 'distance' ? { unaided: '', pinhole: '', corrected: '' } : { unaided: '', corrected: '' }
+        };
+      }
+      if (!updatedData.visualAcuity[test][eye]) {
+        updatedData.visualAcuity[test][eye] = test === 'distance' ? { unaided: '', pinhole: '', corrected: '' } : { unaided: '', corrected: '' };
+      }
+
+      updatedData.visualAcuity[test][eye][type] = value;
+      return updatedData;
+    });
   };
 
   return (
@@ -96,7 +126,7 @@ export default function VisualAcuityStep({ data, setData }) {
               Sans Correction
             </label>
             <select
-              value={data.visualAcuity[testDistance][selectedEye].unaided}
+              value={data.visualAcuity?.[testDistance]?.[selectedEye]?.unaided || ''}
               onChange={(e) => updateVA(selectedEye, testDistance, 'unaided', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -122,7 +152,7 @@ export default function VisualAcuityStep({ data, setData }) {
                 Trou Sténopéique
               </label>
               <select
-                value={data.visualAcuity[testDistance][selectedEye].pinhole}
+                value={data.visualAcuity?.[testDistance]?.[selectedEye]?.pinhole || ''}
                 onChange={(e) => updateVA(selectedEye, testDistance, 'pinhole', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
@@ -132,11 +162,11 @@ export default function VisualAcuityStep({ data, setData }) {
                 ))}
               </select>
               {/* Show improvement indicator */}
-              {data.visualAcuity[testDistance][selectedEye].pinhole &&
-               data.visualAcuity[testDistance][selectedEye].unaided && (
+              {data.visualAcuity?.[testDistance]?.[selectedEye]?.pinhole &&
+               data.visualAcuity?.[testDistance]?.[selectedEye]?.unaided && (
                 <p className="text-xs mt-1 text-green-600">
-                  {parseInt(data.visualAcuity[testDistance][selectedEye].pinhole.split('/')[1]) <
-                   parseInt(data.visualAcuity[testDistance][selectedEye].unaided.split('/')[1])
+                  {parseInt(data.visualAcuity?.[testDistance]?.[selectedEye]?.pinhole.split('/')[1]) <
+                   parseInt(data.visualAcuity?.[testDistance]?.[selectedEye]?.unaided.split('/')[1])
                     ? '✓ Amélioration avec trou sténopéique' : ''}
                 </p>
               )}
@@ -149,7 +179,7 @@ export default function VisualAcuityStep({ data, setData }) {
               Avec Correction
             </label>
             <select
-              value={data.visualAcuity[testDistance][selectedEye].corrected}
+              value={data.visualAcuity?.[testDistance]?.[selectedEye]?.corrected || ''}
               onChange={(e) => updateVA(selectedEye, testDistance, 'corrected', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -174,24 +204,24 @@ export default function VisualAcuityStep({ data, setData }) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Vision de loin sans correction:</span>
-                <span className="font-medium">{data.visualAcuity.distance.OD.unaided || '-'}</span>
+                <span className="font-medium">{data.visualAcuity?.distance?.OD?.unaided || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Trou sténopéique:</span>
-                <span className="font-medium">{data.visualAcuity.distance.OD.pinhole || '-'}</span>
+                <span className="font-medium">{data.visualAcuity?.distance?.OD?.pinhole || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Avec correction:</span>
-                <span className="font-medium text-green-600">{data.visualAcuity.distance.OD.corrected || '-'}</span>
+                <span className="font-medium text-green-600">{data.visualAcuity?.distance?.OD?.corrected || '-'}</span>
               </div>
               <hr className="my-2" />
               <div className="flex justify-between">
                 <span className="text-gray-600">Vision de près sans correction:</span>
-                <span className="font-medium">{data.visualAcuity.near.OD.unaided || '-'}</span>
+                <span className="font-medium">{data.visualAcuity?.near?.OD?.unaided || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Vision de près avec correction:</span>
-                <span className="font-medium text-green-600">{data.visualAcuity.near.OD.corrected || '-'}</span>
+                <span className="font-medium text-green-600">{data.visualAcuity?.near?.OD?.corrected || '-'}</span>
               </div>
             </div>
           </div>
@@ -204,24 +234,24 @@ export default function VisualAcuityStep({ data, setData }) {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-gray-600">Vision de loin sans correction:</span>
-                <span className="font-medium">{data.visualAcuity.distance.OS.unaided || '-'}</span>
+                <span className="font-medium">{data.visualAcuity?.distance?.OS?.unaided || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Trou sténopéique:</span>
-                <span className="font-medium">{data.visualAcuity.distance.OS.pinhole || '-'}</span>
+                <span className="font-medium">{data.visualAcuity?.distance?.OS?.pinhole || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Avec correction:</span>
-                <span className="font-medium text-green-600">{data.visualAcuity.distance.OS.corrected || '-'}</span>
+                <span className="font-medium text-green-600">{data.visualAcuity?.distance?.OS?.corrected || '-'}</span>
               </div>
               <hr className="my-2" />
               <div className="flex justify-between">
                 <span className="text-gray-600">Vision de près sans correction:</span>
-                <span className="font-medium">{data.visualAcuity.near.OS.unaided || '-'}</span>
+                <span className="font-medium">{data.visualAcuity?.near?.OS?.unaided || '-'}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Vision de près avec correction:</span>
-                <span className="font-medium text-green-600">{data.visualAcuity.near.OS.corrected || '-'}</span>
+                <span className="font-medium text-green-600">{data.visualAcuity?.near?.OS?.corrected || '-'}</span>
               </div>
             </div>
           </div>

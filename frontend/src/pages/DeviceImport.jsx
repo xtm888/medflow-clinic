@@ -14,13 +14,12 @@ import {
 } from 'lucide-react';
 import deviceService from '../services/deviceService';
 import patientService from '../services/patientService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 const DeviceImport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   const [device, setDevice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -58,7 +57,7 @@ const DeviceImport = () => {
         }));
       }
     } catch (err) {
-      showError('Failed to load device');
+      toast.error('Failed to load device');
       console.error(err);
     } finally {
       setLoading(false);
@@ -119,12 +118,12 @@ const DeviceImport = () => {
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
-      showError('Please select at least one file');
+      toast.error('Please select at least one file');
       return;
     }
 
     if (!formData.patientId) {
-      showError('Please select a patient');
+      toast.error('Please select a patient');
       return;
     }
 
@@ -173,11 +172,11 @@ const DeviceImport = () => {
       const failCount = results.filter(r => r.status === 'error').length;
 
       if (failCount === 0) {
-        success(`Successfully imported ${successCount} file(s)`);
+        toast.success(`Successfully imported ${successCount} file(s)`);
       } else if (successCount === 0) {
-        showError(`Failed to import all ${failCount} file(s)`);
+        toast.error(`Failed to import all ${failCount} file(s)`);
       } else {
-        showError(
+        toast.error(
           `Imported ${successCount} file(s), ${failCount} failed. Check results below.`
         );
       }
@@ -185,7 +184,7 @@ const DeviceImport = () => {
       // Clear selected files after upload
       setSelectedFiles([]);
     } catch (err) {
-      showError('Upload failed');
+      toast.error('Upload failed');
       console.error(err);
     } finally {
       setUploading(false);

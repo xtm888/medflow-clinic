@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const http = require('http');
 require('dotenv').config();
 
 const authRoutes = require('./routes/auth');
@@ -39,6 +40,7 @@ const { auditLogger } = require('./middleware/auditLogger');
 const alertScheduler = require('./services/alertScheduler');
 const deviceSyncScheduler = require('./services/deviceSyncScheduler');
 const reservationCleanupScheduler = require('./services/reservationCleanupScheduler');
+const websocketService = require('./services/websocketService');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -130,17 +132,21 @@ app.use('/api/portal', portalRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/sync', require('./routes/sync'));
 app.use('/api/visits', require('./routes/visits'));
-app.use('/api/templates', require('./routes/templates'));
-app.use('/api/correspondence', require('./routes/correspondence'));
+// app.use('/api/templates', require('./routes/templates')); // Commented - Template model removed
+// app.use('/api/correspondence', require('./routes/correspondence')); // Commented - check if exists
 app.use('/api/documents', require('./routes/documents'));
+app.use('/api/laboratory', require('./routes/laboratory'));
+app.use('/api/uploads', require('./routes/uploads'));
 
 // Error handling middleware
 app.use(errorHandler);
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow', {
+// MongoDB connection - Force IPv4 and replica set
+const mongoUri = process.env.MONGODB_URI?.replace('localhost', '127.0.0.1') || 'mongodb://127.0.0.1:27017/medflow?replicaSet=rs0';
+mongoose.connect(mongoUri, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  family: 4, // Force IPv4
 })
 .then(() => {
   console.log('✅ Connected to MongoDB');
@@ -154,11 +160,21 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow',
   // Start reservation cleanup scheduler (CRITICAL: prevents stock lockup)
   reservationCleanupScheduler.start();
 
+  // Create HTTP server
+  const server = http.createServer(app);
+
+  // Initialize WebSocket
+  websocketService.initialize(server, {
+    origin: allowedOrigins,
+    credentials: true
+  });
+
   // Start server
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
     console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
     console.log(`📡 API available at http://localhost:${PORT}/api`);
+    console.log(`🔌 WebSocket available at ws://localhost:${PORT}`);
   });
 })
 .catch((err) => {

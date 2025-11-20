@@ -21,12 +21,11 @@ import {
   XCircle
 } from 'lucide-react';
 import deviceService from '../services/deviceService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 
 const DeviceManager = () => {
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   // State
   const [devices, setDevices] = useState([]);
@@ -58,7 +57,7 @@ const DeviceManager = () => {
       const response = await deviceService.getDevices();
       setDevices(response.data || []);
     } catch (err) {
-      showError('Failed to load devices');
+      toast.error('Failed to load devices');
       console.error(err);
     } finally {
       setLoading(false);
@@ -100,12 +99,12 @@ const DeviceManager = () => {
 
     try {
       const response = await deviceService.syncDeviceFolder(deviceId);
-      success(
+      toast.success(
         `Sync completed: ${response.recordsProcessed} processed, ${response.recordsFailed} failed`
       );
       await loadDevices();
     } catch (err) {
-      showError(`Sync failed: ${err.response?.data?.message || err.message}`);
+      toast.error(`Sync failed: ${err.response?.data?.message || err.message}`);
     } finally {
       setSyncing(prev => {
         const next = new Set(prev);
@@ -120,10 +119,10 @@ const DeviceManager = () => {
 
     try {
       await deviceService.deleteDevice(deviceId);
-      success('Device deleted successfully');
+      toast.success('Device deleted successfully');
       await loadDevices();
     } catch (err) {
-      showError(`Failed to delete device: ${err.response?.data?.message || err.message}`);
+      toast.error(`Failed to delete device: ${err.response?.data?.message || err.message}`);
     }
   };
 

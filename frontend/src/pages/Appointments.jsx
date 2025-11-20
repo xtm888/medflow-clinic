@@ -7,15 +7,14 @@ import appointmentService from '../services/appointmentService';
 import patientService from '../services/patientService';
 import queueService from '../services/queueService';
 import userService from '../services/userService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 import EmptyState from '../components/EmptyState';
 import { normalizeToArray, isArray } from '../utils/apiHelpers';
 import { PatientSelector } from '../modules/patient';
 
 export default function Appointments() {
   const navigate = useNavigate();
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
 
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -67,7 +66,7 @@ export default function Appointments() {
       );
       setProviders(providerUsers);
     } catch (err) {
-      showError('Failed to load appointments');
+      toast.error('Failed to load appointments');
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
@@ -168,27 +167,27 @@ export default function Appointments() {
   const handleBookAppointment = async () => {
     // Validate all required fields
     if (!newAppointment.patient) {
-      showError('Veuillez sélectionner un patient');
+      toast.error('Veuillez sélectionner un patient');
       return;
     }
     if (!newAppointment.provider) {
-      showError('Veuillez sélectionner un médecin');
+      toast.error('Veuillez sélectionner un médecin');
       return;
     }
     if (!newAppointment.department) {
-      showError('Veuillez sélectionner un département');
+      toast.error('Veuillez sélectionner un département');
       return;
     }
     if (!newAppointment.date) {
-      showError('Veuillez sélectionner une date');
+      toast.error('Veuillez sélectionner une date');
       return;
     }
     if (!newAppointment.time) {
-      showError('Veuillez sélectionner une heure');
+      toast.error('Veuillez sélectionner une heure');
       return;
     }
     if (!newAppointment.reason || newAppointment.reason.trim() === '') {
-      showError('Veuillez indiquer la raison de la visite');
+      toast.error('Veuillez indiquer la raison de la visite');
       return;
     }
 
@@ -214,7 +213,7 @@ export default function Appointments() {
 
       await appointmentService.createAppointment(appointmentData);
 
-      success('Rendez-vous créé avec succès!');
+      toast.success('Rendez-vous créé avec succès!');
       setShowBookingModal(false);
 
       // Reset form
@@ -234,7 +233,7 @@ export default function Appointments() {
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Échec de la création du rendez-vous');
+      toast.error(err.response?.data?.error || 'Échec de la création du rendez-vous');
       console.error('Error creating appointment:', err);
     } finally {
       setSubmitting(false);
@@ -250,11 +249,11 @@ export default function Appointments() {
         status: 'confirmed'
       });
 
-      success('Appointment confirmed!');
+      toast.success('Appointment confirmed!');
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to confirm appointment');
+      toast.error(err.response?.data?.error || 'Failed to confirm appointment');
       console.error('Error confirming appointment:', err);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
@@ -275,11 +274,11 @@ export default function Appointments() {
         cancelledBy: 'staff'
       });
 
-      success('Appointment cancelled!');
+      toast.success('Appointment cancelled!');
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to cancel appointment');
+      toast.error(err.response?.data?.error || 'Failed to cancel appointment');
       console.error('Error cancelling appointment:', err);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
@@ -295,11 +294,11 @@ export default function Appointments() {
         status: 'in-progress'
       });
 
-      success('Appointment started!');
+      toast.success('Appointment started!');
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to start appointment');
+      toast.error(err.response?.data?.error || 'Failed to start appointment');
       console.error('Error starting appointment:', err);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
@@ -312,18 +311,18 @@ export default function Appointments() {
       setActionLoading(prev => ({ ...prev, [appointmentId]: true }));
 
       // Check if patient should have VIP priority
-      const priority = patient?.vip ? 'VIP' : 'NORMAL';
+      const priority = patient?.vip ? 'vip' : 'normal';
 
       await queueService.checkIn({
         appointmentId,
         priority
       });
 
-      success('Patient checked in and added to queue!');
+      toast.success('Patient checked in and added to queue!');
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to check in patient');
+      toast.error(err.response?.data?.error || 'Failed to check in patient');
       console.error('Error checking in patient:', err);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));
@@ -343,11 +342,11 @@ export default function Appointments() {
         status: 'cancelled'
       });
 
-      success('Appointment rejected!');
+      toast.success('Appointment rejected!');
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to reject appointment');
+      toast.error(err.response?.data?.error || 'Failed to reject appointment');
       console.error('Error rejecting appointment:', err);
     } finally {
       setActionLoading(prev => ({ ...prev, [appointmentId]: false }));

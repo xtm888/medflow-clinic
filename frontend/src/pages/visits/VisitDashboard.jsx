@@ -3,7 +3,7 @@ import {
   Calendar, Clock, User, Activity, FileText, Plus, ChevronRight,
   CheckCircle, AlertCircle, Clock3, Users, Stethoscope, ClipboardList
 } from 'lucide-react';
-import api from '../../services/api';
+import api from '../../services/apiConfig';
 
 export default function VisitDashboard() {
   const [visits, setVisits] = useState([]);

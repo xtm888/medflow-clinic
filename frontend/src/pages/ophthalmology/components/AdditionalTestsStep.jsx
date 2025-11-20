@@ -5,13 +5,45 @@ import DeviceImageSelector from '../../../components/DeviceImageSelector';
 export default function AdditionalTestsStep({ data, setData, examId, patientId }) {
   const [selectedTest, setSelectedTest] = useState('pupils');
 
+  // Initialize data structures if not present
+  if (!data.pupils) {
+    data.pupils = {
+      OD: { size: 3, reaction: 'normal', shape: 'round' },
+      OS: { size: 3, reaction: 'normal', shape: 'round' },
+      isocoric: true,
+      notes: ''
+    };
+  }
+
+  if (!data.motility) {
+    data.motility = {
+      versions: 'normal',
+      npc: 8,
+      vergence: 'normal',
+      stereopsis: 'normal',
+      coverTest: {
+        distance: 'ortho',
+        near: 'ortho'
+      },
+      notes: ''
+    };
+  }
+
+  if (!data.pupilDistance) {
+    data.pupilDistance = {
+      binocular: 63,
+      OD: 31.5,
+      OS: 31.5
+    };
+  }
+
   const updatePupils = (eye, param, value) => {
     setData(prev => ({
       ...prev,
       pupils: {
         ...prev.pupils,
         [eye]: {
-          ...prev.pupils[eye],
+          ...(prev.pupils?.[eye] || {}),
           [param]: param === 'size' ? parseFloat(value) : value
         }
       }
@@ -168,12 +200,12 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
           </div>
 
           {/* Anisocoria Alert */}
-          {Math.abs(data.pupils.OD.size - data.pupils.OS.size) > 1 && (
+          {Math.abs((data.pupils?.OD?.size || 3) - (data.pupils?.OS?.size || 3)) > 1 && (
             <div className="mt-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
               <div className="flex items-center">
                 <AlertCircle className="w-5 h-5 text-yellow-600 mr-2" />
                 <span className="text-sm text-yellow-800">
-                  Anisocorie détectée: Différence de {Math.abs(data.pupils.OD.size - data.pupils.OS.size)}mm
+                  Anisocorie détectée: Différence de {Math.abs((data.pupils?.OD?.size || 3) - (data.pupils?.OS?.size || 3))}mm
                 </span>
               </div>
             </div>
@@ -292,7 +324,7 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
             <div>
               <label className="block text-sm text-gray-600 mb-1">Vision de Loin</label>
               <select
-                value={data.motility.coverTest.distance}
+                value={data.motility?.coverTest.distance}
                 onChange={(e) => updateCoverTest('distance', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
@@ -308,7 +340,7 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
             <div>
               <label className="block text-sm text-gray-600 mb-1">Vision de Près</label>
               <select
-                value={data.motility.coverTest.near}
+                value={data.motility?.coverTest.near}
                 onChange={(e) => updateCoverTest('near', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
@@ -383,8 +415,8 @@ export default function AdditionalTestsStep({ data, setData, examId, patientId }
           </div>
           <div>
             <span className="text-gray-600">Cover Test:</span>
-            <p className="font-medium">VL: {data.motility.coverTest.distance}</p>
-            <p className="font-medium">VP: {data.motility.coverTest.near}</p>
+            <p className="font-medium">VL: {data.motility?.coverTest.distance}</p>
+            <p className="font-medium">VP: {data.motility?.coverTest.near}</p>
           </div>
         </div>
       </div>

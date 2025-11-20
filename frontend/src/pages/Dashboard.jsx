@@ -86,7 +86,7 @@ export default function Dashboard() {
 
     // Get user role from localStorage
     try {
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const { user } = useAuth();
       if (user.role) {
         setUserRole(user.role);
       }

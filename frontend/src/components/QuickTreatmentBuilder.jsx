@@ -14,7 +14,7 @@ import {
   History,
   Trash2
 } from 'lucide-react';
-import api from '../services/api';
+import api from '../services/apiConfig';
 
 /**
  * QuickTreatmentBuilder - Fermer-style 3-column drug selection interface

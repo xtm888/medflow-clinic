@@ -6,16 +6,15 @@ import patientService from '../services/patientService';
 import templateCatalogService from '../services/templateCatalogService';
 import doseTemplateService from '../services/doseTemplateService';
 import treatmentProtocolService from '../services/treatmentProtocolService';
-import api from '../services/api';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import api from '../services/apiConfig';
+import { toast } from 'react-toastify';
 import EmptyState from '../components/EmptyState';
 import { normalizeToArray, safeString } from '../utils/apiHelpers';
 import DocumentGenerator from '../components/documents/DocumentGenerator';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Prescriptions() {
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [prescriptions, setPrescriptions] = useState([]);
@@ -165,7 +164,7 @@ export default function Prescriptions() {
       }
 
     } catch (err) {
-      showError('Failed to load data');
+      toast.error('Failed to load data');
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
@@ -253,7 +252,7 @@ export default function Prescriptions() {
     try {
       // Check if protocol has medications
       if (!protocol.medications || protocol.medications.length === 0) {
-        showError('Ce protocole ne contient aucun médicament');
+        toast.error('Ce protocole ne contient aucun médicament');
         return;
       }
 
@@ -304,9 +303,9 @@ export default function Prescriptions() {
       }
 
       setShowProtocolSelector(false);
-      success(`Protocole "${protocol.name}" appliqué avec ${protocolMeds.length} médicament(s)`);
+      toast.success(`Protocole "${protocol.name}" appliqué avec ${protocolMeds.length} médicament(s)`);
     } catch (err) {
-      showError('Erreur lors de l\'application du protocole');
+      toast.error('Erreur lors de l\'application du protocole');
       console.error('Error applying protocol:', err);
     }
   };
@@ -314,12 +313,12 @@ export default function Prescriptions() {
   // Add medication to prescription
   const handleAddMedication = () => {
     if (!currentMedication.medicationName) {
-      showError('Veuillez sélectionner un médicament');
+      toast.error('Veuillez sélectionner un médicament');
       return;
     }
 
     if (!currentMedication.dose || !currentMedication.posologie) {
-      showError('Veuillez remplir au moins la dose et la posologie');
+      toast.error('Veuillez remplir au moins la dose et la posologie');
       return;
     }
 
@@ -343,7 +342,7 @@ export default function Prescriptions() {
     setCurrentDoseTemplate(null);
     setMedicationSearch('');
 
-    success('Médicament ajouté');
+    toast.success('Médicament ajouté');
   };
 
   // Remove medication from prescription
@@ -359,12 +358,12 @@ export default function Prescriptions() {
     e.preventDefault();
 
     if (!prescriptionForm.patient) {
-      showError('Please select a patient');
+      toast.error('Please select a patient');
       return;
     }
 
     if (prescriptionForm.medications.length === 0) {
-      showError('Please add at least one medication');
+      toast.error('Please add at least one medication');
       return;
     }
 
@@ -415,7 +414,7 @@ export default function Prescriptions() {
 
       await prescriptionService.createPrescription(prescriptionData);
 
-      success('Prescription created successfully!');
+      toast.success('Prescription created successfully!');
       setShowNewPrescription(false);
 
       // Reset form
@@ -434,7 +433,7 @@ export default function Prescriptions() {
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Failed to create prescription');
+      toast.error(err.response?.data?.error || 'Failed to create prescription');
       console.error('Error creating prescription:', err);
     } finally {
       setSubmitting(false);
@@ -463,9 +462,9 @@ export default function Prescriptions() {
           `${d.medication}: ${d.quantity} unités (Stock restant: ${d.remainingStock})`
         ).join('\n');
 
-        success(`Prescription dispensée avec succès!\n\nInventaire mis à jour:\n${deductionInfo}`);
+        toast.success(`Prescription dispensée avec succès!\n\nInventaire mis à jour:\n${deductionInfo}`);
       } else {
-        success('Prescription dispensée avec succès!');
+        toast.success('Prescription dispensée avec succès!');
       }
 
       // Refresh list
@@ -479,9 +478,9 @@ export default function Prescriptions() {
           `${s.medication}: Besoin ${s.required}, Disponible ${s.available}`
         ).join('\n');
 
-        showError(`Stock insuffisant:\n${errorMessage}`);
+        toast.error(`Stock insuffisant:\n${errorMessage}`);
       } else {
-        showError(err.response?.data?.error || 'Échec de la dispensation');
+        toast.error(err.response?.data?.error || 'Échec de la dispensation');
       }
       console.error('Error dispensing prescription:', err);
     } finally {
@@ -501,9 +500,9 @@ export default function Prescriptions() {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
-      success('Prescription downloaded successfully!');
+      toast.success('Prescription downloaded successfully!');
     } catch (err) {
-      showError('Failed to print prescription');
+      toast.error('Failed to print prescription');
       console.error('Error printing prescription:', err);
     }
   };
@@ -1257,7 +1256,7 @@ export default function Prescriptions() {
             setSelectedPrescription(null);
           }}
           onDocumentGenerated={(doc) => {
-            success('Document généré avec succès!');
+            toast.success('Document généré avec succès!');
             setShowDocumentGenerator(false);
             setSelectedPrescription(null);
           }}

@@ -2,12 +2,11 @@ import { useState, useEffect } from 'react';
 import { FlaskConical, Search, Plus, Check, Clock, AlertCircle, Filter, User, Calendar, Printer, Eye } from 'lucide-react';
 import laboratoryService from '../services/laboratoryService';
 import patientService from '../services/patientService';
-import { useToast } from '../hooks/useToast';
-import ToastContainer from '../components/ToastContainer';
+import { toast } from 'react-toastify';
 import { normalizeToArray, safeString } from '../utils/apiHelpers';
 
 export default function Laboratory() {
-  const { toasts, success, error: showError, removeToast } = useToast();
+  
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState([]);
   const [patients, setPatients] = useState([]);
@@ -56,7 +55,7 @@ export default function Laboratory() {
       const uniqueCategories = [...new Set(templatesData.map(t => t.category).filter(Boolean))];
       setCategories(uniqueCategories);
     } catch (err) {
-      showError('Erreur lors du chargement des donnees');
+      toast.error('Erreur lors du chargement des donnees');
       console.error('Error fetching data:', err);
     } finally {
       setLoading(false);
@@ -101,12 +100,12 @@ export default function Laboratory() {
     e.preventDefault();
 
     if (!orderForm.patient) {
-      showError('Veuillez selectionner un patient');
+      toast.error('Veuillez selectionner un patient');
       return;
     }
 
     if (orderForm.selectedTests.length === 0) {
-      showError('Veuillez selectionner au moins un test');
+      toast.error('Veuillez selectionner au moins un test');
       return;
     }
 
@@ -130,7 +129,7 @@ export default function Laboratory() {
 
       await laboratoryService.createOrder(orderData);
 
-      success('Demande d\'examen creee avec succes!');
+      toast.success('Demande d\'examen creee avec succes!');
       setShowNewOrder(false);
 
       // Reset form
@@ -147,7 +146,7 @@ export default function Laboratory() {
       fetchData();
 
     } catch (err) {
-      showError(err.response?.data?.error || 'Erreur lors de la creation de la demande');
+      toast.error(err.response?.data?.error || 'Erreur lors de la creation de la demande');
       console.error('Error creating order:', err);
     } finally {
       setSubmitting(false);
@@ -158,10 +157,10 @@ export default function Laboratory() {
   const handleUpdateStatus = async (orderId, status) => {
     try {
       await laboratoryService.updateOrderStatus(orderId, status);
-      success(`Statut mis a jour: ${status}`);
+      toast.success(`Statut mis a jour: ${status}`);
       fetchData();
     } catch (err) {
-      showError('Erreur lors de la mise a jour du statut');
+      toast.error('Erreur lors de la mise a jour du statut');
       console.error('Error updating status:', err);
     }
   };

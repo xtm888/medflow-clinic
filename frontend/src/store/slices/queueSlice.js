@@ -28,9 +28,10 @@ export const checkInPatient = createAsyncThunk(
 
 export const updateQueueStatus = createAsyncThunk(
   'queue/updateStatus',
-  async ({ id, status, roomNumber }, { rejectWithValue }) => {
+  async ({ id, status, roomNumber, priority }, { rejectWithValue }) => {
     try {
-      const response = await queueService.updateStatus(id, status, roomNumber);
+      // Ensure priority is lowercase if provided
+      const response = await queueService.updateStatus(id, status, roomNumber, priority);
       return response;
     } catch (error) {
       return rejectWithValue(error.response?.data?.error || 'Failed to update status');
@@ -99,7 +100,20 @@ const queueSlice = createSlice({
     },
     // Real-time update from WebSocket
     updateQueueRealtime: (state, action) => {
-      state.queues = action.payload.data || {};
+      // Clean priority values to lowercase
+      const cleanedQueues = {};
+      const rawQueues = action.payload.data || {};
+      Object.keys(rawQueues).forEach(key => {
+        if (Array.isArray(rawQueues[key])) {
+          cleanedQueues[key] = rawQueues[key].map(patient => ({
+            ...patient,
+            priority: patient.priority ? patient.priority.toLowerCase() : 'normal'
+          }));
+        } else {
+          cleanedQueues[key] = rawQueues[key];
+        }
+      });
+      state.queues = cleanedQueues;
       state.stats = action.payload.stats || state.stats;
       state.lastUpdated = new Date().toISOString();
     },
@@ -118,7 +132,16 @@ const queueSlice = createSlice({
       })
       .addCase(fetchQueue.fulfilled, (state, action) => {
         state.loading = false;
-        state.queues = action.payload.data || {};
+        // Clean priority values to lowercase
+        const cleanedQueues = {};
+        const rawQueues = action.payload.data || {};
+        Object.keys(rawQueues).forEach(key => {
+          cleanedQueues[key] = rawQueues[key].map(patient => ({
+            ...patient,
+            priority: patient.priority ? patient.priority.toLowerCase() : 'normal'
+          }));
+        });
+        state.queues = cleanedQueues;
         state.stats = action.payload.stats || state.stats;
         state.lastUpdated = new Date().toISOString();
       })

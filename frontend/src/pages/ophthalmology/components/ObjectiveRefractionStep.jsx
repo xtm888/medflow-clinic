@@ -9,6 +9,18 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
   const [manualEntry, setManualEntry] = useState(false);
   const [showDeviceImport, setShowDeviceImport] = useState(false);
 
+  // Initialize objective data structure if not present
+  if (!data.objective) {
+    data.objective = {
+      OD: { sphere: 0, cylinder: 0, axis: 0 },
+      OS: { sphere: 0, cylinder: 0, axis: 0 },
+      confidence: 7,
+      timestamp: null,
+      sourceDevice: null,
+      device: null
+    };
+  }
+
   // Hook for copy previous functionality
   const { hasPreviousExam, copyObjectiveRefraction, loading: loadingPrevious } = usePreviousRefraction(patientId);
 
@@ -198,15 +210,15 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
       )}
 
       {/* Source Device Indicator */}
-      {data.objective.sourceDevice && (
+      {data.objective?.sourceDevice && (
         <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-3 flex items-center gap-2">
           <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-green-900">
-              Données importées depuis: {data.objective.device}
+              Données importées depuis: {data.objective?.device}
             </p>
             <p className="text-xs text-green-700">
-              Mesure effectuée le: {new Date(data.objective.timestamp).toLocaleString('fr-FR')}
+              Mesure effectuée le: {data.objective?.timestamp ? new Date(data.objective?.timestamp).toLocaleString('fr-FR') : '-'}
             </p>
           </div>
         </div>
@@ -226,7 +238,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
               <input
                 type="number"
                 step="0.25"
-                value={data.objective.OD.sphere}
+                value={data.objective?.OD?.sphere || 0}
                 onChange={(e) => updateValue('OD', 'sphere', e.target.value)}
                 disabled={!manualEntry && selectedDevice === 'autorefractor'}
                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -237,7 +249,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
               <input
                 type="number"
                 step="0.25"
-                value={data.objective.OD.cylinder}
+                value={data.objective?.OD?.cylinder || 0}
                 onChange={(e) => updateValue('OD', 'cylinder', e.target.value)}
                 disabled={!manualEntry && selectedDevice === 'autorefractor'}
                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -249,7 +261,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
                 type="number"
                 min="1"
                 max="180"
-                value={data.objective.OD.axis}
+                value={data.objective?.OD?.axis || 0}
                 onChange={(e) => updateValue('OD', 'axis', e.target.value)}
                 disabled={!manualEntry && selectedDevice === 'autorefractor'}
                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -259,7 +271,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
           <div className="mt-2 text-sm">
             <span className="text-gray-600">Équivalent Sphérique:</span>
             <span className="font-medium ml-2">
-              {calculateSE(data.objective.OD.sphere, data.objective.OD.cylinder)}D
+              {calculateSE(data.objective?.OD?.sphere || 0, data.objective?.OD?.cylinder || 0)}D
             </span>
           </div>
         </div>
@@ -276,7 +288,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
               <input
                 type="number"
                 step="0.25"
-                value={data.objective.OS.sphere}
+                value={data.objective?.OS.sphere}
                 onChange={(e) => updateValue('OS', 'sphere', e.target.value)}
                 disabled={!manualEntry && selectedDevice === 'autorefractor'}
                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -287,7 +299,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
               <input
                 type="number"
                 step="0.25"
-                value={data.objective.OS.cylinder}
+                value={data.objective?.OS.cylinder}
                 onChange={(e) => updateValue('OS', 'cylinder', e.target.value)}
                 disabled={!manualEntry && selectedDevice === 'autorefractor'}
                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -299,7 +311,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
                 type="number"
                 min="1"
                 max="180"
-                value={data.objective.OS.axis}
+                value={data.objective?.OS.axis}
                 onChange={(e) => updateValue('OS', 'axis', e.target.value)}
                 disabled={!manualEntry && selectedDevice === 'autorefractor'}
                 className="w-full px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
@@ -309,7 +321,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
           <div className="mt-2 text-sm">
             <span className="text-gray-600">Équivalent Sphérique:</span>
             <span className="font-medium ml-2">
-              {calculateSE(data.objective.OS.sphere, data.objective.OS.cylinder)}D
+              {calculateSE(data.objective?.OS?.sphere || 0, data.objective?.OS?.cylinder || 0)}D
             </span>
           </div>
         </div>
@@ -325,7 +337,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
             type="range"
             min="1"
             max="10"
-            value={data.objective.confidence}
+            value={data.objective?.confidence || 7}
             onChange={(e) => setData(prev => ({
               ...prev,
               objective: {
@@ -335,7 +347,7 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
             }))}
             className="flex-1"
           />
-          <span className="font-medium text-lg">{data.objective.confidence}/10</span>
+          <span className="font-medium text-lg">{data.objective?.confidence || 7}/10</span>
         </div>
         <p className="text-xs text-gray-500 mt-1">
           {data.objective.confidence >= 8 ? 'Mesure fiable' :
@@ -350,16 +362,16 @@ export default function ObjectiveRefractionStep({ data, setData, examId, patient
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
           <div>
             <span className="font-medium">OD:</span>
-            <span className="ml-2">{formatPrescription({ OD: data.objective.OD }).OD}</span>
+            <span className="ml-2">{formatPrescription({ OD: data.objective?.OD || { sphere: 0, cylinder: 0, axis: 0 } }).OD}</span>
           </div>
           <div>
             <span className="font-medium">OS:</span>
-            <span className="ml-2">{formatPrescription({ OS: data.objective.OS }).OS}</span>
+            <span className="ml-2">{formatPrescription({ OS: data.objective?.OS || { sphere: 0, cylinder: 0, axis: 0 } }).OS}</span>
           </div>
         </div>
-        {data.objective.timestamp && (
+        {data.objective?.timestamp && (
           <p className="text-xs text-gray-600 mt-2">
-            Mesuré le: {new Date(data.objective.timestamp).toLocaleString('fr-FR')}
+            Mesuré le: {new Date(data.objective?.timestamp).toLocaleString('fr-FR')}
           </p>
         )}
       </div>

@@ -24,7 +24,7 @@ export const queueService = {
    * @param {boolean} data.walkIn - True for walk-in patients
    * @param {Object} data.patientInfo - Patient info for walk-ins (firstName, lastName, phoneNumber)
    * @param {string} data.reason - Visit reason
-   * @param {string} data.priority - Priority level (NORMAL, VIP, PREGNANT, ELDERLY, URGENT)
+   * @param {string} data.priority - Priority level (normal, vip, pregnant, elderly, urgent)
    * @returns {Promise} Queue entry with queue number
    */
   checkIn: async (data) => {
@@ -33,7 +33,7 @@ export const queueService = {
       walkIn: data.walkIn,
       patientInfo: data.patientInfo,
       reason: data.reason,
-      priority: data.priority || 'NORMAL'
+      priority: data.priority || 'normal'
     });
     return response.data;
   },
@@ -43,13 +43,15 @@ export const queueService = {
    * @param {string} id - Appointment/Queue ID
    * @param {string} status - New status (checked-in, in-progress, completed)
    * @param {string} roomNumber - Optional room number
+   * @param {string} priority - Optional priority update
    * @returns {Promise} Updated queue entry
    */
-  updateStatus: async (id, status, roomNumber = null) => {
-    const response = await api.put(`/queue/${id}`, {
-      status,
-      roomNumber
-    });
+  updateStatus: async (id, status, roomNumber = null, priority = null) => {
+    const data = { status };
+    if (roomNumber) data.roomNumber = roomNumber;
+    if (priority) data.priority = priority.toLowerCase(); // Ensure lowercase
+
+    const response = await api.put(`/queue/${id}`, data);
     return response.data;
   },
 

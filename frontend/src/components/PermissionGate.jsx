@@ -1,3 +1,4 @@
+import { useAuth } from '../contexts/AuthContext';
 import { hasPermission, hasMenuAccess } from '../config/rolePermissions';
 
 /**
@@ -23,14 +24,7 @@ export default function PermissionGate({
   menuItem,
   fallback = null
 }) {
-  // Get user from localStorage
-  let user = null;
-  try {
-    user = JSON.parse(localStorage.getItem('user') || '{}');
-  } catch (err) {
-    console.error('Error parsing user:', err);
-  }
-
+  const { user } = useAuth();
   const userRole = user?.role;
 
   // If no user, don't render
