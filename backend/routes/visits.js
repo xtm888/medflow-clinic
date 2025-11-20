@@ -102,56 +102,75 @@ router.get('/today', protect, async (req, res) => {
   }
 });
 
-// @desc    Get patient's visit history/timeline
-// @route   GET /api/visits/patient/:patientId
-// @access  Private
-router.get('/patient/:patientId', protect, async (req, res) => {
-  try {
-    const { page = 1, limit = 10, status, type } = req.query;
-
-    const query = { patient: req.params.patientId };
-    if (status) query.status = status;
-    if (type) query.visitType = type;
-
-    const visits = await Visit.find(query)
-      .sort({ visitDate: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit)
-      .populate('primaryProvider', 'firstName lastName')
-      .populate('appointment', 'type')
-      .select('visitId visitDate visitType status diagnoses chiefComplaint primaryProvider');
-
-    const count = await Visit.countDocuments(query);
-
-    res.json({
-      success: true,
-      data: visits,
-      pagination: {
-        total: count,
-        pages: Math.ceil(count / limit),
-        page: parseInt(page),
-        limit: parseInt(limit)
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching visit history:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// @desc    Get visit timeline for patient
+// @desc    Get comprehensive patient timeline (visits, prescriptions, exams, labs)
 // @route   GET /api/visits/timeline/:patientId
 // @access  Private
+// NOTE: Consolidated from patientHistory - includes all event types, not just visits
 router.get('/timeline/:patientId', protect, async (req, res) => {
   try {
-    const timeline = await Visit.getTimeline(req.params.patientId, req.query.limit);
+    const paramId = req.params.patientId;
+    const { limit = 50, offset = 0, type } = req.query;
+
+    // Resolve patient ID - could be ObjectId or patientId string (e.g., PAT2025000001)
+    let patient;
+    const mongoose = require('mongoose');
+    if (mongoose.Types.ObjectId.isValid(paramId)) {
+      patient = await Patient.findById(paramId);
+    }
+    if (!patient) {
+      patient = await Patient.findOne({ patientId: paramId });
+    }
+    if (!patient) {
+      return res.status(404).json({
+        success: false,
+        error: 'Patient not found'
+      });
+    }
+
+    const patientId = patient._id;
+    const Prescription = require('../models/Prescription');
+    const OphthalmologyExam = require('../models/OphthalmologyExam');
+
+    // Fetch all event types in parallel
+    const [visits, prescriptions, examinations] = await Promise.all([
+      Visit.find({ patient: patientId })
+        .populate('primaryProvider', 'firstName lastName specialization')
+        .sort({ visitDate: -1 }),
+      Prescription.find({ patient: patientId })
+        .populate('prescriber', 'firstName lastName specialization')
+        .sort({ prescriptionDate: -1 }),
+      OphthalmologyExam.find({ patient: patientId })
+        .populate('examiner', 'firstName lastName specialization')
+        .sort({ createdAt: -1 })
+    ]);
+
+    // Extract lab orders from visits
+    const labOrders = visits.flatMap(visit =>
+      (visit.laboratoryOrders || []).map(lab => ({
+        ...lab.toObject(),
+        visitDate: visit.visitDate
+      }))
+    );
+
+    // Build comprehensive timeline
+    let timeline = buildPatientTimeline(visits, prescriptions, examinations, labOrders);
+
+    // Filter by type if specified
+    if (type) {
+      timeline = timeline.filter(event => event.type === type);
+    }
+
+    // Paginate
+    const paginatedTimeline = timeline.slice(parseInt(offset), parseInt(offset) + parseInt(limit));
 
     res.json({
       success: true,
-      data: timeline
+      data: paginatedTimeline,
+      pagination: {
+        total: timeline.length,
+        offset: parseInt(offset),
+        limit: parseInt(limit)
+      }
     });
   } catch (error) {
     console.error('Error fetching timeline:', error);
@@ -161,6 +180,91 @@ router.get('/timeline/:patientId', protect, async (req, res) => {
     });
   }
 });
+
+// Helper function to build comprehensive patient timeline
+function buildPatientTimeline(visits, prescriptions, examinations, labOrders) {
+  const events = [];
+
+  // Add visits
+  visits.forEach(visit => {
+    events.push({
+      type: 'visit',
+      date: visit.visitDate,
+      title: `Visite - ${visit.visitType || 'Consultation'}`,
+      description: visit.chiefComplaint?.complaint || 'Visite médicale',
+      provider: visit.primaryProvider ?
+        `${visit.primaryProvider.firstName} ${visit.primaryProvider.lastName}` : 'N/A',
+      providerSpecialty: visit.primaryProvider?.specialization,
+      status: visit.status,
+      id: visit._id,
+      details: {
+        diagnoses: visit.diagnoses,
+        clinicalActs: visit.clinicalActs?.length || 0
+      }
+    });
+  });
+
+  // Add prescriptions
+  prescriptions.forEach(rx => {
+    const medNames = rx.medications?.map(m => m.drug?.name || m.name).filter(Boolean).join(', ');
+    events.push({
+      type: 'prescription',
+      date: rx.prescriptionDate,
+      title: `Ordonnance - ${rx.prescriptionType || 'Médicaments'}`,
+      description: medNames || rx.diagnosis || 'Prescription',
+      provider: rx.prescriber ?
+        `${rx.prescriber.firstName} ${rx.prescriber.lastName}` : 'N/A',
+      providerSpecialty: rx.prescriber?.specialization,
+      status: rx.status,
+      id: rx._id,
+      details: {
+        medicationCount: rx.medications?.length || 0,
+        validUntil: rx.validUntil
+      }
+    });
+  });
+
+  // Add examinations
+  examinations.forEach(exam => {
+    events.push({
+      type: 'examination',
+      date: exam.createdAt,
+      title: `Examen - ${exam.examType || 'Ophtalmologie'}`,
+      description: exam.assessment?.summary || 'Examen ophtalmologique',
+      provider: exam.examiner ?
+        `${exam.examiner.firstName} ${exam.examiner.lastName}` : 'N/A',
+      providerSpecialty: exam.examiner?.specialization || 'Ophtalmologie',
+      status: exam.status || 'completed',
+      id: exam._id,
+      details: {
+        diagnoses: exam.assessment?.diagnoses,
+        visualAcuity: exam.visualAcuity
+      }
+    });
+  });
+
+  // Add lab orders
+  labOrders.forEach(lab => {
+    events.push({
+      type: 'laboratory',
+      date: lab.orderedAt || lab.visitDate,
+      title: `Laboratoire - ${lab.testName || lab.category}`,
+      description: lab.notes || 'Test de laboratoire',
+      provider: lab.orderedByName || 'N/A',
+      status: lab.status,
+      id: lab._id,
+      details: {
+        result: lab.result,
+        isAbnormal: lab.isAbnormal
+      }
+    });
+  });
+
+  // Sort by date descending
+  events.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  return events;
+}
 
 // @desc    Get visit by ID
 // @route   GET /api/visits/:id
