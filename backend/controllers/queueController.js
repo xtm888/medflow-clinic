@@ -24,6 +24,7 @@ exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
   })
     .populate('patient', 'firstName lastName patientId')
     .populate('provider', 'firstName lastName')
+    .populate('visit', 'visitId status')
     .sort('queueNumber');
 
   // Group by department/provider
@@ -38,6 +39,7 @@ exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
       patient: apt.patient,
       provider: apt.provider,
       appointmentId: apt._id,
+      visitId: apt.visit?._id,
       checkInTime: apt.checkInTime,
       status: apt.status,
       priority: apt.priority,
@@ -340,7 +342,8 @@ exports.callNext = asyncHandler(async (req, res, next) => {
   }
 
   const nextPatient = await Appointment.findOne(query)
-    .populate('patient', 'firstName lastName patientId')
+    .populate('patient', 'firstName lastName patientId dateOfBirth phoneNumber gender')
+    .populate('visit')
     .sort('priority queueNumber');
 
   if (!nextPatient) {
@@ -362,10 +365,15 @@ exports.callNext = asyncHandler(async (req, res, next) => {
     success: true,
     message: 'Next patient called',
     data: {
+      appointmentId: nextPatient._id,
       queueNumber: nextPatient.queueNumber,
       patient: nextPatient.patient,
+      visitId: nextPatient.visit?._id,
+      visit: nextPatient.visit,
       room: nextPatient.location.room,
-      waitingTime: nextPatient.waitingTime
+      waitingTime: nextPatient.waitingTime,
+      checkInTime: nextPatient.checkInTime,
+      consultationStartTime: nextPatient.consultationStartTime
     }
   });
 });
