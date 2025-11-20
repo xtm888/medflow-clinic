@@ -252,8 +252,8 @@ export default function Services() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredServices.map((service) => (
-            <div key={service.id} className="card hover:shadow-lg transition">
+          {filteredServices.map((service, index) => (
+            <div key={service.id || `service-${index}`} className="card hover:shadow-lg transition">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">

@@ -4,8 +4,8 @@ const patientSchema = new mongoose.Schema({
   // Identification
   patientId: {
     type: String,
-    unique: true,
-    required: true
+    unique: true
+    // Not required here - auto-generated in pre-save hook
   },
   nationalId: {
     type: String,

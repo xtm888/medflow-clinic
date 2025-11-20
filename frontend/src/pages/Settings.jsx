@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Settings as SettingsIcon, User, Bell, Lock, Database, Palette, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 import settingsService from '../services/settingsService';
 import { toast } from 'react-toastify';
 
 export default function Settings() {
+  // Get user from auth context
+  const { user } = useAuth();
+
   const showSuccess = (msg) => toast.success(msg);
   const showError = (msg) => toast.error(msg);
   const [activeTab, setActiveTab] = useState('profile');
@@ -51,18 +55,10 @@ export default function Settings() {
   });
 
   // User role check
-  const [isAdmin, setIsAdmin] = useState(false);
+  const isAdmin = user?.role === 'admin';
 
   useEffect(() => {
     fetchSettings();
-
-    // Check if user is admin
-    try {
-      const { user } = useAuth();
-      setIsAdmin(user.role === 'admin');
-    } catch (err) {
-      console.error('Error getting user role:', err);
-    }
   }, []);
 
   const fetchSettings = async () => {
