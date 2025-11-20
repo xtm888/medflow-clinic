@@ -133,65 +133,74 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
     }
   }
 
-  const prescription = await Prescription.create(req.body);
+  // Use transaction to ensure atomicity
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-  // Add prescription to patient record
-  patient.prescriptions.push(prescription._id);
+  try {
+    const prescriptions = await Prescription.create([req.body], { session });
+    const prescription = prescriptions[0];
 
-  // Update patient medications if medication prescription
-  if (prescription.type === 'medication') {
-    prescription.medications.forEach(med => {
-      patient.medications.push({
-        name: med.name,
-        dosage: med.dosage,
-        frequency: med.frequency,
-        startDate: prescription.dateIssued,
-        prescribedBy: userId,
-        reason: med.indication,
-        status: 'active'
+    // Add prescription to patient record
+    patient.prescriptions.push(prescription._id);
+
+    // Update patient medications if medication prescription
+    if (prescription.type === 'medication') {
+      prescription.medications.forEach(med => {
+        patient.medications.push({
+          name: med.name,
+          dosage: med.dosage,
+          frequency: med.frequency,
+          startDate: prescription.dateIssued,
+          prescribedBy: userId,
+          reason: med.indication,
+          status: 'active'
+        });
       });
-    });
-  }
+    }
 
-  // Update patient ophthalmology data if optical prescription
-  if (prescription.type === 'optical') {
-    patient.ophthalmology.currentPrescription = {
-      OD: prescription.optical.OD,
-      OS: prescription.optical.OS,
-      pd: prescription.optical.pd,
-      prescribedDate: prescription.dateIssued,
-      prescribedBy: userId
-    };
-  }
+    // Update patient ophthalmology data if optical prescription
+    if (prescription.type === 'optical') {
+      patient.ophthalmology.currentPrescription = {
+        OD: prescription.optical.OD,
+        OS: prescription.optical.OS,
+        pd: prescription.optical.pd,
+        prescribedDate: prescription.dateIssued,
+        prescribedBy: userId
+      };
+    }
 
-  await patient.save();
+    await patient.save({ session });
 
-  // Link prescription to visit if visit ID is provided
-  if (req.body.visit) {
-    try {
-      const visit = await Visit.findById(req.body.visit);
+    // Link prescription to visit if visit ID is provided
+    if (req.body.visit) {
+      const visit = await Visit.findById(req.body.visit).session(session);
       if (visit) {
         // Add prescription to visit's prescriptions array
         if (!visit.prescriptions.includes(prescription._id)) {
           visit.prescriptions.push(prescription._id);
-          await visit.save();
+          await visit.save({ session });
         }
       }
-    } catch (visitErr) {
-      console.warn('Could not link prescription to visit:', visitErr);
-      // Don't fail the whole request if visit linking fails
     }
+
+    await session.commitTransaction();
+
+    // Populate for response
+    await prescription.populate('patient', 'firstName lastName patientId');
+    await prescription.populate('prescriber', 'firstName lastName');
+    await prescription.populate('visit', 'visitId visitDate status');
+
+    res.status(201).json({
+      success: true,
+      data: prescription
+    });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
   }
-
-  // Populate for response
-  await prescription.populate('patient', 'firstName lastName patientId');
-  await prescription.populate('prescriber', 'firstName lastName');
-  await prescription.populate('visit', 'visitId visitDate status');
-
-  res.status(201).json({
-    success: true,
-    data: prescription
-  });
 });
 
 // @desc    Update prescription

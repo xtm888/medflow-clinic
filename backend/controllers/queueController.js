@@ -2,6 +2,7 @@ const Appointment = require('../models/Appointment');
 const Visit = require('../models/Visit');
 const Patient = require('../models/Patient');
 const Counter = require('../models/Counter');
+const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 
 // In-memory queue for real-time management
@@ -63,94 +64,121 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
 
   // Handle walk-in patients (no appointment)
   if (walkIn && patientInfo) {
-    // Find existing patient by phone or create new one
-    let patient = await Patient.findOne({ phoneNumber: patientInfo.phoneNumber });
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!patient) {
-      // Generate patient ID
-      const patientCounter = await Counter.getNextSequence('patientId');
-      const patientId = `PAT-${String(patientCounter).padStart(6, '0')}`;
+    try {
+      // Find existing patient by phone or create new one
+      let patient = await Patient.findOne({ phoneNumber: patientInfo.phoneNumber }).session(session);
 
-      patient = await Patient.create({
-        patientId,
-        firstName: patientInfo.firstName,
-        lastName: patientInfo.lastName,
-        phoneNumber: patientInfo.phoneNumber,
-        gender: patientInfo.gender || 'other',
-        dateOfBirth: patientInfo.dateOfBirth || new Date('1990-01-01'),
-        registrationType: 'walk-in',
-        status: 'active'
+      if (!patient) {
+        // Generate patient ID (using same format as Patient model)
+        const year = new Date().getFullYear();
+        const counterId = `patient-${year}`;
+        const sequence = await Counter.getNextSequence(counterId);
+        const patientId = `PAT${year}${String(sequence).padStart(6, '0')}`;
+
+        const patientData = {
+          patientId,
+          firstName: patientInfo.firstName,
+          lastName: patientInfo.lastName,
+          phoneNumber: patientInfo.phoneNumber,
+          gender: patientInfo.gender || 'other',
+          dateOfBirth: patientInfo.dateOfBirth || new Date('1990-01-01'),
+          registrationType: 'walk-in',
+          status: 'active'
+        };
+
+        const patients = await Patient.create([patientData], { session });
+        patient = patients[0];
+      }
+
+      // Generate queue number
+      const counterId = Counter.getTodayQueueCounterId();
+      const queueNumber = await Counter.getNextSequence(counterId);
+
+      // Generate appointment ID using Counter (atomic)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const aptCounterId = `appointment-${year}${month}${day}`;
+      const sequence = await Counter.getNextSequence(aptCounterId);
+      const appointmentId = `APT${year}${month}${day}${String(sequence).padStart(4, '0')}`;
+
+      // Calculate start and end times
+      const startTime = new Date();
+      const startTimeStr = `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`;
+      const endTime = new Date(startTime.getTime() + 30 * 60000); // 30 minutes later
+      const endTimeStr = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
+
+      // Create walk-in appointment
+      const appointmentData = {
+        appointmentId,
+        patient: patient._id,
+        provider: req.user.id, // Use logged-in user as provider
+        date: new Date(),
+        startTime: startTimeStr,
+        endTime: endTimeStr,
+        type: 'consultation', // 'walk-in' is not valid enum, use 'consultation'
+        source: 'walk-in', // Mark source as walk-in
+        reason: reason || 'Walk-in consultation',
+        status: 'checked-in',
+        checkInTime: Date.now(),
+        queueNumber: queueNumber,
+        priority: priority ? priority.toLowerCase() : 'normal',
+        department: 'general'
+      };
+
+      const appointments = await Appointment.create([appointmentData], { session });
+      const appointment = appointments[0];
+
+      // Auto-create Visit
+      const visitData = {
+        patient: patient._id,
+        appointment: appointment._id,
+        visitDate: Date.now(),
+        visitType: 'consultation', // 'walk-in' is not valid enum
+        primaryProvider: req.user.id, // Required field
+        status: 'in-progress',
+        chiefComplaint: {
+          complaint: reason || 'Walk-in consultation',
+          associatedSymptoms: []
+        }
+      };
+
+      const visits = await Visit.create([visitData], { session });
+      const visit = visits[0];
+
+      // Link visit back to appointment (bidirectional relationship)
+      appointment.visit = visit._id;
+      await appointment.save({ session });
+
+      await session.commitTransaction();
+
+      return res.status(201).json({
+        success: true,
+        message: 'Walk-in patient added to queue',
+        data: {
+          queueNumber,
+          patient: {
+            _id: patient._id,
+            firstName: patient.firstName,
+            lastName: patient.lastName,
+            patientId: patient.patientId
+          },
+          appointmentId: appointment._id,
+          visitId: visit._id,
+          position: queueNumber,
+          estimatedWaitTime: queueNumber * 15
+        }
       });
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
     }
-
-    // Generate queue number
-    const counterId = Counter.getTodayQueueCounterId();
-    const queueNumber = await Counter.getNextSequence(counterId);
-
-    // Generate appointment ID using Counter (atomic)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const aptCounterId = `appointment-${year}${month}${day}`;
-    const sequence = await Counter.getNextSequence(aptCounterId);
-    const appointmentId = `APT${year}${month}${day}${String(sequence).padStart(4, '0')}`;
-
-    // Calculate start and end times
-    const startTime = new Date();
-    const startTimeStr = `${String(startTime.getHours()).padStart(2, '0')}:${String(startTime.getMinutes()).padStart(2, '0')}`;
-    const endTime = new Date(startTime.getTime() + 30 * 60000); // 30 minutes later
-    const endTimeStr = `${String(endTime.getHours()).padStart(2, '0')}:${String(endTime.getMinutes()).padStart(2, '0')}`;
-
-    // Create walk-in appointment
-    const appointment = await Appointment.create({
-      appointmentId,
-      patient: patient._id,
-      provider: req.user.id, // Use logged-in user as provider
-      date: new Date(),
-      startTime: startTimeStr,
-      endTime: endTimeStr,
-      type: 'consultation', // 'walk-in' is not valid enum, use 'consultation'
-      source: 'walk-in', // Mark source as walk-in
-      reason: reason || 'Walk-in consultation',
-      status: 'checked-in',
-      checkInTime: Date.now(),
-      queueNumber: queueNumber,
-      priority: priority ? priority.toLowerCase() : 'normal',
-      department: 'general'
-    });
-
-    // Auto-create Visit
-    const visit = await Visit.create({
-      patient: patient._id,
-      appointment: appointment._id,
-      visitDate: Date.now(),
-      visitType: 'consultation', // 'walk-in' is not valid enum
-      primaryProvider: req.user.id, // Required field
-      status: 'in-progress',
-      chiefComplaint: {
-        complaint: reason || 'Walk-in consultation',
-        associatedSymptoms: []
-      }
-    });
-
-    return res.status(201).json({
-      success: true,
-      message: 'Walk-in patient added to queue',
-      data: {
-        queueNumber,
-        patient: {
-          _id: patient._id,
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          patientId: patient.patientId
-        },
-        appointmentId: appointment._id,
-        visitId: visit._id,
-        position: queueNumber,
-        estimatedWaitTime: queueNumber * 15
-      }
-    });
   }
 
   // Handle regular appointment check-in
