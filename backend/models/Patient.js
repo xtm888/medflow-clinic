@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const Counter = require('./Counter');
 
 const patientSchema = new mongoose.Schema({
   // Identification
@@ -515,9 +516,10 @@ patientSchema.pre('save', function(next) {
 // Generate patient ID
 patientSchema.pre('save', async function(next) {
   if (!this.patientId) {
-    const count = await this.constructor.countDocuments();
     const year = new Date().getFullYear();
-    this.patientId = `PAT${year}${String(count + 1).padStart(6, '0')}`;
+    const counterId = `patient-${year}`;
+    const sequence = await Counter.getNextSequence(counterId);
+    this.patientId = `PAT${year}${String(sequence).padStart(6, '0')}`;
   }
   next();
 });
