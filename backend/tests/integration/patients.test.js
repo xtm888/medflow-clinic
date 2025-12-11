@@ -14,7 +14,7 @@ describe('Patient API Integration Tests', () => {
       createTestUser({
         role: 'doctor',
         email: 'testdoctor@medflow.com',
-        password: 'Test123!@#'
+        password: 'TestPass123!@#'
       })
     );
 
@@ -23,7 +23,7 @@ describe('Patient API Integration Tests', () => {
       .post('/api/auth/login')
       .send({
         email: 'testdoctor@medflow.com',
-        password: 'Test123!@#'
+        password: 'TestPass123!@#'
       });
 
     authToken = loginResponse.body.token;

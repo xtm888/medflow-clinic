@@ -44,7 +44,7 @@ function createTestUser(overrides = {}) {
     firstName: overrides.firstName || `User${id}`,
     lastName: overrides.lastName || `Test${id}`,
     email: overrides.email || `user${id}@test.com`,
-    password: overrides.password || 'Test123!@#',
+    password: overrides.password || 'TestPass123!@#',
     phoneNumber: overrides.phoneNumber || `+24390${String(id).padStart(7, '0')}`,
     role: overrides.role || 'doctor',
     employeeId: overrides.employeeId || `EMP${String(id).padStart(5, '0')}`,

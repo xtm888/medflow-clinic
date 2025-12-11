@@ -1,6 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { ClinicProvider, useClinic } from '../../contexts/ClinicContext';
+import { Provider } from 'react-redux';
+import { configureStore } from '@reduxjs/toolkit';
+
+// Create a minimal test store
+const createTestStore = () => configureStore({
+  reducer: {
+    clinic: (state = { selectedClinic: null }) => state
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false
+    })
+});
 
 // Create a stable mock for useAuth
 const mockUseAuth = vi.fn(() => ({
@@ -57,7 +70,9 @@ describe('ClinicContext', () => {
       });
 
       const wrapper = ({ children }) => (
-        <ClinicProvider>{children}</ClinicProvider>
+        <Provider store={createTestStore()}>
+          <ClinicProvider>{children}</ClinicProvider>
+        </Provider>
       );
 
       const { result } = renderHook(() => useClinic(), { wrapper });
@@ -89,7 +104,9 @@ describe('ClinicContext', () => {
       });
 
       const wrapper = ({ children }) => (
-        <ClinicProvider>{children}</ClinicProvider>
+        <Provider store={createTestStore()}>
+          <ClinicProvider>{children}</ClinicProvider>
+        </Provider>
       );
 
       const { result } = renderHook(() => useClinic(), { wrapper });
@@ -126,7 +143,9 @@ describe('ClinicContext', () => {
       });
 
       const wrapper = ({ children }) => (
-        <ClinicProvider>{children}</ClinicProvider>
+        <Provider store={createTestStore()}>
+          <ClinicProvider>{children}</ClinicProvider>
+        </Provider>
       );
 
       const { result } = renderHook(() => useClinic(), { wrapper });
@@ -156,7 +175,9 @@ describe('ClinicContext', () => {
   describe('SyncProgress Modal State', () => {
     it('should have showSyncProgress state', async () => {
       const wrapper = ({ children }) => (
-        <ClinicProvider>{children}</ClinicProvider>
+        <Provider store={createTestStore()}>
+          <ClinicProvider>{children}</ClinicProvider>
+        </Provider>
       );
 
       const { result } = renderHook(() => useClinic(), { wrapper });
@@ -170,7 +191,9 @@ describe('ClinicContext', () => {
 
     it('should toggle sync progress modal', async () => {
       const wrapper = ({ children }) => (
-        <ClinicProvider>{children}</ClinicProvider>
+        <Provider store={createTestStore()}>
+          <ClinicProvider>{children}</ClinicProvider>
+        </Provider>
       );
 
       const { result } = renderHook(() => useClinic(), { wrapper });
@@ -196,7 +219,9 @@ describe('ClinicContext', () => {
   describe('Persistence', () => {
     it('should persist selected clinic to localStorage', async () => {
       const wrapper = ({ children }) => (
-        <ClinicProvider>{children}</ClinicProvider>
+        <Provider store={createTestStore()}>
+          <ClinicProvider>{children}</ClinicProvider>
+        </Provider>
       );
 
       const { result } = renderHook(() => useClinic(), { wrapper });
