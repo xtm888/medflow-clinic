@@ -12,6 +12,9 @@ const BaseAdapter = require('./BaseAdapter');
 const OctAdapter = require('./OctAdapter');
 const TonometryAdapter = require('./TonometryAdapter');
 const AutorefractorAdapter = require('./AutorefractorAdapter');
+const SpecularMicroscopeAdapter = require('./SpecularMicroscopeAdapter');
+const BiometerAdapter = require('./BiometerAdapter');
+const NidekAdapter = require('./NidekAdapter');
 
 class AdapterFactory {
   /**
@@ -33,13 +36,26 @@ class AdapterFactory {
     'keratometer': AutorefractorAdapter,
     'ark': AutorefractorAdapter, // Auto Refractor Keratometer
 
-    // Additional device types can be added here as new adapters are created
-    // 'perimeter': PerimeterAdapter,
-    // 'fundus-camera': FundusAdapter,
-    // 'topographer': TopographyAdapter,
-    // 'biometer': BiometryAdapter,
-    // 'pachymeter': PachymetryAdapter,
-    // 'ultrasound': UltrasoundAdapter,
+    // Specular Microscope devices
+    'specular-microscope': SpecularMicroscopeAdapter,
+    'specular': SpecularMicroscopeAdapter,
+    'endothelial': SpecularMicroscopeAdapter,
+
+    // Biometer devices
+    'biometer': BiometerAdapter,
+    'biometry': BiometerAdapter,
+    'iol-master': BiometerAdapter,
+    'lenstar': BiometerAdapter,
+    'al-scan': BiometerAdapter,
+
+    // NIDEK devices (auto-detection based on model)
+    'nidek': NidekAdapter,
+    'nidek-ark': NidekAdapter,
+    'nidek-opd': NidekAdapter,
+    'nidek-al': NidekAdapter,
+    'nidek-rs': NidekAdapter,
+    'nidek-cem': NidekAdapter,
+    'nidek-nt': NidekAdapter,
   };
 
   /**

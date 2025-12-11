@@ -27,10 +27,10 @@ const AnalyticsDashboard = () => {
   const [dateRange, setDateRange] = useState('month');
   const [loading, setLoading] = useState(false);
   const [metrics, setMetrics] = useState({
-    patients: { total: 0, new: 0, trend: 0 },
-    appointments: { total: 0, completed: 0, noShow: 0, trend: 0 },
-    revenue: { total: 0, average: 0, outstanding: 0, trend: 0 },
-    clinical: { exams: 0, surgeries: 0, procedures: 0 }
+    patients: { total: 0, new: 0, trend: 0, active: 0 },
+    appointments: { total: 0, completed: 0, noShow: 0, cancelled: 0, trend: 0 },
+    revenue: { total: 0, average: 0, outstanding: 0, collected: 0, trend: 0 },
+    clinical: { exams: 0, surgeries: 0, procedures: 0, prescriptions: 0 }
   });
   const [charts, setCharts] = useState({
     revenue: [],
@@ -47,53 +47,196 @@ const AnalyticsDashboard = () => {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      // This would fetch real analytics data from the backend
-      // For now, using mock data
+      // Determine period for API calls
+      const periodMap = { week: '7days', month: '30days', quarter: '90days' };
+      const period = periodMap[dateRange] || '30days';
+
+      // Fetch real data from multiple endpoints in parallel
+      const [
+        dashboardStats,
+        billingStats,
+        queueStats,
+        revenueTrends,
+        appointmentStats,
+        ophthalmologyStats
+      ] = await Promise.all([
+        api.get('/dashboard/stats').catch(() => ({ data: {} })),
+        api.get('/billing/statistics').catch(() => ({ data: {} })),
+        api.get(`/queue/stats?dateRange=${dateRange === 'week' ? 'week' : dateRange === 'quarter' ? 'month' : 'month'}`).catch(() => ({ data: {} })),
+        api.get(`/dashboard/revenue-trends?period=${period}`).catch(() => ({ data: [] })),
+        api.get('/appointments/statistics').catch(() => ({ data: {} })),
+        api.get('/ophthalmology/dashboard-stats').catch(() => ({ data: {} }))
+      ]);
+
+      // Extract data with safe defaults
+      const dashboard = dashboardStats.data?.data || dashboardStats.data || {};
+      const billing = billingStats.data?.data || billingStats.data || {};
+      const queue = queueStats.data?.data || queueStats.data || {};
+      const appointments = appointmentStats.data?.data || appointmentStats.data || {};
+      const revenueData = revenueTrends.data?.data || revenueTrends.data || [];
+      const ophthalmology = ophthalmologyStats.data?.data || ophthalmologyStats.data || {};
+
+      // Revenue data - use thisMonth from billing statistics
+      const monthRevenue = billing.thisMonth?.revenue || 0; // Paid amount
+      const totalInvoiced = billing.thisMonth?.totalInvoiced || 0;
+      // Outstanding = what's been invoiced minus what's been paid (ensure non-negative)
+      const outstandingRevenue = Math.max(0, totalInvoiced - monthRevenue);
+
+      // Appointments - use appointments.overview for accurate totals
+      const apptTotal = appointments.overview?.total || 0;
+      const apptCompleted = appointments.overview?.completed || 0;
+      const apptNoShow = appointments.overview?.noShow || 0;
+      const apptCancelled = appointments.overview?.cancelled || 0;
+
+      // Today's patients from dashboard
+      const todayPatients = dashboard.todayPatients || 0;
+      const waitingNow = dashboard.waitingNow || 0;
+
+      // Calculate revenue trend from monthlyTrends
+      const trends = billing.monthlyTrends || [];
+      let revenueTrend = 0;
+      if (trends.length >= 2) {
+        const current = trends[trends.length - 1]?.revenue || 0;
+        const previous = trends[trends.length - 2]?.revenue || 1;
+        revenueTrend = Math.round(((current - previous) / previous) * 100);
+      }
+
+      // Build metrics from real data
       setMetrics({
         patients: {
-          total: 2847,
-          new: 127,
-          trend: 8.5,
-          active: 2145
+          total: todayPatients, // Today's patients
+          new: dashboard.newPatients || 0,
+          trend: 0, // No patient trend data available
+          active: waitingNow
         },
         appointments: {
-          total: 486,
-          completed: 412,
-          noShow: 23,
-          cancelled: 51,
-          trend: -2.3
+          total: apptTotal,
+          completed: apptCompleted,
+          noShow: apptNoShow,
+          cancelled: apptCancelled,
+          trend: 0
         },
         revenue: {
-          total: 127350,
-          average: 285,
-          outstanding: 18940,
-          collected: 108410,
-          trend: 12.7
+          total: totalInvoiced,
+          average: apptTotal > 0 ? Math.round(monthRevenue / apptTotal) : 0,
+          outstanding: outstandingRevenue,
+          collected: monthRevenue,
+          trend: revenueTrend
         },
         clinical: {
-          exams: 1284,
-          surgeries: 42,
-          procedures: 186,
-          prescriptions: 623
+          exams: apptCompleted, // Completed consultations
+          surgeries: 0,
+          procedures: queue.inProgress || 0,
+          prescriptions: dashboard.pendingPrescriptions || 0
         }
       });
 
-      // Mock chart data
-      const revenueData = generateRevenueData();
-      const appointmentData = generateAppointmentData();
-      const diagnosesData = generateDiagnosesData();
-      const procedureData = generateProcedureData();
-      const patientFlowData = generatePatientFlowData();
+      // Format revenue trends for chart - fill in all days in range
+      const days = dateRange === 'week' ? 7 : dateRange === 'quarter' ? 90 : 30;
+      const revenueMap = new Map();
+
+      // Create a map of existing data
+      if (Array.isArray(revenueData)) {
+        revenueData.forEach(item => {
+          const dateKey = item._id || item.date;
+          revenueMap.set(dateKey, item.revenue || item.total || 0);
+        });
+      }
+
+      // Generate all days in range
+      const formattedRevenue = [];
+      const today = new Date();
+      for (let i = days - 1; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        const dateKey = date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        const revenue = revenueMap.get(dateKey) || 0;
+        formattedRevenue.push({
+          date: date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
+          revenue: revenue,
+          profit: Math.round(revenue * 0.3) // Estimated 30% profit margin
+        });
+      }
+
+      // Generate appointment chart data from appointments.byDepartment
+      const deptData = appointments.byDepartment || [];
+      const completionRate = apptTotal > 0 ? apptCompleted / apptTotal : 0.9;
+      const noShowRate = apptTotal > 0 ? apptNoShow / apptTotal : 0.05;
+
+      const appointmentData = deptData.length > 0
+        ? deptData.map(d => {
+            const count = d.count || 0;
+            return {
+              department: d._id || 'Autre',
+              total: count,
+              completed: Math.round(count * completionRate),
+              noShow: Math.round(count * noShowRate)
+            };
+          })
+        : (queue.byDepartment && Object.keys(queue.byDepartment).length > 0
+          ? Object.entries(queue.byDepartment).map(([dept, data]) => ({
+              department: dept,
+              total: data.total || 0,
+              completed: data.completed || 0,
+              noShow: data.noShow || 0
+            }))
+          : generateAppointmentData());
+
+      // Generate patient flow from peak hours - fill all working hours (8-18)
+      const peakHoursMap = new Map();
+      if (queue.peakHours && queue.peakHours.length > 0) {
+        queue.peakHours.forEach(h => {
+          const hour = h.hour || h._id;
+          peakHoursMap.set(hour, h.count || 0);
+        });
+      }
+
+      // Generate all working hours (8AM to 6PM)
+      const patientFlowData = [];
+      for (let hour = 8; hour <= 18; hour++) {
+        patientFlowData.push({
+          hour: `${hour}:00`,
+          patients: peakHoursMap.get(hour) || 0,
+          waitTime: peakHoursMap.has(hour) ? Math.min(queue.averageWaitTime || 15, 60) : 0
+        });
+      }
+
+      // Get diagnoses from ophthalmology endpoint or fallback to mock
+      const diagnosesData = ophthalmology.diagnoses && ophthalmology.diagnoses.length > 0
+        ? ophthalmology.diagnoses.map(d => ({
+            name: d.name || 'Autre',
+            value: d.count || 0,
+            color: d.color || '#6b7280'
+          }))
+        : generateDiagnosesData();
+
+      // Get procedures from billing revenueByService or fallback to mock
+      const proceduresData = billing.revenueByService && billing.revenueByService.length > 0
+        ? billing.revenueByService.map(s => ({
+            procedure: s.service || 'Autre',
+            count: s.count || 0,
+            revenue: s.amount || 0
+          }))
+        : generateProcedureData();
 
       setCharts({
-        revenue: revenueData,
+        revenue: formattedRevenue,
         appointments: appointmentData,
         diagnoses: diagnosesData,
-        procedures: procedureData,
+        procedures: proceduresData,
         patientFlow: patientFlowData
       });
+
     } catch (error) {
       console.error('Error fetching analytics:', error);
+      // Fallback to mock data on error
+      setCharts({
+        revenue: generateRevenueData(),
+        appointments: generateAppointmentData(),
+        diagnoses: generateDiagnosesData(),
+        procedures: generateProcedureData(),
+        patientFlow: generatePatientFlowData()
+      });
     } finally {
       setLoading(false);
     }
@@ -108,7 +251,7 @@ const AnalyticsDashboard = () => {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       data.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        date: date.toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' }),
         revenue: Math.floor(Math.random() * 5000) + 2000,
         expenses: Math.floor(Math.random() * 3000) + 1000,
         profit: 0
@@ -119,13 +262,12 @@ const AnalyticsDashboard = () => {
   };
 
   const generateAppointmentData = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    return days.map(day => ({
-      day,
-      scheduled: Math.floor(Math.random() * 30) + 20,
-      completed: Math.floor(Math.random() * 25) + 15,
-      noShow: Math.floor(Math.random() * 5) + 1,
-      cancelled: Math.floor(Math.random() * 3) + 1
+    const departments = ['Ophtalmologie', 'Général', 'Orthoptie'];
+    return departments.map(dept => ({
+      department: dept,
+      total: Math.floor(Math.random() * 30) + 10,
+      completed: Math.floor(Math.random() * 25) + 8,
+      noShow: Math.floor(Math.random() * 3) + 1
     }));
   };
 
@@ -184,7 +326,7 @@ const AnalyticsDashboard = () => {
           <span className={`text-sm font-medium ${trend > 0 ? 'text-green-500' : 'text-red-500'}`}>
             {Math.abs(trend)}%
           </span>
-          <span className="text-sm text-gray-500 ml-1">vs last period</span>
+          <span className="text-sm text-gray-500 ml-1">vs période précédente</span>
         </div>
       )}
     </div>
@@ -192,23 +334,27 @@ const AnalyticsDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
+      {/* Page Header */}
       <div className="bg-white border-b">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-6 py-6">
+          <div className="flex items-start justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-              <p className="text-sm text-gray-500 mt-1">Track your practice performance and insights</p>
+              <h1 className="text-3xl font-bold text-gray-900">Tableau de Bord Analytics</h1>
+              <p className="text-base text-gray-600 mt-2">Vue d'ensemble des performances</p>
             </div>
+          </div>
+
+          {/* Controls Row */}
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <select
                 value={dateRange}
                 onChange={(e) => setDateRange(e.target.value)}
                 className="px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               >
-                <option value="week">Last 7 days</option>
-                <option value="month">Last 30 days</option>
-                <option value="quarter">Last 90 days</option>
+                <option value="week">7 derniers jours</option>
+                <option value="month">30 derniers jours</option>
+                <option value="quarter">90 derniers jours</option>
               </select>
               <button
                 onClick={fetchAnalytics}
@@ -217,11 +363,11 @@ const AnalyticsDashboard = () => {
               >
                 <RefreshCcw size={20} className={loading ? 'animate-spin' : ''} />
               </button>
-              <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
-                <Download size={16} />
-                Export Report
-              </button>
             </div>
+            <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+              <Download size={16} />
+              Exporter
+            </button>
           </div>
         </div>
       </div>
@@ -230,33 +376,33 @@ const AnalyticsDashboard = () => {
       <div className="p-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
           <MetricCard
-            title="Total Patients"
-            value={metrics.patients.total.toLocaleString()}
-            subValue={`${metrics.patients.new} new this period`}
-            trend={metrics.patients.trend}
+            title="Patients aujourd'hui"
+            value={(metrics.patients.total || 0).toLocaleString()}
+            subValue={`${metrics.patients.active || 0} en attente`}
+            trend={undefined}
             icon={Users}
             color="bg-blue-500"
           />
           <MetricCard
-            title="Appointments"
+            title="Rendez-vous"
             value={metrics.appointments.total}
-            subValue={`${metrics.appointments.completed} completed`}
+            subValue={`${metrics.appointments.completed} terminés`}
             trend={metrics.appointments.trend}
             icon={Calendar}
             color="bg-green-500"
           />
           <MetricCard
-            title="Revenue"
-            value={`$${metrics.revenue.total.toLocaleString()}`}
-            subValue={`Avg: $${metrics.revenue.average}`}
+            title="Revenus"
+            value={`${(metrics.revenue.total || 0).toLocaleString()} FCFA`}
+            subValue={`Moy: ${metrics.revenue.average} FCFA`}
             trend={metrics.revenue.trend}
             icon={DollarSign}
             color="bg-purple-500"
           />
           <MetricCard
-            title="Clinical Activity"
+            title="Activité clinique"
             value={metrics.clinical.exams}
-            subValue={`${metrics.clinical.procedures} procedures`}
+            subValue={`${metrics.clinical.procedures} actes`}
             icon={Activity}
             color="bg-orange-500"
           />
@@ -267,7 +413,7 @@ const AnalyticsDashboard = () => {
           {/* Revenue Chart */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Revenue Trend</h3>
+              <h3 className="text-lg font-semibold">Évolution des revenus</h3>
               <LineChart size={20} className="text-gray-400" />
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -277,8 +423,8 @@ const AnalyticsDashboard = () => {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Area type="monotone" dataKey="revenue" stackId="1" stroke="#3B82F6" fill="#93BBFC" />
-                <Area type="monotone" dataKey="profit" stackId="2" stroke="#10B981" fill="#86EFAC" />
+                <Area type="monotone" dataKey="revenue" stackId="1" stroke="#3B82F6" fill="#93BBFC" name="Revenus" />
+                <Area type="monotone" dataKey="profit" stackId="2" stroke="#10B981" fill="#86EFAC" name="Bénéfice" />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -286,19 +432,19 @@ const AnalyticsDashboard = () => {
           {/* Appointments Chart */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Weekly Appointments</h3>
+              <h3 className="text-lg font-semibold">Rendez-vous par département</h3>
               <BarChart3 size={20} className="text-gray-400" />
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={charts.appointments}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="day" />
+                <XAxis dataKey="department" />
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="scheduled" fill="#3B82F6" />
-                <Bar dataKey="completed" fill="#10B981" />
-                <Bar dataKey="noShow" fill="#EF4444" />
+                <Bar dataKey="total" fill="#3B82F6" name="Total" />
+                <Bar dataKey="completed" fill="#10B981" name="Terminés" />
+                <Bar dataKey="noShow" fill="#EF4444" name="Absents" />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -306,7 +452,7 @@ const AnalyticsDashboard = () => {
           {/* Diagnoses Distribution */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Top Diagnoses</h3>
+              <h3 className="text-lg font-semibold">Principaux diagnostics</h3>
               <PieChart size={20} className="text-gray-400" />
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -333,7 +479,7 @@ const AnalyticsDashboard = () => {
           {/* Patient Flow */}
           <div className="bg-white rounded-xl shadow-sm border p-6">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold">Patient Flow Today</h3>
+              <h3 className="text-lg font-semibold">Flux patients aujourd'hui</h3>
               <Clock size={20} className="text-gray-400" />
             </div>
             <ResponsiveContainer width="100%" height={300}>
@@ -357,7 +503,7 @@ const AnalyticsDashboard = () => {
                   type="monotone"
                   dataKey="waitTime"
                   stroke="#EF4444"
-                  name="Wait Time (min)"
+                  name="Temps d'attente (min)"
                   strokeWidth={2}
                 />
               </RechartsLineChart>
@@ -368,27 +514,27 @@ const AnalyticsDashboard = () => {
         {/* Procedures Table */}
         <div className="bg-white rounded-xl shadow-sm border p-6 mt-6">
           <div className="flex items-center justify-between mb-6">
-            <h3 className="text-lg font-semibold">Top Procedures</h3>
+            <h3 className="text-lg font-semibold">Principaux actes</h3>
             <FileText size={20} className="text-gray-400" />
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b">
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Procedure</th>
-                  <th className="text-center py-3 px-4 font-medium text-gray-700">Count</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Revenue</th>
-                  <th className="text-right py-3 px-4 font-medium text-gray-700">Avg. Revenue</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Acte</th>
+                  <th className="text-center py-3 px-4 font-medium text-gray-700">Nombre</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">Revenus</th>
+                  <th className="text-right py-3 px-4 font-medium text-gray-700">Moy. Revenus</th>
                 </tr>
               </thead>
               <tbody>
                 {charts.procedures.map((proc, index) => (
                   <tr key={index} className="border-b hover:bg-gray-50">
-                    <td className="py-3 px-4">{proc.procedure}</td>
-                    <td className="text-center py-3 px-4">{proc.count}</td>
-                    <td className="text-right py-3 px-4">${proc.revenue.toLocaleString()}</td>
+                    <td className="py-3 px-4">{proc.procedure || '-'}</td>
+                    <td className="text-center py-3 px-4">{proc.count || 0}</td>
+                    <td className="text-right py-3 px-4">{(proc.revenue || 0).toLocaleString()} FCFA</td>
                     <td className="text-right py-3 px-4">
-                      ${(proc.revenue / proc.count).toFixed(2)}
+                      {proc.count > 0 ? Math.round((proc.revenue || 0) / proc.count) : 0} FCFA
                     </td>
                   </tr>
                 ))}
@@ -400,55 +546,69 @@ const AnalyticsDashboard = () => {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h4 className="font-medium text-gray-700 mb-4">Collection Rate</h4>
+            <h4 className="font-medium text-gray-700 mb-4">Taux de recouvrement</h4>
             <div className="flex items-end justify-between">
               <div>
-                <p className="text-3xl font-bold text-green-600">85.2%</p>
+                <p className="text-3xl font-bold text-green-600">
+                  {metrics.revenue.total > 0
+                    ? ((metrics.revenue.collected / metrics.revenue.total) * 100).toFixed(1)
+                    : 0}%
+                </p>
                 <p className="text-sm text-gray-500 mt-1">
-                  ${metrics.revenue.collected.toLocaleString()} collected
+                  {(metrics.revenue.collected || 0).toLocaleString()} FCFA encaissés
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-sm text-gray-500">Outstanding</p>
+                <p className="text-sm text-gray-500">Impayés</p>
                 <p className="text-lg font-semibold text-orange-600">
-                  ${metrics.revenue.outstanding.toLocaleString()}
+                  {(metrics.revenue.outstanding || 0).toLocaleString()} FCFA
                 </p>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h4 className="font-medium text-gray-700 mb-4">Appointment Efficiency</h4>
+            <h4 className="font-medium text-gray-700 mb-4">Efficacité des rendez-vous</h4>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Completion Rate</span>
-                <span className="font-semibold">84.8%</span>
+                <span className="text-sm text-gray-600">Taux de complétion</span>
+                <span className="font-semibold">
+                  {metrics.appointments.total > 0
+                    ? ((metrics.appointments.completed / metrics.appointments.total) * 100).toFixed(1)
+                    : 0}%
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">No-Show Rate</span>
-                <span className="font-semibold text-red-600">4.7%</span>
+                <span className="text-sm text-gray-600">Taux d'absence</span>
+                <span className="font-semibold text-red-600">
+                  {metrics.appointments.total > 0
+                    ? ((metrics.appointments.noShow / metrics.appointments.total) * 100).toFixed(1)
+                    : 0}%
+                </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Avg. Wait Time</span>
-                <span className="font-semibold">12 min</span>
+                <span className="text-sm text-gray-600">Annulations</span>
+                <span className="font-semibold text-orange-600">
+                  {metrics.appointments.cancelled}
+                </span>
               </div>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border p-6">
-            <h4 className="font-medium text-gray-700 mb-4">Clinical Metrics</h4>
+            <h4 className="font-medium text-gray-700 mb-4">Activité clinique</h4>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Surgery Success Rate</span>
-                <span className="font-semibold text-green-600">98.2%</span>
+                <span className="text-sm text-gray-600">Examens complétés</span>
+                <span className="font-semibold text-green-600">{metrics.clinical.exams}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Patient Satisfaction</span>
-                <span className="font-semibold">4.8/5.0</span>
+                <span className="text-sm text-gray-600">En cours</span>
+                <span className="font-semibold text-blue-600">{metrics.clinical.procedures}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Referral Rate</span>
-                <span className="font-semibold">32%</span>
+                <span className="text-sm text-gray-600">Ordonnances en attente</span>
+                <span className="font-semibold text-orange-600">{metrics.clinical.prescriptions}</span>
               </div>
             </div>
           </div>

@@ -79,7 +79,7 @@ const AudioRecorder = ({ onSave, onCancel, maxDuration = 300 }) => {
       visualize();
     } catch (error) {
       console.error('Error starting recording:', error);
-      alert('Failed to access microphone. Please check permissions.');
+      alert('Impossible d\'accéder au microphone. Veuillez vérifier les permissions.');
     }
   };
 

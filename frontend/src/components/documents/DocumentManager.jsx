@@ -8,6 +8,7 @@ import {
 import api from '../../services/apiConfig';
 import AudioRecorder from './AudioRecorder';
 import DocumentViewer from './DocumentViewer';
+import ConfirmationModal from '../ConfirmationModal';
 
 const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
   const [documents, setDocuments] = useState([]);
@@ -21,6 +22,15 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
   const [dragActive, setDragActive] = useState(false);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
 
   const categories = [
     { value: 'all', label: 'All Documents', icon: Folder },
@@ -166,16 +176,22 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
     }
   };
 
-  const handleDelete = async (docId) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) return;
-
-    try {
-      await api.delete(`/api/documents/${docId}`);
-      setDocuments(documents.filter(doc => doc._id !== docId));
-      setSelectedDoc(null);
-    } catch (error) {
-      console.error('Error deleting document:', error);
-    }
+  const handleDelete = (docId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer ce document?',
+      message: 'Êtes-vous sûr de vouloir supprimer ce document? Cette action est irréversible.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/api/documents/${docId}`);
+          setDocuments(documents.filter(doc => doc._id !== docId));
+          setSelectedDoc(null);
+        } catch (error) {
+          console.error('Error deleting document:', error);
+        }
+      }
+    });
   };
 
   const handleShare = async (docId) => {
@@ -238,7 +254,7 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              placeholder="Search documents..."
+              placeholder="Rechercher des documents..."
               className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
@@ -457,6 +473,16 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
           }}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

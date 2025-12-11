@@ -1,12 +1,15 @@
 const crypto = require('crypto');
 const User = require('../models/User');
 const Counter = require('../models/Counter');
-const sendEmail = require('../utils/sendEmail');
-const { generateToken, sendTokenResponse } = require('../utils/tokenUtils');
+const notificationFacade = require('../services/notificationFacade');
+const { generateToken, sendTokenResponse, verifyRefreshToken } = require('../utils/tokenUtils');
+const { success, error, unauthorized, forbidden } = require('../utils/apiResponse');
+const { auth: authLogger } = require('../utils/structuredLogger');
+const { AUTH, RATE_LIMIT } = require('../config/constants');
 
 // @desc    Register user
 // @route   POST /api/auth/register
-// @access  Public (first user) or Admin
+// @access  Public (first user only) or Admin
 exports.register = async (req, res, next) => {
   try {
     const {
@@ -24,6 +27,13 @@ exports.register = async (req, res, next) => {
 
     // Check if this is the first user (make them admin)
     const userCount = await User.countDocuments();
+
+    // Security: Only allow public registration for the first user
+    // All subsequent registrations require an authenticated admin
+    if (userCount > 0 && (!req.user || req.user.role !== 'admin')) {
+      return forbidden(res, 'Only administrators can register new users');
+    }
+
     const userRole = userCount === 0 ? 'admin' : (role || 'receptionist');
 
     // Check if user already exists
@@ -32,10 +42,7 @@ exports.register = async (req, res, next) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        error: 'User with that email or username already exists'
-      });
+      return error(res, 'User with that email or username already exists');
     }
 
     // Generate employee ID
@@ -64,22 +71,22 @@ exports.register = async (req, res, next) => {
     // Send verification email
     const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
 
-    await sendEmail({
-      to: user.email,
-      subject: 'Email Verification - MedFlow',
-      template: 'emailVerification',
-      data: {
+    await notificationFacade.sendEmail(
+      user.email,
+      'Email Verification - MedFlow',
+      'emailVerification',
+      {
         name: user.fullName,
         verificationUrl
       }
-    });
+    );
 
     sendTokenResponse(user, 201, res, 'User registered successfully. Please check your email for verification.');
-  } catch (error) {
-    console.error('Registration error:', error);
+  } catch (err) {
+    authLogger.error('Registration error', { error: err.message, stack: err.stack });
     res.status(500).json({
       success: false,
-      error: error.message || 'Error registering user'
+      error: err.message || 'Error registering user'
     });
   }
 };
@@ -93,10 +100,7 @@ exports.login = async (req, res, next) => {
 
     // Validate input
     if ((!email && !username) || !password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide email/username and password'
-      });
+      return error(res, 'Please provide email/username and password');
     }
 
     // Find user
@@ -105,26 +109,17 @@ exports.login = async (req, res, next) => {
     }).select('+password');
 
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
-      });
+      return unauthorized(res, 'Invalid credentials');
     }
 
     // Check if account is locked
     if (user.isLocked) {
-      return res.status(401).json({
-        success: false,
-        error: 'Account is locked due to multiple failed login attempts. Please try again later.'
-      });
+      return unauthorized(res, 'Account is locked due to multiple failed login attempts. Please try again later.');
     }
 
     // Check if account is active
     if (!user.isActive) {
-      return res.status(401).json({
-        success: false,
-        error: 'Account has been deactivated. Please contact administrator.'
-      });
+      return unauthorized(res, 'Account has been deactivated. Please contact administrator.');
     }
 
     // Check password
@@ -132,9 +127,17 @@ exports.login = async (req, res, next) => {
 
     if (!isPasswordMatch) {
       await user.incLoginAttempts();
-      return res.status(401).json({
-        success: false,
-        error: 'Invalid credentials'
+      return unauthorized(res, 'Invalid credentials');
+    }
+
+    // Check if 2FA is enabled - require verification
+    if (user.twoFactorEnabled) {
+      return success(res, {
+        data: {
+          requiresTwoFactor: true,
+          userId: user._id
+        },
+        message: 'Two-factor authentication required'
       });
     }
 
@@ -169,11 +172,11 @@ exports.login = async (req, res, next) => {
     await user.save({ validateBeforeSave: false });
 
     sendTokenResponse(user, 200, res, 'Login successful');
-  } catch (error) {
-    console.error('Login error:', error);
+  } catch (err) {
+    authLogger.error('Login error', { error: err.message, stack: err.stack });
     res.status(500).json({
       success: false,
-      error: error.message || 'Error logging in'
+      error: err.message || 'Error logging in'
     });
   }
 };
@@ -185,12 +188,9 @@ exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
 
-    res.status(200).json({
-      success: true,
-      data: user
-    });
-  } catch (error) {
-    console.error('Get me error:', error);
+    return success(res, { data: user });
+  } catch (err) {
+    authLogger.error('Get me error', { error: err.message, userId: req.user?.id });
     res.status(500).json({
       success: false,
       error: 'Error fetching user profile'
@@ -227,15 +227,12 @@ exports.updateDetails = async (req, res, next) => {
       }
     );
 
-    res.status(200).json({
-      success: true,
-      data: user
-    });
-  } catch (error) {
-    console.error('Update details error:', error);
+    return success(res, { data: user });
+  } catch (err) {
+    authLogger.error('Update details error', { error: err.message, userId: req.user?.id });
     res.status(500).json({
       success: false,
-      error: error.message || 'Error updating user details'
+      error: err.message || 'Error updating user details'
     });
   }
 };
@@ -248,10 +245,7 @@ exports.updatePassword = async (req, res, next) => {
     const { currentPassword, newPassword } = req.body;
 
     if (!currentPassword || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide current and new password'
-      });
+      return error(res, 'Please provide current and new password');
     }
 
     const user = await User.findById(req.user.id).select('+password');
@@ -260,32 +254,61 @@ exports.updatePassword = async (req, res, next) => {
     const isPasswordMatch = await user.matchPassword(currentPassword);
 
     if (!isPasswordMatch) {
-      return res.status(401).json({
-        success: false,
-        error: 'Current password is incorrect'
-      });
+      return unauthorized(res, 'Current password is incorrect');
     }
 
     // Check if new password was used before
     const isPasswordUsedBefore = await user.isPasswordUsedBefore(newPassword);
 
     if (isPasswordUsedBefore) {
-      return res.status(400).json({
-        success: false,
-        error: 'This password has been used before. Please choose a different password.'
-      });
+      return error(res, 'This password has been used before. Please choose a different password.');
     }
 
     // Update password
     user.password = newPassword;
+
+    // CRITICAL SECURITY FIX: Track password change time for token invalidation
+    user.passwordChangedAt = new Date();
+
+    // CRITICAL SECURITY FIX: Invalidate all existing sessions except current
+    // This prevents session fixation attacks where attacker retains access after password change
+    const currentSessionId = req.sessionId || req.headers['x-session-id'];
+    if (user.sessions && user.sessions.length > 0) {
+      // Keep only current session, invalidate all others
+      user.sessions = user.sessions.filter(s =>
+        s.sessionId === currentSessionId && s.expiresAt > new Date()
+      );
+    }
+
+    // Clear all refresh tokens except current (if tracking refresh tokens)
+    if (user.refreshTokens && user.refreshTokens.length > 0) {
+      const currentRefreshToken = req.body.currentRefreshToken;
+      user.refreshTokens = currentRefreshToken
+        ? user.refreshTokens.filter(t => t === currentRefreshToken)
+        : [];
+    }
+
     await user.save();
 
-    sendTokenResponse(user, 200, res, 'Password updated successfully');
-  } catch (error) {
-    console.error('Update password error:', error);
+    // Log the password change with security context
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      user: user._id,
+      action: 'PASSWORD_CHANGE',
+      resource: '/api/auth/updatepassword',
+      ipAddress: req.ip,
+      metadata: {
+        sessionsInvalidated: true,
+        previousSessionCount: user.sessions?.length || 0
+      }
+    });
+
+    sendTokenResponse(user, 200, res, 'Password updated successfully. Other sessions have been logged out.');
+  } catch (err) {
+    authLogger.error('Update password error', { error: err.message, userId: req.user?.id });
     res.status(500).json({
       success: false,
-      error: error.message || 'Error updating password'
+      error: err.message || 'Error updating password'
     });
   }
 };
@@ -298,19 +321,13 @@ exports.forgotPassword = async (req, res, next) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide an email'
-      });
+      return error(res, 'Please provide an email');
     }
 
     const user = await User.findOne({ email });
 
     if (!user) {
-      return res.status(404).json({
-        success: false,
-        error: 'No user found with that email'
-      });
+      return error(res, 'No user found with that email');
     }
 
     // Get reset token
@@ -321,36 +338,30 @@ exports.forgotPassword = async (req, res, next) => {
     const resetUrl = `${req.protocol}://${req.get('host')}/api/auth/resetpassword/${resetToken}`;
 
     try {
-      await sendEmail({
-        to: user.email,
-        subject: 'Password Reset Request - MedFlow',
-        template: 'passwordReset',
-        data: {
+      await notificationFacade.sendEmail(
+        user.email,
+        'Password Reset Request - MedFlow',
+        'passwordReset',
+        {
           name: user.fullName,
           resetUrl
         }
-      });
+      );
 
-      res.status(200).json({
-        success: true,
-        message: 'Password reset email sent'
-      });
-    } catch (error) {
-      console.error('Email send error:', error);
+      return success(res, { data: null, message: 'Password reset email sent' });
+    } catch (err) {
+      authLogger.error('Email send error', { error: err.message, email: user.email });
       user.resetPasswordToken = undefined;
       user.resetPasswordExpire = undefined;
       await user.save({ validateBeforeSave: false });
 
-      return res.status(500).json({
-        success: false,
-        error: 'Email could not be sent'
-      });
+      return error(res, 'Email could not be sent');
     }
-  } catch (error) {
-    console.error('Forgot password error:', error);
+  } catch (err) {
+    authLogger.error('Forgot password error', { error: err.message, stack: err.stack });
     res.status(500).json({
       success: false,
-      error: error.message || 'Error processing password reset'
+      error: err.message || 'Error processing password reset'
     });
   }
 };
@@ -363,10 +374,7 @@ exports.resetPassword = async (req, res, next) => {
     const { password } = req.body;
 
     if (!password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide a new password'
-      });
+      return error(res, 'Please provide a new password');
     }
 
     // Get hashed token
@@ -381,20 +389,14 @@ exports.resetPassword = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or expired reset token'
-      });
+      return error(res, 'Invalid or expired reset token');
     }
 
     // Check if new password was used before
     const isPasswordUsedBefore = await user.isPasswordUsedBefore(password);
 
     if (isPasswordUsedBefore) {
-      return res.status(400).json({
-        success: false,
-        error: 'This password has been used before. Please choose a different password.'
-      });
+      return error(res, 'This password has been used before. Please choose a different password.');
     }
 
     // Set new password
@@ -404,11 +406,105 @@ exports.resetPassword = async (req, res, next) => {
     await user.save();
 
     sendTokenResponse(user, 200, res, 'Password reset successful');
-  } catch (error) {
-    console.error('Reset password error:', error);
+  } catch (err) {
+    authLogger.error('Reset password error', { error: err.message, stack: err.stack });
     res.status(500).json({
       success: false,
-      error: error.message || 'Error resetting password'
+      error: err.message || 'Error resetting password'
+    });
+  }
+};
+
+// @desc    Refresh token
+// @route   POST /api/auth/refresh
+// @access  Public (with valid refresh token)
+exports.refreshToken = async (req, res, next) => {
+  try {
+    // Get refresh token from body or cookie
+    const refreshToken = req.body.refreshToken || req.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      return error(res, 'Please provide a refresh token');
+    }
+
+    // SECURITY: Verify the refresh token using separate secret
+    let decoded;
+    try {
+      decoded = verifyRefreshToken(refreshToken);
+    } catch (err) {
+      // Log security-relevant errors
+      if (err.message === 'Invalid token type - expected refresh token') {
+        authLogger.info('[SECURITY] Attempted to use access token as refresh token', { ip: req.ip });
+      }
+      return unauthorized(res, 'Invalid or expired refresh token');
+    }
+
+    // Find the user
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return unauthorized(res, 'User not found');
+    }
+
+    if (!user.isActive) {
+      return unauthorized(res, 'Account has been deactivated');
+    }
+
+    // Generate new tokens (both access and refresh for rotation)
+    const newAccessToken = user.getSignedJwtToken();
+    const newRefreshToken = user.getSignedRefreshToken();
+
+    // Update session with new tokens
+    const sessionIndex = user.sessions?.findIndex(s => s.token === refreshToken);
+    if (sessionIndex >= 0) {
+      user.sessions[sessionIndex].token = newRefreshToken;
+      user.sessions[sessionIndex].lastActivity = Date.now();
+      await user.save({ validateBeforeSave: false });
+    }
+
+    // Set new cookies
+    const accessTokenOptions = {
+      expires: new Date(Date.now() + AUTH.ACCESS_TOKEN_EXPIRY_MINUTES * 60 * 1000),
+      httpOnly: true,
+      sameSite: 'strict'
+    };
+
+    const refreshTokenOptions = {
+      expires: new Date(Date.now() + (parseInt(process.env.JWT_COOKIE_EXPIRE) || AUTH.REFRESH_TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000),
+      httpOnly: true,
+      sameSite: 'strict',
+      path: '/api/auth/refresh'
+    };
+
+    if (process.env.NODE_ENV === 'production') {
+      accessTokenOptions.secure = true;
+      refreshTokenOptions.secure = true;
+    }
+
+    res
+      .cookie('token', newAccessToken, accessTokenOptions)
+      .cookie('refreshToken', newRefreshToken, refreshTokenOptions)
+      .status(200)
+      .json({
+        success: true,
+        token: newAccessToken,
+        refreshToken: newRefreshToken,
+        expiresIn: 900, // 15 minutes in seconds
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          role: user.role,
+          department: user.department
+        }
+      });
+  } catch (err) {
+    authLogger.error('Refresh token error', { error: err.message, stack: err.stack });
+    res.status(500).json({
+      success: false,
+      error: 'Error refreshing token'
     });
   }
 };
@@ -432,12 +528,9 @@ exports.logout = async (req, res, next) => {
       httpOnly: true
     });
 
-    res.status(200).json({
-      success: true,
-      message: 'Logged out successfully'
-    });
-  } catch (error) {
-    console.error('Logout error:', error);
+    return success(res, { data: null, message: 'Logged out successfully' });
+  } catch (err) {
+    authLogger.error('Logout error', { error: err.message, userId: req.user?.id });
     res.status(500).json({
       success: false,
       error: 'Error logging out'
@@ -461,10 +554,7 @@ exports.verifyEmail = async (req, res, next) => {
     });
 
     if (!user) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid or expired verification token'
-      });
+      return error(res, 'Invalid or expired verification token');
     }
 
     user.isEmailVerified = true;
@@ -472,12 +562,9 @@ exports.verifyEmail = async (req, res, next) => {
     user.emailVerificationExpire = undefined;
     await user.save({ validateBeforeSave: false });
 
-    res.status(200).json({
-      success: true,
-      message: 'Email verified successfully'
-    });
-  } catch (error) {
-    console.error('Email verification error:', error);
+    return success(res, { data: null, message: 'Email verified successfully' });
+  } catch (err) {
+    authLogger.error('Email verification error', { error: err.message, stack: err.stack });
     res.status(500).json({
       success: false,
       error: 'Error verifying email'
@@ -485,7 +572,7 @@ exports.verifyEmail = async (req, res, next) => {
   }
 };
 
-// @desc    Enable two-factor authentication
+// @desc    Enable two-factor authentication (Step 1: Generate secret)
 // @route   POST /api/auth/enable-2fa
 // @access  Private
 exports.enableTwoFactor = async (req, res, next) => {
@@ -494,20 +581,19 @@ exports.enableTwoFactor = async (req, res, next) => {
     const { password } = req.body;
 
     if (!password) {
-      return res.status(400).json({
-        success: false,
-        error: 'Please provide your password'
-      });
+      return error(res, 'Please provide your password');
     }
 
     // Verify password
     const isPasswordMatch = await user.matchPassword(password);
 
     if (!isPasswordMatch) {
-      return res.status(401).json({
-        success: false,
-        error: 'Incorrect password'
-      });
+      return unauthorized(res, 'Incorrect password');
+    }
+
+    // Check if already enabled
+    if (user.twoFactorEnabled) {
+      return error(res, 'Two-factor authentication is already enabled');
     }
 
     // Generate 2FA secret
@@ -515,28 +601,291 @@ exports.enableTwoFactor = async (req, res, next) => {
     const qrcode = require('qrcode');
 
     const secret = speakeasy.generateSecret({
-      name: `MedFlow (${user.email})`
+      name: `MedFlow (${user.email})`,
+      length: 20
     });
 
     user.twoFactorSecret = secret.base32;
-    user.twoFactorEnabled = false; // Will be enabled after verification
     await user.save({ validateBeforeSave: false });
 
     // Generate QR code
     const qrCodeUrl = await qrcode.toDataURL(secret.otpauth_url);
 
-    res.status(200).json({
-      success: true,
+    return success(res, {
       data: {
         secret: secret.base32,
         qrCode: qrCodeUrl
-      }
+      },
+      message: 'Scan the QR code with your authenticator app, then verify with a code'
     });
-  } catch (error) {
-    console.error('Enable 2FA error:', error);
+  } catch (err) {
+    authLogger.error('Enable 2FA error', { error: err.message, userId: req.user?.id });
     res.status(500).json({
       success: false,
       error: 'Error enabling two-factor authentication'
+    });
+  }
+};
+
+// @desc    Verify two-factor authentication setup (Step 2: Confirm setup)
+// @route   POST /api/auth/verify-2fa-setup
+// @access  Private
+exports.verifyTwoFactorSetup = async (req, res, next) => {
+  try {
+    const { token } = req.body;
+
+    if (!token) {
+      return error(res, 'Please provide the verification code from your authenticator app');
+    }
+
+    const user = await User.findById(req.user.id);
+
+    if (!user.twoFactorSecret) {
+      return error(res, 'Please initiate 2FA setup first');
+    }
+
+    if (user.twoFactorEnabled) {
+      return error(res, 'Two-factor authentication is already enabled');
+    }
+
+    // Verify the token
+    const speakeasy = require('speakeasy');
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token,
+      window: 2 // Allow 2 time steps tolerance
+    });
+
+    if (!verified) {
+      return error(res, 'Invalid verification code. Please try again.');
+    }
+
+    // Generate backup codes
+    const backupCodes = user.generateBackupCodes();
+
+    // Enable 2FA
+    user.twoFactorEnabled = true;
+    await user.save({ validateBeforeSave: false });
+
+    return success(res, {
+      data: {
+        backupCodes,
+        warning: 'Save these backup codes in a secure place. They will not be shown again.'
+      },
+      message: 'Two-factor authentication enabled successfully'
+    });
+  } catch (err) {
+    authLogger.error('Verify 2FA setup error', { error: err.message, userId: req.user?.id });
+    res.status(500).json({
+      success: false,
+      error: 'Error verifying two-factor authentication'
+    });
+  }
+};
+
+// @desc    Disable two-factor authentication
+// @route   POST /api/auth/disable-2fa
+// @access  Private
+exports.disableTwoFactor = async (req, res, next) => {
+  try {
+    const { password, token } = req.body;
+
+    if (!password) {
+      return error(res, 'Please provide your password');
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user.twoFactorEnabled) {
+      return error(res, 'Two-factor authentication is not enabled');
+    }
+
+    // Verify password
+    const isPasswordMatch = await user.matchPassword(password);
+
+    if (!isPasswordMatch) {
+      return unauthorized(res, 'Incorrect password');
+    }
+
+    // If 2FA is enabled, require a valid token to disable it
+    if (token) {
+      const speakeasy = require('speakeasy');
+      const verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token: token,
+        window: 2
+      });
+
+      if (!verified) {
+        // Check backup codes
+        const backupUsed = user.useBackupCode(token);
+        if (!backupUsed) {
+          return error(res, 'Invalid verification code');
+        }
+      }
+    } else {
+      return error(res, 'Please provide a verification code from your authenticator app');
+    }
+
+    // Disable 2FA
+    user.twoFactorEnabled = false;
+    user.twoFactorSecret = undefined;
+    user.twoFactorBackupCodes = [];
+    await user.save({ validateBeforeSave: false });
+
+    return success(res, { data: null, message: 'Two-factor authentication disabled successfully' });
+  } catch (err) {
+    authLogger.error('Disable 2FA error', { error: err.message, userId: req.user?.id });
+    res.status(500).json({
+      success: false,
+      error: 'Error disabling two-factor authentication'
+    });
+  }
+};
+
+// @desc    Verify 2FA token during login
+// @route   POST /api/auth/verify-2fa
+// @access  Public (with pending 2FA session)
+exports.verifyTwoFactorLogin = async (req, res, next) => {
+  try {
+    const { userId, token, isBackupCode } = req.body;
+
+    if (!userId || !token) {
+      return error(res, 'Please provide user ID and verification code');
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return unauthorized(res, 'Invalid credentials');
+    }
+
+    if (!user.twoFactorEnabled) {
+      return error(res, 'Two-factor authentication is not enabled for this account');
+    }
+
+    let verified = false;
+
+    if (isBackupCode) {
+      // Try backup code
+      verified = user.useBackupCode(token);
+      if (verified) {
+        await user.save({ validateBeforeSave: false });
+      }
+    } else {
+      // Verify TOTP
+      const speakeasy = require('speakeasy');
+      verified = speakeasy.totp.verify({
+        secret: user.twoFactorSecret,
+        encoding: 'base32',
+        token: token,
+        window: 2
+      });
+    }
+
+    if (!verified) {
+      await user.incLoginAttempts();
+      return unauthorized(res, 'Invalid verification code');
+    }
+
+    // Reset login attempts on successful 2FA
+    if (user.loginAttempts > 0) {
+      await user.resetLoginAttempts();
+    }
+
+    // Update last login
+    user.lastLogin = Date.now();
+
+    // Generate session
+    const jwtToken = user.getSignedJwtToken();
+    const session = {
+      token: jwtToken,
+      device: req.headers['user-agent'],
+      ip: req.ip,
+      userAgent: req.headers['user-agent'],
+      createdAt: Date.now(),
+      lastActivity: Date.now()
+    };
+
+    user.sessions = user.sessions || [];
+    user.sessions.push(session);
+
+    if (user.sessions.length > 5) {
+      user.sessions = user.sessions.slice(-5);
+    }
+
+    await user.save({ validateBeforeSave: false });
+
+    // Count remaining backup codes
+    const remainingBackupCodes = user.twoFactorBackupCodes?.filter(bc => !bc.used).length || 0;
+
+    sendTokenResponse(user, 200, res, 'Login successful', {
+      remainingBackupCodes,
+      lowBackupCodes: remainingBackupCodes < 3
+    });
+  } catch (err) {
+    authLogger.error('2FA verification error', { error: err.message, stack: err.stack });
+    res.status(500).json({
+      success: false,
+      error: 'Error verifying two-factor authentication'
+    });
+  }
+};
+
+// @desc    Regenerate backup codes
+// @route   POST /api/auth/regenerate-backup-codes
+// @access  Private
+exports.regenerateBackupCodes = async (req, res, next) => {
+  try {
+    const { password, token } = req.body;
+
+    if (!password || !token) {
+      return error(res, 'Please provide your password and a verification code');
+    }
+
+    const user = await User.findById(req.user.id).select('+password');
+
+    if (!user.twoFactorEnabled) {
+      return error(res, 'Two-factor authentication is not enabled');
+    }
+
+    // Verify password
+    const isPasswordMatch = await user.matchPassword(password);
+    if (!isPasswordMatch) {
+      return unauthorized(res, 'Incorrect password');
+    }
+
+    // Verify TOTP
+    const speakeasy = require('speakeasy');
+    const verified = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: token,
+      window: 2
+    });
+
+    if (!verified) {
+      return error(res, 'Invalid verification code');
+    }
+
+    // Generate new backup codes
+    const backupCodes = user.generateBackupCodes();
+    await user.save({ validateBeforeSave: false });
+
+    return success(res, {
+      data: {
+        backupCodes,
+        warning: 'Your old backup codes are now invalid. Save these new codes in a secure place.'
+      },
+      message: 'Backup codes regenerated successfully'
+    });
+  } catch (err) {
+    authLogger.error('Regenerate backup codes error', { error: err.message, userId: req.user?.id });
+    res.status(500).json({
+      success: false,
+      error: 'Error regenerating backup codes'
     });
   }
 };

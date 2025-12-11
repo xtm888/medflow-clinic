@@ -1,4 +1,6 @@
 import api from './apiConfig';
+import databaseService from './database';
+import clinicSyncService from './clinicSyncService';
 
 const authService = {
   // Login user
@@ -40,18 +42,47 @@ const authService = {
   },
 
   // Logout user
+  // CRITICAL: Complete data cleanup to prevent data leakage
   async logout() {
     try {
       await api.post('/auth/logout');
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      return { success: true };
     } catch (error) {
-      // Even if logout fails on server, clear local storage
+      console.warn('[Auth] Server logout failed:', error.message);
+    }
+
+    // CRITICAL: Clear ALL sensitive local data on logout
+    try {
+      // 1. Clear authentication tokens
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      return { success: true };
+
+      // 2. Clear clinic selection data
+      localStorage.removeItem('medflow_selected_clinic');
+      localStorage.removeItem('medflow_active_clinic_id');
+      localStorage.removeItem('medflow_last_sync');
+      localStorage.removeItem('medflow_sync_status');
+
+      // 3. Clear redux-persist data
+      localStorage.removeItem('persist:root');
+
+      // 4. Clear any cached patient data
+      localStorage.removeItem('medflow_recent_patients');
+      localStorage.removeItem('medflow_patient_cache');
+
+      // 5. Clear clinic sync service state
+      clinicSyncService.setActiveClinic(null);
+
+      // 6. Clear IndexedDB data (async, but don't block logout)
+      databaseService.clearAll().catch(err => {
+        console.error('[Auth] Failed to clear IndexedDB:', err);
+      });
+
+      console.log('[Auth] Complete logout cleanup performed');
+    } catch (cleanupError) {
+      console.error('[Auth] Logout cleanup failed:', cleanupError);
     }
+
+    return { success: true };
   },
 
   // Get current user
@@ -178,6 +209,25 @@ const authService = {
     if (!userRole) return false;
     if (userRole === 'admin') return true;
     return requiredRoles.includes(userRole);
+  },
+
+  // Get role permissions from database
+  async getRolePermissions() {
+    try {
+      const response = await api.get('/role-permissions/me');
+      if (response.data.success) {
+        return {
+          success: true,
+          data: response.data.data
+        };
+      }
+      return { success: false, error: response.data.error };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Failed to fetch permissions'
+      };
+    }
   }
 };
 

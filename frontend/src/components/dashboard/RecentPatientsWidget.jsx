@@ -8,6 +8,9 @@ import { Link } from 'react-router-dom';
  * Most relevant for doctors, nurses, and ophthalmologists
  */
 const RecentPatientsWidget = ({ userRole, patients = [] }) => {
+  // Ensure patients is always an array
+  const patientsList = Array.isArray(patients) ? patients : [];
+
   // Check if widget is relevant for user role
   const isRelevantForRole = () => {
     return ['doctor', 'ophthalmologist', 'nurse', 'admin'].includes(userRole);
@@ -77,7 +80,7 @@ const RecentPatientsWidget = ({ userRole, patients = [] }) => {
           </div>
           <h3 className="text-lg font-semibold text-gray-900">Patients récents</h3>
         </div>
-        {patients.length > 0 && (
+        {patientsList.length > 0 && (
           <Link
             to="/patients"
             className="text-sm text-blue-600 hover:text-blue-800 font-medium"
@@ -88,17 +91,17 @@ const RecentPatientsWidget = ({ userRole, patients = [] }) => {
       </div>
 
       <div className="space-y-2">
-        {patients.length === 0 ? (
+        {patientsList.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
             <Users className="h-12 w-12 mx-auto mb-2 text-gray-300" />
             <p className="text-sm">Aucun patient récent</p>
           </div>
         ) : (
           <>
-            {patients.slice(0, 6).map((patient, index) => (
+            {patientsList.slice(0, 6).map((patient, index) => (
               <Link
                 key={patient.id || index}
-                to={`/patients/${patient.patientId || patient.id}`}
+                to={`/patients/${patient.id || patient.patientId}`}
                 className="block"
               >
                 <div className="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors cursor-pointer">
@@ -151,13 +154,13 @@ const RecentPatientsWidget = ({ userRole, patients = [] }) => {
       </div>
 
       {/* Quick Stats */}
-      {patients.length > 0 && (
+      {patientsList.length > 0 && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center text-gray-600">
               <Calendar className="h-4 w-4 mr-1" />
               <span>Aujourd'hui: <span className="font-semibold text-gray-900">
-                {patients.filter(p => {
+                {patientsList.filter(p => {
                   const visitDate = new Date(p.visitDate);
                   const today = new Date();
                   return visitDate.toDateString() === today.toDateString();
@@ -165,7 +168,7 @@ const RecentPatientsWidget = ({ userRole, patients = [] }) => {
               </span></span>
             </div>
             <div className="text-gray-600">
-              Total: <span className="font-semibold text-gray-900">{patients.length}</span>
+              Total: <span className="font-semibold text-gray-900">{patientsList.length}</span>
             </div>
           </div>
         </div>

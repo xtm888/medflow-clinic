@@ -6,10 +6,13 @@
  * - Order imaging studies
  * - Add custom procedures
  * - Set priority and add notes
+ *
+ * Includes délibération (prior authorization) warnings for conventioned patients
  */
 
-import { useState } from 'react';
-import { Search, Plus, X, Camera, Scan, Eye, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Search, Plus, X, Camera, Scan, Eye, AlertCircle, AlertTriangle, Clock, CheckCircle, Scissors } from 'lucide-react';
+import ApprovalWarningBanner, { useApprovalWarnings, ApprovalWarningInline } from '../../../components/ApprovalWarningBanner';
 
 // Common ophthalmology procedures and imaging
 const PROCEDURES = {
@@ -42,6 +45,31 @@ const PROCEDURES = {
     { code: 'SLT', name: 'SLT', description: 'Trabéculoplastie sélective' },
     { code: 'IVT', name: 'Injection Intravitréenne', description: 'Anti-VEGF / Corticoïdes' },
     { code: 'PKE', name: 'Ponction Chambre Antérieure', description: 'Prélèvement d\'humeur aqueuse' }
+  ],
+  surgery: [
+    { code: 'PHACO', name: 'Phacoémulsification', description: 'Chirurgie de la cataracte par phaco' },
+    { code: 'ECCE', name: 'Extraction Extra-Capsulaire', description: 'Chirurgie cataracte manuelle' },
+    { code: 'SICS', name: 'SICS', description: 'Small Incision Cataract Surgery' },
+    { code: 'IOL-SEC', name: 'Implant Secondaire', description: 'Pose d\'implant secondaire' },
+    { code: 'TRAB', name: 'Trabéculectomie', description: 'Chirurgie filtrante du glaucome' },
+    { code: 'VALVE', name: 'Valve de Glaucome', description: 'Implant de drainage' },
+    { code: 'GONIO-SURG', name: 'Chirurgie de l\'Angle', description: 'MIGS / Goniotomie' },
+    { code: 'PPV', name: 'Vitrectomie', description: 'Vitrectomie postérieure' },
+    { code: 'DR-SURG', name: 'Chirurgie Rétine', description: 'Décollement de rétine / Cerclage' },
+    { code: 'MEMBRANE', name: 'Pelage Membrane', description: 'Membrane épirétinienne / MH' },
+    { code: 'PTERYG', name: 'Ptérygion', description: 'Exérèse de ptérygion' },
+    { code: 'CHALAZ', name: 'Chalazion', description: 'Incision et curetage' },
+    { code: 'ENTROP', name: 'Entropion/Ectropion', description: 'Chirurgie palpébrale' },
+    { code: 'BLEPHAR', name: 'Blépharoplastie', description: 'Chirurgie esthétique paupières' },
+    { code: 'DACRY', name: 'Dacryocystorhinostomie', description: 'DCR - Voies lacrymales' },
+    { code: 'STRAB', name: 'Chirurgie Strabisme', description: 'Correction strabisme' },
+    { code: 'GREFFE-CORN', name: 'Greffe Cornéenne', description: 'Kératoplastie / DMEK / DSAEK' },
+    { code: 'CROSS-LINK', name: 'Cross-Linking', description: 'Traitement du kératocône' },
+    { code: 'PKR', name: 'PKR', description: 'Photoablation réfractive' },
+    { code: 'LASIK', name: 'LASIK', description: 'Chirurgie réfractive laser' },
+    { code: 'ICL', name: 'Implant ICL', description: 'Implant phaque réfractif' },
+    { code: 'ENUCL', name: 'Énucléation', description: 'Ablation du globe oculaire' },
+    { code: 'EVISC', name: 'Éviscération', description: 'Éviscération avec implant' }
   ]
 };
 
@@ -55,16 +83,40 @@ const PRIORITY_LEVELS = [
 const CATEGORY_LABELS = {
   imaging: { label: 'Imagerie', icon: Camera },
   functional: { label: 'Examens Fonctionnels', icon: Eye },
-  interventional: { label: 'Actes Interventionnels', icon: Scan }
+  interventional: { label: 'Actes Interventionnels', icon: Scan },
+  surgery: { label: 'Chirurgie', icon: Scissors }
 };
 
-export default function ProceduresStep({ data = [], onChange, readOnly = false }) {
+export default function ProceduresStep({ data = [], onChange, readOnly = false, patient = null }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('imaging');
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [customProcedure, setCustomProcedure] = useState({ name: '', code: '', notes: '' });
 
   const orders = Array.isArray(data) ? data : [];
+
+  // Approval warnings for conventioned patients
+  const { warnings, company, loading: warningsLoading, checkWarnings, hasBlockingWarnings } = useApprovalWarnings();
+
+  // Check approval requirements when orders change
+  useEffect(() => {
+    if (patient?._id && orders.length > 0) {
+      const actCodes = orders.map(o => o.code);
+      checkWarnings(patient._id, actCodes);
+    }
+  }, [patient?._id, orders.length]);
+
+  // Build a map of approval status for inline display
+  const approvalStatusMap = {};
+  if (warnings?.blocking) {
+    warnings.blocking.forEach(w => { approvalStatusMap[w.actCode] = { status: 'missing', ...w }; });
+  }
+  if (warnings?.warning) {
+    warnings.warning.forEach(w => { approvalStatusMap[w.actCode] = { status: 'pending', ...w }; });
+  }
+  if (warnings?.info) {
+    warnings.info.forEach(w => { approvalStatusMap[w.actCode] = { status: 'approved', ...w }; });
+  }
 
   // Filter procedures by search
   const filterProcedures = (procedures) => {
@@ -157,6 +209,22 @@ export default function ProceduresStep({ data = [], onChange, readOnly = false }
           {orders.length} examen{orders.length !== 1 ? 's' : ''} demandé{orders.length !== 1 ? 's' : ''}
         </span>
       </div>
+
+      {/* Approval Warning Banner - shows when patient has convention and procedures require approval */}
+      {patient?.convention?.company && orders.length > 0 && (warnings.blocking?.length > 0 || warnings.warning?.length > 0 || warnings.info?.length > 0) && (
+        <ApprovalWarningBanner
+          warnings={warnings}
+          company={company}
+          patient={patient}
+          onRequestApproval={() => {
+            // Refresh warnings after request
+            if (patient?._id && orders.length > 0) {
+              checkWarnings(patient._id, orders.map(o => o.code));
+            }
+          }}
+          compact={false}
+        />
+      )}
 
       {/* Search and Category Tabs */}
       {!readOnly && (
@@ -305,9 +373,19 @@ export default function ProceduresStep({ data = [], onChange, readOnly = false }
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 flex-wrap gap-1">
                     <span className="font-mono text-sm text-blue-600">{order.code}</span>
                     <span className="font-medium text-gray-900">{order.name}</span>
+                    {/* Inline approval status badge */}
+                    {approvalStatusMap[order.code] && (
+                      <ApprovalWarningInline
+                        actCode={order.code}
+                        actName={order.name}
+                        requiresApproval={true}
+                        approvalStatus={approvalStatusMap[order.code].status}
+                        reason={approvalStatusMap[order.code].reason}
+                      />
+                    )}
                   </div>
                   {order.description && (
                     <p className="text-xs text-gray-500 mt-1">{order.description}</p>

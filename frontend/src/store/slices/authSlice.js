@@ -136,16 +136,14 @@ const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
+    // Note: localStorage persistence is handled by authMiddleware or callers
+    // Reducers must be pure functions - no side effects allowed
     setCredentials: (state, action) => {
       const { user, token, refreshToken } = action.payload;
       state.user = user;
       state.token = token;
       state.refreshToken = refreshToken;
       state.isAuthenticated = true;
-      localStorage.setItem('token', token);
-      if (refreshToken) {
-        localStorage.setItem('refreshToken', refreshToken);
-      }
     },
     clearCredentials: (state) => {
       state.user = null;
@@ -153,8 +151,6 @@ const authSlice = createSlice({
       state.refreshToken = null;
       state.isAuthenticated = false;
       state.permissions = {};
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
     },
     setRememberMe: (state, action) => {
       state.rememberMe = action.payload;
@@ -283,6 +279,30 @@ const authSlice = createSlice({
         state.isLoading = false;
       })
       .addCase(changePassword.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Request password reset
+      .addCase(requestPasswordReset.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(requestPasswordReset.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(requestPasswordReset.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      // Reset password
+      .addCase(resetPassword.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(resetPassword.fulfilled, (state) => {
+        state.isLoading = false;
+      })
+      .addCase(resetPassword.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
       });

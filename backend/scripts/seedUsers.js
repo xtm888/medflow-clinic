@@ -1,148 +1,259 @@
+/**
+ * Seed Users Script
+ *
+ * Creates default users for the MedFlow system
+ * Uses centralized password from config/defaults.js for consistency
+ *
+ * Run with: node scripts/seedUsers.js
+ */
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const Clinic = require('../models/Clinic');
+const defaults = require('../config/defaults');
 require('dotenv').config();
 
 const seedUsers = async () => {
   try {
-    // Connect to MongoDB
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');
     console.log('Connected to MongoDB');
+
+    // Get clinics for assignment
+    const clinics = await Clinic.find({ isActive: true });
+    const clinicIds = clinics.map(c => c._id);
 
     // Clear existing users
     await User.deleteMany({});
     console.log('Cleared existing users');
 
-    // Hash passwords
-    const hashedPassword = await bcrypt.hash('Admin123!', 10);
+    // Use centralized password from config/defaults.js for consistency
+    const defaultPassword = defaults.testUsers.password;
+    const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+    console.log(`Using password: ${defaultPassword}`);
 
-    // Create users
+    // Create users with proper schema fields
     const users = [
       {
+        username: 'admin',
         firstName: 'Admin',
-        lastName: 'User',
+        lastName: 'System',
         email: 'admin@medflow.com',
         password: hashedPassword,
-        role: 'administrator',
-        phone: '1234567890',
+        phoneNumber: '+243810000001',
+        role: 'admin',
+        employeeId: 'EMP-001',
+        department: 'general',
+        shift: 'flexible',
         isActive: true,
-        specializations: [],
-        licenseNumber: 'ADMIN001',
-        permissions: {
-          patients: { create: true, read: true, update: true, delete: true },
-          appointments: { create: true, read: true, update: true, delete: true },
-          medical: { create: true, read: true, update: true, delete: true },
-          billing: { create: true, read: true, update: true, delete: true },
-          reports: { create: true, read: true, update: true, delete: true },
-          admin: { create: true, read: true, update: true, delete: true },
-          prescriptions: { create: true, read: true, update: true, delete: true },
-          settings: { create: true, read: true, update: true, delete: true }
-        }
+        clinics: clinicIds
       },
       {
-        firstName: 'Dr. John',
-        lastName: 'Smith',
-        email: 'doctor@medflow.com',
+        username: 'dr.kabila',
+        firstName: 'Joseph',
+        lastName: 'Kabila',
+        email: 'dr.kabila@medflow.com',
         password: hashedPassword,
+        phoneNumber: '+243810000002',
+        role: 'ophthalmologist',
+        employeeId: 'EMP-002',
+        department: 'ophthalmology',
+        shift: 'morning',
+        isActive: true,
+        clinics: clinicIds.slice(0, 2),
+        specialization: 'Cataract Surgery, Glaucoma, Retina',
+        licenseNumber: 'ORD-RDC-2024-001'
+      },
+      {
+        username: 'dr.tshisekedi',
+        firstName: 'Félix',
+        lastName: 'Tshisekedi',
+        email: 'dr.tshisekedi@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000003',
+        role: 'ophthalmologist',
+        employeeId: 'EMP-003',
+        department: 'ophthalmology',
+        shift: 'afternoon',
+        isActive: true,
+        clinics: clinicIds.slice(1, 3),
+        specialization: 'Pediatric Ophthalmology, Strabismus',
+        licenseNumber: 'ORD-RDC-2024-002'
+      },
+      {
+        username: 'dr.lumumba',
+        firstName: 'Patrice',
+        lastName: 'Lumumba',
+        email: 'dr.lumumba@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000004',
         role: 'doctor',
-        phone: '1234567891',
+        employeeId: 'EMP-004',
+        department: 'general',
+        shift: 'morning',
         isActive: true,
-        specializations: ['Ophthalmology', 'Retinal Surgery'],
-        licenseNumber: 'MD123456',
-        permissions: {
-          patients: { create: true, read: true, update: true, delete: false },
-          appointments: { create: true, read: true, update: true, delete: false },
-          medical: { create: true, read: true, update: true, delete: false },
-          billing: { create: false, read: true, update: false, delete: false },
-          reports: { create: true, read: true, update: false, delete: false },
-          admin: { create: false, read: false, update: false, delete: false },
-          prescriptions: { create: true, read: true, update: true, delete: true },
-          settings: { create: false, read: true, update: false, delete: false }
-        }
+        clinics: clinicIds.slice(0, 1),
+        specialization: 'General Medicine',
+        licenseNumber: 'MED-RDC-2024-001'
       },
       {
-        firstName: 'Dr. Sarah',
-        lastName: 'Johnson',
-        email: 'doctor2@medflow.com',
+        username: 'nurse.marie',
+        firstName: 'Marie',
+        lastName: 'Lukusa',
+        email: 'nurse.marie@medflow.com',
         password: hashedPassword,
-        role: 'doctor',
-        phone: '1234567892',
+        phoneNumber: '+243810000005',
+        role: 'nurse',
+        employeeId: 'EMP-005',
+        department: 'ophthalmology',
+        shift: 'morning',
         isActive: true,
-        specializations: ['Ophthalmology', 'Pediatric Ophthalmology'],
-        licenseNumber: 'MD789012',
-        permissions: {
-          patients: { create: true, read: true, update: true, delete: false },
-          appointments: { create: true, read: true, update: true, delete: false },
-          medical: { create: true, read: true, update: true, delete: false },
-          billing: { create: false, read: true, update: false, delete: false },
-          reports: { create: true, read: true, update: false, delete: false },
-          admin: { create: false, read: false, update: false, delete: false },
-          prescriptions: { create: true, read: true, update: true, delete: true },
-          settings: { create: false, read: true, update: false, delete: false }
-        }
+        clinics: clinicIds.slice(0, 2)
       },
       {
-        firstName: 'Emily',
-        lastName: 'Davis',
-        email: 'technician@medflow.com',
+        username: 'tech.jean',
+        firstName: 'Jean',
+        lastName: 'Ilunga',
+        email: 'tech.jean@medflow.com',
         password: hashedPassword,
+        phoneNumber: '+243810000006',
         role: 'technician',
-        phone: '1234567893',
+        employeeId: 'EMP-006',
+        department: 'ophthalmology',
+        shift: 'morning',
         isActive: true,
-        specializations: [],
-        licenseNumber: 'TECH001',
-        permissions: {
-          patients: { create: false, read: true, update: true, delete: false },
-          appointments: { create: false, read: true, update: true, delete: false },
-          medical: { create: false, read: true, update: true, delete: false },
-          billing: { create: false, read: false, update: false, delete: false },
-          reports: { create: false, read: true, update: false, delete: false },
-          admin: { create: false, read: false, update: false, delete: false },
-          prescriptions: { create: false, read: true, update: false, delete: false },
-          settings: { create: false, read: false, update: false, delete: false }
-        }
+        clinics: clinicIds.slice(0, 2)
       },
       {
-        firstName: 'Michael',
-        lastName: 'Wilson',
+        username: 'reception.nkulu',
+        firstName: 'Nkulu',
+        lastName: 'Mwamba',
         email: 'reception@medflow.com',
         password: hashedPassword,
+        phoneNumber: '+243810000007',
         role: 'receptionist',
-        phone: '1234567894',
+        employeeId: 'EMP-007',
+        department: 'general',
+        shift: 'morning',
         isActive: true,
-        specializations: [],
-        licenseNumber: 'RECEP001',
-        permissions: {
-          patients: { create: true, read: true, update: true, delete: false },
-          appointments: { create: true, read: true, update: true, delete: true },
-          medical: { create: false, read: false, update: false, delete: false },
-          billing: { create: true, read: true, update: true, delete: false },
-          reports: { create: false, read: true, update: false, delete: false },
-          admin: { create: false, read: false, update: false, delete: false },
-          prescriptions: { create: false, read: true, update: false, delete: false },
-          settings: { create: false, read: false, update: false, delete: false }
-        }
+        clinics: clinicIds.slice(0, 1)
+      },
+      {
+        username: 'pharma.tshala',
+        firstName: 'Tshala',
+        lastName: 'Muana',
+        email: 'pharmacy@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000008',
+        role: 'pharmacist',
+        employeeId: 'EMP-008',
+        department: 'pharmacy',
+        shift: 'morning',
+        isActive: true,
+        clinics: clinicIds,
+        licenseNumber: 'PHARM-RDC-2024-001'
+      },
+      {
+        username: 'lab.kasongo',
+        firstName: 'Kasongo',
+        lastName: 'Mutombo',
+        email: 'lab@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000009',
+        role: 'lab_technician',
+        employeeId: 'EMP-009',
+        department: 'laboratory',
+        shift: 'morning',
+        isActive: true,
+        clinics: clinicIds.slice(1, 3)
+      },
+      {
+        username: 'orthoptist.grace',
+        firstName: 'Grace',
+        lastName: 'Mbombo',
+        email: 'orthoptist@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000010',
+        role: 'orthoptist',
+        employeeId: 'EMP-010',
+        department: 'ophthalmology',
+        shift: 'morning',
+        isActive: true,
+        clinics: clinicIds.slice(0, 2)
+      },
+      {
+        username: 'optometrist.paul',
+        firstName: 'Paul',
+        lastName: 'Kambale',
+        email: 'optometrist@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000011',
+        role: 'optometrist',
+        employeeId: 'EMP-011',
+        department: 'ophthalmology',
+        shift: 'afternoon',
+        isActive: true,
+        clinics: clinicIds.slice(0, 1)
+      },
+      {
+        username: 'accountant.jose',
+        firstName: 'José',
+        lastName: 'Makila',
+        email: 'accountant@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000012',
+        role: 'accountant',
+        employeeId: 'EMP-012',
+        department: 'general',
+        shift: 'morning',
+        isActive: true,
+        clinics: clinicIds
+      },
+      {
+        username: 'manager.sarah',
+        firstName: 'Sarah',
+        lastName: 'Kimba',
+        email: 'manager@medflow.com',
+        password: hashedPassword,
+        phoneNumber: '+243810000013',
+        role: 'manager',
+        employeeId: 'EMP-013',
+        department: 'general',
+        shift: 'flexible',
+        isActive: true,
+        clinics: clinicIds
       }
     ];
 
     // Create users
     const createdUsers = await User.insertMany(users);
-    console.log(`Created ${createdUsers.length} users`);
+    console.log(`\n✅ Created ${createdUsers.length} users\n`);
 
     // Display login credentials
-    console.log('\n=== Login Credentials ===');
-    console.log('All users have the same password: Admin123!\n');
+    console.log('═'.repeat(60));
+    console.log('LOGIN CREDENTIALS');
+    console.log('═'.repeat(60));
+    console.log(`Password for all users: ${defaultPassword}\n`);
+
+    // Group by role
+    const byRole = {};
     users.forEach(user => {
-      console.log(`${user.role.toUpperCase()}:`);
-      console.log(`  Email: ${user.email}`);
-      console.log(`  Password: Admin123!`);
+      if (!byRole[user.role]) byRole[user.role] = [];
+      byRole[user.role].push(user);
+    });
+
+    Object.entries(byRole).forEach(([role, users]) => {
+      console.log(`${role.toUpperCase()}:`);
+      users.forEach(user => {
+        console.log(`  ${user.username} (${user.email})`);
+      });
       console.log('');
     });
 
-    console.log('✅ Seed completed successfully!');
+    console.log('═'.repeat(60));
+    console.log('✅ User seeding completed successfully!');
+    console.log('═'.repeat(60));
+
     process.exit(0);
   } catch (error) {
     console.error('Error seeding database:', error);

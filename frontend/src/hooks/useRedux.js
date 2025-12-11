@@ -13,8 +13,8 @@ export const useAppDispatch = () => useDispatch();
 // Custom hook for selector
 export const useAppSelector = useSelector;
 
-// Auth hooks
-export const useAuth = () => {
+// Auth hooks - renamed to avoid conflict with AuthContext's useAuth
+export const useReduxAuth = () => {
   const dispatch = useDispatch();
   const auth = useSelector((state) => state.auth);
   const actions = bindActionCreators(authActions, dispatch);
@@ -31,6 +31,9 @@ export const useAuth = () => {
     hasRole: (role) => auth.user?.role === role,
   };
 };
+
+// Backward compatibility alias (deprecated - use useAuth from AuthContext instead)
+export const useAuth = useReduxAuth;
 
 // Patient hooks
 export const usePatients = () => {
@@ -98,7 +101,7 @@ export const useNotifications = () => {
 // Combined hook for common operations
 export const useStore = () => {
   return {
-    auth: useAuth(),
+    auth: useReduxAuth(),
     patients: usePatients(),
     appointments: useAppointments(),
     visits: useVisits(),
@@ -125,7 +128,8 @@ export const useIsLoading = () => {
 export default {
   useAppDispatch,
   useAppSelector,
-  useAuth,
+  useReduxAuth,
+  useAuth, // deprecated alias for useReduxAuth
   usePatients,
   useAppointments,
   useVisits,

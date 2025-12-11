@@ -692,8 +692,242 @@ ivtInjectionSchema.statics.getPatientDueForInjection = async function() {
     .sort({ 'nextInjection.recommendedDate': 1 });
 };
 
+// ========== IVT SERIES VALIDATION RULES ==========
+// Minimum intervals (in days) for each medication
+const MEDICATION_MIN_INTERVALS = {
+  // Anti-VEGF medications
+  'Avastin': 21,           // Minimum 3 weeks (typically 4 weeks)
+  'Bevacizumab': 21,
+  'Lucentis': 21,          // Minimum 3 weeks (typically 4 weeks)
+  'Ranibizumab': 21,
+  'Eylea': 28,             // Minimum 4 weeks
+  'Aflibercept': 28,
+  'Beovu': 28,             // Minimum 4 weeks (8 weeks after loading)
+  'Brolucizumab': 28,
+  'Vabysmo': 28,           // Minimum 4 weeks
+  'Faricimab': 28,
+
+  // Steroid implants - much longer intervals
+  'Ozurdex': 90,           // Minimum 3 months (implant)
+  'Dexamethasone implant': 90,
+  'Iluvien': 365,          // Minimum 12 months (36-month implant)
+  'Fluocinolone implant': 365,
+
+  // Other steroids
+  'Kenacort': 90,
+  'Triamcinolone': 90,
+
+  // Antibiotics (for endophthalmitis - may need repeat)
+  'Vancomycin': 2,
+  'Ceftazidime': 2,
+  'Amphotericin B': 2,
+
+  // Default for unknown
+  'Other': 21
+};
+
+// Maximum injections per protocol phase
+const PROTOCOL_MAX_INJECTIONS = {
+  'loading': 3,                    // Loading phase: typically 3 monthly
+  'maintenance_monthly': 12,       // 1 year of monthly
+  'maintenance_q6w': 9,            // ~1 year at 6-week intervals
+  'maintenance_q8w': 7,            // ~1 year at 8-week intervals
+  'maintenance_q12w': 5,           // ~1 year at 12-week intervals
+  'PRN': 24,                       // 2 years limit for PRN
+  'treat_and_extend': 24,          // 2 years limit
+  'observe': 0,                    // No injections in observe phase
+  'other': 24
+};
+
+// Expected intervals (in weeks) for protocols
+const PROTOCOL_EXPECTED_INTERVALS = {
+  'loading': { min: 3, max: 6 },           // 3-6 weeks during loading
+  'maintenance_monthly': { min: 3, max: 6 },
+  'maintenance_q6w': { min: 5, max: 8 },
+  'maintenance_q8w': { min: 7, max: 10 },
+  'maintenance_q12w': { min: 10, max: 14 },
+  'PRN': { min: 3, max: 52 },              // Flexible
+  'treat_and_extend': { min: 4, max: 16 },
+  'observe': null,
+  'other': { min: 3, max: 52 }
+};
+
+// Static method to validate a new injection
+ivtInjectionSchema.statics.validateNewInjection = async function(injectionData, patientId, eye) {
+  const warnings = [];
+  const errors = [];
+
+  // Get previous injections for this patient and eye
+  const previousInjections = await this.find({
+    patient: patientId,
+    eye: eye,
+    status: { $in: ['completed', 'scheduled'] }
+  }).sort({ injectionDate: -1 }).limit(10);
+
+  if (previousInjections.length === 0) {
+    // First injection - no validation needed
+    return { valid: true, warnings, errors };
+  }
+
+  const lastInjection = previousInjections[0];
+  const lastDate = new Date(lastInjection.injectionDate);
+  const newDate = new Date(injectionData.injectionDate || new Date());
+  const daysSinceLast = Math.floor((newDate - lastDate) / (1000 * 60 * 60 * 24));
+
+  const medicationName = injectionData.medication?.name || 'Other';
+  const minInterval = MEDICATION_MIN_INTERVALS[medicationName] || 21;
+
+  // Rule 1: Check minimum interval
+  if (daysSinceLast < minInterval) {
+    errors.push({
+      code: 'MIN_INTERVAL_VIOLATION',
+      message: `Minimum interval for ${medicationName} is ${minInterval} days. Last injection was ${daysSinceLast} days ago.`,
+      severity: 'error',
+      details: {
+        lastInjectionDate: lastDate,
+        daysSinceLast,
+        minimumDays: minInterval,
+        medication: medicationName
+      }
+    });
+  }
+
+  // Rule 2: Check protocol consistency (medication switch warning)
+  if (lastInjection.medication?.name && medicationName !== 'Other') {
+    const lastMed = lastInjection.medication.name;
+    if (lastMed !== medicationName) {
+      // Check if it's a valid switch or an accidental one
+      const isSameClass = areSameDrugClass(lastMed, medicationName);
+      if (isSameClass) {
+        warnings.push({
+          code: 'MEDICATION_SWITCH',
+          message: `Switching from ${lastMed} to ${medicationName}. Ensure this is intentional and document the reason.`,
+          severity: 'warning',
+          requiresConfirmation: true
+        });
+      } else {
+        warnings.push({
+          code: 'MEDICATION_CLASS_SWITCH',
+          message: `Switching drug class from ${lastMed} to ${medicationName}. This may affect treatment efficacy.`,
+          severity: 'warning',
+          requiresConfirmation: true
+        });
+      }
+    }
+  }
+
+  // Rule 3: Check protocol phase limits
+  const protocol = injectionData.series?.protocol || lastInjection.series?.protocol || 'other';
+  const maxInjections = PROTOCOL_MAX_INJECTIONS[protocol] || 24;
+
+  // Count injections in current protocol phase
+  const injectionsInPhase = previousInjections.filter(inj =>
+    inj.series?.protocol === protocol && inj.status === 'completed'
+  ).length;
+
+  if (injectionsInPhase >= maxInjections) {
+    warnings.push({
+      code: 'PROTOCOL_LIMIT_REACHED',
+      message: `${protocol} protocol typically has ${maxInjections} injections. Consider transitioning to next phase.`,
+      severity: 'warning'
+    });
+  }
+
+  // Rule 4: Check for loading phase completion
+  if (protocol === 'loading') {
+    const loadingCount = previousInjections.filter(inj =>
+      inj.series?.protocol === 'loading' && inj.status === 'completed'
+    ).length;
+
+    if (loadingCount >= 3) {
+      warnings.push({
+        code: 'LOADING_PHASE_COMPLETE',
+        message: 'Loading phase (3 injections) is complete. Consider transitioning to maintenance protocol.',
+        severity: 'info'
+      });
+    }
+  }
+
+  // Rule 5: Check treat-and-extend protocol intervals
+  if (protocol === 'treat_and_extend') {
+    const expectedInterval = PROTOCOL_EXPECTED_INTERVALS['treat_and_extend'];
+    const weeksSinceLast = daysSinceLast / 7;
+
+    if (weeksSinceLast < expectedInterval.min) {
+      warnings.push({
+        code: 'TAE_INTERVAL_TOO_SHORT',
+        message: `Treat-and-extend interval is shorter than expected (${weeksSinceLast.toFixed(1)} weeks). Consider extending if macula is dry.`,
+        severity: 'warning'
+      });
+    } else if (weeksSinceLast > expectedInterval.max) {
+      warnings.push({
+        code: 'TAE_INTERVAL_TOO_LONG',
+        message: `Treat-and-extend interval is longer than expected (${weeksSinceLast.toFixed(1)} weeks). Check for disease activity.`,
+        severity: 'warning'
+      });
+    }
+  }
+
+  // Rule 6: Check for missed follow-up from last injection
+  if (lastInjection.followUp?.scheduled && !lastInjection.followUp?.completed) {
+    const scheduledFollow = new Date(lastInjection.followUp.scheduledDate);
+    if (scheduledFollow < newDate) {
+      warnings.push({
+        code: 'MISSED_FOLLOWUP',
+        message: 'Previous injection follow-up was not completed. Ensure pre-injection assessment is thorough.',
+        severity: 'warning'
+      });
+    }
+  }
+
+  // Rule 7: Check bilateral treatment (both eyes same day)
+  if (injectionData.eye) {
+    const otherEye = injectionData.eye === 'OD' ? 'OS' : 'OD';
+    const sameDayOtherEye = await this.findOne({
+      patient: patientId,
+      eye: otherEye,
+      injectionDate: {
+        $gte: new Date(newDate.setHours(0, 0, 0, 0)),
+        $lte: new Date(newDate.setHours(23, 59, 59, 999))
+      },
+      status: { $in: ['completed', 'scheduled'] }
+    });
+
+    if (sameDayOtherEye) {
+      warnings.push({
+        code: 'BILATERAL_SAME_DAY',
+        message: 'Bilateral IVT on the same day. Ensure different lot numbers are used for each eye.',
+        severity: 'info'
+      });
+    }
+  }
+
+  return {
+    valid: errors.length === 0,
+    warnings,
+    errors
+  };
+};
+
+// Helper function to check if medications are in the same class
+function areSameDrugClass(drug1, drug2) {
+  const antiVEGF = ['Avastin', 'Bevacizumab', 'Lucentis', 'Ranibizumab', 'Eylea', 'Aflibercept', 'Beovu', 'Brolucizumab', 'Vabysmo', 'Faricimab'];
+  const steroids = ['Kenacort', 'Triamcinolone', 'Ozurdex', 'Dexamethasone implant', 'Iluvien', 'Fluocinolone implant'];
+  const antibiotics = ['Vancomycin', 'Ceftazidime'];
+  const antifungals = ['Amphotericin B'];
+
+  const classes = [antiVEGF, steroids, antibiotics, antifungals];
+
+  for (const drugClass of classes) {
+    if (drugClass.includes(drug1) && drugClass.includes(drug2)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 // Middleware
-ivtInjectionSchema.pre('save', function(next) {
+ivtInjectionSchema.pre('save', async function(next) {
   // Auto-generate injectionId if not set
   if (!this.injectionId) {
     const timestamp = Date.now();
@@ -701,10 +935,54 @@ ivtInjectionSchema.pre('save', function(next) {
     this.injectionId = `IVT${timestamp}${random}`;
   }
 
-  // Calculate interval from last injection if previous injection exists
-  if (this.series.previousInjection && this.injectionDate) {
-    // This would need to be calculated from the actual previous injection date
-    // Implementation would require fetching the previous injection
+  // Skip validation for cancellation or updates to completed injections
+  if (this.status === 'cancelled' || (!this.isNew && this.status === 'completed')) {
+    return next();
+  }
+
+  // Validate new injections (only on create or when scheduling)
+  if (this.isNew || this.isModified('injectionDate') || this.isModified('medication')) {
+    try {
+      const validation = await this.constructor.validateNewInjection(
+        {
+          injectionDate: this.injectionDate,
+          medication: this.medication,
+          series: this.series,
+          eye: this.eye
+        },
+        this.patient,
+        this.eye
+      );
+
+      // Store validation warnings on the document for frontend display
+      this._validationWarnings = validation.warnings;
+
+      // Block save if there are errors (unless force flag is set)
+      if (!validation.valid && !this._forceCreate) {
+        const error = new Error(validation.errors[0]?.message || 'IVT validation failed');
+        error.name = 'IVTValidationError';
+        error.code = validation.errors[0]?.code;
+        error.validationErrors = validation.errors;
+        error.validationWarnings = validation.warnings;
+        return next(error);
+      }
+    } catch (err) {
+      console.error('IVT validation error:', err);
+      // Don't block save on validation system errors, just log
+    }
+  }
+
+  // Calculate interval from last injection
+  if (this.series?.previousInjection && this.injectionDate) {
+    try {
+      const prevInjection = await this.constructor.findById(this.series.previousInjection);
+      if (prevInjection) {
+        const daysDiff = Math.floor((this.injectionDate - prevInjection.injectionDate) / (1000 * 60 * 60 * 24));
+        this.series.intervalFromLast = Math.round(daysDiff / 7);
+      }
+    } catch (err) {
+      console.error('Error calculating interval:', err);
+    }
   }
 
   next();

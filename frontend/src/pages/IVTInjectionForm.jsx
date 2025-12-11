@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import api from '../services/apiConfig';
+import FaceVerification from '../components/biometric/FaceVerification';
+import { useAuth } from '../contexts/AuthContext';
+import OfflineWarningBanner from '../components/OfflineWarningBanner';
 import {
   ArrowLeft,
   Save,
@@ -12,12 +15,19 @@ import {
 const IVTInjectionForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { user } = useAuth();
+  const [searchParams] = useSearchParams();
+  const patientIdParam = searchParams.get('patientId');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
+
+  // Face verification state
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationPassed, setVerificationPassed] = useState(false);
 
   const steps = ['Informations de base', 'Évaluation pré-injection', 'Procédure', 'Suivi'];
 
@@ -162,6 +172,42 @@ const IVTInjectionForm = () => {
       fetchInjection();
     }
   }, [id]);
+
+  // Pre-select patient from URL params
+  useEffect(() => {
+    if (patientIdParam && patients.length > 0 && !selectedPatient) {
+      const patient = patients.find(p => p._id === patientIdParam || p.id === patientIdParam);
+      if (patient) {
+        setSelectedPatient(patient);
+        setFormData(prev => ({
+          ...prev,
+          patient: patient._id || patient.id
+        }));
+      }
+    }
+  }, [patientIdParam, patients]);
+
+  // Face verification check when patient is selected
+  useEffect(() => {
+    if (!selectedPatient) return;
+
+    const isDoctorRole = user?.role === 'doctor' || user?.role === 'ophthalmologist' || user?.role === 'admin';
+
+    if (isDoctorRole && selectedPatient?.biometric?.faceEncoding) {
+      const sessionKey = `faceVerified_${selectedPatient._id || selectedPatient.id}`;
+      const alreadyVerified = sessionStorage.getItem(sessionKey);
+
+      if (alreadyVerified === 'true') {
+        setVerificationPassed(true);
+      } else {
+        setShowVerification(true);
+        setVerificationPassed(false);
+      }
+    } else {
+      // Skip verification if not doctor role or patient has no biometric
+      setVerificationPassed(true);
+    }
+  }, [selectedPatient, user]);
 
   const fetchPatients = async () => {
     try {
@@ -906,6 +952,36 @@ const IVTInjectionForm = () => {
     </div>
   );
 
+  // Show face verification modal
+  if (showVerification && selectedPatient) {
+    return (
+      <FaceVerification
+        patient={selectedPatient}
+        onVerified={() => {
+          setShowVerification(false);
+          setVerificationPassed(true);
+          sessionStorage.setItem(`faceVerified_${selectedPatient._id || selectedPatient.id}`, 'true');
+        }}
+        onSkip={() => {
+          setShowVerification(false);
+          setVerificationPassed(true);
+          sessionStorage.setItem(`faceVerified_${selectedPatient._id || selectedPatient.id}`, 'true');
+        }}
+        onCancel={() => navigate(-1)}
+        allowSkip={user?.role === 'admin'}
+      />
+    );
+  }
+
+  // Block content until verification passed (if patient selected and verification required)
+  if (selectedPatient && !verificationPassed) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center">
@@ -919,6 +995,8 @@ const IVTInjectionForm = () => {
           {id ? 'Modifier l\'injection IVT' : 'Nouvelle injection IVT'}
         </h1>
       </div>
+
+      <OfflineWarningBanner isCritical={true} />
 
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start">

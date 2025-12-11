@@ -7,6 +7,7 @@
 
 // API & Data Fetching
 export { default as useApi, useApiMutation, usePaginatedApi } from './useApi';
+export { default as useAbortController, isAbortError, withAbortSignal } from './useAbortController';
 export { default as usePreviousData } from './usePreviousData';
 
 // State Management
@@ -25,3 +26,6 @@ export { default as useFileUpload } from './useFileUpload';
 
 // Real-time
 export { default as useWebSocket } from './useWebSocket';
+
+// Inventory Management
+export { default as useInventory } from './useInventory';

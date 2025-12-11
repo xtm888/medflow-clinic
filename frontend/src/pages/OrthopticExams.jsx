@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../services/apiConfig';
 import { useAuth } from '../contexts/AuthContext';
 
 const OrthopticExams = () => {
@@ -33,7 +33,7 @@ const OrthopticExams = () => {
         limit: 20
       };
 
-      const response = await axios.get('/api/orthoptic', { params });
+      const response = await api.get('/orthoptic', { params });
 
       setExams(response.data.data);
       setTotalPages(response.data.pages);
@@ -120,7 +120,7 @@ const OrthopticExams = () => {
             Gestion des examens et rééducations orthoptiques
           </p>
         </div>
-        {(user?.role === 'admin' || user?.role === 'ophthalmologist' || user?.role === 'nurse') && (
+        {(user?.role === 'admin' || user?.role === 'ophthalmologist' || user?.role === 'orthoptist' || user?.role === 'nurse') && (
           <button
             onClick={handleCreateExam}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"

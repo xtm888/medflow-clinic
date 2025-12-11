@@ -88,7 +88,7 @@ const clinicalActSchema = new mongoose.Schema({
     basePrice: Number,
     currency: {
       type: String,
-      default: 'CFA'
+      default: process.env.BASE_CURRENCY || 'CDF'
     },
     insuranceCode: String
   },

@@ -57,7 +57,7 @@ const DeviceImport = () => {
         }));
       }
     } catch (err) {
-      toast.error('Failed to load device');
+      toast.error('Échec du chargement de l\'appareil');
       console.error(err);
     } finally {
       setLoading(false);
@@ -118,12 +118,12 @@ const DeviceImport = () => {
 
   const handleUpload = async () => {
     if (selectedFiles.length === 0) {
-      toast.error('Please select at least one file');
+      toast.error('Veuillez sélectionner au moins un fichier');
       return;
     }
 
     if (!formData.patientId) {
-      toast.error('Please select a patient');
+      toast.error('Veuillez sélectionner un patient');
       return;
     }
 
@@ -155,13 +155,13 @@ const DeviceImport = () => {
             fileName: file.name,
             status: 'success',
             recordsProcessed: response.recordsProcessed || 0,
-            message: response.message || 'Import successful'
+            message: response.message || 'Import réussi'
           });
         } catch (err) {
           results.push({
             fileName: file.name,
             status: 'error',
-            message: err.response?.data?.message || err.message || 'Import failed'
+            message: err.response?.data?.message || err.message || 'Échec de l\'import'
           });
         }
       }
@@ -172,19 +172,19 @@ const DeviceImport = () => {
       const failCount = results.filter(r => r.status === 'error').length;
 
       if (failCount === 0) {
-        toast.success(`Successfully imported ${successCount} file(s)`);
+        toast.success(`${successCount} fichier(s) importé(s) avec succès`);
       } else if (successCount === 0) {
-        toast.error(`Failed to import all ${failCount} file(s)`);
+        toast.error(`Échec de l'import de ${failCount} fichier(s)`);
       } else {
         toast.error(
-          `Imported ${successCount} file(s), ${failCount} failed. Check results below.`
+          `${successCount} fichier(s) importé(s), ${failCount} en échec. Voir les résultats ci-dessous.`
         );
       }
 
       // Clear selected files after upload
       setSelectedFiles([]);
     } catch (err) {
-      toast.error('Upload failed');
+      toast.error('Échec du téléversement');
       console.error(err);
     } finally {
       setUploading(false);
@@ -220,14 +220,14 @@ const DeviceImport = () => {
           <ArrowLeft className="w-6 h-6" />
         </button>
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manual Import</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Import Manuel</h1>
           <p className="text-gray-600 mt-1">{device?.name}</p>
         </div>
       </div>
 
       {/* Import Form */}
       <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Import Configuration</h2>
+        <h2 className="text-xl font-semibold mb-4">Configuration de l'import</h2>
 
         <div className="space-y-4">
           {/* Patient Selection */}
@@ -246,7 +246,7 @@ const DeviceImport = () => {
                     patientId: ''
                   }))
                 }
-                placeholder="Search by name or MRN..."
+                placeholder="Rechercher par nom ou numéro de dossier..."
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
 
@@ -280,7 +280,7 @@ const DeviceImport = () => {
             {formData.patientId && (
               <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                 <CheckCircle className="w-3 h-3" />
-                Patient selected
+                Patient sélectionné
               </p>
             )}
           </div>
@@ -289,7 +289,7 @@ const DeviceImport = () => {
             {/* Exam ID (optional) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Exam ID (Optional)
+                ID Examen (Optionnel)
               </label>
               <input
                 type="text"
@@ -297,7 +297,7 @@ const DeviceImport = () => {
                 onChange={e =>
                   setFormData(prev => ({ ...prev, examId: e.target.value }))
                 }
-                placeholder="Link to specific exam"
+                placeholder="Lier à un examen spécifique"
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
@@ -305,7 +305,7 @@ const DeviceImport = () => {
             {/* File Format */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                File Format
+                Format de fichier
               </label>
               <select
                 value={formData.fileFormat}
@@ -326,7 +326,7 @@ const DeviceImport = () => {
             {/* Eye */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Eye (Optional)
+                Œil (Optionnel)
               </label>
               <select
                 value={formData.eye}
@@ -335,10 +335,10 @@ const DeviceImport = () => {
                 }
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
-                <option value="">Auto-detect</option>
-                <option value="OD">Right Eye (OD)</option>
-                <option value="OS">Left Eye (OS)</option>
-                <option value="OU">Both Eyes (OU)</option>
+                <option value="">Détection auto</option>
+                <option value="OD">Œil Droit (OD)</option>
+                <option value="OS">Œil Gauche (OS)</option>
+                <option value="OU">Les Deux Yeux (OU)</option>
               </select>
             </div>
           </div>
@@ -347,7 +347,7 @@ const DeviceImport = () => {
 
       {/* File Upload Area */}
       <div className="bg-white rounded-lg shadow border border-gray-200 p-6 mb-6">
-        <h2 className="text-xl font-semibold mb-4">Upload Files</h2>
+        <h2 className="text-xl font-semibold mb-4">Téléverser des fichiers</h2>
 
         {/* Drag & Drop Zone */}
         <div
@@ -358,10 +358,10 @@ const DeviceImport = () => {
         >
           <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <p className="text-lg font-medium text-gray-700 mb-2">
-            Drop files here or click to browse
+            Déposez les fichiers ici ou cliquez pour parcourir
           </p>
           <p className="text-sm text-gray-500">
-            Supported formats: {formData.fileFormat.toUpperCase()}, and more
+            Formats supportés : {formData.fileFormat.toUpperCase()}, et plus
           </p>
           <input
             id="fileInput"
@@ -387,7 +387,7 @@ const DeviceImport = () => {
         {selectedFiles.length > 0 && (
           <div className="mt-6">
             <h3 className="font-medium text-gray-900 mb-3">
-              Selected Files ({selectedFiles.length})
+              Fichiers sélectionnés ({selectedFiles.length})
             </h3>
             <div className="space-y-2">
               {selectedFiles.map((file, index) => (
@@ -429,10 +429,10 @@ const DeviceImport = () => {
               {uploading ? (
                 <span className="flex items-center justify-center gap-2">
                   <RefreshCw className="w-5 h-5 animate-spin" />
-                  Uploading... {uploadProgress}%
+                  Téléversement... {uploadProgress}%
                 </span>
               ) : (
-                `Upload ${selectedFiles.length} File(s)`
+                `Téléverser ${selectedFiles.length} fichier(s)`
               )}
             </button>
 
@@ -453,7 +453,7 @@ const DeviceImport = () => {
       {/* Upload Results */}
       {uploadResults.length > 0 && (
         <div className="bg-white rounded-lg shadow border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold mb-4">Upload Results</h2>
+          <h2 className="text-xl font-semibold mb-4">Résultats du téléversement</h2>
           <div className="space-y-3">
             {uploadResults.map((result, index) => (
               <div
@@ -480,7 +480,7 @@ const DeviceImport = () => {
                   </p>
                   {result.recordsProcessed > 0 && (
                     <p className="text-sm text-gray-600 mt-1">
-                      Records processed: {result.recordsProcessed}
+                      Enregistrements traités : {result.recordsProcessed}
                     </p>
                   )}
                 </div>
@@ -492,7 +492,7 @@ const DeviceImport = () => {
             onClick={() => setUploadResults([])}
             className="mt-4 px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
           >
-            Clear Results
+            Effacer les résultats
           </button>
         </div>
       )}

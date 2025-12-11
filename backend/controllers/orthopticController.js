@@ -1,7 +1,48 @@
+const mongoose = require('mongoose');
 const OrthopticExam = require('../models/OrthopticExam');
 const Patient = require('../models/Patient');
 const Visit = require('../models/Visit');
-const { logAction, logPatientDataAccess } = require('../middleware/auditLogger');
+const AuditLog = require('../models/AuditLog');
+const { asyncHandler } = require('../middleware/errorHandler');
+
+// Helper function to log actions directly
+const logAuditAction = async (req, action, metadata = {}) => {
+  try {
+    await AuditLog.create({
+      user: req.user ? req.user._id : null,
+      action,
+      resource: req.originalUrl,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      metadata,
+      responseStatus: 200
+    });
+  } catch (error) {
+    console.error('Audit logging error:', error);
+  }
+};
+
+// Helper function to log patient data access
+const logPatientAccess = async (req, patientId, accessType, resourceType) => {
+  try {
+    await AuditLog.create({
+      user: req.user ? req.user._id : null,
+      action: 'PATIENT_DATA_ACCESS',
+      resource: req.originalUrl,
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent'],
+      metadata: {
+        patientId,
+        accessType,
+        resourceType,
+        department: req.user?.department
+      },
+      responseStatus: 200
+    });
+  } catch (error) {
+    console.error('Patient access logging error:', error);
+  }
+};
 
 // @desc    Create new orthoptic examination
 // @route   POST /api/orthoptic
@@ -81,13 +122,13 @@ exports.createOrthopticExam = async (req, res) => {
     });
 
     // Log the action
-    await logAction(req, 'CREATE_ORTHOPTIC_EXAM', {
+    await logAuditAction(req, 'CREATE_ORTHOPTIC_EXAM', {
       examId: orthopticExam.examId,
       patientId: patient._id,
       examType
     });
 
-    await logPatientDataAccess(req, patient._id, 'CREATE', 'OrthopticExam');
+    await logPatientAccess(req, patient._id, 'CREATE', 'OrthopticExam');
 
     // Populate examiner details
     await orthopticExam.populate('examiner', 'firstName lastName role');
@@ -182,7 +223,7 @@ exports.getOrthopticExam = async (req, res) => {
     }
 
     // Log patient data access
-    await logPatientDataAccess(req, exam.patient._id, 'READ', 'OrthopticExam');
+    await logPatientAccess(req, exam.patient._id, 'READ', 'OrthopticExam');
 
     res.json({
       success: true,
@@ -229,12 +270,12 @@ exports.updateOrthopticExam = async (req, res) => {
       .populate('examiner', 'firstName lastName role');
 
     // Log the action
-    await logAction(req, 'UPDATE_ORTHOPTIC_EXAM', {
+    await logAuditAction(req, 'UPDATE_ORTHOPTIC_EXAM', {
       examId: exam.examId,
       patientId: exam.patient._id
     });
 
-    await logPatientDataAccess(req, exam.patient._id, 'UPDATE', 'OrthopticExam');
+    await logPatientAccess(req, exam.patient._id, 'UPDATE', 'OrthopticExam');
 
     res.json({
       success: true,
@@ -267,7 +308,7 @@ exports.completeOrthopticExam = async (req, res) => {
     await exam.completeExam(req.user._id);
 
     // Log the action
-    await logAction(req, 'COMPLETE_ORTHOPTIC_EXAM', {
+    await logAuditAction(req, 'COMPLETE_ORTHOPTIC_EXAM', {
       examId: exam.examId,
       patientId: exam.patient
     });
@@ -310,7 +351,7 @@ exports.signOrthopticExam = async (req, res) => {
     await exam.signExam(req.user._id);
 
     // Log the action
-    await logAction(req, 'SIGN_ORTHOPTIC_EXAM', {
+    await logAuditAction(req, 'SIGN_ORTHOPTIC_EXAM', {
       examId: exam.examId,
       patientId: exam.patient
     });
@@ -348,7 +389,7 @@ exports.getPatientOrthopticHistory = async (req, res) => {
     const exams = await OrthopticExam.getPatientExams(patientId, parseInt(limit));
 
     // Log patient data access
-    await logPatientDataAccess(req, patientId, 'READ', 'OrthopticExam');
+    await logPatientAccess(req, patientId, 'READ', 'OrthopticExam');
 
     res.json({
       success: true,
@@ -383,7 +424,7 @@ exports.getTreatmentProgress = async (req, res) => {
     const progress = await OrthopticExam.getTreatmentProgress(patientId);
 
     // Log patient data access
-    await logPatientDataAccess(req, patientId, 'READ', 'OrthopticExam');
+    await logPatientAccess(req, patientId, 'READ', 'OrthopticExam');
 
     res.json({
       success: true,
@@ -457,7 +498,7 @@ exports.generateReport = async (req, res) => {
     const report = exam.generateReport(language);
 
     // Log the action
-    await logAction(req, 'GENERATE_ORTHOPTIC_REPORT', {
+    await logAuditAction(req, 'GENERATE_ORTHOPTIC_REPORT', {
       examId: exam.examId,
       patientId: exam.patient._id,
       language
@@ -502,7 +543,7 @@ exports.deleteOrthopticExam = async (req, res) => {
     await exam.deleteOne();
 
     // Log the action
-    await logAction(req, 'DELETE_ORTHOPTIC_EXAM', {
+    await logAuditAction(req, 'DELETE_ORTHOPTIC_EXAM', {
       examId: exam.examId,
       patientId: exam.patient
     });
@@ -576,7 +617,7 @@ exports.getOrthopticStats = async (req, res) => {
     }
 
     if (examinerId) {
-      matchStage.examiner = mongoose.Types.ObjectId(examinerId);
+      matchStage.examiner = new mongoose.Types.ObjectId(examinerId);
     }
 
     const stats = await OrthopticExam.aggregate([

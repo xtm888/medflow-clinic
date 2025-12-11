@@ -221,10 +221,11 @@ export default function PatientTimeline({
                       </button>
 
                       {isExpanded && (
-                        <div className="mt-2 p-2 bg-gray-50 rounded text-xs text-gray-600">
+                        <div className="mt-2 p-3 bg-gray-50 rounded text-xs text-gray-600 space-y-2">
+                          {/* Diagnoses */}
                           {event.details.diagnoses && event.details.diagnoses.length > 0 && (
-                            <div className="mb-2">
-                              <strong>Diagnostics:</strong>
+                            <div>
+                              <strong className="text-gray-700">Diagnostics:</strong>
                               <ul className="ml-3 mt-1 list-disc">
                                 {event.details.diagnoses.map((d, i) => (
                                   <li key={i}>{typeof d === 'object' ? (d.diagnosis || d.description || d.code || JSON.stringify(d)) : d}</li>
@@ -232,43 +233,163 @@ export default function PatientTimeline({
                               </ul>
                             </div>
                           )}
+
+                          {/* Clinical Acts - Show names */}
+                          {event.details.clinicalActNames && event.details.clinicalActNames.length > 0 && (
+                            <div>
+                              <strong className="text-gray-700">Actes cliniques ({event.details.clinicalActs}):</strong>
+                              <div className="mt-1 flex flex-wrap gap-1">
+                                {event.details.clinicalActNames.map((name, i) => (
+                                  <span key={i} className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded-full">
+                                    {name}
+                                  </span>
+                                ))}
+                                {event.details.moreActsCount > 0 && (
+                                  <span className="px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full">
+                                    +{event.details.moreActsCount} autres
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                          {/* Fallback if only count is available */}
+                          {event.details.clinicalActs > 0 && (!event.details.clinicalActNames || event.details.clinicalActNames.length === 0) && (
+                            <div>
+                              <strong className="text-gray-700">Actes cliniques:</strong> {event.details.clinicalActs}
+                            </div>
+                          )}
+
+                          {/* Vital Signs */}
+                          {event.details.vitalSigns && (
+                            <div>
+                              <strong className="text-gray-700">Signes vitaux:</strong>
+                              <div className="mt-1 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                {event.details.vitalSigns.bloodPressure && (
+                                  <span className="px-2 py-1 bg-red-50 text-red-700 rounded">
+                                    TA: {event.details.vitalSigns.bloodPressure}
+                                  </span>
+                                )}
+                                {event.details.vitalSigns.heartRate && (
+                                  <span className="px-2 py-1 bg-pink-50 text-pink-700 rounded">
+                                    FC: {event.details.vitalSigns.heartRate} bpm
+                                  </span>
+                                )}
+                                {event.details.vitalSigns.temperature && (
+                                  <span className="px-2 py-1 bg-orange-50 text-orange-700 rounded">
+                                    T°: {event.details.vitalSigns.temperature}°C
+                                  </span>
+                                )}
+                                {event.details.vitalSigns.weight && (
+                                  <span className="px-2 py-1 bg-green-50 text-green-700 rounded">
+                                    Poids: {event.details.vitalSigns.weight} kg
+                                  </span>
+                                )}
+                                {event.details.vitalSigns.oxygenSaturation && (
+                                  <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded">
+                                    SpO2: {event.details.vitalSigns.oxygenSaturation}%
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Visual Acuity */}
+                          {event.details.visualAcuity && (
+                            <div>
+                              <strong className="text-gray-700">Acuité visuelle:</strong>
+                              <div className="mt-1 grid grid-cols-2 gap-2">
+                                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded">
+                                  OD: {event.details.visualAcuity.rightEye?.uncorrected || 'N/A'}
+                                  {event.details.visualAcuity.rightEye?.corrected && ` → ${event.details.visualAcuity.rightEye.corrected}`}
+                                </span>
+                                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded">
+                                  OG: {event.details.visualAcuity.leftEye?.uncorrected || 'N/A'}
+                                  {event.details.visualAcuity.leftEye?.corrected && ` → ${event.details.visualAcuity.leftEye.corrected}`}
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* IOP */}
+                          {event.details.intraocularPressure && (
+                            <div>
+                              <strong className="text-gray-700">Pression intraoculaire:</strong>
+                              <div className="mt-1 grid grid-cols-2 gap-2">
+                                <span className="px-2 py-1 bg-teal-50 text-teal-700 rounded">
+                                  OD: {event.details.intraocularPressure.rightEye || 'N/A'} mmHg
+                                </span>
+                                <span className="px-2 py-1 bg-teal-50 text-teal-700 rounded">
+                                  OG: {event.details.intraocularPressure.leftEye || 'N/A'} mmHg
+                                </span>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Refraction */}
+                          {event.details.refraction && (event.details.refraction.rightEye || event.details.refraction.leftEye) && (
+                            <div>
+                              <strong className="text-gray-700">Réfraction:</strong>
+                              <div className="mt-1 grid grid-cols-2 gap-2">
+                                {event.details.refraction.rightEye && (
+                                  <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded">
+                                    OD: {event.details.refraction.rightEye.sphere > 0 ? '+' : ''}{event.details.refraction.rightEye.sphere || 0}
+                                    {event.details.refraction.rightEye.cylinder !== 0 && ` (${event.details.refraction.rightEye.cylinder > 0 ? '+' : ''}${event.details.refraction.rightEye.cylinder})`}
+                                    {event.details.refraction.rightEye.axis && ` x${event.details.refraction.rightEye.axis}°`}
+                                  </span>
+                                )}
+                                {event.details.refraction.leftEye && (
+                                  <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded">
+                                    OG: {event.details.refraction.leftEye.sphere > 0 ? '+' : ''}{event.details.refraction.leftEye.sphere || 0}
+                                    {event.details.refraction.leftEye.cylinder !== 0 && ` (${event.details.refraction.leftEye.cylinder > 0 ? '+' : ''}${event.details.refraction.leftEye.cylinder})`}
+                                    {event.details.refraction.leftEye.axis && ` x${event.details.refraction.leftEye.axis}°`}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Medications */}
                           {event.details.medicationCount > 0 && (
-                            <div className="mb-1">
-                              <strong>Médicaments:</strong> {event.details.medicationCount}
+                            <div>
+                              <strong className="text-gray-700">Médicaments:</strong> {event.details.medicationCount}
                             </div>
                           )}
-                          {event.details.clinicalActs > 0 && (
-                            <div className="mb-1">
-                              <strong>Actes cliniques:</strong> {event.details.clinicalActs}
-                            </div>
-                          )}
+
+                          {/* Valid Until */}
                           {event.details.validUntil && (
-                            <div className="mb-1">
-                              <strong>Valide jusqu'au:</strong> {formatDate(event.details.validUntil)}
+                            <div>
+                              <strong className="text-gray-700">Valide jusqu'au:</strong> {formatDate(event.details.validUntil)}
                             </div>
                           )}
+
+                          {/* Lab Result */}
                           {event.details.result && (
-                            <div className="mb-1">
-                              <strong>Résultat:</strong> {event.details.result}
+                            <div>
+                              <strong className="text-gray-700">Résultat:</strong> {event.details.result}
                               {event.details.isAbnormal && (
-                                <span className="ml-2 text-red-600">(Anormal)</span>
+                                <span className="ml-2 text-red-600 font-semibold">(Anormal)</span>
                               )}
                             </div>
                           )}
-                          {event.details.visualAcuity && (
-                            <div className="mb-1">
-                              <strong>Acuité visuelle:</strong>{' '}
-                              OD: {event.details.visualAcuity.rightEye?.uncorrected || 'N/A'} |
-                              OG: {event.details.visualAcuity.leftEye?.uncorrected || 'N/A'}
+
+                          {/* Notes */}
+                          {event.details.notes && (
+                            <div>
+                              <strong className="text-gray-700">Notes:</strong>
+                              <p className="mt-1 text-gray-500 italic">{event.details.notes}...</p>
                             </div>
                           )}
+
                           {/* Show message if no details available */}
                           {(!event.details.diagnoses || event.details.diagnoses.length === 0) &&
                            !event.details.medicationCount &&
                            !event.details.clinicalActs &&
                            !event.details.validUntil &&
                            !event.details.result &&
-                           !event.details.visualAcuity && (
+                           !event.details.visualAcuity &&
+                           !event.details.vitalSigns &&
+                           !event.details.intraocularPressure &&
+                           !event.details.refraction && (
                             <p className="text-gray-400 italic">Aucun détail supplémentaire disponible</p>
                           )}
                         </div>

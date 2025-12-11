@@ -11,6 +11,9 @@ import {
 } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 
+// Import middleware
+import authMiddleware from './middleware/authMiddleware';
+
 // Import slices
 import authReducer from './slices/authSlice';
 import patientReducer from './slices/patientSlice';
@@ -27,7 +30,7 @@ import queueReducer from './slices/queueSlice';
 const authPersistConfig = {
   key: 'auth',
   storage,
-  whitelist: ['user', 'token', 'isAuthenticated', 'rememberMe'],
+  whitelist: ['user', 'token', 'refreshToken', 'isAuthenticated', 'rememberMe'],
 };
 
 const uiPersistConfig = {
@@ -59,12 +62,19 @@ export const store = configureStore({
       serializableCheck: {
         ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ['meta.arg', 'payload.timestamp'],
+        ignoredActionPaths: [
+          'meta.arg',
+          'payload.timestamp',
+          'payload.headers',      // Axios response headers
+          'payload.config',       // Axios config
+          'payload.request',      // XMLHttpRequest object
+          'meta.baseQueryMeta'    // React Query metadata
+        ],
         // Ignore these paths in the state
         ignoredPaths: ['auth.user', 'ui.modals'],
       },
-    }),
-  devTools: process.env.NODE_ENV !== 'production',
+    }).concat(authMiddleware),
+  devTools: import.meta.env.DEV,
 });
 
 export const persistor = persistStore(store);

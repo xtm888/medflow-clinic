@@ -102,7 +102,7 @@ const DeviceStatusDashboard = () => {
           deviceId: devicesData[0]?._id,
           deviceName: devicesData[0]?.name,
           type: 'measurement',
-          action: 'New measurement received',
+          action: 'Nouvelle mesure reçue',
           timestamp: new Date(),
           status: 'success'
         },
@@ -111,7 +111,7 @@ const DeviceStatusDashboard = () => {
           deviceId: devicesData[1]?._id,
           deviceName: devicesData[1]?.name,
           type: 'connection',
-          action: 'Device connected',
+          action: 'Appareil connecté',
           timestamp: new Date(Date.now() - 300000),
           status: 'success'
         }
@@ -119,7 +119,7 @@ const DeviceStatusDashboard = () => {
 
     } catch (err) {
       console.error('Error loading dashboard data:', err);
-      toast.error('Failed to load dashboard data');
+      toast.error('Échec du chargement des données');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -128,7 +128,7 @@ const DeviceStatusDashboard = () => {
 
   const handleRefresh = () => {
     loadDashboardData();
-    toast.success('Dashboard refreshed');
+    toast.success('Tableau de bord actualisé');
   };
 
   const getFilteredDevices = () => {

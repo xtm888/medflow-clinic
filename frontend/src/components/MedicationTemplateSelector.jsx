@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Search, Plus, Clock, Star, Loader2, ChevronRight, X } from 'lucide-react';
+import { Search, Plus, Clock, Star, Loader2, ChevronRight, X, Eye } from 'lucide-react';
 import doseTemplateService from '../services/doseTemplateService';
 import treatmentProtocolService from '../services/treatmentProtocolService';
+import { EYE_OPTIONS, ADMINISTRATION_ROUTES, getSuggestedTaperingTemplates, TAPERING_TEMPLATES } from '../data/medicationRoutes';
 
 /**
  * MedicationTemplateSelector - Fermer-style three-column medication selector
@@ -27,23 +28,24 @@ export default function MedicationTemplateSelector({
   const [searchQuery, setSearchQuery] = useState('');
   const [duration, setDuration] = useState('');
   const [customInstructions, setCustomInstructions] = useState('');
+  const [selectedEye, setSelectedEye] = useState('OU'); // OD, OS, or OU
 
-  // Medication categories (Fermer-style)
+  // Medication categories (Fermer-style) with default routes
   const MEDICATION_CATEGORIES = [
-    { id: 'ains_local', name: 'A.I.N.S. LOCAUX', icon: '💧' },
-    { id: 'ains_general', name: 'A.I.N.S. GÉNÉRAUX', icon: '💊' },
-    { id: 'antibio_local', name: 'ANTIBIOTIQUES LOCAUX', icon: '👁️' },
-    { id: 'antibio_general', name: 'ANTIBIOTIQUES GÉNÉRAUX', icon: '💉' },
-    { id: 'antiallergique', name: 'ANTIALLERGIQUES', icon: '🌸' },
-    { id: 'antiviral', name: 'ANTIVIRAUX', icon: '🦠' },
-    { id: 'cortico_local', name: 'CORTICOÏDES LOCAUX', icon: '💧' },
-    { id: 'cortico_general', name: 'CORTICOÏDES GÉNÉRAUX', icon: '💊' },
-    { id: 'glaucome', name: 'ANTI-GLAUCOMATEUX', icon: '👁️' },
-    { id: 'lubrifiant', name: 'LUBRIFIANTS', icon: '💦' },
-    { id: 'mydriatique', name: 'MYDRIATIQUES', icon: '⭕' },
-    { id: 'antiseptique', name: 'ANTISEPTIQUES', icon: '🧴' },
-    { id: 'vitamines', name: 'VITAMINES', icon: '🍊' },
-    { id: 'autres', name: 'AUTRES', icon: '📦' }
+    { id: 'ains_local', name: 'A.I.N.S. LOCAUX', icon: '💧', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'ains_general', name: 'A.I.N.S. GÉNÉRAUX', icon: '💊', route: 'oral', isOphthalmic: false },
+    { id: 'antibio_local', name: 'ANTIBIOTIQUES LOCAUX', icon: '👁️', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'antibio_general', name: 'ANTIBIOTIQUES GÉNÉRAUX', icon: '💉', route: 'oral', isOphthalmic: false },
+    { id: 'antiallergique', name: 'ANTIALLERGIQUES', icon: '🌸', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'antiviral', name: 'ANTIVIRAUX', icon: '🦠', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'cortico_local', name: 'CORTICOÏDES LOCAUX', icon: '💧', route: 'ophthalmic', isOphthalmic: true, suggestTapering: true },
+    { id: 'cortico_general', name: 'CORTICOÏDES GÉNÉRAUX', icon: '💊', route: 'oral', isOphthalmic: false, suggestTapering: true },
+    { id: 'glaucome', name: 'ANTI-GLAUCOMATEUX', icon: '👁️', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'lubrifiant', name: 'LUBRIFIANTS', icon: '💦', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'mydriatique', name: 'MYDRIATIQUES', icon: '⭕', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'antiseptique', name: 'ANTISEPTIQUES', icon: '🧴', route: 'ophthalmic', isOphthalmic: true },
+    { id: 'vitamines', name: 'VITAMINES', icon: '🍊', route: 'oral', isOphthalmic: false },
+    { id: 'autres', name: 'AUTRES', icon: '📦', route: 'oral', isOphthalmic: false }
   ];
 
   // Sample medications by category (would come from API)
@@ -174,6 +176,9 @@ export default function MedicationTemplateSelector({
   const handleAdd = () => {
     if (!selectedMedication || !selectedDose) return;
 
+    const isOphthalmic = selectedCategory?.isOphthalmic;
+    const route = selectedCategory?.route || 'oral';
+
     const medication = {
       id: Date.now(),
       name: selectedMedication.name,
@@ -182,7 +187,15 @@ export default function MedicationTemplateSelector({
       frequency: selectedDose.frequency,
       duration: duration || '7 jours',
       instructions: customInstructions,
-      category: selectedCategory?.name
+      category: selectedCategory?.name,
+      // New fields for route and application location
+      route: route,
+      applicationLocation: isOphthalmic ? {
+        eye: selectedEye,
+        eyeArea: 'conjunctiva'
+      } : null,
+      // Tapering suggestion for corticosteroids
+      suggestTapering: selectedCategory?.suggestTapering || false
     };
 
     onAddMedication(medication);
@@ -192,12 +205,17 @@ export default function MedicationTemplateSelector({
     setSelectedDose(null);
     setDuration('');
     setCustomInstructions('');
+    setSelectedEye('OU');
   };
 
   // Apply treatment protocol
   const applyProtocol = async (protocol) => {
     if (protocol.medications) {
       protocol.medications.forEach(med => {
+        // Determine route based on medication form
+        const isOphthalmic = ['collyre', 'gel ophtalmique', 'pommade ophtalmique', 'unidoses'].includes(med.form?.toLowerCase());
+        const route = med.route || (isOphthalmic ? 'ophthalmic' : 'oral');
+
         onAddMedication({
           id: Date.now() + Math.random(),
           name: med.name,
@@ -206,7 +224,16 @@ export default function MedicationTemplateSelector({
           frequency: med.frequency,
           duration: med.duration,
           instructions: med.instructions,
-          category: protocol.name
+          category: protocol.name,
+          // Add route and applicationLocation
+          route: route,
+          applicationLocation: isOphthalmic ? {
+            eye: med.eye || selectedEye || 'OU',
+            eyeArea: med.eyeArea || 'conjunctiva'
+          } : null,
+          // Pass through tapering if present in protocol
+          tapering: med.tapering || null,
+          suggestTapering: med.suggestTapering || false
         });
       });
     }
@@ -334,6 +361,32 @@ export default function MedicationTemplateSelector({
               </div>
             ) : (
               <div className="space-y-3">
+                {/* Eye Selection - Only for ophthalmic medications */}
+                {selectedCategory?.isOphthalmic && (
+                  <div>
+                    <div className="text-xs font-medium text-gray-600 mb-1 flex items-center">
+                      <Eye className="w-3 h-3 mr-1" />
+                      Oeil
+                    </div>
+                    <div className="flex gap-1">
+                      {EYE_OPTIONS.map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => setSelectedEye(option.value)}
+                          className={`flex-1 px-2 py-1.5 text-xs rounded border transition ${
+                            selectedEye === option.value
+                              ? 'bg-blue-100 border-blue-500 text-blue-700'
+                              : 'border-gray-200 hover:bg-gray-50'
+                          }`}
+                          title={option.description}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Frequency */}
                 <div>
                   <div className="text-xs font-medium text-gray-600 mb-1">Fréquence</div>
@@ -392,6 +445,11 @@ export default function MedicationTemplateSelector({
           <div className="flex items-center justify-between">
             <div className="text-sm">
               <span className="font-medium">{selectedMedication.name}</span>
+              {selectedCategory?.isOphthalmic && (
+                <span className="ml-1 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
+                  {selectedEye}
+                </span>
+              )}
               <span className="text-gray-500"> - {selectedDose.label}</span>
               {duration && <span className="text-gray-500"> ({duration})</span>}
             </div>

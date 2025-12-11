@@ -289,19 +289,139 @@ export const frameOptions = [
 export const eyeExamData = {
   encounterTypes: ['Examen de Réfraction', 'Contrôle', 'Post-Op', 'Urgence Oculaire'],
 
-  visualAcuityFormats: ['Snellen', 'LogMAR', 'Décimal'],
+  visualAcuityFormats: ['Monoyer', 'Snellen', 'LogMAR'],
 
-  snellenValues: [
-    '20/200', '20/160', '20/125', '20/100', '20/80',
-    '20/63', '20/50', '20/40', '20/32', '20/25',
-    '20/20', '20/16', '20/12.5', '20/10'
+  // French Monoyer decimal scale (used in France, Belgium, Congo, etc.)
+  monoyerValues: [
+    'CLD',      // Compte les doigts
+    'MDM',      // Mouvement de la main
+    '1/20',     // Très basse vision
+    '1/10',     // 20/200 Snellen
+    '2/10',     // 20/100
+    '3/10',     // 20/63
+    '4/10',     // 20/50
+    '5/10',     // 20/40
+    '6/10',     // 20/32
+    '7/10',     // 20/28
+    '8/10',     // 20/25
+    '9/10',     // 20/22
+    '10/10',    // 20/20 (normal)
+    '12/10',    // 20/16 (above normal)
+    '14/10',    // 20/14
+    '16/10'     // 20/12.5
   ],
+
+  // Snellen scale (US/UK system)
+  snellenValues: [
+    '20/400', '20/200', '20/160', '20/125', '20/100', '20/80',
+    '20/63', '20/50', '20/40', '20/32', '20/28', '20/25', '20/22',
+    '20/20', '20/16', '20/14', '20/12.5', '20/10'
+  ],
+
+  // Conversion mapping: Snellen to Monoyer (French decimal)
+  snellenToMonoyer: {
+    '20/400': '0.5/10',
+    '20/200': '1/10',
+    '20/160': '1.25/10',
+    '20/125': '1.6/10',
+    '20/100': '2/10',
+    '20/80': '2.5/10',
+    '20/63': '3/10',
+    '20/50': '4/10',
+    '20/40': '5/10',
+    '20/32': '6/10',
+    '20/28': '7/10',
+    '20/25': '8/10',
+    '20/22': '9/10',
+    '20/20': '10/10',
+    '20/16': '12/10',
+    '20/14': '14/10',
+    '20/12.5': '16/10',
+    '20/10': '20/10'
+  },
+
+  // Low vision special values
+  lowVisionValues: [
+    { id: 'cld', label: 'CLD', description: 'Compte Les Doigts' },
+    { id: 'mdm', label: 'MDM', description: 'Mouvement De la Main' },
+    { id: 'pl', label: 'PL+', description: 'Perception Lumineuse positive' },
+    { id: 'pl_neg', label: 'PL-', description: 'Perception Lumineuse négative' },
+    { id: 'npl', label: 'NPL', description: 'Non Perception Lumineuse' }
+  ],
+
+  // French ophthalmology abbreviations
+  abbreviations: {
+    OD: 'Œil Droit (oculus dexter)',
+    OG: 'Œil Gauche (oculus sinister)',
+    ODG: 'Œil Droit et Gauche',
+    OU: 'Les deux yeux',
+    VL: 'Vision de Loin',
+    VP: 'Vision de Près',
+    VI: 'Vision Intermédiaire',
+    AV: 'Acuité Visuelle',
+    SPH: 'Sphère',
+    CYL: 'Cylindre',
+    AXE: 'Axe',
+    ADD: 'Addition (presbytie)',
+    TIO: 'Tension Intra-Oculaire',
+    FO: 'Fond d\'Œil',
+    CV: 'Champ Visuel'
+  },
 
   refractionDevices: [
     { id: 'auto1', name: 'Topcon KR-8900', type: 'Autorefractor' },
     { id: 'auto2', name: 'Nidek AR-1a', type: 'Autorefractor' },
     { id: 'ret1', name: 'Heine Beta 200', type: 'Retinoscope' },
     { id: 'trial', name: 'Lunettes d\'essai', type: 'Manual' }
+  ],
+
+  // Complete refraction types from Care Vision mockups
+  refractionTypes: [
+    { id: 'sans_correction', name: 'Sans correction', category: 'Base' },
+    { id: 'ancienne_refraction', name: 'Ancienne réfraction', category: 'Historique' },
+    { id: 'lunettes_portees', name: 'Lunettes portées', category: 'Correction actuelle' },
+    { id: 'lunettes_loin', name: 'Lunettes portées - De loin', category: 'Correction actuelle' },
+    { id: 'lunettes_pres', name: 'Lunettes portées - De près', category: 'Correction actuelle' },
+    { id: 'lunettes_progressifs', name: 'Lunettes portées - Progressifs', category: 'Correction actuelle' },
+    { id: 'lunettes_bifocaux', name: 'Lunettes portées - Bifocaux', category: 'Correction actuelle' },
+    { id: 'lunettes_demi_lune', name: 'Lunettes portées - Demi-lune', category: 'Correction actuelle' },
+    { id: 'lunettes_triple_foyers', name: 'Lunettes portées - Triple-foyers', category: 'Correction actuelle' },
+    { id: 'lunettes_2_paires', name: 'Lunettes portées - 2 paires', category: 'Correction actuelle' },
+    { id: 'lunettes_proximite', name: 'Lunettes portées - Verres de proximité', category: 'Correction actuelle' },
+    { id: 'autorefractometre', name: 'Autoréfractomètre', category: 'Mesure objective' },
+    { id: 'autorefractometre_cyclo', name: 'Autoréfractomètre sous cyclo', category: 'Mesure objective' },
+    { id: 'refraction_subjective', name: 'Réfraction subjective', category: 'Mesure subjective' },
+    { id: 'refraction_subjective_cyclo', name: 'Réfraction subjective sous cyclo', category: 'Mesure subjective' },
+    { id: 'refraction_subjective_auto', name: 'Réfraction subjective automatique', category: 'Mesure subjective' },
+    { id: 'skiascopie', name: 'Skiascopie', category: 'Mesure objective' },
+    { id: 'javal', name: 'Javal', category: 'Kératométrie' },
+    { id: 'tar', name: 'Tar', category: 'Mesure objective' },
+    { id: 'refraction_finale', name: 'Réfraction finale', category: 'Prescription' },
+    { id: 'prescription', name: 'Prescription', category: 'Prescription' },
+    { id: 'essai_lentille', name: 'Essai Lentille de Contact', category: 'Contactologie' },
+    { id: 'sans_type', name: 'Sans Type', category: 'Autre' },
+    { id: 'autre', name: 'Autre', category: 'Autre' },
+    { id: 'apm_lunettes', name: 'APM Lunettes portées', category: 'Auto-Phoropter' },
+    { id: 'apm_autorefractometre', name: 'APM Autoréfractomètre', category: 'Auto-Phoropter' },
+    { id: 'apm_subjective', name: 'APM Réfraction subjective', category: 'Auto-Phoropter' },
+    { id: 'apm_finale', name: 'APM Réfraction finale', category: 'Auto-Phoropter' },
+    { id: 'apm_memoire_5', name: 'APM mémoire 5', category: 'Auto-Phoropter' },
+    { id: 'apm_memoire_6', name: 'APM mémoire 6', category: 'Auto-Phoropter' },
+    { id: 'apm_memoire_7', name: 'APM mémoire 7', category: 'Auto-Phoropter' }
+  ],
+
+  // Refraction type categories for grouping in dropdowns
+  refractionTypeCategories: [
+    'Base',
+    'Historique',
+    'Correction actuelle',
+    'Mesure objective',
+    'Mesure subjective',
+    'Kératométrie',
+    'Prescription',
+    'Contactologie',
+    'Auto-Phoropter',
+    'Autre'
   ],
 
   commonDiagnoses: [

@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const defaults = require('../config/defaults');
 require('dotenv').config();
 
 async function createAdminUser() {
@@ -15,22 +15,20 @@ async function createAdminUser() {
     console.log('✅ Connected to MongoDB');
 
     // Check if admin already exists
-    const existingAdmin = await User.findOne({ email: 'admin@medflow.com' });
+    const existingAdmin = await User.findOne({ email: defaults.admin.email });
     if (existingAdmin) {
       console.log('⚠️  Admin user already exists');
       return;
     }
 
-    // Create admin user
-    const hashedPassword = await bcrypt.hash('admin123', 10);
-
+    // Create admin user - PLAIN TEXT password, pre-save hook will hash it
     const adminUser = await User.create({
       username: 'admin',
-      email: 'admin@medflow.com',
-      password: hashedPassword,
-      firstName: 'Admin',
-      lastName: 'User',
-      role: 'admin',
+      email: defaults.admin.email,
+      password: defaults.admin.password,
+      firstName: defaults.admin.firstName,
+      lastName: defaults.admin.lastName,
+      role: defaults.admin.role,
       employeeId: 'EMP001',
       phoneNumber: '+243 123456789',
       specialty: 'Administration',
@@ -39,8 +37,8 @@ async function createAdminUser() {
     });
 
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: admin@medflow.com');
-    console.log('🔑 Password: admin123');
+    console.log('📧 Email: ' + defaults.admin.email);
+    console.log('🔑 Password: ' + defaults.admin.password);
     console.log('');
     console.log('You can now login with these credentials!');
 

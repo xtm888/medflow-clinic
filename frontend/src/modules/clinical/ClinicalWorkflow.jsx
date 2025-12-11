@@ -10,6 +10,12 @@ import { usePatientClinical } from '../patient';
 import { useAutoSave } from '../../hooks/useAutoSave';
 import AutoSaveIndicator from '../../components/AutoSaveIndicator';
 import ophthalmologyService from '../../services/ophthalmologyService';
+import { HistoryProvider } from '../../contexts/HistoryContext';
+import EditableHistorySidebar from '../../pages/ophthalmology/components/EditableHistorySidebar';
+import ConfirmationModal from '../../components/ConfirmationModal';
+import FaceVerification from '../../components/biometric/FaceVerification';
+import { useAuth } from '../../contexts/AuthContext';
+import OfflineWarningBanner from '../../components/OfflineWarningBanner';
 
 /**
  * ClinicalWorkflow - Modular clinical workflow orchestrator
@@ -40,11 +46,13 @@ export default function ClinicalWorkflow({
   enableAutoSave = true,
   autoSaveInterval = 30000,
   showPatientSidebar = true,
+  showHistorySidebar = true,
   className = ''
 }) {
   const { id, patientId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { user } = useAuth();
 
   // Patient data from our new hook
   const {
@@ -54,6 +62,19 @@ export default function ClinicalWorkflow({
     patientFullName,
     patientAge
   } = usePatientClinical(patientId || initialData.patientId, Boolean(patientId || initialData.patientId));
+
+  // Face verification state
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationPassed, setVerificationPassed] = useState(false);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
 
   // Workflow state
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -69,6 +90,7 @@ export default function ClinicalWorkflow({
   const [loadingHistory, setLoadingHistory] = useState(false);
   const [selectedHistoryIndex, setSelectedHistoryIndex] = useState(null);
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
+  const [historySidebarCollapsed, setHistorySidebarCollapsed] = useState(false);
 
   // Load patient's previous exams for comparison
   useEffect(() => {
@@ -270,9 +292,20 @@ export default function ClinicalWorkflow({
   // Handle cancel
   const handleCancel = useCallback(() => {
     if (isDirty) {
-      if (!window.confirm('Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter ?')) {
-        return;
-      }
+      setConfirmModal({
+        isOpen: true,
+        title: 'Modifications non enregistrées',
+        message: 'Vous avez des modifications non enregistrées. Voulez-vous vraiment quitter sans sauvegarder?',
+        type: 'warning',
+        onConfirm: () => {
+          if (onCancel) {
+            onCancel();
+          } else {
+            navigate(-1);
+          }
+        }
+      });
+      return;
     }
 
     if (onCancel) {
@@ -307,8 +340,60 @@ export default function ClinicalWorkflow({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [saveAll, goToNextStep, goToPreviousStep]);
 
+  // Face verification check when patient data loads
+  useEffect(() => {
+    if (!patient) return;
+
+    const isDoctorRole = user?.role === 'doctor' || user?.role === 'ophthalmologist' || user?.role === 'admin';
+
+    if (isDoctorRole && patient?.biometric?.faceEncoding) {
+      const sessionKey = `faceVerified_${patient._id || patient.id}`;
+      const alreadyVerified = sessionStorage.getItem(sessionKey);
+
+      if (alreadyVerified === 'true') {
+        setVerificationPassed(true);
+      } else {
+        setShowVerification(true);
+        setVerificationPassed(false);
+      }
+    } else {
+      // Skip verification if not doctor role or patient has no biometric
+      setVerificationPassed(true);
+    }
+  }, [patient, user]);
+
   // Get step component
   const StepComponent = currentStep ? stepComponents[currentStep.component] : null;
+
+  // Show face verification modal
+  if (showVerification && patient) {
+    return (
+      <FaceVerification
+        patient={patient}
+        onVerified={() => {
+          setShowVerification(false);
+          setVerificationPassed(true);
+          sessionStorage.setItem(`faceVerified_${patient._id || patient.id}`, 'true');
+        }}
+        onSkip={() => {
+          setShowVerification(false);
+          setVerificationPassed(true);
+          sessionStorage.setItem(`faceVerified_${patient._id || patient.id}`, 'true');
+        }}
+        onCancel={() => navigate(-1)}
+        allowSkip={user?.role === 'admin'}
+      />
+    );
+  }
+
+  // Block content until verification passed
+  if (patient && !verificationPassed) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   if (!workflowConfig || steps.length === 0) {
     return (
@@ -318,8 +403,19 @@ export default function ClinicalWorkflow({
     );
   }
 
-  return (
-    <div className={`flex h-full ${className}`}>
+  // Get patient ID for HistoryProvider
+  const effectivePatientId = patientId || initialData.patientId;
+
+  // Workflow content wrapped in HistoryProvider if showing history sidebar
+  const WorkflowContent = (
+    <div className="flex flex-col h-full">
+      {/* CRITICAL: Offline warning for clinical workflows */}
+      <OfflineWarningBanner
+        isCritical={true}
+        criticalMessage="Mode hors ligne. Sauvegarde automatique locale active. Les données seront synchronisées au retour de la connexion."
+      />
+
+      <div className={`flex flex-1 overflow-hidden ${className}`}>
       {/* Patient Sidebar - Fermer Style */}
       {showPatientSidebar && patient && (
         <div className={`flex-shrink-0 border-r bg-gray-50 transition-all duration-300 ${sidebarCollapsed ? 'w-16' : 'w-72'}`}>
@@ -645,8 +741,38 @@ export default function ClinicalWorkflow({
           </div>
         </div>
       </div>
+
+      {/* History Sidebar - Right Side */}
+      {showHistorySidebar && effectivePatientId && (
+        <EditableHistorySidebar
+          isCollapsed={historySidebarCollapsed}
+          onToggle={() => setHistorySidebarCollapsed(!historySidebarCollapsed)}
+        />
+      )}
+      </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
+
+  // Wrap with HistoryProvider if showing history sidebar
+  if (showHistorySidebar && effectivePatientId) {
+    return (
+      <HistoryProvider patientId={effectivePatientId}>
+        {WorkflowContent}
+      </HistoryProvider>
+    );
+  }
+
+  return WorkflowContent;
 }
 
 // Hook for using workflow state outside the component

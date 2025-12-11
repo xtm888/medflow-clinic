@@ -57,7 +57,7 @@ const DeviceManager = () => {
       const response = await deviceService.getDevices();
       setDevices(response.data || []);
     } catch (err) {
-      toast.error('Failed to load devices');
+      toast.error('Échec du chargement des appareils');
       console.error(err);
     } finally {
       setLoading(false);
@@ -100,11 +100,11 @@ const DeviceManager = () => {
     try {
       const response = await deviceService.syncDeviceFolder(deviceId);
       toast.success(
-        `Sync completed: ${response.recordsProcessed} processed, ${response.recordsFailed} failed`
+        `Synchronisation terminée : ${response.recordsProcessed} traités, ${response.recordsFailed} échecs`
       );
       await loadDevices();
     } catch (err) {
-      toast.error(`Sync failed: ${err.response?.data?.message || err.message}`);
+      toast.error(`Échec de la synchronisation : ${err.response?.data?.message || err.message}`);
     } finally {
       setSyncing(prev => {
         const next = new Set(prev);
@@ -115,14 +115,14 @@ const DeviceManager = () => {
   };
 
   const handleDeleteDevice = async (deviceId) => {
-    if (!confirm('Are you sure you want to delete this device?')) return;
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cet appareil ?')) return;
 
     try {
       await deviceService.deleteDevice(deviceId);
-      toast.success('Device deleted successfully');
+      toast.success('Appareil supprimé avec succès');
       await loadDevices();
     } catch (err) {
-      toast.error(`Failed to delete device: ${err.response?.data?.message || err.message}`);
+      toast.error(`Échec de la suppression : ${err.response?.data?.message || err.message}`);
     }
   };
 
@@ -170,30 +170,30 @@ const DeviceManager = () => {
   };
 
   const formatLastSync = (lastSync) => {
-    if (!lastSync) return 'Never';
+    if (!lastSync) return 'Jamais';
 
     const now = new Date();
     const syncDate = new Date(lastSync);
     const diffMs = now - syncDate;
     const diffMins = Math.floor(diffMs / 60000);
 
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
-    return `${Math.floor(diffMins / 1440)}d ago`;
+    if (diffMins < 1) return 'À l\'instant';
+    if (diffMins < 60) return `Il y a ${diffMins}m`;
+    if (diffMins < 1440) return `Il y a ${Math.floor(diffMins / 60)}h`;
+    return `Il y a ${Math.floor(diffMins / 1440)}j`;
   };
 
-  // Get unique device types for filter
-  const deviceTypes = [...new Set(devices.map(d => d.type))];
+  // Get unique device types for filter (exclude undefined)
+  const deviceTypes = [...new Set(devices.map(d => d.type).filter(Boolean))];
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Device Manager</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Gestion des Appareils</h1>
           <p className="text-gray-600 mt-1">
-            Manage medical devices and integrations
+            Gérer les appareils médicaux et les intégrations
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -202,14 +202,14 @@ const DeviceManager = () => {
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
           >
             <Activity className="w-4 h-4" />
-            Status Dashboard
+            Tableau de bord
           </button>
           <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-5 h-5" />
-            Add Device
+            Ajouter un appareil
           </button>
         </div>
       </div>
@@ -222,7 +222,7 @@ const DeviceManager = () => {
               <HardDrive className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Total Devices</p>
+              <p className="text-sm text-gray-600">Total Appareils</p>
               <p className="text-2xl font-bold">{devices.length}</p>
             </div>
           </div>
@@ -234,7 +234,7 @@ const DeviceManager = () => {
               <CheckCircle className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Connected</p>
+              <p className="text-sm text-gray-600">Connectés</p>
               <p className="text-2xl font-bold">
                 {devices.filter(d => d.integration?.status === 'connected').length}
               </p>
@@ -248,7 +248,7 @@ const DeviceManager = () => {
               <XCircle className="w-6 h-6 text-red-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Errors</p>
+              <p className="text-sm text-gray-600">Erreurs</p>
               <p className="text-2xl font-bold">
                 {devices.filter(d => d.integration?.status === 'error').length}
               </p>
@@ -262,7 +262,7 @@ const DeviceManager = () => {
               <Activity className="w-6 h-6 text-purple-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Active</p>
+              <p className="text-sm text-gray-600">Actifs</p>
               <p className="text-2xl font-bold">
                 {devices.filter(d => d.active).length}
               </p>
@@ -279,7 +279,7 @@ const DeviceManager = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <input
               type="text"
-              placeholder="Search devices..."
+              placeholder="Rechercher des appareils..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -292,7 +292,7 @@ const DeviceManager = () => {
             onChange={(e) => setFilterType(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="all">All Types</option>
+            <option value="all">Tous les types</option>
             {deviceTypes.map(type => (
               <option key={type} value={type}>
                 {type.toUpperCase()}
@@ -306,12 +306,12 @@ const DeviceManager = () => {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
-            <option value="all">All Status</option>
-            <option value="connected">Connected</option>
-            <option value="disconnected">Disconnected</option>
-            <option value="error">Error</option>
-            <option value="pending">Pending</option>
-            <option value="not-configured">Not Configured</option>
+            <option value="all">Tous les statuts</option>
+            <option value="connected">Connecté</option>
+            <option value="disconnected">Déconnecté</option>
+            <option value="error">Erreur</option>
+            <option value="pending">En attente</option>
+            <option value="not-configured">Non configuré</option>
           </select>
         </div>
       </div>
@@ -325,19 +325,19 @@ const DeviceManager = () => {
         <div className="bg-white rounded-lg shadow border border-gray-200 p-12 text-center">
           <HardDrive className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            No devices found
+            Aucun appareil trouvé
           </h3>
           <p className="text-gray-600 mb-6">
             {searchQuery || filterType !== 'all' || filterStatus !== 'all'
-              ? 'Try adjusting your filters'
-              : 'Get started by adding your first device'}
+              ? 'Essayez de modifier vos filtres'
+              : 'Commencez par ajouter votre premier appareil'}
           </p>
           {!searchQuery && filterType === 'all' && filterStatus === 'all' && (
             <button
               onClick={() => setShowAddModal(true)}
               className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
-              Add Device
+              Ajouter un appareil
             </button>
           )}
         </div>
@@ -369,14 +369,14 @@ const DeviceManager = () => {
               {/* Device Details */}
               <div className="space-y-2 mb-4">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Type:</span>
+                  <span className="text-gray-600">Type :</span>
                   <span className="font-medium text-gray-900">
-                    {device.type.toUpperCase()}
+                    {device.type?.toUpperCase() || 'N/A'}
                   </span>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Status:</span>
+                  <span className="text-gray-600">Statut :</span>
                   <span
                     className={`px-2 py-1 rounded text-xs font-medium border ${getStatusColor(
                       device.integration?.status
@@ -387,17 +387,17 @@ const DeviceManager = () => {
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Method:</span>
+                  <span className="text-gray-600">Méthode :</span>
                   <div className="flex items-center gap-1">
                     {getMethodIcon(device.integration?.method)}
                     <span className="font-medium text-gray-900">
-                      {device.integration?.method || 'none'}
+                      {device.integration?.method || 'aucune'}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between text-sm">
-                  <span className="text-gray-600">Last Sync:</span>
+                  <span className="text-gray-600">Dernière sync :</span>
                   <span className="text-gray-900">
                     {formatLastSync(device.integration?.lastSync)}
                   </span>
@@ -407,7 +407,7 @@ const DeviceManager = () => {
                   <div className="flex items-center gap-2 p-2 bg-red-50 rounded border border-red-200">
                     <AlertCircle className="w-4 h-4 text-red-600" />
                     <span className="text-xs text-red-700">
-                      {device.integration.consecutiveErrors} consecutive errors
+                      {device.integration.consecutiveErrors} erreurs consécutives
                     </span>
                   </div>
                 )}
@@ -420,7 +420,7 @@ const DeviceManager = () => {
                   className="flex-1 px-3 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                 >
                   <Settings className="w-4 h-4 inline mr-1" />
-                  Manage
+                  Gérer
                 </button>
 
                 {device.integration?.method === 'folder-sync' &&
@@ -456,6 +456,383 @@ const DeviceManager = () => {
           ))}
         </div>
       )}
+
+      {/* Add Device Modal */}
+      {showAddModal && (
+        <AddDeviceModal
+          onClose={() => setShowAddModal(false)}
+          onSuccess={async () => {
+            setShowAddModal(false);
+            await loadDevices();
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// Add Device Modal Component
+const AddDeviceModal = ({ onClose, onSuccess }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    manufacturer: '',
+    model: '',
+    serialNumber: '',
+    type: 'oct',
+    category: 'imaging',
+    connection: {
+      type: 'network',
+      protocol: 'dicom',
+      ipAddress: '',
+      port: '',
+    },
+    integration: {
+      method: 'webhook',
+      enabled: true
+    },
+    location: {
+      facility: '',
+      room: ''
+    }
+  });
+  const [saving, setSaving] = useState(false);
+
+  const deviceTypes = [
+    { value: 'auto-refractor', label: 'Auto-réfracteur' },
+    { value: 'keratometer', label: 'Kératomètre' },
+    { value: 'tonometer', label: 'Tonomètre' },
+    { value: 'perimeter', label: 'Périmètre' },
+    { value: 'oct', label: 'OCT (Tomographie)' },
+    { value: 'fundus-camera', label: 'Rétinographe' },
+    { value: 'slit-lamp', label: 'Lampe à fente' },
+    { value: 'phoropter', label: 'Phoroptère' },
+    { value: 'lensmeter', label: 'Frontofocamètre' },
+    { value: 'topographer', label: 'Topographe cornéen' },
+    { value: 'biometer', label: 'Biomètre' },
+    { value: 'pachymeter', label: 'Pachymètre' },
+    { value: 'ultrasound', label: 'Échographe' },
+    { value: 'other', label: 'Autre' }
+  ];
+
+  const connectionTypes = [
+    { value: 'network', label: 'Réseau (IP)' },
+    { value: 'serial', label: 'Port série' },
+    { value: 'usb', label: 'USB' },
+    { value: 'wifi', label: 'Wi-Fi' },
+    { value: 'manual', label: 'Manuel' }
+  ];
+
+  const integrationMethods = [
+    { value: 'webhook', label: 'Webhook (Temps réel)' },
+    { value: 'folder-sync', label: 'Synchronisation dossier' },
+    { value: 'manual', label: 'Import manuel' }
+  ];
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      await deviceService.createDevice(formData);
+      toast.success('Appareil ajouté avec succès');
+      onSuccess();
+    } catch (err) {
+      toast.error(`Erreur lors de l'ajout : ${err.response?.data?.error || err.message}`);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateField = (path, value) => {
+    setFormData(prev => {
+      const newData = { ...prev };
+      const keys = path.split('.');
+      let current = newData;
+
+      for (let i = 0; i < keys.length - 1; i++) {
+        if (!current[keys[i]]) current[keys[i]] = {};
+        current = current[keys[i]];
+      }
+
+      current[keys[keys.length - 1]] = value;
+      return newData;
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex justify-between items-center">
+          <h2 className="text-xl font-bold text-gray-900">Ajouter un appareil</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+          >
+            <XCircle className="w-6 h-6" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Basic Information */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Informations de base</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nom de l'appareil *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => updateField('name', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: OCT Salle 1"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type d'appareil *
+                </label>
+                <select
+                  required
+                  value={formData.type}
+                  onChange={(e) => updateField('type', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {deviceTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Fabricant *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.manufacturer}
+                  onChange={(e) => updateField('manufacturer', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: Zeiss, Heidelberg, Topcon"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Modèle *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.model}
+                  onChange={(e) => updateField('model', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: Cirrus HD-OCT 5000"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Numéro de série
+                </label>
+                <input
+                  type="text"
+                  value={formData.serialNumber}
+                  onChange={(e) => updateField('serialNumber', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: SN123456789"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Catégorie *
+                </label>
+                <select
+                  required
+                  value={formData.category}
+                  onChange={(e) => updateField('category', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="diagnostic">Diagnostic</option>
+                  <option value="imaging">Imagerie</option>
+                  <option value="measurement">Mesure</option>
+                  <option value="therapeutic">Thérapeutique</option>
+                  <option value="surgical">Chirurgical</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Connection Settings */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Paramètres de connexion</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Type de connexion *
+                </label>
+                <select
+                  required
+                  value={formData.connection.type}
+                  onChange={(e) => updateField('connection.type', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {connectionTypes.map(type => (
+                    <option key={type.value} value={type.value}>{type.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Protocole
+                </label>
+                <select
+                  value={formData.connection.protocol}
+                  onChange={(e) => updateField('connection.protocol', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="dicom">DICOM</option>
+                  <option value="hl7">HL7</option>
+                  <option value="api">API REST</option>
+                  <option value="file-based">Fichiers</option>
+                  <option value="proprietary">Propriétaire</option>
+                  <option value="manual">Manuel</option>
+                </select>
+              </div>
+
+              {formData.connection.type === 'network' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Adresse IP
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.connection.ipAddress}
+                      onChange={(e) => updateField('connection.ipAddress', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="192.168.1.100"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Port
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.connection.port}
+                      onChange={(e) => updateField('connection.port', e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="104"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Integration Method */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Méthode d'intégration</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Méthode *
+                </label>
+                <select
+                  required
+                  value={formData.integration.method}
+                  onChange={(e) => updateField('integration.method', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {integrationMethods.map(method => (
+                    <option key={method.value} value={method.value}>{method.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.integration.enabled}
+                    onChange={(e) => updateField('integration.enabled', e.target.checked)}
+                    className="w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Activer l'intégration</span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Location */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Localisation</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Établissement
+                </label>
+                <input
+                  type="text"
+                  value={formData.location.facility}
+                  onChange={(e) => updateField('location.facility', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: Clinique Principale"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Salle
+                </label>
+                <input
+                  type="text"
+                  value={formData.location.room}
+                  onChange={(e) => updateField('location.room', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Ex: Salle 101"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-3 pt-4 border-t border-gray-200">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 flex items-center justify-center gap-2"
+            >
+              {saving ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  Ajouter l'appareil
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 };

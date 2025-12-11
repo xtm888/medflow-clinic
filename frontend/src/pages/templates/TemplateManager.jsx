@@ -7,6 +7,7 @@ import {
 import api from '../../services/apiConfig';
 import TemplateBuilder from './TemplateBuilder';
 import TemplatePreview from './TemplatePreview';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 export default function TemplateManager() {
   const [templates, setTemplates] = useState([]);
@@ -20,16 +21,25 @@ export default function TemplateManager() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showShareModal, setShowShareModal] = useState(false);
 
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
+
   const categories = [
-    { value: 'all', label: 'All Templates', icon: Grid },
-    { value: 'medication', label: 'Medications', icon: FileText },
-    { value: 'pathology', label: 'Pathology', icon: AlertCircle },
-    { value: 'prescription', label: 'Prescriptions', icon: FileText },
-    { value: 'letter', label: 'Letters', icon: FileText },
+    { value: 'all', label: 'Tous les modèles', icon: Grid },
+    { value: 'medication', label: 'Médicaments', icon: FileText },
+    { value: 'pathology', label: 'Pathologie', icon: AlertCircle },
+    { value: 'prescription', label: 'Ordonnances', icon: FileText },
+    { value: 'letter', label: 'Lettres', icon: FileText },
     { value: 'instruction', label: 'Instructions', icon: FileText },
-    { value: 'diagnosis', label: 'Diagnoses', icon: CheckCircle },
-    { value: 'plan', label: 'Treatment Plans', icon: FileText },
-    { value: 'examination', label: 'Examinations', icon: FileText }
+    { value: 'diagnosis', label: 'Diagnostics', icon: CheckCircle },
+    { value: 'plan', label: 'Plans de traitement', icon: FileText },
+    { value: 'examination', label: 'Examens', icon: FileText }
   ];
 
   useEffect(() => {
@@ -44,10 +54,10 @@ export default function TemplateManager() {
     try {
       setLoading(true);
       const params = selectedCategory !== 'all' ? `?category=${selectedCategory}` : '';
-      const response = await api.get(`/api/templates${params}`);
+      const response = await api.get(`/consultation-templates${params}`);
       setTemplates(response.data.data);
     } catch (error) {
-      console.error('Error fetching templates:', error);
+      console.error('Erreur lors du chargement des modèles:', error);
     } finally {
       setLoading(false);
     }
@@ -66,48 +76,54 @@ export default function TemplateManager() {
     setFilteredTemplates(filtered);
   };
 
-  const handleDeleteTemplate = async (templateId) => {
-    if (window.confirm('Are you sure you want to delete this template?')) {
-      try {
-        await api.delete(`/api/templates/${templateId}`);
-        fetchTemplates();
-      } catch (error) {
-        console.error('Error deleting template:', error);
+  const handleDeleteTemplate = (templateId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer ce modèle?',
+      message: 'Êtes-vous sûr de vouloir supprimer ce modèle? Cette action est irréversible.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/consultation-templates/${templateId}`);
+          fetchTemplates();
+        } catch (error) {
+          console.error('Erreur lors de la suppression du modèle:', error);
+        }
       }
-    }
+    });
   };
 
   const handleCloneTemplate = async (templateId) => {
     try {
-      const response = await api.post(`/api/templates/${templateId}/clone`);
+      const response = await api.post(`/consultation-templates/${templateId}/clone`);
       fetchTemplates();
       setSelectedTemplate(response.data.data);
       setShowBuilder(true);
     } catch (error) {
-      console.error('Error cloning template:', error);
+      console.error('Erreur lors de la duplication du modèle:', error);
     }
   };
 
   const handlePinTemplate = async (templateId) => {
     try {
-      await api.put(`/api/templates/${templateId}/pin`);
+      await api.put(`/consultation-templates/${templateId}/pin`);
       fetchTemplates();
     } catch (error) {
-      console.error('Error pinning template:', error);
+      console.error('Erreur lors de l\'épinglage du modèle:', error);
     }
   };
 
   const handleApplyTemplate = async (templateId) => {
     try {
-      const response = await api.post(`/api/templates/${templateId}/apply`, {
+      const response = await api.post(`/consultation-templates/${templateId}/apply`, {
         context: {
-          patientName: 'John Doe', // This would come from actual patient context
-          date: new Date().toLocaleDateString()
+          patientName: 'Patient', // This would come from actual patient context
+          date: new Date().toLocaleDateString('fr-FR')
         }
       });
       // Handle the applied template data (e.g., populate form fields)
     } catch (error) {
-      console.error('Error applying template:', error);
+      console.error('Erreur lors de l\'application du modèle:', error);
     }
   };
 
@@ -116,10 +132,15 @@ export default function TemplateManager() {
     return categoryData ? categoryData.icon : FileText;
   };
 
+  const getCategoryLabel = (category) => {
+    const categoryData = categories.find(c => c.value === category);
+    return categoryData ? categoryData.label : category;
+  };
+
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
+    return new Date(date).toLocaleDateString('fr-FR', {
       day: 'numeric',
+      month: 'short',
       year: 'numeric'
     });
   };
@@ -130,13 +151,13 @@ export default function TemplateManager() {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Template Manager</h1>
-            <p className="text-gray-600 mt-1">Create and manage clinical templates</p>
+            <h1 className="text-2xl font-bold text-gray-900">Gestion des Templates</h1>
+            <p className="text-gray-600 mt-1">Modèles de documents et formulaires</p>
           </div>
           <div className="flex space-x-3">
             <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
               <Upload className="w-5 h-5 inline mr-2" />
-              Import
+              Importer
             </button>
             <button
               onClick={() => {
@@ -146,7 +167,7 @@ export default function TemplateManager() {
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
             >
               <Plus className="w-5 h-5 inline mr-2" />
-              New Template
+              Nouveau modèle
             </button>
           </div>
         </div>
@@ -157,7 +178,7 @@ export default function TemplateManager() {
             <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Search templates..."
+              placeholder="Rechercher des modèles..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -181,12 +202,14 @@ export default function TemplateManager() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 rounded ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''}`}
+                title="Vue grille"
               >
                 <Grid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 rounded ${viewMode === 'list' ? 'bg-white shadow-sm' : ''}`}
+                title="Vue liste"
               >
                 <List className="w-4 h-4" />
               </button>
@@ -199,17 +222,17 @@ export default function TemplateManager() {
       {loading ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading templates...</p>
+          <p className="mt-2 text-gray-600">Chargement des modèles...</p>
         </div>
       ) : filteredTemplates.length === 0 ? (
         <div className="bg-white rounded-lg shadow-sm p-8 text-center">
           <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600">No templates found</p>
+          <p className="text-gray-600">Aucun modèle trouvé</p>
           <button
             onClick={() => setShowBuilder(true)}
             className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
           >
-            Create Your First Template
+            Créer votre premier modèle
           </button>
         </div>
       ) : viewMode === 'grid' ? (
@@ -240,7 +263,7 @@ export default function TemplateManager() {
 
                   <h3 className="font-medium text-gray-900 mb-1">{template.name}</h3>
                   <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                    {template.description || 'No description'}
+                    {template.description || 'Aucune description'}
                   </p>
 
                   {/* Tags */}
@@ -258,7 +281,7 @@ export default function TemplateManager() {
                   <div className="flex items-center justify-between text-xs text-gray-500">
                     <span className="flex items-center">
                       <Clock className="w-3 h-3 mr-1" />
-                      {template.usageCount || 0} uses
+                      {template.usageCount || 0} utilisations
                     </span>
                     <span>{formatDate(template.createdAt)}</span>
                   </div>
@@ -273,7 +296,7 @@ export default function TemplateManager() {
                         handleApplyTemplate(template._id);
                       }}
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                      title="Apply Template"
+                      title="Appliquer le modèle"
                     >
                       <CheckCircle className="w-4 h-4" />
                     </button>
@@ -284,7 +307,7 @@ export default function TemplateManager() {
                         setShowPreview(true);
                       }}
                       className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition"
-                      title="Preview"
+                      title="Aperçu"
                     >
                       <FileText className="w-4 h-4" />
                     </button>
@@ -294,7 +317,7 @@ export default function TemplateManager() {
                         handleCloneTemplate(template._id);
                       }}
                       className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition"
-                      title="Clone"
+                      title="Dupliquer"
                     >
                       <Copy className="w-4 h-4" />
                     </button>
@@ -306,7 +329,7 @@ export default function TemplateManager() {
                         handlePinTemplate(template._id);
                       }}
                       className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition"
-                      title="Pin/Unpin"
+                      title={template.quickAccess?.isPinned ? 'Désépingler' : 'Épingler'}
                     >
                       {template.quickAccess?.isPinned ? <StarOff className="w-4 h-4" /> : <Star className="w-4 h-4" />}
                     </button>
@@ -317,7 +340,7 @@ export default function TemplateManager() {
                         setShowBuilder(true);
                       }}
                       className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition"
-                      title="Edit"
+                      title="Modifier"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
@@ -327,7 +350,7 @@ export default function TemplateManager() {
                         handleDeleteTemplate(template._id);
                       }}
                       className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                      title="Delete"
+                      title="Supprimer"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -344,16 +367,16 @@ export default function TemplateManager() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Template
+                  Modèle
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Category
+                  Catégorie
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Usage
+                  Utilisation
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Created
+                  Créé le
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -384,11 +407,11 @@ export default function TemplateManager() {
                   </td>
                   <td className="px-6 py-4">
                     <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded-full">
-                      {template.category}
+                      {getCategoryLabel(template.category)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
-                    {template.usageCount || 0} times
+                    {template.usageCount || 0} fois
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {formatDate(template.createdAt)}
@@ -398,7 +421,7 @@ export default function TemplateManager() {
                       <button
                         onClick={() => handleApplyTemplate(template._id)}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition"
-                        title="Apply"
+                        title="Appliquer"
                       >
                         <CheckCircle className="w-4 h-4" />
                       </button>
@@ -408,14 +431,14 @@ export default function TemplateManager() {
                           setShowBuilder(true);
                         }}
                         className="p-1.5 text-gray-600 hover:bg-gray-50 rounded transition"
-                        title="Edit"
+                        title="Modifier"
                       >
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteTemplate(template._id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded transition"
-                        title="Delete"
+                        title="Supprimer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -454,6 +477,16 @@ export default function TemplateManager() {
           }}
         />
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 }

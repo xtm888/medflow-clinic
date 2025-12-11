@@ -1,12 +1,24 @@
-import { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import patientService from '../services/patientService';
 
 const PatientContext = createContext({});
 
+// Default values when not in provider (for error boundary recovery)
+const defaultPatientContext = {
+  selectedPatient: null,
+  patientHistory: null,
+  loading: false,
+  isExpanded: true,
+  loadPatient: () => Promise.resolve(),
+  clearPatient: () => {},
+  setIsExpanded: () => {}
+};
+
 export const usePatient = () => {
   const context = useContext(PatientContext);
-  if (!context) {
-    throw new Error('usePatient must be used within a PatientProvider');
+  if (!context || Object.keys(context).length === 0) {
+    console.warn('usePatient called outside PatientProvider - using default values');
+    return defaultPatientContext;
   }
   return context;
 };
@@ -17,12 +29,17 @@ export const PatientProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(true);
 
+  // Race condition prevention: track current load operation
+  const currentLoadId = useRef(0);
+  const abortControllerRef = useRef(null);
+
   // Load patient from localStorage on mount
   useEffect(() => {
     const savedPatientId = localStorage.getItem('selectedPatientId');
     if (savedPatientId) {
-      loadPatient(savedPatientId);
+      loadPatientInternal(savedPatientId);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Save selected patient ID to localStorage
@@ -34,27 +51,53 @@ export const PatientProvider = ({ children }) => {
     }
   }, [selectedPatient]);
 
-  const loadPatient = async (patientId) => {
+  // Internal load function with race condition protection
+  const loadPatientInternal = async (patientId) => {
     if (!patientId) return;
+
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
+    // Increment load ID to track this specific load operation
+    const loadId = ++currentLoadId.current;
 
     try {
       setLoading(true);
+
       const response = await patientService.getPatient(patientId);
+
+      // Check if this load is still current (no newer load started)
+      if (loadId !== currentLoadId.current) {
+        return; // Stale response, ignore
+      }
+
       const patient = response.data || response;
       setSelectedPatient(patient);
 
-      // Also load recent history
-      await loadPatientHistory(patientId);
+      // Also load recent history (still check for staleness)
+      await loadPatientHistoryInternal(patientId, loadId);
     } catch (error) {
-      console.error('Error loading patient:', error);
-      setSelectedPatient(null);
-      setPatientHistory(null);
+      // Ignore aborted requests
+      if (error.name === 'AbortError') return;
+
+      // Only update state if this is still the current load
+      if (loadId === currentLoadId.current) {
+        console.error('Error loading patient:', error);
+        setSelectedPatient(null);
+        setPatientHistory(null);
+      }
     } finally {
-      setLoading(false);
+      // Only clear loading if this is still the current load
+      if (loadId === currentLoadId.current) {
+        setLoading(false);
+      }
     }
   };
 
-  const loadPatientHistory = async (patientId) => {
+  const loadPatientHistoryInternal = async (patientId, loadId) => {
     try {
       // Load recent visits, prescriptions, etc.
       const [visitsRes, prescriptionsRes] = await Promise.all([
@@ -62,13 +105,21 @@ export const PatientProvider = ({ children }) => {
         patientService.getPatientPrescriptions(patientId, { limit: 5 }).catch(() => ({ data: [] }))
       ]);
 
+      // Check if this load is still current
+      if (loadId !== currentLoadId.current) {
+        return; // Stale response, ignore
+      }
+
       setPatientHistory({
         recentVisits: visitsRes.data || visitsRes || [],
         recentPrescriptions: prescriptionsRes.data || prescriptionsRes || []
       });
     } catch (error) {
-      console.error('Error loading patient history:', error);
-      setPatientHistory(null);
+      // Only update state if this is still the current load
+      if (loadId === currentLoadId.current) {
+        console.error('Error loading patient history:', error);
+        setPatientHistory(null);
+      }
     }
   };
 
@@ -82,18 +133,25 @@ export const PatientProvider = ({ children }) => {
 
     // If it's just an ID, load full patient
     if (typeof patient === 'string') {
-      await loadPatient(patient);
+      await loadPatientInternal(patient);
     } else if (!patient.firstName && patientId) {
       // Partial patient object, load full details
-      await loadPatient(patientId);
+      await loadPatientInternal(patientId);
     } else {
-      // Full patient object
+      // Full patient object - set immediately, then load history
       setSelectedPatient(patient);
-      await loadPatientHistory(patientId);
+      const loadId = ++currentLoadId.current;
+      await loadPatientHistoryInternal(patientId, loadId);
     }
   }, []);
 
   const clearPatient = useCallback(() => {
+    // Cancel any pending requests
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    currentLoadId.current++;
+
     setSelectedPatient(null);
     setPatientHistory(null);
     localStorage.removeItem('selectedPatientId');
@@ -102,7 +160,7 @@ export const PatientProvider = ({ children }) => {
   const refreshPatient = useCallback(async () => {
     if (selectedPatient) {
       const patientId = selectedPatient._id || selectedPatient.id;
-      await loadPatient(patientId);
+      await loadPatientInternal(patientId);
     }
   }, [selectedPatient]);
 
@@ -136,6 +194,15 @@ export const PatientProvider = ({ children }) => {
     const last = (selectedPatient.lastName || '?')[0];
     return `${first}${last}`.toUpperCase();
   }, [selectedPatient]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const value = {
     // State

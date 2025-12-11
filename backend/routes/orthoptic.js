@@ -22,52 +22,52 @@ const { protect, authorize } = require('../middleware/auth');
 router.use(protect);
 
 // Statistics route
-router.get('/stats', getOrthopticStats);
+router.get('/stats', authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse', 'manager'), getOrthopticStats);
 
 // Patient-specific routes
 router.get(
   '/patient/:patientId/history',
-  authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+  authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'),
   getPatientOrthopticHistory
 );
 
 router.get(
   '/patient/:patientId/progress',
-  authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+  authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'),
   getTreatmentProgress
 );
 
 // Exam-specific routes (must come after patient routes)
-router.get('/:id/compare', compareWithPrevious);
-router.get('/:id/report', generateReport);
+router.get('/:id/compare', authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist'), compareWithPrevious);
+router.get('/:id/report', authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist'), generateReport);
 router.put(
   '/:id/complete',
-  authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+  authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'),
   completeOrthopticExam
 );
 router.put(
   '/:id/sign',
-  authorize('admin', 'doctor', 'ophthalmologist'),
+  authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist'),
   signOrthopticExam
 );
 router.post(
   '/:id/attachments',
-  authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+  authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'),
   addAttachment
 );
 
 // Main CRUD routes
 router.route('/')
-  .get(getOrthopticExams)
+  .get(authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'), getOrthopticExams)
   .post(
-    authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+    authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist'),
     createOrthopticExam
   );
 
 router.route('/:id')
-  .get(getOrthopticExam)
+  .get(authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'), getOrthopticExam)
   .put(
-    authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+    authorize('admin', 'doctor', 'ophthalmologist', 'orthoptist'),
     updateOrthopticExam
   )
   .delete(

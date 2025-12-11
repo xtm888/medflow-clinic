@@ -1,5 +1,6 @@
 import { AlertCircle, FileText, Pill, DollarSign, Upload, ClipboardList } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 /**
  * PendingActionsWidget - Shows pending actions requiring user attention
@@ -13,6 +14,7 @@ import { Link } from 'react-router-dom';
  * - Accountants: Invoices to create, pending payments
  */
 const PendingActionsWidget = ({ userRole, actions = [] }) => {
+  const [showAll, setShowAll] = useState(false);
   // Role-specific action configurations
   const getRoleActions = () => {
     switch (userRole) {
@@ -168,7 +170,7 @@ const PendingActionsWidget = ({ userRole, actions = [] }) => {
           </div>
         ) : (
           <>
-            {roleActions.slice(0, 5).map((action, index) => {
+            {(showAll ? roleActions : roleActions.slice(0, 5)).map((action, index) => {
               const ActionIcon = getActionIcon(action.type);
               const urgencyBadge = getUrgencyBadge(action.urgency);
 
@@ -187,11 +189,6 @@ const PendingActionsWidget = ({ userRole, actions = [] }) => {
                         <p className="font-medium text-gray-900 text-sm">{action.title}</p>
                         {action.description && (
                           <p className="text-xs text-gray-600 mt-1">{action.description}</p>
-                        )}
-                        {action.patient && (
-                          <p className="text-xs text-gray-500 mt-1">
-                            Patient: <span className="font-medium">{action.patient}</span>
-                          </p>
                         )}
                       </div>
 
@@ -228,8 +225,11 @@ const PendingActionsWidget = ({ userRole, actions = [] }) => {
 
             {roleActions.length > 5 && (
               <div className="text-center pt-2">
-                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
-                  Voir toutes les actions ({roleActions.length})
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-sm text-blue-600 hover:text-blue-800 font-medium hover:underline"
+                >
+                  {showAll ? 'Voir moins' : `Voir toutes les actions (${roleActions.length})`}
                 </button>
               </div>
             )}

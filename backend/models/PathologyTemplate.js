@@ -46,7 +46,8 @@ const pathologyTemplateSchema = new mongoose.Schema({
   },
   laterality: {
     type: [String],
-    enum: ['OD', 'OG', 'ODG', 'Droite', 'Gauche', 'Bilatéral'],
+    // OD=Right eye, OS/OG=Left eye, OU/ODG=Both eyes (supporting both standards)
+    enum: ['OD', 'OS', 'OU', 'OG', 'ODG'],
     default: []
   },
   severity: {

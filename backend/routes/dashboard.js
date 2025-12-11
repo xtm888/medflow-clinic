@@ -2,13 +2,15 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { optionalClinic } = require('../middleware/clinicAuth');
 const Appointment = require('../models/Appointment');
 const Visit = require('../models/Visit');
 const Prescription = require('../models/Prescription');
 const Invoice = require('../models/Invoice');
 
-// Protect all routes
+// Protect all routes and add clinic context
 router.use(protect);
+router.use(optionalClinic);
 
 // @desc    Get dashboard statistics
 // @route   GET /api/dashboard/stats
@@ -19,18 +21,28 @@ router.get('/stats', asyncHandler(async (req, res) => {
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  const [todayAppointments, waitingCount, pendingPrescriptions, todayRevenue] = await Promise.all([
+  // Get first day of current month
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const firstDayOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+
+  // Multi-clinic: Build base query with clinic filter
+  const clinicFilter = (req.clinicId && !req.accessAllClinics) ? { clinic: req.clinicId } : {};
+
+  const [todayAppointments, waitingCount, pendingPrescriptions, todayRevenue, todayConsultations, monthlyStats] = await Promise.all([
     Appointment.countDocuments({
+      ...clinicFilter,
       date: { $gte: today, $lt: tomorrow }
     }),
     Appointment.countDocuments({
+      ...clinicFilter,
       date: { $gte: today, $lt: tomorrow },
-      status: 'checked-in'
+      status: { $in: ['checked-in', 'in-progress', 'waiting', 'scheduled'] }
     }),
-    Prescription.countDocuments({ status: 'pending' }),
+    Prescription.countDocuments({ ...clinicFilter, status: 'pending' }),
     Invoice.aggregate([
       {
         $match: {
+          ...clinicFilter,
           createdAt: { $gte: today, $lt: tomorrow },
           status: 'paid'
         }
@@ -38,9 +50,43 @@ router.get('/stats', asyncHandler(async (req, res) => {
       {
         $group: {
           _id: null,
-          total: { $sum: '$totalAmount' }
+          total: { $sum: '$summary.amountPaid' }
         }
       }
+    ]),
+    // Today's completed consultations (visits)
+    Visit.countDocuments({
+      ...clinicFilter,
+      visitDate: { $gte: today, $lt: tomorrow }
+    }),
+    // This month's totals
+    Promise.all([
+      // Monthly visits count
+      Visit.countDocuments({
+        ...clinicFilter,
+        visitDate: { $gte: firstDayOfMonth, $lt: firstDayOfNextMonth }
+      }),
+      // Monthly revenue
+      Invoice.aggregate([
+        {
+          $match: {
+            ...clinicFilter,
+            createdAt: { $gte: firstDayOfMonth, $lt: firstDayOfNextMonth },
+            status: { $in: ['paid', 'partial'] }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$summary.amountPaid' }
+          }
+        }
+      ]),
+      // Monthly appointments count
+      Appointment.countDocuments({
+        ...clinicFilter,
+        date: { $gte: firstDayOfMonth, $lt: firstDayOfNextMonth }
+      })
     ])
   ]);
 
@@ -50,7 +96,11 @@ router.get('/stats', asyncHandler(async (req, res) => {
       todayPatients: todayAppointments,
       waitingNow: waitingCount,
       revenue: todayRevenue[0]?.total || 0,
-      pendingPrescriptions
+      pendingPrescriptions,
+      todayConsultations,
+      monthlyVisits: monthlyStats[0],
+      monthlyRevenue: monthlyStats[1][0]?.total || 0,
+      monthlyAppointments: monthlyStats[2]
     }
   });
 }));
@@ -70,6 +120,11 @@ router.get('/today-tasks', asyncHandler(async (req, res) => {
     status: { $in: ['scheduled', 'confirmed', 'checked-in'] }
   };
 
+  // Multi-clinic: Filter by clinic unless admin with accessAllClinics
+  if (req.clinicId && !req.accessAllClinics) {
+    query.clinic = req.clinicId;
+  }
+
   // If user is a provider, filter by their appointments
   if (['doctor', 'ophthalmologist', 'orthoptist'].includes(req.user.role)) {
     query.provider = req.user.id;
@@ -80,15 +135,85 @@ router.get('/today-tasks', asyncHandler(async (req, res) => {
     .sort('startTime')
     .lean();
 
-  const tasks = appointments.map(apt => ({
-    id: apt._id,
-    type: 'appointment',
-    title: apt.patient ? `${apt.patient.firstName} ${apt.patient.lastName}` : 'Unknown Patient',
-    description: apt.reason || apt.type || 'Consultation',
-    time: apt.startTime ? new Date(apt.startTime).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
-    priority: apt.priority || 'normal',
-    link: '/queue'
-  }));
+  const tasks = appointments.map(apt => {
+    const patientId = apt.patient?._id;
+    const patientName = apt.patient ? `${apt.patient.firstName} ${apt.patient.lastName}` : 'Unknown Patient';
+
+    // Determine task type and link based on user role and appointment status
+    let taskDescription = apt.reason || apt.type || 'Consultation';
+    let taskLink = '/queue';
+
+    switch (req.user.role) {
+      case 'receptionist':
+      case 'secretary':
+        // Receptionists handle check-ins
+        if (apt.status === 'scheduled' || apt.status === 'confirmed') {
+          taskDescription = `Enregistrement - ${apt.reason || apt.type || 'Consultation'}`;
+          taskLink = `/queue`;
+        } else {
+          taskLink = `/patients/${patientId}`;
+        }
+        break;
+
+      case 'doctor':
+      case 'ophthalmologist':
+        // Doctors handle consultations
+        if (apt.status === 'checked-in' || apt.status === 'in-progress') {
+          taskDescription = `Consultation - ${apt.reason || apt.type || 'Examen'}`;
+          taskLink = `/ophthalmology/new-consultation?patientId=${patientId}`;
+        } else {
+          taskDescription = `RDV prévu - ${apt.reason || apt.type || 'Consultation'}`;
+          taskLink = `/queue`;
+        }
+        break;
+
+      case 'nurse':
+        // Nurses handle vitals and triage
+        if (apt.status === 'checked-in') {
+          taskDescription = `Signes vitaux - ${patientName}`;
+          taskLink = `/nurse/vitals/${patientId}`;
+        } else {
+          taskDescription = `Préparer - ${apt.reason || apt.type || 'Consultation'}`;
+          taskLink = `/patients/${patientId}`;
+        }
+        break;
+
+      case 'orthoptist':
+        // Orthoptists handle orthoptic exams
+        if (apt.status === 'checked-in' || apt.status === 'in-progress') {
+          taskDescription = `Examen orthoptique - ${patientName}`;
+          taskLink = `/orthoptic-exams?patientId=${patientId}`;
+        } else {
+          taskLink = `/queue`;
+        }
+        break;
+
+      case 'pharmacist':
+        // Pharmacists see prescription tasks (different endpoint should provide this)
+        taskDescription = apt.reason || 'Consultation programmée';
+        taskLink = `/patients/${patientId}?tab=prescriptions`;
+        break;
+
+      case 'admin':
+      default:
+        // Admins get overview links
+        taskLink = `/patients/${patientId}`;
+        break;
+    }
+
+    return {
+      id: apt._id,
+      type: 'appointment',
+      title: patientName,
+      description: taskDescription,
+      time: apt.date ? new Date(apt.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '',
+      priority: apt.priority || 'normal',
+      link: taskLink,
+      patientId: patientId,
+      appointmentId: apt._id,
+      status: apt.status
+    };
+  });
 
   res.status(200).json({
     success: true,
@@ -102,6 +227,11 @@ router.get('/today-tasks', asyncHandler(async (req, res) => {
 router.get('/recent-patients', asyncHandler(async (req, res) => {
   // Get recent visits
   const query = {};
+
+  // Multi-clinic: Filter by clinic unless admin with accessAllClinics
+  if (req.clinicId && !req.accessAllClinics) {
+    query.clinic = req.clinicId;
+  }
 
   // If user is a provider, filter by their visits
   if (['doctor', 'ophthalmologist', 'orthoptist'].includes(req.user.role)) {
@@ -156,14 +286,17 @@ router.get('/recent-patients', asyncHandler(async (req, res) => {
 router.get('/pending-actions', asyncHandler(async (req, res) => {
   const actions = [];
 
+  // Multi-clinic: Build base clinic filter
+  const clinicFilter = (req.clinicId && !req.accessAllClinics) ? { clinic: req.clinicId } : {};
+
   // Query for user-specific items if provider
   const userQuery = ['doctor', 'ophthalmologist', 'orthoptist'].includes(req.user.role)
-    ? { primaryProvider: req.user.id }
-    : {};
+    ? { ...clinicFilter, primaryProvider: req.user.id }
+    : { ...clinicFilter };
 
   const prescriberQuery = ['doctor', 'ophthalmologist'].includes(req.user.role)
-    ? { prescriber: req.user.id }
-    : {};
+    ? { ...clinicFilter, prescriber: req.user.id }
+    : { ...clinicFilter };
 
   // Get unsigned visits
   const unsignedVisits = await Visit.find({
@@ -196,6 +329,19 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
   unsignedByPatient.forEach(data => {
     const count = data.visits.length;
     const patientName = `${data.patient?.firstName || ''} ${data.patient?.lastName || ''}`;
+    const patientId = data.patient?._id;
+
+    // Determine link based on role
+    let actionLink = `/patients/${patientId}?tab=ophthalmology`;
+    if (['doctor', 'ophthalmologist'].includes(req.user.role)) {
+      // Doctors go to ophthalmology section to see/sign visits
+      actionLink = `/patients/${patientId}?tab=ophthalmology`;
+    } else if (req.user.role === 'admin') {
+      // Admins can see all unsigned notes
+      actionLink = `/patients/${patientId}?tab=ophthalmology`;
+    }
+    // Other roles shouldn't see these, but if they do, link to patient
+
     actions.push({
       id: data.mostRecentId,
       type: 'unsigned_note',
@@ -203,7 +349,9 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
       description: `Patient: ${patientName} - ${new Date(data.mostRecentDate).toLocaleDateString('fr-FR')}`,
       urgency: 'high',
       patient: patientName,
-      link: `/visits/${data.mostRecentId}`
+      patientId: patientId,
+      link: actionLink,
+      visitId: data.mostRecentId
     });
   });
 
@@ -218,6 +366,20 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
     .lean();
 
   pendingPrescriptions.forEach(p => {
+    const patientId = p.patient?._id;
+
+    // Determine link based on role
+    let actionLink = `/patients/${patientId}?tab=prescriptions`;
+    if (req.user.role === 'pharmacist') {
+      // Pharmacists go to pharmacy dashboard to process
+      actionLink = `/pharmacy?prescriptionId=${p._id}`;
+    } else if (['doctor', 'ophthalmologist'].includes(req.user.role)) {
+      // Doctors review/edit prescriptions
+      actionLink = `/prescriptions/${p._id}`;
+    } else if (req.user.role === 'admin') {
+      actionLink = `/prescriptions/${p._id}`;
+    }
+
     actions.push({
       id: p._id,
       type: 'prescription_pending',
@@ -225,12 +387,15 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
       description: `${p.patient?.firstName || ''} ${p.patient?.lastName || ''}`,
       urgency: 'medium',
       patient: `${p.patient?.firstName || ''} ${p.patient?.lastName || ''}`,
-      link: '/prescriptions'
+      patientId: patientId,
+      link: actionLink,
+      prescriptionId: p._id
     });
   });
 
   // Get overdue follow-ups
   const overdueFollowups = await Appointment.find({
+    ...clinicFilter,
     ...(userQuery.primaryProvider ? { provider: userQuery.primaryProvider } : {}),
     type: 'follow-up',
     date: { $lt: new Date() },
@@ -242,6 +407,20 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
     .lean();
 
   overdueFollowups.forEach(a => {
+    const patientId = a.patient?._id;
+
+    // Determine link based on role
+    let actionLink = `/patients/${patientId}?tab=appointments`;
+    if (['receptionist', 'secretary'].includes(req.user.role)) {
+      // Receptionists reschedule appointments
+      actionLink = `/appointments?appointmentId=${a._id}`;
+    } else if (['doctor', 'ophthalmologist'].includes(req.user.role)) {
+      // Doctors view patient appointments
+      actionLink = `/patients/${patientId}?tab=appointments`;
+    } else if (req.user.role === 'admin') {
+      actionLink = `/appointments?appointmentId=${a._id}`;
+    }
+
     actions.push({
       id: a._id,
       type: 'overdue_followup',
@@ -249,7 +428,9 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
       description: `${a.patient?.firstName || ''} ${a.patient?.lastName || ''} - Prévu le ${new Date(a.date).toLocaleDateString('fr-FR')}`,
       urgency: 'high',
       patient: `${a.patient?.firstName || ''} ${a.patient?.lastName || ''}`,
-      link: '/appointments'
+      patientId: patientId,
+      link: actionLink,
+      appointmentId: a._id
     });
   });
 
@@ -274,9 +455,13 @@ router.get('/revenue-trends', asyncHandler(async (req, res) => {
     startDate.setDate(startDate.getDate() - 90);
   }
 
+  // Multi-clinic: Build clinic filter for aggregation
+  const clinicFilter = (req.clinicId && !req.accessAllClinics) ? { clinic: req.clinicId } : {};
+
   const trends = await Invoice.aggregate([
     {
       $match: {
+        ...clinicFilter,
         createdAt: { $gte: startDate },
         status: 'paid'
       }
@@ -286,7 +471,7 @@ router.get('/revenue-trends', asyncHandler(async (req, res) => {
         _id: {
           $dateToString: { format: '%Y-%m-%d', date: '$createdAt' }
         },
-        revenue: { $sum: '$totalAmount' },
+        revenue: { $sum: '$summary.amountPaid' },
         count: { $sum: 1 }
       }
     },

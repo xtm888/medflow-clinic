@@ -1,8 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Settings as SettingsIcon, User, Bell, Lock, Database, Palette, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { Settings as SettingsIcon, User, Bell, Lock, Database, Palette, Globe, Check, AlertCircle, Loader2, DollarSign, Plus, Trash2, Edit2, X, Calendar, Server, Shield, UserPlus, Tag } from 'lucide-react';
+import CalendarIntegration from '../components/settings/CalendarIntegration';
+import LISIntegration from '../components/settings/LISIntegration';
+import RolePermissionsManager from '../components/settings/RolePermissionsManager';
+import ReferrerManagement from '../components/settings/ReferrerManagement';
+import TarifManagement from '../components/settings/TarifManagement';
 import { useAuth } from '../contexts/AuthContext';
 import settingsService from '../services/settingsService';
+import billingService from '../services/billingService';
 import { toast } from 'react-toastify';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 export default function Settings() {
   // Get user from auth context
@@ -54,8 +61,33 @@ export default function Settings() {
     confirmPassword: ''
   });
 
+  // Tax configuration state
+  const [taxes, setTaxes] = useState([]);
+  const [taxesLoading, setTaxesLoading] = useState(false);
+  const [showTaxModal, setShowTaxModal] = useState(false);
+  const [editingTax, setEditingTax] = useState(null);
+  const [taxForm, setTaxForm] = useState({
+    name: '',
+    code: '',
+    rate: '',
+    type: 'percentage',
+    applicableCategories: ['all'],
+    description: '',
+    active: true
+  });
+
   // User role check
   const isAdmin = user?.role === 'admin';
+  const canManageBilling = ['admin', 'accountant'].includes(user?.role); // ADDED: Accountants can manage billing settings
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
 
   useEffect(() => {
     fetchSettings();
@@ -103,8 +135,7 @@ export default function Settings() {
       await settingsService.updateProfile(profile);
       toast.success('Profil mis à jour avec succès');
 
-      // Update localStorage
-      const { user } = useAuth();
+      // Update localStorage with user from auth context (already available at component level)
       localStorage.setItem('user', JSON.stringify({
         ...user,
         firstName: profile.firstName,
@@ -195,15 +226,135 @@ export default function Settings() {
     }
   };
 
+  // Tax configuration handlers
+  const fetchTaxes = async () => {
+    try {
+      setTaxesLoading(true);
+      const response = await billingService.getTaxRates({ active: 'all' });
+      setTaxes(response.data || []);
+    } catch (error) {
+      console.error('Error fetching taxes:', error);
+      toast.error('Erreur lors du chargement des taux de taxe');
+    } finally {
+      setTaxesLoading(false);
+    }
+  };
+
+  const handleOpenTaxModal = (tax = null) => {
+    if (tax) {
+      setEditingTax(tax);
+      setTaxForm({
+        name: tax.name || '',
+        code: tax.code || '',
+        rate: tax.rate?.toString() || '',
+        type: tax.type || 'percentage',
+        applicableCategories: tax.applicableCategories || ['all'],
+        description: tax.description || '',
+        active: tax.active !== false
+      });
+    } else {
+      setEditingTax(null);
+      setTaxForm({
+        name: '',
+        code: '',
+        rate: '',
+        type: 'percentage',
+        applicableCategories: ['all'],
+        description: '',
+        active: true
+      });
+    }
+    setShowTaxModal(true);
+  };
+
+  const handleCloseTaxModal = () => {
+    setShowTaxModal(false);
+    setEditingTax(null);
+    setTaxForm({
+      name: '',
+      code: '',
+      rate: '',
+      type: 'percentage',
+      applicableCategories: ['all'],
+      description: '',
+      active: true
+    });
+  };
+
+  const handleSaveTax = async () => {
+    if (!taxForm.name || !taxForm.code || !taxForm.rate) {
+      toast.error('Veuillez remplir tous les champs obligatoires');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      const taxData = {
+        ...taxForm,
+        rate: parseFloat(taxForm.rate)
+      };
+
+      if (editingTax) {
+        await billingService.updateTaxRate(editingTax._id, taxData);
+        toast.success('Taux de taxe mis à jour');
+      } else {
+        await billingService.createTaxRate(taxData);
+        toast.success('Taux de taxe créé');
+      }
+
+      handleCloseTaxModal();
+      fetchTaxes();
+    } catch (error) {
+      console.error('Error saving tax:', error);
+      toast.error(error.response?.data?.error || 'Erreur lors de la sauvegarde');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteTax = (taxId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Désactiver ce taux de taxe?',
+      message: 'Êtes-vous sûr de vouloir désactiver ce taux de taxe? Les factures existantes ne seront pas affectées.',
+      type: 'warning',
+      onConfirm: async () => {
+        try {
+          await billingService.deleteTaxRate(taxId);
+          toast.success('Taux de taxe désactivé');
+          fetchTaxes();
+        } catch (error) {
+          console.error('Error deleting tax:', error);
+          toast.error('Erreur lors de la désactivation');
+        }
+      }
+    });
+  };
+
   const tabs = [
     { id: 'profile', icon: User, label: 'Profil' },
     { id: 'notifications', icon: Bell, label: 'Notifications' },
+    { id: 'calendar', icon: Calendar, label: 'Calendrier' },
     { id: 'security', icon: Lock, label: 'Sécurité' },
+    ...(canManageBilling ? [
+      { id: 'billing', icon: DollarSign, label: 'Facturation' },
+      { id: 'tarifs', icon: Tag, label: 'Tarifs' },
+      { id: 'referrers', icon: UserPlus, label: 'Référents' }
+    ] : []),
     ...(isAdmin ? [
       { id: 'clinic', icon: Database, label: 'Clinique' },
-      { id: 'twilio', icon: Globe, label: 'Twilio' }
+      { id: 'permissions', icon: Shield, label: 'Permissions' },
+      { id: 'twilio', icon: Globe, label: 'Twilio' },
+      { id: 'lis', icon: Server, label: 'LIS/HL7' }
     ] : [])
   ];
+
+  // Fetch taxes when billing tab is active
+  useEffect(() => {
+    if (activeTab === 'billing' && taxes.length === 0 && canManageBilling) {
+      fetchTaxes();
+    }
+  }, [activeTab, canManageBilling]);
 
   if (loading) {
     return (
@@ -473,6 +624,13 @@ export default function Settings() {
             </div>
           )}
 
+          {/* Calendar Integration */}
+          {activeTab === 'calendar' && (
+            <div className="card">
+              <CalendarIntegration />
+            </div>
+          )}
+
           {/* Security Settings */}
           {activeTab === 'security' && (
             <div className="card">
@@ -600,8 +758,282 @@ export default function Settings() {
               </div>
             </div>
           )}
+
+          {/* LIS/HL7 Integration (Admin only) */}
+          {activeTab === 'lis' && isAdmin && (
+            <div className="card">
+              <LISIntegration />
+            </div>
+          )}
+
+          {/* Role Permissions (Admin only) */}
+          {activeTab === 'permissions' && isAdmin && (
+            <div className="card">
+              <RolePermissionsManager />
+            </div>
+          )}
+
+          {/* Billing/Tax Configuration (Admin & Accountant) */}
+          {activeTab === 'billing' && canManageBilling && (
+            <div className="space-y-6">
+              {/* Tax Rates Configuration */}
+              <div className="card">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Taux de Taxe</h2>
+                    <p className="text-sm text-gray-500">Configurez les taux de taxe appliqués aux factures</p>
+                  </div>
+                  <button
+                    onClick={() => handleOpenTaxModal()}
+                    className="btn btn-primary flex items-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Ajouter</span>
+                  </button>
+                </div>
+
+                {taxesLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary-600" />
+                    <span className="ml-2 text-gray-600">Chargement...</span>
+                  </div>
+                ) : taxes.length > 0 ? (
+                  <div className="space-y-3">
+                    {taxes.map((tax) => (
+                      <div
+                        key={tax._id}
+                        className={`p-4 rounded-lg border ${
+                          tax.active ? 'bg-white border-gray-200' : 'bg-gray-50 border-gray-300 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={`w-3 h-3 rounded-full ${tax.active ? 'bg-green-500' : 'bg-gray-400'}`} />
+                            <div>
+                              <p className="font-semibold text-gray-900">{tax.name}</p>
+                              <p className="text-sm text-gray-500">Code: {tax.code}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-4">
+                            <div className="text-right">
+                              <p className="font-bold text-lg text-primary-600">
+                                {tax.rate}{tax.type === 'percentage' ? '%' : ' CDF'}
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                {tax.applicableCategories?.includes('all') ? 'Toutes catégories' : tax.applicableCategories?.join(', ')}
+                              </p>
+                            </div>
+                            <div className="flex space-x-2">
+                              <button
+                                onClick={() => handleOpenTaxModal(tax)}
+                                className="p-2 text-gray-500 hover:text-primary-600 hover:bg-primary-50 rounded"
+                                title="Modifier"
+                              >
+                                <Edit2 className="h-4 w-4" />
+                              </button>
+                              {tax.active && (
+                                <button
+                                  onClick={() => handleDeleteTax(tax._id)}
+                                  className="p-2 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded"
+                                  title="Désactiver"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {tax.description && (
+                          <p className="mt-2 text-sm text-gray-600 border-t pt-2">{tax.description}</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <DollarSign className="h-12 w-12 mx-auto text-gray-300 mb-4" />
+                    <p>Aucun taux de taxe configuré</p>
+                    <p className="text-sm">Cliquez sur "Ajouter" pour créer un taux de taxe</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Info Card */}
+              <div className="card bg-blue-50 border-blue-200">
+                <div className="flex items-start space-x-3">
+                  <AlertCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-blue-700">
+                    <p className="font-medium mb-1">À propos de la configuration des taxes</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Les taxes actives sont automatiquement appliquées aux nouvelles factures</li>
+                      <li>Vous pouvez configurer des taxes en pourcentage ou en montant fixe</li>
+                      <li>Les catégories permettent d'appliquer des taxes spécifiques à certains types de services</li>
+                      <li>La désactivation d'une taxe n'affecte pas les factures existantes</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tarifs Management (Admin & Accountant) */}
+          {activeTab === 'tarifs' && canManageBilling && (
+            <div className="card">
+              <TarifManagement />
+            </div>
+          )}
+
+          {/* Referrers Management (Admin & Accountant) */}
+          {activeTab === 'referrers' && canManageBilling && (
+            <div className="card">
+              <ReferrerManagement />
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Tax Modal */}
+      {showTaxModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  {editingTax ? 'Modifier le taux de taxe' : 'Ajouter un taux de taxe'}
+                </h2>
+                <button onClick={handleCloseTaxModal} className="text-gray-400 hover:text-gray-600">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nom *</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="ex: TVA"
+                  value={taxForm.name}
+                  onChange={(e) => setTaxForm({ ...taxForm, name: e.target.value })}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Code *</label>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="ex: VAT"
+                  value={taxForm.code}
+                  onChange={(e) => setTaxForm({ ...taxForm, code: e.target.value.toUpperCase() })}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Taux *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="input"
+                    placeholder="ex: 18"
+                    value={taxForm.rate}
+                    onChange={(e) => setTaxForm({ ...taxForm, rate: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                  <select
+                    className="input"
+                    value={taxForm.type}
+                    onChange={(e) => setTaxForm({ ...taxForm, type: e.target.value })}
+                  >
+                    <option value="percentage">Pourcentage (%)</option>
+                    <option value="fixed">Montant fixe (CDF)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Catégories applicables</label>
+                <select
+                  className="input"
+                  value={taxForm.applicableCategories[0] || 'all'}
+                  onChange={(e) => setTaxForm({ ...taxForm, applicableCategories: [e.target.value] })}
+                >
+                  <option value="all">Toutes les catégories</option>
+                  <option value="consultation">Consultation</option>
+                  <option value="procedure">Procédure</option>
+                  <option value="imaging">Imagerie</option>
+                  <option value="laboratory">Laboratoire</option>
+                  <option value="medication">Médicaments</option>
+                  <option value="surgery">Chirurgie</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <textarea
+                  className="input"
+                  rows="2"
+                  placeholder="Description optionnelle..."
+                  value={taxForm.description}
+                  onChange={(e) => setTaxForm({ ...taxForm, description: e.target.value })}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="tax-active"
+                  checked={taxForm.active}
+                  onChange={(e) => setTaxForm({ ...taxForm, active: e.target.checked })}
+                  className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
+                />
+                <label htmlFor="tax-active" className="text-sm text-gray-700">
+                  Taxe active
+                </label>
+              </div>
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end space-x-3">
+              <button
+                onClick={handleCloseTaxModal}
+                className="btn btn-secondary"
+                disabled={saving}
+              >
+                Annuler
+              </button>
+              <button
+                onClick={handleSaveTax}
+                disabled={saving || !taxForm.name || !taxForm.code || !taxForm.rate}
+                className="btn btn-primary"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Sauvegarde...
+                  </>
+                ) : (
+                  editingTax ? 'Mettre à jour' : 'Créer'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 }

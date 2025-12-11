@@ -3,10 +3,10 @@ import { createSlice } from '@reduxjs/toolkit';
 const initialState = {
   sidebarCollapsed: false,
   theme: 'light',
-  language: 'en',
+  language: 'fr',
   preferences: {
-    dateFormat: 'MM/DD/YYYY',
-    timeFormat: '12h',
+    dateFormat: 'DD/MM/YYYY',
+    timeFormat: '24h',
     currency: 'USD',
   },
   modals: {

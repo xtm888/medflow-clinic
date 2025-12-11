@@ -142,35 +142,88 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// Background sync for queued operations
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered');
+// SYNC_ENTITIES - must match syncService.js
+const SYNC_ENTITIES = [
+  'patients', 'appointments', 'prescriptions', 'ophthalmologyExams', 'users',
+  'visits', 'labOrders', 'labResults', 'invoices', 'queue',
+  'pharmacyInventory', 'orthopticExams', 'glassesOrders', 'frameInventory',
+  'contactLensInventory', 'clinics', 'approvals', 'stockReconciliations'
+];
 
-  if (event.tag === 'sync-queue') {
-    event.waitUntil(syncQueuedOperations());
+// Background sync handler
+self.addEventListener('sync', (event) => {
+  console.log('[SW] Background sync triggered:', event.tag);
+
+  // Handle both tag formats for compatibility
+  if (event.tag === 'medflow-sync-queue' || event.tag === 'sync-queue') {
+    event.waitUntil(
+      handleBackgroundSync()
+    );
   }
+
+  // Handle entity-specific sync tags
+  SYNC_ENTITIES.forEach(entity => {
+    if (event.tag === `sync-${entity}`) {
+      event.waitUntil(
+        handleEntitySync(entity)
+      );
+    }
+  });
 });
 
-// Sync queued operations when online
-async function syncQueuedOperations() {
-  try {
-    // Get all clients
-    const clients = await self.clients.matchAll();
+// Handle general background sync
+async function handleBackgroundSync() {
+  console.log('[SW] Processing background sync queue');
 
-    // Send message to all clients to trigger sync
+  try {
+    // Notify the main thread to trigger sync
+    const clients = await self.clients.matchAll({ type: 'window' });
     clients.forEach(client => {
       client.postMessage({
-        type: 'SYNC_START',
+        type: 'BACKGROUND_SYNC',
         timestamp: Date.now()
       });
     });
 
-    console.log('[SW] Sync completed successfully');
+    // Call the global sync function if available
+    if (typeof self.__medflowSync === 'function') {
+      await self.__medflowSync();
+    }
+
+    return true;
   } catch (error) {
-    console.error('[SW] Sync failed:', error);
+    console.error('[SW] Background sync failed:', error);
+    throw error; // Re-throw to retry
+  }
+}
+
+// Handle entity-specific sync
+async function handleEntitySync(entity) {
+  console.log(`[SW] Syncing entity: ${entity}`);
+
+  try {
+    const clients = await self.clients.matchAll({ type: 'window' });
+    clients.forEach(client => {
+      client.postMessage({
+        type: 'ENTITY_SYNC',
+        entity,
+        timestamp: Date.now()
+      });
+    });
+    return true;
+  } catch (error) {
+    console.error(`[SW] Entity sync failed for ${entity}:`, error);
     throw error;
   }
 }
+
+// Periodic background sync (for browsers that support it)
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'medflow-periodic-sync') {
+    console.log('[SW] Periodic sync triggered');
+    event.waitUntil(handleBackgroundSync());
+  }
+});
 
 // Push notifications
 self.addEventListener('push', (event) => {

@@ -25,6 +25,11 @@ const prescriptionSchema = new mongoose.Schema({
     ref: 'Visit'
     // Not required - prescriptions can be created without a visit
   },
+  consultationSession: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'ConsultationSession'
+    // Links prescription to the specific consultation session for full traceability
+  },
   appointment: {
     type: mongoose.Schema.ObjectId,
     ref: 'Appointment'
@@ -80,6 +85,11 @@ const prescriptionSchema = new mongoose.Schema({
       type: mongoose.Schema.ObjectId,
       ref: 'PharmacyInventory'
     },
+    // Flag for medications that will be dispensed externally (not from our inventory)
+    isExternalItem: {
+      type: Boolean,
+      default: false
+    },
 
     // Basic prescription details
     name: String, // Display name (auto-populated from drug)
@@ -87,7 +97,88 @@ const prescriptionSchema = new mongoose.Schema({
     brand: String,
     strength: String,
     form: String,
-    route: String,
+
+    // Administration Route (Enhanced)
+    route: {
+      type: String,
+      enum: [
+        'oral',           // Par voie orale
+        'topical',        // Topique (peau)
+        'ophthalmic',     // Ophtalmique (gouttes, pommade oculaire)
+        'otic',           // Auriculaire (gouttes oreille)
+        'nasal',          // Nasal (spray, gouttes)
+        'inhalation',     // Inhalation (aérosol)
+        'sublingual',     // Sublingual
+        'buccal',         // Buccal
+        'rectal',         // Rectal (suppositoire)
+        'vaginal',        // Vaginal
+        'transdermal',    // Transdermique (patch)
+        'subcutaneous',   // Sous-cutané (SC)
+        'intramuscular',  // Intramusculaire (IM)
+        'intravenous',    // Intraveineux (IV)
+        'intravitreal',   // Intravitréen (IVT) - injection dans le vitré
+        'subconjunctival', // Sous-conjonctival
+        'periocular',     // Périoculaire
+        'intracameral',   // Intracamérulaire
+        'other'
+      ],
+      default: 'oral'
+    },
+
+    // Application Location (critical for ophthalmology)
+    applicationLocation: {
+      // Eye selection for ophthalmic medications
+      eye: {
+        type: String,
+        enum: ['OD', 'OS', 'OU', null], // Right, Left, Both, or N/A
+        default: null
+      },
+      // Specific location within the eye area
+      eyeArea: {
+        type: String,
+        enum: [
+          'conjunctiva',      // Conjonctive
+          'cornea',           // Cornée
+          'eyelid',           // Paupière
+          'lacrimal',         // Voies lacrymales
+          'periorbital',      // Périorbitaire
+          'intraocular',      // Intraoculaire
+          null
+        ],
+        default: null
+      },
+      // Body part for non-ophthalmic applications
+      bodyPart: String,
+      // Specific instructions for location
+      specificLocation: String
+    },
+
+    // Tapering Schedule (for corticosteroids, opioids, etc.)
+    tapering: {
+      enabled: {
+        type: Boolean,
+        default: false
+      },
+      reason: String, // e.g., "Sevrage corticoïde", "Réduction progressive"
+      schedule: [{
+        stepNumber: {
+          type: Number,
+          required: true
+        },
+        dose: {
+          amount: Number,
+          unit: String
+        },
+        frequency: String, // e.g., "4x/jour", "2x/jour"
+        frequencyTimes: Number, // numeric version: 4, 2, 1
+        durationDays: Number,
+        startDay: Number, // Day number from start of treatment
+        endDay: Number,
+        instructions: String
+      }],
+      totalDurationDays: Number,
+      template: String // Reference to template used, e.g., "prednisolone_standard"
+    },
 
     // Dosage instructions
     dosage: {
@@ -196,7 +287,21 @@ const prescriptionSchema = new mongoose.Schema({
         ref: 'User'
       },
       dispensedAt: Date,
-      pharmacyNotes: String
+      pharmacyNotes: String,
+      // Link to invoice item for unified billing (CRITICAL FIX 2)
+      invoiceItemId: {
+        type: mongoose.Schema.ObjectId
+      },
+      // Payment tracking
+      paymentStatus: {
+        type: String,
+        enum: ['pending', 'partial', 'paid', 'refunded'],
+        default: 'pending'
+      },
+      paidAt: Date,
+      refundIssued: { type: Boolean, default: false },
+      refundDate: Date,
+      refundNotes: String
     },
 
     // Pricing (from inventory at time of prescription)
@@ -205,7 +310,7 @@ const prescriptionSchema = new mongoose.Schema({
       totalCost: Number,
       currency: {
         type: String,
-        default: 'CFA'
+        default: process.env.BASE_CURRENCY || 'CDF'
       }
     }
   }],
@@ -319,6 +424,111 @@ const prescriptionSchema = new mongoose.Schema({
     coverageStatus: String
   },
 
+  // Prior Authorization (comprehensive workflow)
+  priorAuthorization: {
+    required: {
+      type: Boolean,
+      default: false
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'submitted', 'in_review', 'approved', 'denied', 'appeal_pending', 'expired'],
+      default: 'pending'
+    },
+    referenceNumber: String,
+    requestedAt: Date,
+    requestedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+
+    // Insurance info for PA
+    insurance: {
+      provider: String,
+      policyNumber: String,
+      groupNumber: String
+    },
+
+    // Clinical justification
+    clinicalInfo: {
+      diagnosis: [{
+        code: String,
+        description: String
+      }],
+      justification: String,
+      previousTherapies: [{
+        therapy: String,
+        dates: String,
+        outcome: String
+      }],
+      urgency: {
+        type: String,
+        enum: ['routine', 'urgent', 'emergent'],
+        default: 'routine'
+      }
+    },
+
+    // Contact info
+    contact: {
+      phone: String,
+      fax: String
+    },
+
+    // Supporting documents
+    documents: [{
+      type: String,
+      name: String,
+      url: String,
+      uploadedAt: Date
+    }],
+
+    // Approval details
+    approval: {
+      authorizationNumber: String,
+      approvedAt: Date,
+      approvedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      },
+      approvedQuantity: Number,
+      approvedRefills: Number,
+      approvedDays: Number,
+      expirationDate: Date
+    },
+
+    // Denial details
+    denial: {
+      deniedAt: Date,
+      deniedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      },
+      reason: String,
+      appealDeadline: Date
+    },
+
+    // Insurance response
+    insuranceResponse: mongoose.Schema.Types.Mixed,
+
+    // Status history
+    statusHistory: [{
+      status: String,
+      previousStatus: String,
+      changedAt: Date,
+      changedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      },
+      notes: String
+    }],
+
+    lastUpdated: Date,
+    lastUpdatedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  },
+
   // E-Prescription Details
   ePrescription: {
     enabled: {
@@ -335,6 +545,163 @@ const prescriptionSchema = new mongoose.Schema({
     errorMessage: String
   },
 
+  // ============================================
+  // EXTERNAL PHARMACY DISPATCH
+  // For prescriptions to be filled at external pharmacies
+  // ============================================
+  externalPharmacy: {
+    // Is this prescription for external fulfillment?
+    enabled: {
+      type: Boolean,
+      default: false
+    },
+
+    // Reason for external dispatch
+    reason: {
+      type: String,
+      enum: [
+        'patient_preference',       // Patient wants to use their preferred pharmacy
+        'out_of_stock',             // Medication not available in-house
+        'specialty_medication',     // Requires compounding or specialty pharmacy
+        'insurance_requirement',    // Insurance requires specific pharmacy
+        'controlled_substance',     // Controlled substance restrictions
+        'after_hours',              // Clinic pharmacy closed
+        'geographic',               // Patient lives far from clinic
+        'other'
+      ]
+    },
+    reasonNotes: String,
+
+    // External facility reference
+    externalFacility: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'ExternalFacility'
+    },
+
+    // Manual pharmacy info (if not in directory)
+    pharmacy: {
+      name: String,
+      address: String,
+      phone: String,
+      fax: String,
+      email: String,
+      contactPerson: String,
+      licenseNumber: String
+    },
+
+    // Dispatch status
+    dispatchStatus: {
+      type: String,
+      enum: ['pending', 'dispatched', 'acknowledged', 'preparing', 'ready', 'dispensed', 'failed', 'cancelled'],
+      default: 'pending'
+    },
+
+    // Dispatch details
+    dispatchedAt: Date,
+    dispatchedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    dispatchMethod: {
+      type: String,
+      enum: ['email', 'fax', 'api', 'print', 'sms', 'portal', 'phone', 'manual']
+    },
+
+    // Email dispatch
+    emailDispatch: {
+      sentTo: [String],
+      subject: String,
+      attachments: [String],
+      messageId: String,
+      sentAt: Date
+    },
+
+    // Print dispatch
+    printDispatch: {
+      copies: Number,
+      printedAt: Date,
+      printedBy: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      },
+      handedTo: String // Patient name if handed directly
+    },
+
+    // Fax dispatch
+    faxDispatch: {
+      faxNumber: String,
+      sentAt: Date,
+      confirmationNumber: String,
+      pagesTransmitted: Number
+    },
+
+    // Acknowledgment from external pharmacy
+    acknowledgment: {
+      received: { type: Boolean, default: false },
+      receivedAt: Date,
+      receivedBy: String, // Name of pharmacist at external pharmacy
+      pharmacyReferenceNumber: String,
+      estimatedReadyTime: Date,
+      notes: String
+    },
+
+    // Pickup/Delivery details
+    pickup: {
+      ready: { type: Boolean, default: false },
+      readyAt: Date,
+      readyNotificationSent: Boolean,
+      notificationMethod: String,
+      pickedUpAt: Date,
+      pickedUpBy: String, // Patient or authorized person
+      deliveryOption: {
+        type: String,
+        enum: ['pickup', 'delivery', 'mail']
+      },
+      deliveryAddress: String,
+      deliveryNotes: String
+    },
+
+    // Completion tracking
+    completed: { type: Boolean, default: false },
+    completedAt: Date,
+    completedBy: String, // External pharmacist name
+    dispensedQuantity: Number,
+    partialDispense: Boolean,
+    partialDispenseReason: String,
+    receiptDocument: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Document'
+    },
+
+    // Issues/Problems
+    issues: [{
+      type: { type: String }, // 'out_of_stock', 'insurance_denial', 'requires_auth', 'patient_no_show', etc.
+      description: String,
+      reportedAt: Date,
+      reportedBy: String,
+      resolved: Boolean,
+      resolvedAt: Date,
+      resolution: String
+    }],
+
+    // Link to FulfillmentDispatch for unified tracking
+    fulfillmentDispatch: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'FulfillmentDispatch'
+    },
+
+    // Status history for audit
+    statusHistory: [{
+      status: String,
+      timestamp: { type: Date, default: Date.now },
+      by: { type: mongoose.Schema.ObjectId, ref: 'User' },
+      notes: String
+    }],
+
+    // Special instructions for external pharmacy
+    instructions: String
+  },
+
   // Verification
   verification: {
     required: {
@@ -348,6 +715,25 @@ const prescriptionSchema = new mongoose.Schema({
     verifiedAt: Date,
     method: String, // manual, automatic, phone
     notes: String
+  },
+
+  // Safety Override Documentation (for critical cases)
+  // When a doctor needs to prescribe despite safety warnings
+  safetyOverride: {
+    overridden: {
+      type: Boolean,
+      default: false
+    },
+    overriddenAt: Date,
+    overriddenBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    reason: {
+      type: String,
+      minlength: [20, 'Override reason must be at least 20 characters']
+    },
+    acknowledgedWarnings: [String] // List of safety warnings that were acknowledged and overridden
   },
 
   // Controlled Substance Info
@@ -398,6 +784,12 @@ const prescriptionSchema = new mongoose.Schema({
     reason: String
   },
 
+  // Force cancellation without inventory release (admin override)
+  forceCancelWithoutRelease: {
+    type: Boolean,
+    default: false
+  },
+
   // Renewal
   renewal: {
     isRenewal: {
@@ -431,6 +823,17 @@ const prescriptionSchema = new mongoose.Schema({
     timestamp: Date,
     resolved: Boolean
   }],
+
+  // Inventory Reservation Tracking
+  inventoryReserved: {
+    type: Boolean,
+    default: false
+  },
+  inventoryReservedAt: Date,
+  inventoryReservedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
 
   // Audit
   createdBy: {
@@ -469,6 +872,13 @@ prescriptionSchema.index({ prescriber: 1, status: 1 });
 prescriptionSchema.index({ prescriptionId: 1 }, { unique: true, sparse: true });
 prescriptionSchema.index({ type: 1, status: 1 });
 prescriptionSchema.index({ validUntil: 1 });
+prescriptionSchema.index({ consultationSession: 1 }); // For traceability queries
+
+// CRITICAL: Multi-clinic indexes for data isolation
+prescriptionSchema.index({ clinic: 1, dateIssued: -1 }); // Clinic-scoped prescription list
+prescriptionSchema.index({ clinic: 1, status: 1 }); // Clinic-scoped status filtering
+prescriptionSchema.index({ clinic: 1, patient: 1 }); // Clinic-scoped patient prescriptions
+prescriptionSchema.index({ clinic: 1, type: 1, status: 1 }); // Clinic-scoped type/status combo
 
 // Virtual for isExpired
 prescriptionSchema.virtual('isExpired').get(function() {
@@ -522,6 +932,73 @@ prescriptionSchema.pre('save', function(next) {
         const error = new Error('Reservation date cannot be in the future');
         error.name = 'ValidationError';
         error.statusCode = 400;
+        return next(error);
+      }
+    }
+  }
+
+  next();
+});
+
+// CRITICAL FIX 1: Validate that medication prescriptions MUST have inventoryItem linked
+// This prevents dispensing medications without backing inventory
+prescriptionSchema.pre('save', function(next) {
+  if (this.type === 'medication' && this.medications?.length > 0) {
+    for (const med of this.medications) {
+      // Only validate if medication is not marked as external
+      if (!med.isExternalItem && !med.inventoryItem) {
+        const error = new Error(
+          `Medication "${med.name || 'unnamed'}" must be linked to an inventory item. ` +
+          `Either link it to PharmacyInventory or mark it as isExternalItem=true if it will be dispensed elsewhere.`
+        );
+        error.name = 'ValidationError';
+        error.statusCode = 400;
+        return next(error);
+      }
+    }
+  }
+  next();
+});
+
+// BUSINESS LOGIC: Validate optical prescriptions require lens type for dispensing
+prescriptionSchema.pre('save', function(next) {
+  // Only validate when prescription is being marked as ready or dispensed
+  if (this.type === 'optical' && ['ready', 'dispensed'].includes(this.status)) {
+    // Check if lens type is specified for glasses prescriptions
+    if (this.optical?.prescriptionType && ['glasses', 'both'].includes(this.optical.prescriptionType)) {
+      if (!this.optical.lensType) {
+        const error = new Error('Lens type is required for glasses prescriptions before dispensing. Please specify: single vision, bifocal, progressive, etc.');
+        error.name = 'ValidationError';
+        error.statusCode = 400;
+        error.field = 'optical.lensType';
+        return next(error);
+      }
+    }
+
+    // Validate that optical data has prescription values
+    if (this.optical?.prescriptionType === 'glasses' || this.optical?.prescriptionType === 'both') {
+      const hasODData = this.optical.OD && (this.optical.OD.sphere !== undefined || this.optical.OD.cylinder !== undefined);
+      const hasOSData = this.optical.OS && (this.optical.OS.sphere !== undefined || this.optical.OS.cylinder !== undefined);
+
+      if (!hasODData && !hasOSData) {
+        const error = new Error('Optical prescription must have refraction values for at least one eye');
+        error.name = 'ValidationError';
+        error.statusCode = 400;
+        error.field = 'optical.OD/OS';
+        return next(error);
+      }
+    }
+
+    // Validate contact lens prescriptions have required parameters
+    if (this.optical?.prescriptionType === 'contacts' || this.optical?.prescriptionType === 'both') {
+      const hasContactOD = this.optical.OD && (this.optical.OD.baseCurve || this.optical.OD.diameter);
+      const hasContactOS = this.optical.OS && (this.optical.OS.baseCurve || this.optical.OS.diameter);
+
+      if ((this.optical?.prescriptionType === 'contacts') && !hasContactOD && !hasContactOS) {
+        const error = new Error('Contact lens prescription must have base curve and diameter for at least one eye');
+        error.name = 'ValidationError';
+        error.statusCode = 400;
+        error.field = 'optical.baseCurve/diameter';
         return next(error);
       }
     }
@@ -618,6 +1095,17 @@ prescriptionSchema.methods.reserveInventory = async function(userId, session = n
   const results = [];
 
   for (const medication of this.medications) {
+    // Skip external items - they don't need inventory reservation
+    if (medication.isExternalItem) {
+      results.push({
+        medicationName: medication.name,
+        success: true,
+        external: true,
+        message: 'External item - no inventory reservation needed'
+      });
+      continue;
+    }
+
     if (!medication.inventoryItem) {
       results.push({
         medicationName: medication.name,
@@ -732,7 +1220,7 @@ prescriptionSchema.methods.releaseInventoryReservations = async function(session
 };
 
 // Fulfill reservation and dispense medication
-// NOW WITH TRANSACTION SUPPORT
+// NOW WITH TRANSACTION SUPPORT AND COMPENSATING ROLLBACK
 prescriptionSchema.methods.dispenseMedication = async function(medicationIndex, dispensedBy, pharmacyNotes, session = null) {
   if (this.type !== 'medication' || !this.medications[medicationIndex]) {
     throw new Error('Invalid medication index');
@@ -744,88 +1232,485 @@ prescriptionSchema.methods.dispenseMedication = async function(medicationIndex, 
     throw new Error('No active reservation for this medication');
   }
 
-  const PharmacyInventory = require('./PharmacyInventory');
-  // Use session for transaction support
-  const inventoryItem = await PharmacyInventory.findById(medication.inventoryItem).session(session);
+  // Track operations for compensating rollback
+  const rollbackStack = [];
+  let ownSession = false;
 
-  if (!inventoryItem) {
-    throw new Error('Inventory item not found');
-  }
-
-  // Find the reservation in inventory
-  const reservation = inventoryItem.reservations.find(
-    r => r.reservationId === medication.reservation.reservationId && r.status === 'active'
-  );
-
-  if (!reservation) {
-    throw new Error('Reservation not found in inventory');
-  }
-
-  // CRITICAL: Check for expired batches before dispensing
-  const now = new Date();
-  for (const reservedBatch of reservation.batches) {
-    const batch = inventoryItem.batches.find(b => b.lotNumber === reservedBatch.lotNumber);
-    if (batch && batch.expirationDate && new Date(batch.expirationDate) < now) {
-      throw new Error(`Cannot dispense expired medication: Lot ${batch.lotNumber} expired on ${batch.expirationDate}`);
+  // Create session if not provided
+  if (!session) {
+    try {
+      const mongoose = require('mongoose');
+      session = await mongoose.startSession();
+      await session.startTransaction();
+      ownSession = true;
+    } catch (e) {
+      console.warn('[dispenseMedication] Transactions not available - using compensating pattern');
     }
   }
 
-  // Deduct stock from batches
-  for (const reservedBatch of reservation.batches) {
-    const batch = inventoryItem.batches.find(b => b.lotNumber === reservedBatch.lotNumber);
-    if (batch) {
-      batch.quantity -= reservedBatch.quantity;
-      batch.reserved = Math.max(0, (batch.reserved || 0) - reservedBatch.quantity);
+  const PharmacyInventory = require('./PharmacyInventory');
 
-      if (batch.quantity <= 0) {
-        batch.status = 'depleted';
+  try {
+    // Use session for transaction support
+    const inventoryItem = await PharmacyInventory.findById(medication.inventoryItem).session(session);
+
+    if (!inventoryItem) {
+      throw new Error('Inventory item not found');
+    }
+
+    // Find the reservation in inventory
+    const reservation = inventoryItem.reservations.find(
+      r => r.reservationId === medication.reservation.reservationId && r.status === 'active'
+    );
+
+    if (!reservation) {
+      throw new Error('Reservation not found in inventory');
+    }
+
+    // CRITICAL: Check for expired batches before dispensing
+    const now = new Date();
+    for (const reservedBatch of reservation.batches) {
+      const batch = inventoryItem.batches.find(b => b.lotNumber === reservedBatch.lotNumber);
+      if (batch && batch.expirationDate && new Date(batch.expirationDate) < now) {
+        throw new Error(`Cannot dispense expired medication: Lot ${batch.lotNumber} expired on ${batch.expirationDate}`);
+      }
+    }
+
+    // Deduct stock from batches
+    for (const reservedBatch of reservation.batches) {
+      const batch = inventoryItem.batches.find(b => b.lotNumber === reservedBatch.lotNumber);
+      if (batch) {
+        batch.quantity -= reservedBatch.quantity;
+        batch.reserved = Math.max(0, (batch.reserved || 0) - reservedBatch.quantity);
+
+        if (batch.quantity <= 0) {
+          batch.status = 'depleted';
+        }
+      }
+    }
+
+    // Update inventory totals
+    const previousStock = inventoryItem.inventory.currentStock;
+    inventoryItem.inventory.currentStock -= reservation.quantity;
+    inventoryItem.inventory.reserved = Math.max(0, inventoryItem.inventory.reserved - reservation.quantity);
+    inventoryItem.inventory.dispensed = (inventoryItem.inventory.dispensed || 0) + reservation.quantity;
+
+    // Mark reservation as fulfilled
+    reservation.status = 'fulfilled';
+
+    // Use session for save if provided
+    await inventoryItem.save(session ? { session } : {});
+
+    // Track for rollback
+    rollbackStack.push({
+      type: 'inventory_deduction',
+      inventoryItemId: inventoryItem._id,
+      quantity: reservation.quantity,
+      previousStock,
+      reservationId: medication.reservation.reservationId
+    });
+
+    // Update prescription medication
+    medication.reservation.status = 'fulfilled';
+    medication.dispensing = {
+      dispensed: true,
+      dispensedQuantity: reservation.quantity,
+      dispensedBatches: medication.reservation.reservedBatches,
+      dispensedBy: dispensedBy,
+      dispensedAt: new Date(),
+      pharmacyNotes: pharmacyNotes,
+      // invoiceItemId will be set by markMedicationsCompletedOnVisitInvoice
+      invoiceItemId: null
+    };
+
+    rollbackStack.push({
+      type: 'medication_dispensed',
+      medicationIndex
+    });
+
+    // Update prescription status
+    const allDispensed = this.medications.every(m => m.dispensing?.dispensed);
+    const someDispensed = this.medications.some(m => m.dispensing?.dispensed);
+
+    if (allDispensed) {
+      this.status = 'dispensed';
+      this.pharmacyStatus = 'dispensed';
+
+      // UNIFIED BILLING: Mark medication items on visit invoice as completed
+      // Instead of generating a separate invoice
+      try {
+        await this.markMedicationsCompletedOnVisitInvoice(dispensedBy, session);
+      } catch (err) {
+        console.error('Error marking medications on visit invoice:', err);
+        // Fall back to legacy invoice generation if visit invoice not found
+        if (!this.invoice) {
+          try {
+            const invoiceResult = await this.generateInvoice(dispensedBy, session);
+            if (invoiceResult.invoice) {
+              this.invoice = invoiceResult.invoice._id;
+            }
+          } catch (err2) {
+            console.error('Error auto-generating invoice for prescription:', err2);
+          }
+        }
+      }
+    } else if (someDispensed) {
+      this.status = 'partial';
+      this.pharmacyStatus = 'preparing';
+    }
+
+    // Use session for save if provided
+    await this.save(session ? { session } : {});
+
+    // Commit if we own the session
+    if (ownSession && session) {
+      await session.commitTransaction();
+    }
+
+    return {
+      success: true,
+      medication: medication.name,
+      dispensedQuantity: reservation.quantity,
+      batches: medication.reservation.reservedBatches,
+      invoiceGenerated: allDispensed && this.invoice ? true : false
+    };
+
+  } catch (error) {
+    console.error(`[dispenseMedication] Error:`, error);
+
+    // Rollback if we own the session
+    if (ownSession && session) {
+      await session.abortTransaction();
+    } else if (!session && rollbackStack.length > 0) {
+      // Compensating rollback without transaction
+      await this._executeDispensingRollback(rollbackStack);
+    }
+
+    throw error;
+  } finally {
+    if (ownSession && session) {
+      session.endSession();
+    }
+  }
+};
+
+// Compensating rollback for dispensing operations
+prescriptionSchema.methods._executeDispensingRollback = async function(rollbackStack) {
+  const PharmacyInventory = require('./PharmacyInventory');
+
+  console.log(`[COMPENSATING ROLLBACK] Rolling back ${rollbackStack.length} dispensing operations`);
+
+  // Reverse order (LIFO)
+  while (rollbackStack.length > 0) {
+    const operation = rollbackStack.pop();
+
+    try {
+      switch (operation.type) {
+        case 'inventory_deduction':
+          // Restore inventory
+          await PharmacyInventory.findByIdAndUpdate(operation.inventoryItemId, {
+            $inc: { 'inventory.currentStock': operation.quantity }
+          });
+          console.log(`[COMPENSATING ROLLBACK] Restored inventory: +${operation.quantity} to ${operation.inventoryItemId}`);
+          break;
+
+        case 'medication_dispensed':
+          // Un-mark medication as dispensed
+          this.medications[operation.medicationIndex].dispensing = {
+            dispensed: false,
+            dispensedAt: null,
+            dispensedBy: null
+          };
+          await this.save();
+          console.log(`[COMPENSATING ROLLBACK] Reverted medication dispensing at index ${operation.medicationIndex}`);
+          break;
+
+        default:
+          console.warn(`[COMPENSATING ROLLBACK] Unknown operation type: ${operation.type}`);
+      }
+    } catch (rollbackError) {
+      console.error(`[COMPENSATING ROLLBACK] Failed to rollback ${operation.type}:`, rollbackError);
+
+      // Create critical alert
+      const Alert = require('./Alert');
+      await Alert.create({
+        category: 'system',
+        priority: 'critical',
+        title: 'Dispensing Rollback Failure',
+        message: `Failed to rollback ${operation.type} for prescription ${this.prescriptionId}`,
+        metadata: {
+          prescriptionId: this.prescriptionId,
+          operationType: operation.type,
+          operation,
+          error: rollbackError.message
+        },
+        requiresAcknowledgment: true
+      }).catch(err => console.error('Failed to create alert:', err));
+    }
+  }
+
+  console.log(`[COMPENSATING ROLLBACK] Dispensing rollback complete`);
+};
+
+// Generate invoice for prescription (pharmacy billing)
+prescriptionSchema.methods.generateInvoice = async function(userId, session = null) {
+  if (this.invoice) {
+    const Invoice = require('./Invoice');
+    const existingInvoice = await Invoice.findById(this.invoice).session(session);
+    if (existingInvoice) {
+      return { success: true, invoice: existingInvoice, alreadyExists: true };
+    }
+  }
+
+  // Only medication prescriptions generate invoices
+  if (this.type !== 'medication' || !this.medications || this.medications.length === 0) {
+    return { success: false, message: 'No medications to invoice' };
+  }
+
+  const Invoice = require('./Invoice');
+  const items = [];
+  let subtotal = 0;
+
+  // Add each dispensed medication to invoice
+  for (const med of this.medications) {
+    if (med.dispensing?.dispensed && med.pricing?.totalCost) {
+      items.push({
+        category: 'medication',
+        description: med.name || med.genericName || 'Médicament',
+        code: med.drug?.toString() || 'MED-001',
+        quantity: med.dispensing.dispensedQuantity || med.quantity,
+        unitPrice: med.pricing.unitPrice || 0,
+        subtotal: med.pricing.totalCost,
+        total: med.pricing.totalCost
+      });
+      subtotal += med.pricing.totalCost;
+    }
+  }
+
+  if (items.length === 0) {
+    return { success: false, message: 'No billable medications' };
+  }
+
+  // Calculate totals
+  const tax = 0; // No tax for medications
+  const total = subtotal + tax;
+
+  // Create invoice
+  const invoiceData = {
+    patient: this.patient,
+    prescription: this._id,
+    items,
+    summary: {
+      subtotal,
+      tax,
+      total,
+      amountDue: total,
+      amountPaid: 0
+    },
+    currency: process.env.BASE_CURRENCY || 'CDF', // Franc Congolais
+    status: 'issued',
+    dateIssued: new Date(),
+    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+    createdBy: userId,
+    notes: {
+      internal: `Auto-generated from prescription ${this.prescriptionId}`
+    }
+  };
+
+  let invoice;
+  if (session) {
+    const invoices = await Invoice.create([invoiceData], { session });
+    invoice = invoices[0];
+  } else {
+    invoice = await Invoice.create(invoiceData);
+  }
+
+  // FIXED: Update Patient.invoices array to maintain accurate patient invoice list
+  // This ensures patient balance calculations include all invoices
+  try {
+    const Patient = require('./Patient');
+    await Patient.findByIdAndUpdate(
+      this.patient,
+      { $addToSet: { invoices: invoice._id } },
+      session ? { session } : {}
+    );
+  } catch (err) {
+    console.error('Error updating patient invoices array:', err.message);
+    // Don't fail the invoice creation if patient update fails
+  }
+
+  return {
+    success: true,
+    invoice,
+    itemsCount: items.length,
+    total
+  };
+};
+
+// UNIFIED BILLING: Mark medication items as completed on visit invoice
+// This is called when medications are dispensed to update the visit's unified invoice
+prescriptionSchema.methods.markMedicationsCompletedOnVisitInvoice = async function(dispensedBy, session = null) {
+  // Get visit from prescription
+  if (!this.visit) {
+    throw new Error('Prescription has no associated visit - cannot mark items on visit invoice');
+  }
+
+  const Invoice = require('./Invoice');
+  const Visit = require('./Visit');
+
+  // Find the visit and its invoice
+  const visit = await Visit.findById(this.visit).session(session);
+  if (!visit || !visit.billing?.invoice) {
+    throw new Error('Visit has no invoice - cannot mark items');
+  }
+
+  // Find the visit's invoice
+  const invoice = await Invoice.findById(visit.billing.invoice).session(session);
+  if (!invoice) {
+    throw new Error('Visit invoice not found');
+  }
+
+  // CRITICAL FIX 2: Mark each dispensed medication as completed on the invoice
+  // Enhanced matching: Try invoiceItemId first, then fall back to description matching
+  let itemsUpdated = 0;
+  for (const med of this.medications) {
+    if (med.dispensing?.dispensed) {
+      let itemFound = false;
+
+      // FIRST: Try to match by invoiceItemId if it was previously stored
+      if (med.dispensing.invoiceItemId) {
+        const itemById = invoice.items.id(med.dispensing.invoiceItemId);
+        if (itemById && itemById.status !== 'completed' && itemById.status !== 'external') {
+          itemById.status = 'completed';
+          itemById.completedAt = new Date();
+          itemById.completedBy = dispensedBy;
+          itemsUpdated++;
+          itemFound = true;
+        }
+      }
+
+      // SECOND: Fall back to description/reference matching if no invoiceItemId match
+      if (!itemFound) {
+        const prescriptionRef = `Prescription:${this._id}`;
+
+        for (const item of invoice.items) {
+          // Match by category and description (or reference if exists)
+          const isMatch = item.category === 'medication' && (
+            item.reference === prescriptionRef ||
+            item.description === med.name ||
+            item.description === med.genericName ||
+            (item.description && med.name && item.description.includes(med.name))
+          );
+
+          if (isMatch && item.status !== 'completed' && item.status !== 'external') {
+            item.status = 'completed';
+            item.completedAt = new Date();
+            item.completedBy = dispensedBy;
+
+            // CRITICAL: Store the invoice item ID back to the medication for future reference
+            med.dispensing.invoiceItemId = item._id;
+
+            itemsUpdated++;
+            break; // Only update one item per medication
+          }
+        }
       }
     }
   }
 
-  // Update inventory totals
-  inventoryItem.inventory.currentStock -= reservation.quantity;
-  inventoryItem.inventory.reserved = Math.max(0, inventoryItem.inventory.reserved - reservation.quantity);
-  inventoryItem.inventory.dispensed = (inventoryItem.inventory.dispensed || 0) + reservation.quantity;
-
-  // Mark reservation as fulfilled
-  reservation.status = 'fulfilled';
-
-  // Use session for save if provided
-  await inventoryItem.save(session ? { session } : {});
-
-  // Update prescription medication
-  medication.reservation.status = 'fulfilled';
-  medication.dispensing = {
-    dispensed: true,
-    dispensedQuantity: reservation.quantity,
-    dispensedBatches: medication.reservation.reservedBatches,
-    dispensedBy: dispensedBy,
-    dispensedAt: new Date(),
-    pharmacyNotes: pharmacyNotes
-  };
-
-  // Update prescription status
-  const allDispensed = this.medications.every(m => m.dispensing?.dispensed);
-  const someDispensed = this.medications.some(m => m.dispensing?.dispensed);
-
-  if (allDispensed) {
-    this.status = 'dispensed';
-    this.pharmacyStatus = 'dispensed';
-  } else if (someDispensed) {
-    this.status = 'partial';
-    this.pharmacyStatus = 'preparing';
+  if (itemsUpdated > 0) {
+    await invoice.save(session ? { session } : {});
+    console.log(`[UNIFIED BILLING] Marked ${itemsUpdated} medication items as completed on invoice ${invoice.invoiceId}`);
   }
-
-  // Use session for save if provided
-  await this.save(session ? { session } : {});
 
   return {
     success: true,
-    medication: medication.name,
-    dispensedQuantity: reservation.quantity,
-    batches: medication.reservation.reservedBatches
+    invoiceId: invoice._id,
+    itemsUpdated
   };
 };
+
+// Post-save hook to update Patient.prescriptions array
+prescriptionSchema.post('save', async function(doc) {
+  // Only add to patient's prescriptions array if this is a new prescription
+  if (doc.wasNew && doc.patient) {
+    try {
+      const Patient = mongoose.model('Patient');
+      await Patient.findByIdAndUpdate(
+        doc.patient,
+        { $addToSet: { prescriptions: doc._id } },
+        { new: true }
+      );
+    } catch (err) {
+      console.error('Error updating patient prescriptions array:', err);
+    }
+  }
+});
+
+// Track if document is new for post-save hook
+prescriptionSchema.pre('save', function(next) {
+  this.wasNew = this.isNew;
+  next();
+});
+
+// CRITICAL: Auto-release inventory reservations when prescription is cancelled
+// BLOCKS cancellation if inventory release fails (unless forceCancelWithoutRelease is true)
+prescriptionSchema.pre('save', async function(next) {
+  // Check if status is being changed to 'cancelled'
+  if (this.isModified('status') && this.status === 'cancelled') {
+    // Check if there are reservations to release
+    const hasReservations = this.medications?.some(m =>
+      m.reservation?.status === 'reserved'
+    );
+
+    if (hasReservations && !this.forceCancelWithoutRelease) {
+      try {
+        // Release any held inventory reservations
+        const result = await this.releaseInventoryReservations();
+
+        // CRITICAL: Block cancellation if release fails
+        if (!result.success) {
+          const failedMeds = result.results
+            .filter(r => !r.success)
+            .map(r => `${r.medicationName}: ${r.error}`)
+            .join('; ');
+          return next(new Error(
+            `Cannot cancel prescription: Failed to release inventory reservations - ${failedMeds}. ` +
+            `Use forceCancelWithoutRelease=true to override (admin only).`
+          ));
+        }
+
+        if (result.results && result.results.length > 0) {
+          console.log(`Released inventory reservations for cancelled prescription ${this.prescriptionId}:`, result.results);
+        }
+
+        // Mark cancellation details if not already set
+        if (!this.cancellation?.cancelled) {
+          this.cancellation = this.cancellation || {};
+          this.cancellation.cancelled = true;
+          this.cancellation.cancelledAt = new Date();
+        }
+      } catch (error) {
+        // CRITICAL: Block cancellation on any error
+        return next(new Error(
+          `Cannot cancel prescription: Inventory release error - ${error.message}. ` +
+          `Use forceCancelWithoutRelease=true to override (admin only).`
+        ));
+      }
+    } else {
+      // No reservations or force override - just mark cancellation details
+      if (!this.cancellation?.cancelled) {
+        this.cancellation = this.cancellation || {};
+        this.cancellation.cancelled = true;
+        this.cancellation.cancelledAt = new Date();
+      }
+
+      if (this.forceCancelWithoutRelease) {
+        console.warn(`ADMIN OVERRIDE: Prescription ${this.prescriptionId} cancelled without releasing inventory reservations`);
+      }
+    }
+  }
+  next();
+});
 
 module.exports = mongoose.model('Prescription', prescriptionSchema);

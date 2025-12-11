@@ -8,9 +8,13 @@ export const rolePermissions = {
       'queue',
       'appointments',
       'clinical',
+      'inventory',
+      'procurement',
       'finance',
       'notifications',
-      'settings'
+      'settings',
+      'admin',
+      'audit'
     ],
     permissions: [
       'view_all_data',
@@ -18,11 +22,20 @@ export const rolePermissions = {
       'manage_system',
       'manage_financial',
       'manage_patients',
+      'register_patients',
       'manage_appointments',
       'manage_pharmacy',
       'manage_imaging',
       'view_reports',
-      'manage_settings'
+      'manage_settings',
+      // Prescription & dispensing permissions (admin can do everything)
+      'create_prescriptions',
+      'view_prescriptions',
+      'dispense_medications',
+      'verify_prescriptions',
+      // Invoice permissions
+      'create_invoices',
+      'manage_invoices'
     ]
   },
 
@@ -55,6 +68,7 @@ export const rolePermissions = {
       'queue',
       'appointments',
       'clinical',
+      'inventory',
       'notifications',
       'settings'
     ],
@@ -78,6 +92,7 @@ export const rolePermissions = {
       'dashboard',
       'patients',
       'queue',
+      'nurse-vitals',
       'appointments',
       'clinical',
       'notifications'
@@ -86,10 +101,15 @@ export const rolePermissions = {
       'view_patients',
       'update_vitals',
       'view_appointments',
+      'manage_appointments',      // ADDED: Can book any appointment
       'manage_queue',
       'view_prescriptions',
       'administer_medications',
-      'update_patient_notes'
+      'update_patient_notes',
+      'check_in_patients',
+      'register_patients',         // ADDED: Can register new patients (with face scan)
+      'view_lab_orders',          // ADDED: Can view lab orders
+      'order_imaging'             // ADDED: Can order any lab test
     ]
   },
 
@@ -99,6 +119,7 @@ export const rolePermissions = {
       'patients',
       'queue',
       'appointments',
+      'inventory',
       'finance',
       'notifications'
     ],
@@ -117,10 +138,12 @@ export const rolePermissions = {
     menuItems: [
       'dashboard',
       'patients',
+      'prescription-queue',
       'clinical',
       'notifications'
     ],
     permissions: [
+      'view_patients',             // ADDED: Can view FULL patient details (allergies, etc.)
       'view_prescriptions',
       'dispense_medications',
       'manage_inventory',
@@ -135,13 +158,19 @@ export const rolePermissions = {
       'dashboard',
       'patients',
       'queue',
+      'lab-worklist',
+      'lab-orders',
       'clinical',
+      'inventory',
       'notifications'
     ],
     permissions: [
-      'view_imaging_orders',
+      'view_lab_orders',
+      'collect_specimens',
+      'receive_specimens',
+      'enter_results',
+      'verify_results',
       'upload_results',
-      'manage_imaging',
       'view_patients',
       'update_test_status'
     ]
@@ -161,6 +190,142 @@ export const rolePermissions = {
       'manage_insurance_claims',
       'generate_reports'
     ]
+  },
+
+  manager: {
+    menuItems: [
+      'dashboard',
+      'patients',
+      'queue',
+      'appointments',
+      'clinical',
+      'inventory',
+      'finance',
+      'notifications'
+    ],
+    permissions: [
+      'view_all_data',
+      'view_reports',
+      'manage_queue',
+      'view_financial_reports',
+      'manage_staff_schedules'
+    ]
+  },
+
+  optician: {
+    menuItems: [
+      'dashboard',
+      'patients',
+      'queue',
+      'optical-shop',
+      'inventory',
+      'notifications'
+    ],
+    permissions: [
+      'view_patients',
+      'search_patients',
+      'view_prescriptions',
+      'create_glasses_orders',
+      'manage_glasses_orders',
+      'view_inventory',
+      'view_queue'
+    ]
+  },
+
+  technician: {
+    menuItems: [
+      'dashboard',
+      'clinical',
+      'optical-shop',
+      'inventory',
+      'notifications'
+    ],
+    permissions: [
+      'view_patients',
+      'manage_devices',
+      'view_imaging',
+      'upload_results',
+      'manage_equipment',
+      'verify_glasses_orders',
+      'manage_external_orders'
+    ]
+  },
+
+  orthoptist: {
+    menuItems: [
+      'dashboard',
+      'patients',
+      'queue',
+      'appointments',
+      'clinical',
+      'notifications'
+    ],
+    permissions: [
+      'view_patients',
+      'perform_orthoptic_exams',
+      'manage_appointments',
+      'view_prescriptions',
+      'update_patient_notes',
+      'view_queue'
+    ]
+  },
+
+  optometrist: {
+    menuItems: [
+      'dashboard',
+      'patients',
+      'queue',
+      'appointments',
+      'clinical',
+      'inventory',
+      'notifications'
+    ],
+    permissions: [
+      'view_patients',
+      'manage_patients',
+      'perform_eye_exams',
+      'create_optical_prescriptions',
+      'manage_glasses_orders',
+      'view_prescriptions',
+      'view_queue',
+      'manage_appointments'        // ADDED: Can manage own appointments only
+    ]
+  },
+
+  radiologist: {
+    menuItems: [
+      'dashboard',
+      'patients',
+      'clinical',
+      'notifications'
+    ],
+    permissions: [
+      'view_patients',
+      'view_imaging',
+      'upload_imaging_results',
+      'manage_imaging',
+      'create_imaging_reports'
+    ]
+  },
+
+  imaging_tech: {
+    menuItems: [
+      'dashboard',
+      'patients',
+      'queue',
+      'imaging-orders',
+      'clinical',
+      'notifications'
+    ],
+    permissions: [
+      'view_patients',
+      'view_imaging_orders',
+      'schedule_imaging',
+      'perform_imaging',
+      'upload_imaging_results',
+      'manage_imaging',
+      'view_queue'
+    ]
   }
 };
 
@@ -173,6 +338,8 @@ export const hasMenuAccess = (userRole, menuItem) => {
 // Helper function to check if a user has a specific permission
 export const hasPermission = (userRole, permission) => {
   if (!userRole || !rolePermissions[userRole]) return false;
+  // Admin has all permissions
+  if (userRole === 'admin') return true;
   return rolePermissions[userRole].permissions.includes(permission);
 };
 
@@ -185,134 +352,319 @@ export const getAccessibleMenuItems = (userRole) => {
 // Menu item configurations with details
 export const menuConfigurations = {
   dashboard: {
-    label: 'Dashboard',
+    label: 'Tableau de bord',
     path: '/dashboard',
     icon: 'LayoutDashboard',
-    description: 'Overview and statistics'
+    description: 'Aperçu et statistiques'
   },
   patients: {
     label: 'Patients',
     path: '/patients',
     icon: 'Users',
-    description: 'Manage patient records'
+    description: 'Gérer les dossiers patients'
   },
   queue: {
-    label: 'Queue',
+    label: 'File d\'attente',
     path: '/queue',
     icon: 'Clock',
-    description: 'Patient queue management'
+    description: 'Gestion de la file d\'attente'
   },
   appointments: {
-    label: 'Appointments',
+    label: 'Rendez-vous',
     path: '/appointments',
     icon: 'Calendar',
-    description: 'Schedule and manage appointments'
+    description: 'Planifier et gérer les rendez-vous'
   },
   pharmacy: {
-    label: 'Pharmacy',
+    label: 'Pharmacie',
     path: '/pharmacy',
     icon: 'Pill',
-    description: 'Medication inventory and dispensing'
+    description: 'Inventaire et délivrance des médicaments'
   },
   prescriptions: {
-    label: 'Prescriptions',
+    label: 'Ordonnances',
     path: '/prescriptions',
     icon: 'FileText',
-    description: 'Manage prescriptions'
+    description: 'Gérer les ordonnances'
   },
   imaging: {
-    label: 'Imaging',
+    label: 'Imagerie',
     path: '/imaging',
     icon: 'Image',
-    description: 'Medical imaging and lab results'
+    description: 'Imagerie médicale et résultats de laboratoire'
   },
   documents: {
     label: 'Documents',
     path: '/documents',
     icon: 'FileText',
-    description: 'Generate medical certificates and letters'
+    description: 'Générer des certificats et courriers médicaux'
   },
   notifications: {
     label: 'Notifications',
     path: '/notifications',
     icon: 'Bell',
-    description: 'System notifications'
+    description: 'Notifications système'
   },
   financial: {
-    label: 'Financial',
+    label: 'Rapports financiers',
     path: '/financial',
     icon: 'DollarSign',
-    description: 'Financial management'
+    description: 'Gestion financière'
   },
   invoicing: {
-    label: 'Invoicing',
+    label: 'Facturation',
     path: '/invoicing',
     icon: 'Receipt',
-    description: 'Billing and invoices'
+    description: 'Factures et paiements'
   },
   services: {
     label: 'Services',
     path: '/services',
     icon: 'Briefcase',
-    description: 'Service catalog'
+    description: 'Catalogue de services'
   },
   settings: {
-    label: 'Settings',
+    label: 'Paramètres',
     path: '/settings',
     icon: 'Settings',
-    description: 'System settings'
+    description: 'Paramètres système'
+  },
+  audit: {
+    label: 'Journal d\'audit',
+    path: '/audit',
+    icon: 'Shield',
+    description: 'Journaux d\'audit système'
   },
   // Consolidated Clinical menu with submenus
   clinical: {
-    label: 'Clinical',
+    label: 'Clinique',
     path: null,
     icon: 'Stethoscope',
-    description: 'Clinical modules',
+    description: 'Modules cliniques',
     subItems: [
-      { label: 'Prescriptions', path: '/prescriptions', icon: 'FileText' },
-      { label: 'Laboratory', path: '/laboratory', icon: 'FlaskConical' },
-      { label: 'Imaging', path: '/imaging', icon: 'Image' },
-      { label: 'Pharmacy', path: '/pharmacy', icon: 'Pill' },
-      { label: 'Ophthalmology', path: '/ophthalmology', icon: 'Eye' },
-      { label: 'IVT', path: '/ivt', icon: 'Syringe' },
-      { label: 'Devices', path: '/devices', icon: 'HardDrive' }
+      { label: 'Ordonnances', path: '/prescriptions', icon: 'FileText', roles: ['admin', 'doctor', 'ophthalmologist', 'pharmacist', 'nurse', 'optometrist'] },
+      { label: 'Laboratoire', path: '/laboratory', icon: 'FlaskConical', roles: ['admin', 'doctor', 'ophthalmologist', 'lab_technician', 'nurse'] },
+      { label: 'Imagerie', path: '/imaging', icon: 'Image', roles: ['admin', 'doctor', 'ophthalmologist', 'radiologist', 'technician', 'imaging_tech'] },
+      { label: 'Pharmacie', path: '/pharmacy', icon: 'Pill', roles: ['admin', 'pharmacist', 'doctor', 'ophthalmologist'] },
+      { label: 'Ophtalmologie', path: '/ophthalmology', icon: 'Eye', roles: ['admin', 'doctor', 'ophthalmologist', 'optometrist', 'nurse'] },
+      { label: 'Orthoptie', path: '/orthoptic', icon: 'Eye', roles: ['admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'] },
+      { label: 'IVT', path: '/ivt', icon: 'Syringe', roles: ['admin', 'doctor', 'ophthalmologist', 'nurse'] },
+      { label: 'Chirurgie', path: '/surgery', icon: 'Scissors', roles: ['admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'] },
+      { label: 'Boutique Optique', path: '/optical-shop', icon: 'Glasses', roles: ['admin', 'optician', 'technician', 'receptionist', 'manager', 'ophthalmologist', 'optometrist'] },
+      { label: 'Appareils', path: '/devices', icon: 'HardDrive', roles: ['admin', 'technician', 'imaging_tech', 'doctor', 'ophthalmologist'] }
     ]
   },
   // Consolidated Finance menu with submenus
   finance: {
-    label: 'Finance',
+    label: 'Finances',
     path: null,
     icon: 'DollarSign',
-    description: 'Financial management',
+    description: 'Gestion financière',
     subItems: [
-      { label: 'Invoicing', path: '/invoicing', icon: 'Receipt' },
-      { label: 'Financial Reports', path: '/financial', icon: 'BarChart3' },
-      { label: 'Services', path: '/services', icon: 'Briefcase' }
+      { label: 'Facturation', path: '/invoicing', icon: 'Receipt', roles: ['admin', 'receptionist', 'accountant'] },
+      { label: 'Rapports financiers', path: '/financial', icon: 'BarChart3', roles: ['admin', 'accountant', 'manager'] },
+      { label: 'Conventions', path: '/companies', icon: 'Building2', roles: ['admin', 'accountant', 'manager'] },
+      { label: 'Approbations', path: '/approvals', icon: 'ShieldCheck', roles: ['admin', 'accountant', 'manager', 'doctor', 'receptionist'] },
+      { label: 'Services', path: '/services', icon: 'Briefcase', roles: ['admin', 'accountant', 'manager'] }
     ]
   },
   // Keep individual items for direct access (legacy support)
   ophthalmology: {
-    label: 'Ophthalmology',
+    label: 'Ophtalmologie',
     path: '/ophthalmology',
     icon: 'Eye',
-    description: 'Eye care and examinations'
+    description: 'Soins et examens oculaires'
   },
   ivt: {
-    label: 'IVT Injections',
+    label: 'Injections IVT',
     path: '/ivt',
     icon: 'Stethoscope',
-    description: 'Intravitreal injection tracking and management'
+    description: 'Suivi et gestion des injections intravitréennes'
   },
-  'pharmacy-inventory': {
-    label: 'Pharmacy Inventory',
-    path: '/pharmacy-inventory',
-    icon: 'Pill',
-    description: 'Medication inventory and stock management'
+  surgery: {
+    label: 'Chirurgie',
+    path: '/surgery',
+    icon: 'Scissors',
+    description: 'Gestion des cas chirurgicaux et agenda opératoire'
   },
   devices: {
-    label: 'Devices',
+    label: 'Appareils',
     path: '/devices',
     icon: 'HardDrive',
-    description: 'Medical device integration and management'
+    description: 'Intégration et gestion des appareils médicaux'
+  },
+  'prescription-queue': {
+    label: 'File Ordonnances',
+    path: '/prescription-queue',
+    icon: 'FileText',
+    description: 'Vérification et délivrance des ordonnances'
+  },
+  'lab-worklist': {
+    label: 'Liste de Travail',
+    path: '/lab-worklist',
+    icon: 'FlaskConical',
+    description: 'Gestion des prélèvements et saisie des résultats'
+  },
+  'nurse-vitals': {
+    label: 'Saisie Signes Vitaux',
+    path: '/nurse-vitals',
+    icon: 'Activity',
+    description: 'Saisie des signes vitaux patients'
+  },
+  // Disabled - Lab Orders page requires MUI (use Laboratory page instead)
+  // 'lab-orders': {
+  //   label: 'Commandes Labo',
+  //   path: '/lab-orders',
+  //   icon: 'FlaskConical',
+  //   description: 'Gestion des commandes de laboratoire'
+  // },
+  // Disabled - Imaging Orders page requires MUI (use Imaging page instead)
+  // 'imaging-orders': {
+  //   label: 'Commandes Imagerie',
+  //   path: '/imaging-orders',
+  //   icon: 'Scan',
+  //   description: 'Gestion des commandes d\'imagerie médicale'
+  // },
+  laboratory: {
+    label: 'Laboratoire',
+    path: '/laboratory',
+    icon: 'FlaskConical',
+    description: 'Gestion du laboratoire et résultats'
+  },
+  orthoptic: {
+    label: 'Orthoptie',
+    path: '/orthoptic',
+    icon: 'Eye',
+    description: 'Examens orthoptiques'
+  },
+  correspondence: {
+    label: 'Correspondance',
+    path: '/correspondence',
+    icon: 'Mail',
+    description: 'Courriers et correspondances médicales'
+  },
+  companies: {
+    label: 'Conventions',
+    path: '/companies',
+    icon: 'Building2',
+    description: 'Gestion des entreprises et conventions'
+  },
+  approvals: {
+    label: 'Approbations',
+    path: '/approvals',
+    icon: 'ShieldCheck',
+    description: 'Demandes d\'approbation préalable (délibérations)'
+  },
+  // Inventory menu with submenus (Optical + Lab)
+  inventory: {
+    label: 'Inventaire',
+    path: null,
+    icon: 'Package',
+    description: 'Gestion des stocks',
+    subItems: [
+      { label: 'Montures', path: '/frame-inventory', icon: 'Glasses', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager'] },
+      { label: 'Verres Optiques', path: '/optical-lens-inventory', icon: 'Eye', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager'] },
+      { label: 'Lentilles Contact', path: '/contact-lens-inventory', icon: 'Circle', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager'] },
+      { label: 'Réactifs Labo', path: '/reagent-inventory', icon: 'FlaskConical', roles: ['admin', 'lab_technician', 'manager'] },
+      { label: 'Consommables Labo', path: '/lab-consumable-inventory', icon: 'TestTube', roles: ['admin', 'lab_technician', 'nurse', 'manager'] }
+    ]
+  },
+  'frame-inventory': {
+    label: 'Inventaire Montures',
+    path: '/frame-inventory',
+    icon: 'Glasses',
+    description: 'Gestion du stock de montures'
+  },
+  'contact-lens-inventory': {
+    label: 'Inventaire Lentilles',
+    path: '/contact-lens-inventory',
+    icon: 'Circle',
+    description: 'Gestion du stock de lentilles de contact'
+  },
+  'optical-lens-inventory': {
+    label: 'Inventaire Verres Optiques',
+    path: '/optical-lens-inventory',
+    icon: 'Eye',
+    description: 'Gestion du stock de verres ophtalmiques'
+  },
+  'reagent-inventory': {
+    label: 'Réactifs Laboratoire',
+    path: '/reagent-inventory',
+    icon: 'FlaskConical',
+    description: 'Gestion du stock de réactifs de laboratoire'
+  },
+  'lab-consumable-inventory': {
+    label: 'Consommables Laboratoire',
+    path: '/lab-consumable-inventory',
+    icon: 'TestTube',
+    description: 'Gestion du stock de consommables de laboratoire (tubes, aiguilles, etc.)'
+  },
+  'optical-shop': {
+    label: 'Boutique Optique',
+    path: '/optical-shop',
+    icon: 'Glasses',
+    description: 'Vente de lunettes et verres correcteurs'
+  },
+  // Procurement menu with submenus
+  procurement: {
+    label: 'Achats & Stock',
+    path: null,
+    icon: 'ShoppingCart',
+    description: 'Gestion des achats et inventaires',
+    subItems: [
+      { label: 'Bons de Commande', path: '/purchase-orders', icon: 'FileBox', roles: ['admin', 'manager', 'accountant'] },
+      { label: 'Inventaire Physique', path: '/stock-reconciliation', icon: 'ClipboardList', roles: ['admin', 'manager', 'pharmacist', 'lab_technician'] },
+      { label: 'Garanties', path: '/warranties', icon: 'Shield', roles: ['admin', 'manager', 'optician', 'technician'] },
+      { label: 'Réparations', path: '/repairs', icon: 'Wrench', roles: ['admin', 'manager', 'optician', 'technician'] }
+    ]
+  },
+  'purchase-orders': {
+    label: 'Bons de Commande',
+    path: '/purchase-orders',
+    icon: 'FileBox',
+    description: 'Gestion des achats et approvisionnements'
+  },
+  'stock-reconciliation': {
+    label: 'Inventaire Physique',
+    path: '/stock-reconciliation',
+    icon: 'ClipboardList',
+    description: 'Réconciliation et comptage des stocks'
+  },
+  warranties: {
+    label: 'Garanties',
+    path: '/warranties',
+    icon: 'Shield',
+    description: 'Suivi des garanties produits et réclamations'
+  },
+  repairs: {
+    label: 'Réparations',
+    path: '/repairs',
+    icon: 'Wrench',
+    description: 'Suivi des réparations et SAV'
+  },
+  // Admin menu with submenus
+  admin: {
+    label: 'Administration',
+    path: null,
+    icon: 'Settings',
+    description: 'Administration système',
+    subItems: [
+      { label: 'Utilisateurs', path: '/users', icon: 'Users', roles: ['admin'] },
+      { label: 'Sauvegardes', path: '/backups', icon: 'Database', roles: ['admin'] },
+      { label: 'Journal d\'audit', path: '/audit', icon: 'Shield', roles: ['admin'] },
+      { label: 'Paramètres', path: '/settings', icon: 'Settings', roles: ['admin'] }
+    ]
+  },
+  users: {
+    label: 'Utilisateurs',
+    path: '/users',
+    icon: 'Users',
+    description: 'Gestion des comptes utilisateurs'
+  },
+  backups: {
+    label: 'Sauvegardes',
+    path: '/backups',
+    icon: 'Database',
+    description: 'Sauvegardes et restauration du système'
   }
 };

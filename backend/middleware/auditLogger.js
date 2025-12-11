@@ -194,10 +194,68 @@ exports.logPrescriptionActivity = async (req, res, next) => {
   next();
 };
 
+// Log permission denials (for admin audit trail)
+exports.logPermissionDenial = async (denialDetails) => {
+  try {
+    await AuditLog.create({
+      user: denialDetails.userId,
+      action: 'PERMISSION_DENIED',
+      resource: denialDetails.path,
+      ipAddress: denialDetails.ip,
+      userAgent: denialDetails.userAgent,
+      metadata: {
+        userRole: denialDetails.userRole,
+        requiredRoles: denialDetails.requiredRoles,
+        requiredPermission: denialDetails.requiredPermission,
+        denialType: denialDetails.denialType, // 'role_mismatch', 'missing_permission', 'ownership_check'
+        method: denialDetails.method,
+        resourceId: denialDetails.resourceId,
+        resourceModel: denialDetails.resourceModel,
+        timestamp: new Date(),
+        severity: 'warning'
+      },
+      responseStatus: 403
+    });
+
+    // Log to console for real-time monitoring
+    console.warn('PERMISSION DENIED - Audit logged:', {
+      userId: denialDetails.userId,
+      userRole: denialDetails.userRole,
+      path: denialDetails.path,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Permission denial logging error:', error);
+  }
+};
+
 // Helper functions
 function shouldLogRequest(req) {
-  // Skip logging for certain endpoints
+  // Skip logging for health checks and static assets
   const skipEndpoints = ['/health', '/api/logs', '/static'];
+
+  // Skip high-frequency polling endpoints (read-only, no audit value)
+  const skipPollingEndpoints = [
+    '/api/alerts/count',
+    '/api/queue',
+    '/api/pharmacy/low-stock',
+    '/api/pharmacy/expiring',
+    '/api/dashboard/stats',
+    '/api/dashboard/pending-actions',
+    '/api/dashboard/today-tasks',
+    '/api/dashboard/recent-patients',
+    '/api/auth/me',
+    '/api/role-permissions/me',
+    '/api/billing/statistics'
+  ];
+
+  // Only skip GET requests for polling endpoints (still log POST/PUT/DELETE)
+  if (req.method === 'GET') {
+    if (skipPollingEndpoints.some(endpoint => req.originalUrl.startsWith(endpoint))) {
+      return false;
+    }
+  }
+
   return !skipEndpoints.some(endpoint => req.originalUrl.includes(endpoint));
 }
 

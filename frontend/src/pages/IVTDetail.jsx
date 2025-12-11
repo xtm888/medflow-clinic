@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/apiConfig';
+import ConfirmationModal from '../components/ConfirmationModal';
+import FaceVerification from '../components/biometric/FaceVerification';
+import { useAuth } from '../contexts/AuthContext';
 import {
   ArrowLeft,
   Edit,
@@ -31,6 +34,7 @@ import {
 const IVTDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [injection, setInjection] = useState(null);
@@ -47,10 +51,45 @@ const IVTDetail = () => {
     nextInjectionDate: ''
   });
 
+  // Face verification state
+  const [showVerification, setShowVerification] = useState(false);
+  const [verificationPassed, setVerificationPassed] = useState(false);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
+
   useEffect(() => {
     fetchInjection();
     fetchTreatmentHistory();
   }, [id]);
+
+  // Face verification check when injection data loads
+  useEffect(() => {
+    if (!injection || !injection.patient) return;
+
+    const isDoctorRole = user?.role === 'doctor' || user?.role === 'ophthalmologist' || user?.role === 'admin';
+
+    if (isDoctorRole && injection.patient?.biometric?.faceEncoding) {
+      const sessionKey = `faceVerified_${injection.patient._id}`;
+      const alreadyVerified = sessionStorage.getItem(sessionKey);
+
+      if (alreadyVerified === 'true') {
+        setVerificationPassed(true);
+      } else {
+        setShowVerification(true);
+        setVerificationPassed(false);
+      }
+    } else {
+      // Skip verification if not doctor role or patient has no biometric
+      setVerificationPassed(true);
+    }
+  }, [injection, user]);
 
   const fetchInjection = async () => {
     try {
@@ -77,17 +116,21 @@ const IVTDetail = () => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette injection?')) {
-      return;
-    }
-
-    try {
-      await api.delete(`/ivt/${id}`);
-      navigate('/ivt');
-    } catch (err) {
-      setError('Erreur lors de la suppression');
-    }
+  const handleDelete = () => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer cette injection?',
+      message: 'Êtes-vous sûr de vouloir supprimer cette injection IVT? Cette action est irréversible.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await api.delete(`/ivt/${id}`);
+          navigate('/ivt');
+        } catch (err) {
+          setError('Erreur lors de la suppression');
+        }
+      }
+    });
   };
 
   const handleFollowUpSubmit = async () => {
@@ -622,6 +665,27 @@ const IVTDetail = () => {
     </div>
   );
 
+  // Show face verification modal
+  if (showVerification && injection?.patient) {
+    return (
+      <FaceVerification
+        patient={injection.patient}
+        onVerified={() => {
+          setShowVerification(false);
+          setVerificationPassed(true);
+          sessionStorage.setItem(`faceVerified_${injection.patient._id}`, 'true');
+        }}
+        onSkip={() => {
+          setShowVerification(false);
+          setVerificationPassed(true);
+          sessionStorage.setItem(`faceVerified_${injection.patient._id}`, 'true');
+        }}
+        onCancel={() => navigate(-1)}
+        allowSkip={user?.role === 'admin'}
+      />
+    );
+  }
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -636,6 +700,15 @@ const IVTDetail = () => {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
           {error || 'Injection non trouvée'}
         </div>
+      </div>
+    );
+  }
+
+  // Block content until verification passed
+  if (!verificationPassed) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
     );
   }
@@ -835,6 +908,16 @@ const IVTDetail = () => {
           </div>
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 };

@@ -4,6 +4,7 @@ const Prescription = require('../models/Prescription');
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Appointment = require('../models/Appointment');
 const AuditLog = require('../models/AuditLog');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 /**
  * Get complete patient profile with all history

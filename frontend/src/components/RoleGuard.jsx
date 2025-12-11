@@ -22,6 +22,12 @@ export default function RoleGuard({
 
   // Get user from localStorage
   let user = null;
+  try {
+    const storedUser = localStorage.getItem('user');
+    if (storedUser) {
+      user = JSON.parse(storedUser);
+    }
+  } catch (err) {
     console.error('Error parsing user:', err);
   }
 

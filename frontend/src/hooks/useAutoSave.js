@@ -12,18 +12,29 @@ export function useAutoSave(data, saveFunction, options = {}) {
   const {
     interval = 30000, // Auto-save every 30 seconds
     debounceDelay = 2000, // Wait 2 seconds after last change before saving
-    enabled = true
+    enabled = true,
+    onVersionConflict = null // Callback for version conflicts
   } = options;
 
-  const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error, conflict
   const [lastSaved, setLastSaved] = useState(null);
   const [error, setError] = useState(null);
+  const [hasConflict, setHasConflict] = useState(false);
+  const [conflictData, setConflictData] = useState(null);
 
   const dataRef = useRef(data);
+  const versionRef = useRef(data?.version || 0);
   const saveTimeoutRef = useRef(null);
   const autoSaveIntervalRef = useRef(null);
   const statusResetTimeoutRef = useRef(null);
   const isSavingRef = useRef(false);
+
+  // Update version when data changes
+  useEffect(() => {
+    if (data?.version !== undefined && data.version > versionRef.current) {
+      versionRef.current = data.version;
+    }
+  }, [data?.version]);
 
   // Update data ref when data changes
   useEffect(() => {
@@ -63,14 +74,25 @@ export function useAutoSave(data, saveFunction, options = {}) {
 
   // Auto-save function
   const autoSave = useCallback(async () => {
-    if (isSavingRef.current || !saveFunction || !enabled) return;
+    if (isSavingRef.current || !saveFunction || !enabled || hasConflict) return;
 
     try {
       isSavingRef.current = true;
       setSaveStatus('saving');
       setError(null);
 
-      await saveFunction(dataRef.current, true); // true = auto-save
+      // Include version in save request for optimistic locking
+      const dataWithVersion = {
+        ...dataRef.current,
+        version: versionRef.current
+      };
+
+      const result = await saveFunction(dataWithVersion, true); // true = auto-save
+
+      // Update version from server response
+      if (result?.version !== undefined) {
+        versionRef.current = result.version;
+      }
 
       setSaveStatus('saved');
       setLastSaved(new Date());
@@ -85,21 +107,35 @@ export function useAutoSave(data, saveFunction, options = {}) {
 
     } catch (err) {
       console.error('Auto-save error:', err);
-      setSaveStatus('error');
-      setError(err.message || 'Auto-save failed');
 
-      // Reset error after 5 seconds (with cleanup)
-      if (statusResetTimeoutRef.current) {
-        clearTimeout(statusResetTimeoutRef.current);
+      // Check for version conflict error (HTTP 409 or specific error code)
+      if (err.status === 409 || err.code === 'VERSION_CONFLICT' || err.message?.includes('version')) {
+        setSaveStatus('conflict');
+        setHasConflict(true);
+        setConflictData(err.serverData || null);
+        setError('Another user has modified this record. Please refresh to see their changes.');
+
+        // Call version conflict callback if provided
+        if (onVersionConflict) {
+          onVersionConflict(err.serverData, dataRef.current);
+        }
+      } else {
+        setSaveStatus('error');
+        setError(err.message || 'Auto-save failed');
+
+        // Reset error after 5 seconds (with cleanup)
+        if (statusResetTimeoutRef.current) {
+          clearTimeout(statusResetTimeoutRef.current);
+        }
+        statusResetTimeoutRef.current = setTimeout(() => {
+          setError(null);
+          setSaveStatus('idle');
+        }, 5000);
       }
-      statusResetTimeoutRef.current = setTimeout(() => {
-        setError(null);
-        setSaveStatus('idle');
-      }, 5000);
     } finally {
       isSavingRef.current = false;
     }
-  }, [saveFunction, enabled]);
+  }, [saveFunction, enabled, hasConflict, onVersionConflict]);
 
   // Debounced auto-save on data change
   useEffect(() => {
@@ -153,12 +189,52 @@ export function useAutoSave(data, saveFunction, options = {}) {
     };
   }, []);
 
+  // Function to resolve conflict (accept server version)
+  const resolveConflict = useCallback(() => {
+    setHasConflict(false);
+    setConflictData(null);
+    setError(null);
+    setSaveStatus('idle');
+  }, []);
+
+  // Function to force save (override server version)
+  const forceSave = useCallback(async () => {
+    if (!saveFunction) return;
+
+    try {
+      isSavingRef.current = true;
+      setSaveStatus('saving');
+
+      // Force save without version check
+      const result = await saveFunction({ ...dataRef.current, forceOverwrite: true }, false);
+
+      if (result?.version !== undefined) {
+        versionRef.current = result.version;
+      }
+
+      setHasConflict(false);
+      setConflictData(null);
+      setSaveStatus('saved');
+      setLastSaved(new Date());
+    } catch (err) {
+      setSaveStatus('error');
+      setError(err.message || 'Force save failed');
+    } finally {
+      isSavingRef.current = false;
+    }
+  }, [saveFunction]);
+
   return {
-    saveStatus, // 'idle' | 'saving' | 'saved' | 'error'
+    saveStatus, // 'idle' | 'saving' | 'saved' | 'error' | 'conflict'
     lastSaved,
     error,
     manualSave,
-    isSaving: saveStatus === 'saving'
+    isSaving: saveStatus === 'saving',
+    // Conflict handling
+    hasConflict,
+    conflictData,
+    resolveConflict,
+    forceSave
   };
 }
 

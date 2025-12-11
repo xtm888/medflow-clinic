@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, User, Calendar, FileText, Clock, Home, X, TrendingUp, ChevronRight } from 'lucide-react';
 import api from '../services/apiConfig';
@@ -165,7 +165,8 @@ function GlobalSearch({ isOpen, onClose }) {
     onClose();
   };
 
-  const groupResultsByCategory = () => {
+  // Memoize grouped results to avoid O(n) grouping on every render
+  const groupedResults = useMemo(() => {
     const grouped = {};
     results.forEach(result => {
       const category = result.category || 'Autres';
@@ -175,11 +176,9 @@ function GlobalSearch({ isOpen, onClose }) {
       grouped[category].push(result);
     });
     return grouped;
-  };
+  }, [results]);
 
   if (!isOpen) return null;
-
-  const groupedResults = groupResultsByCategory();
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">

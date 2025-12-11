@@ -382,13 +382,11 @@ deviceIntegrationLogSchema.pre('save', async function(next) {
   if (this.isNew && !this.logId) {
     const date = new Date();
     const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
-    const count = await mongoose.model('DeviceIntegrationLog').countDocuments({
-      createdAt: {
-        $gte: new Date(date.setHours(0, 0, 0, 0)),
-        $lt: new Date(date.setHours(23, 59, 59, 999))
-      }
-    });
-    this.logId = `DIL${dateStr}${(count + 1).toString().padStart(4, '0')}`;
+    const timeStr = date.toISOString().slice(11, 19).replace(/:/g, '');
+    // Include device ID (last 6 chars) and timestamp for uniqueness
+    const deviceSuffix = this.device ? this.device.toString().slice(-6) : 'XXXXXX';
+    const randomSuffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+    this.logId = `DIL${dateStr}${timeStr}-${deviceSuffix}-${randomSuffix}`;
   }
 
   // Calculate processing time if completed

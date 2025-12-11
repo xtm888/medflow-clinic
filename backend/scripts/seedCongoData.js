@@ -2,7 +2,12 @@
  * Congo Data Seed Script
  * Creates consistent test data with Congolese names
  *
- * Run with: node scripts/seedCongoData.js
+ * SAFE MODE (default): Only adds sample data, does NOT delete existing data
+ * DESTRUCTIVE MODE: Use FORCE_CLEAR=true to clear data first (DANGEROUS!)
+ *
+ * Run with:
+ *   node scripts/seedCongoData.js              # Safe - adds sample data only
+ *   FORCE_CLEAR=true node scripts/seedCongoData.js  # Destructive - clears all first
  */
 
 require('dotenv').config();
@@ -16,6 +21,7 @@ const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Visit = require('../models/Visit');
 const User = require('../models/User');
 const Counter = require('../models/Counter');
+const Clinic = require('../models/Clinic');
 
 async function seedCongoData() {
   try {
@@ -26,16 +32,37 @@ async function seedCongoData() {
     });
     console.log('Connected to MongoDB\n');
 
-    // Clear existing data
-    console.log('Clearing existing test data...');
-    await Patient.deleteMany({});
-    await Appointment.deleteMany({});
-    await Prescription.deleteMany({});
-    await OphthalmologyExam.deleteMany({});
-    await Visit.deleteMany({});
+    // SAFETY CHECK: Only clear data if explicitly requested
+    const forceClear = process.env.FORCE_CLEAR === 'true';
 
-    // Reset counters using the static method
-    await Counter.resetSequence('patientId', 0);
+    if (forceClear) {
+      console.log('⚠️  WARNING: FORCE_CLEAR=true - This will DELETE ALL DATA!');
+      console.log('⚠️  You have 5 seconds to cancel (Ctrl+C)...\n');
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      console.log('🗑️  Clearing existing data...');
+      await Patient.deleteMany({});
+      await Appointment.deleteMany({});
+      await Prescription.deleteMany({});
+      await OphthalmologyExam.deleteMany({});
+      await Visit.deleteMany({});
+
+      // Reset counters using the static method
+      await Counter.resetSequence('patientId', 0);
+      console.log('✓ All data cleared\n');
+    } else {
+      // Check existing data counts
+      const patientCount = await Patient.countDocuments();
+      const visitCount = await Visit.countDocuments();
+      const examCount = await OphthalmologyExam.countDocuments();
+
+      console.log('📊 Current database state:');
+      console.log(`   - Patients: ${patientCount.toLocaleString()}`);
+      console.log(`   - Visits: ${visitCount.toLocaleString()}`);
+      console.log(`   - Ophthalmology Exams: ${examCount.toLocaleString()}`);
+      console.log('\n✅ SAFE MODE: Adding sample data without deleting existing data');
+      console.log('   (Use FORCE_CLEAR=true to clear all data first)\n');
+    }
 
     // Get a doctor user for references (or create one)
     let doctor = await User.findOne({ role: { $in: ['doctor', 'ophthalmologist', 'admin'] } });
@@ -49,6 +76,13 @@ async function seedCongoData() {
         role: 'ophthalmologist',
         specialization: 'Ophtalmologie'
       });
+    }
+
+    // Get a clinic for references (required for OphthalmologyExam)
+    let clinic = await Clinic.findOne({ isActive: true });
+    if (!clinic) {
+      console.log('⚠️  No clinic found. Please run seedClinics.js first.');
+      console.log('Skipping ophthalmology exams creation...');
     }
 
     console.log('Creating Congolese patient data...\n');
@@ -222,8 +256,23 @@ async function seedCongoData() {
       }
     ];
 
-    const patients = await Patient.insertMany(patientsData);
-    console.log(`Created ${patients.length} patients`);
+    // Insert patients only if they don't already exist (upsert-like behavior)
+    const patients = [];
+    let created = 0;
+    let skipped = 0;
+
+    for (const patientData of patientsData) {
+      const existing = await Patient.findOne({ patientId: patientData.patientId });
+      if (existing) {
+        patients.push(existing);
+        skipped++;
+      } else {
+        const newPatient = await Patient.create(patientData);
+        patients.push(newPatient);
+        created++;
+      }
+    }
+    console.log(`Patients: ${created} created, ${skipped} already existed`);
 
     // Create appointments
     const today = new Date();
@@ -307,18 +356,36 @@ async function seedCongoData() {
       }
     ];
 
-    const appointments = await Appointment.insertMany(appointmentsData);
-    console.log(`Created ${appointments.length} appointments`);
+    // Insert appointments only if they don't already exist
+    const appointments = [];
+    let aptsCreated = 0;
+    let aptsSkipped = 0;
+
+    for (const aptData of appointmentsData) {
+      const existing = await Appointment.findOne({ appointmentId: aptData.appointmentId });
+      if (existing) {
+        appointments.push(existing);
+        aptsSkipped++;
+      } else {
+        const newApt = await Appointment.create(aptData);
+        appointments.push(newApt);
+        aptsCreated++;
+      }
+    }
+    console.log(`Appointments: ${aptsCreated} created, ${aptsSkipped} already existed`);
 
     // Note: Prescriptions require visits which adds complexity
     // Skipping for now to maintain data consistency
     console.log('Skipping prescriptions (require visit references)');
 
-    // Create ophthalmology exams
+    // Create ophthalmology exams (only if clinic exists)
+    let exams = [];
+    if (clinic) {
     const examsData = [
       {
         patient: patients[2]._id,
         examiner: doctor._id,
+        clinic: clinic._id,
         examType: 'comprehensive',
         visualAcuity: {
           distance: {
@@ -354,6 +421,7 @@ async function seedCongoData() {
       {
         patient: patients[4]._id,
         examiner: doctor._id,
+        clinic: clinic._id,
         examType: 'refraction',
         visualAcuity: {
           distance: {
@@ -386,32 +454,50 @@ async function seedCongoData() {
     ];
 
     // Use save() to trigger pre-save hook for examId generation
-    const exams = [];
     for (const examData of examsData) {
       const exam = new OphthalmologyExam(examData);
       await exam.save();
       exams.push(exam);
     }
     console.log(`Created ${exams.length} ophthalmology exams`);
+    } else {
+      console.log('Skipped ophthalmology exams (no clinic found)');
+    }
+
+    // Final counts
+    const finalPatientCount = await Patient.countDocuments();
+    const finalVisitCount = await Visit.countDocuments();
+    const finalExamCount = await OphthalmologyExam.countDocuments();
 
     // Summary
     console.log('\n' + '='.repeat(60));
     console.log('CONGO DATA SEED COMPLETE');
     console.log('='.repeat(60));
     console.log(`
-Patients:
+Mode: ${forceClear ? '🗑️  DESTRUCTIVE (data was cleared)' : '✅ SAFE (data preserved)'}
+
+Sample Patients Added:
   - Mbuyi Kabongo (Kinshasa) - Hypertension
   - Tshala Mwamba (Lubumbashi)
   - Nkulu Tshisekedi (Kinshasa) - Diabète, Glaucome
   - Marie Lukusa (Goma)
   - Jean Ilunga (Mbuji-Mayi) - Myopie sévère
 
-Appointments: ${appointments.length} (for today)
-Ophthalmology Exams: ${exams.length}
+This Session:
+  - Patients: ${created} created, ${skipped} skipped
+  - Appointments: ${aptsCreated} created, ${aptsSkipped} skipped
+  - Ophthalmology Exams: ${exams.length} created
 
-All data is now consistent with Congolese context.
+Final Database Totals:
+  - Total Patients: ${finalPatientCount.toLocaleString()}
+  - Total Visits: ${finalVisitCount.toLocaleString()}
+  - Total Ophthalmology Exams: ${finalExamCount.toLocaleString()}
 `);
     console.log('='.repeat(60));
+    console.log('\n💡 TIP: To import real Tombalbaye data, run:');
+    console.log('   node scripts/importPatientsWithPapa.js');
+    console.log('   node scripts/importLegacyConsultations.js');
+    console.log('   node scripts/importLegacyActes.js');
 
   } catch (error) {
     console.error('Seed failed:', error);

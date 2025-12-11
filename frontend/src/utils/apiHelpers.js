@@ -90,6 +90,7 @@ export const safeFormatNumber = (value, decimals = 2, fallback = '0.00') => {
 /**
  * Safe string extraction
  * Handles both strings and objects with name/title properties
+ * Also handles medication dosage objects with amount/unit/value
  *
  * @param {*} value - Value to extract string from
  * @param {string} fallback - Fallback value
@@ -100,8 +101,31 @@ export const safeString = (value, fallback = '') => {
     return value;
   }
 
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
   if (value && typeof value === 'object') {
-    return value.name || value.title || value.label || fallback;
+    // Handle named objects (name, title, label)
+    if (value.name || value.title || value.label) {
+      return value.name || value.title || value.label;
+    }
+
+    // Handle dosage-like objects with amount/unit
+    if (value.amount !== undefined || value.value !== undefined || value.unit) {
+      const parts = [];
+      if (value.amount !== undefined) parts.push(value.amount);
+      else if (value.value !== undefined) parts.push(value.value);
+      if (value.unit) parts.push(value.unit);
+      if (parts.length > 0) return parts.join(' ');
+    }
+
+    // Handle frequency objects
+    if (value.times || value.frequency) {
+      return value.times || value.frequency;
+    }
+
+    return fallback;
   }
 
   return fallback;

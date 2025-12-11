@@ -1,6 +1,21 @@
 const mongoose = require('mongoose');
 
 const pharmacyInventorySchema = new mongoose.Schema({
+  // Clinic/Location reference - REQUIRED for multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: true,
+    index: true
+  },
+
+  // Flag for depot/central warehouse items
+  isDepot: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+
   // Medication reference
   drug: {
     type: mongoose.Schema.Types.ObjectId,
@@ -412,6 +427,12 @@ pharmacyInventorySchema.index({ 'inventory.status': 1 });
 pharmacyInventorySchema.index({ 'batches.expirationDate': 1 });
 pharmacyInventorySchema.index({ 'batches.lotNumber': 1 });
 
+// CRITICAL: Multi-clinic indexes for data isolation
+pharmacyInventorySchema.index({ clinic: 1, active: 1 }); // Clinic-scoped active inventory
+pharmacyInventorySchema.index({ clinic: 1, category: 1 }); // Clinic-scoped category filtering
+pharmacyInventorySchema.index({ clinic: 1, 'inventory.status': 1 }); // Clinic-scoped status
+pharmacyInventorySchema.index({ clinic: 1, 'medication.genericName': 1 }); // Clinic-scoped medication lookup
+
 // Virtuals
 pharmacyInventorySchema.virtual('inventory.available').get(function() {
   return this.inventory.currentStock - (this.inventory.reserved || 0);
@@ -593,6 +614,79 @@ pharmacyInventorySchema.methods.releaseReservation = async function(reservationI
 
   return {
     released: reservation.quantity
+  };
+};
+
+// CRITICAL FIX: Fulfill a reservation (consume reserved stock)
+// This method properly decrements both currentStock AND reserved when dispensing reserved items
+pharmacyInventorySchema.methods.fulfillReservation = async function(reservationId, userId, session = null) {
+  const reservation = this.reservations.find(r => r.reservationId === reservationId && r.status === 'active');
+
+  if (!reservation) {
+    throw new Error('Reservation not found or already processed');
+  }
+
+  // Decrement from batches
+  for (const reservedBatch of reservation.batches) {
+    const batch = this.batches.find(b => b.lotNumber === reservedBatch.lotNumber);
+    if (batch) {
+      // Decrease actual quantity (it was reserved, now being consumed)
+      batch.quantity = Math.max(0, batch.quantity - reservedBatch.quantity);
+      // Decrease reserved count
+      batch.reserved = Math.max(0, (batch.reserved || 0) - reservedBatch.quantity);
+
+      if (batch.quantity === 0) {
+        batch.status = 'depleted';
+      }
+
+      // Add to dispensing history
+      this.usage.dispensingHistory.push({
+        date: new Date(),
+        quantity: reservedBatch.quantity,
+        prescription: reservation.reference,
+        dispensedBy: userId,
+        lotNumber: batch.lotNumber
+      });
+    }
+  }
+
+  // Update totals
+  this.inventory.currentStock = Math.max(0, this.inventory.currentStock - reservation.quantity);
+  this.inventory.reserved = Math.max(0, (this.inventory.reserved || 0) - reservation.quantity);
+
+  // Update usage stats
+  this.usage.totalDispensed = (this.usage.totalDispensed || 0) + reservation.quantity;
+  this.usage.lastDispensedDate = new Date();
+
+  // Mark reservation as fulfilled
+  reservation.status = 'fulfilled';
+  reservation.fulfilledAt = new Date();
+  reservation.fulfilledBy = userId;
+
+  // Add transaction record
+  this.transactions.push({
+    type: 'dispensed',
+    quantity: reservation.quantity,
+    date: new Date(),
+    performedBy: userId,
+    reference: reservation.reference?.toString(),
+    notes: `Fulfilled reservation ${reservationId}`,
+    balanceBefore: this.inventory.currentStock + reservation.quantity,
+    balanceAfter: this.inventory.currentStock
+  });
+
+  // Update stock status
+  this.updateStockStatus();
+
+  // Check and create alerts
+  this.checkAndCreateAlerts();
+
+  // Use session for save if provided (transaction support)
+  await this.save(session ? { session } : {});
+
+  return {
+    fulfilled: reservation.quantity,
+    reservationId
   };
 };
 

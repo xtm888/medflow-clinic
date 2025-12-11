@@ -1,6 +1,7 @@
 const TreatmentProtocol = require('../models/TreatmentProtocol');
 // Import Drug model to ensure it's registered for population
 require('../models/Drug');
+const { asyncHandler } = require('../middleware/errorHandler');
 
 /**
  * Get user's treatment protocols (personal + system-wide)

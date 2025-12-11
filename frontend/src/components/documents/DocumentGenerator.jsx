@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
   FileText, Search, X, Eye, Download, Save, Filter,
-  ChevronRight, Printer, Copy, CheckCircle, AlertCircle
+  ChevronRight, Printer, Copy, CheckCircle, AlertCircle,
+  Loader2, Check, Database, FileOutput, Archive
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import {
@@ -10,6 +11,14 @@ import {
   previewTemplate,
   generateDocument
 } from '../../services/documentGenerationService';
+
+// Generation steps configuration
+const GENERATION_STEPS = [
+  { id: 'prepare', label: 'Préparation des données', icon: Database },
+  { id: 'generate', label: 'Génération du document', icon: FileOutput },
+  { id: 'save', label: 'Sauvegarde', icon: Archive },
+  { id: 'complete', label: 'Terminé', icon: CheckCircle }
+];
 
 const DocumentGenerator = ({
   patientId,
@@ -28,6 +37,15 @@ const DocumentGenerator = ({
   const [customData, setCustomData] = useState({});
   const [saveToVisit, setSaveToVisit] = useState(true);
   const [view, setView] = useState('select'); // 'select', 'preview', 'edit'
+
+  // Generation progress state
+  const [generating, setGenerating] = useState(false);
+  const [generationProgress, setGenerationProgress] = useState({
+    currentStep: 0,
+    status: 'idle', // 'idle', 'in_progress', 'completed', 'error'
+    message: '',
+    errorMessage: ''
+  });
 
   // Load templates and categories on mount
   useEffect(() => {
@@ -86,10 +104,36 @@ const DocumentGenerator = ({
     }
   };
 
-  // Handle generate document
+  // Simulate progress step with delay
+  const simulateStep = (stepIndex, message) => {
+    return new Promise((resolve) => {
+      setGenerationProgress(prev => ({
+        ...prev,
+        currentStep: stepIndex,
+        status: 'in_progress',
+        message
+      }));
+      // Simulate processing time (200-500ms per step)
+      setTimeout(resolve, 200 + Math.random() * 300);
+    });
+  };
+
+  // Handle generate document with progress tracking
   const handleGenerate = async () => {
     try {
-      setLoading(true);
+      setGenerating(true);
+      setGenerationProgress({
+        currentStep: 0,
+        status: 'in_progress',
+        message: 'Initialisation...',
+        errorMessage: ''
+      });
+
+      // Step 1: Prepare data
+      await simulateStep(0, 'Collecte des données patient...');
+
+      // Step 2: Generate document
+      await simulateStep(1, 'Génération du contenu...');
 
       const result = await generateDocument({
         templateId: selectedTemplate._id,
@@ -98,6 +142,20 @@ const DocumentGenerator = ({
         customData,
         saveToVisit: saveToVisit && visitId
       });
+
+      // Step 3: Save
+      await simulateStep(2, 'Sauvegarde du document...');
+
+      // Step 4: Complete
+      setGenerationProgress({
+        currentStep: 3,
+        status: 'completed',
+        message: 'Document généré avec succès!',
+        errorMessage: ''
+      });
+
+      // Wait a moment to show completion
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       toast.success('Document généré avec succès!');
 
@@ -112,10 +170,150 @@ const DocumentGenerator = ({
       }
     } catch (error) {
       console.error('Error generating document:', error);
+      setGenerationProgress(prev => ({
+        ...prev,
+        status: 'error',
+        errorMessage: error.message || 'Une erreur est survenue'
+      }));
       toast.error('Erreur lors de la génération du document');
     } finally {
       setLoading(false);
+      // Keep generating true briefly to show error state if needed
+      setTimeout(() => {
+        if (generationProgress.status !== 'error') {
+          setGenerating(false);
+        }
+      }, 500);
     }
+  };
+
+  // Render generation progress overlay
+  const renderGenerationProgress = () => {
+    if (!generating) return null;
+
+    const progressPercent = ((generationProgress.currentStep + 1) / GENERATION_STEPS.length) * 100;
+
+    return (
+      <div className="absolute inset-0 bg-white bg-opacity-95 flex items-center justify-center z-10 rounded-xl">
+        <div className="max-w-md w-full p-8">
+          {/* Progress icon and title */}
+          <div className="text-center mb-8">
+            {generationProgress.status === 'error' ? (
+              <div className="w-20 h-20 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="h-10 w-10 text-red-600" />
+              </div>
+            ) : generationProgress.status === 'completed' ? (
+              <div className="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4 animate-bounce">
+                <CheckCircle className="h-10 w-10 text-green-600" />
+              </div>
+            ) : (
+              <div className="w-20 h-20 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Loader2 className="h-10 w-10 text-blue-600 animate-spin" />
+              </div>
+            )}
+            <h3 className="text-xl font-bold text-gray-900">
+              {generationProgress.status === 'error'
+                ? 'Erreur de génération'
+                : generationProgress.status === 'completed'
+                  ? 'Document prêt!'
+                  : 'Génération en cours...'}
+            </h3>
+            <p className="text-gray-600 mt-2">{generationProgress.message}</p>
+          </div>
+
+          {/* Progress bar */}
+          <div className="mb-6">
+            <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ease-out rounded-full ${
+                  generationProgress.status === 'error'
+                    ? 'bg-red-500'
+                    : generationProgress.status === 'completed'
+                      ? 'bg-green-500'
+                      : 'bg-blue-600'
+                }`}
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Step indicators */}
+          <div className="space-y-3">
+            {GENERATION_STEPS.map((step, index) => {
+              const StepIcon = step.icon;
+              const isCompleted = index < generationProgress.currentStep;
+              const isCurrent = index === generationProgress.currentStep;
+              const isError = generationProgress.status === 'error' && isCurrent;
+
+              return (
+                <div
+                  key={step.id}
+                  className={`flex items-center space-x-3 transition-all ${
+                    isCompleted ? 'opacity-100' : isCurrent ? 'opacity-100' : 'opacity-40'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${
+                      isError
+                        ? 'bg-red-100 text-red-600'
+                        : isCompleted
+                          ? 'bg-green-100 text-green-600'
+                          : isCurrent
+                            ? 'bg-blue-100 text-blue-600'
+                            : 'bg-gray-100 text-gray-400'
+                    }`}
+                  >
+                    {isError ? (
+                      <AlertCircle className="h-4 w-4" />
+                    ) : isCompleted ? (
+                      <Check className="h-4 w-4" />
+                    ) : isCurrent ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <StepIcon className="h-4 w-4" />
+                    )}
+                  </div>
+                  <span
+                    className={`text-sm font-medium ${
+                      isError
+                        ? 'text-red-700'
+                        : isCompleted
+                          ? 'text-green-700'
+                          : isCurrent
+                            ? 'text-blue-700'
+                            : 'text-gray-500'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Error message */}
+          {generationProgress.status === 'error' && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700">{generationProgress.errorMessage}</p>
+              <button
+                onClick={() => {
+                  setGenerating(false);
+                  setGenerationProgress({
+                    currentStep: 0,
+                    status: 'idle',
+                    message: '',
+                    errorMessage: ''
+                  });
+                }}
+                className="mt-3 text-sm font-medium text-red-600 hover:text-red-800"
+              >
+                Réessayer
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   // Handle copy to clipboard
@@ -361,7 +559,10 @@ const DocumentGenerator = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col relative">
+        {/* Generation Progress Overlay */}
+        {renderGenerationProgress()}
+
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white p-6">
           <div className="flex items-center justify-between">
@@ -376,7 +577,8 @@ const DocumentGenerator = ({
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:bg-blue-700 p-2 rounded-lg transition-colors"
+              disabled={generating}
+              className="text-white hover:bg-blue-700 p-2 rounded-lg transition-colors disabled:opacity-50"
             >
               <X className="w-6 h-6" />
             </button>

@@ -1,6 +1,96 @@
 // Sync Service - Manages data synchronization between offline and online
 import databaseService from './database';
 import api from './apiConfig';
+import { toast } from 'react-toastify';
+
+// ============================================
+// CLINIC-SPECIFIC SYNC CONFIGURATION
+// ============================================
+
+/**
+ * Clinic-specific sync intervals (milliseconds)
+ * Configured based on network conditions at each location
+ */
+export const CLINIC_SYNC_INTERVALS = {
+  'DEPOT_CENTRAL': 300000,    // 5 min - hub/warehouse, good connectivity
+  'TOMBALBAYE_KIN': 300000,   // 5 min - main clinic, fiber connection
+  'MATRIX_KIN': 600000,       // 10 min - satellite, LAN connectivity
+  'MATADI_KC': 1800000        // 30 min - satellite, slow 3G/4G
+};
+
+/**
+ * Extended entities list for comprehensive offline support
+ * Phase 3.2: 23 entities (up from 18)
+ */
+export const SYNC_ENTITIES = [
+  // Original entities
+  'patients',
+  'appointments',
+  'prescriptions',
+  'ophthalmologyExams',
+  'users',
+  'visits',
+  'labOrders',
+  'labResults',
+  'invoices',
+  'queue',
+  // Phase 1: New entities for multi-clinic offline
+  'pharmacyInventory',
+  'orthopticExams',
+  'glassesOrders',
+  'frameInventory',
+  'contactLensInventory',
+  'clinics',
+  'approvals',
+  'stockReconciliations',
+  // Phase 3.2: Additional clinical entities
+  'treatmentProtocols',
+  'ivtVials',
+  'surgeryCases',
+  'consultationSessions',
+  'devices'
+];
+
+/**
+ * Default sync interval for unknown/unspecified clinics
+ */
+export const DEFAULT_SYNC_INTERVAL = 900000; // 15 minutes
+
+/**
+ * Get sync interval for a specific clinic
+ * @param {string} clinicId - The clinic identifier
+ * @returns {number} Sync interval in milliseconds (default 15 min)
+ */
+export const getSyncIntervalForClinic = (clinicId) => {
+  return CLINIC_SYNC_INTERVALS[clinicId] || DEFAULT_SYNC_INTERVAL;
+};
+
+// Exponential backoff configuration
+const BACKOFF_CONFIG = {
+  BASE_DELAY_MS: 1000,        // 1 second
+  MAX_DELAY_MS: 300000,       // 5 minutes
+  MAX_RETRIES: 5,
+  JITTER_PERCENT: 0.30        // ±30%
+};
+
+/**
+ * Calculate exponential backoff delay with jitter
+ * @param {number} retryCount - Current retry attempt (0-indexed)
+ * @returns {number} Delay in milliseconds
+ */
+function calculateBackoffDelay(retryCount) {
+  // Exponential: 1s, 2s, 4s, 8s, 16s...
+  const exponentialDelay = BACKOFF_CONFIG.BASE_DELAY_MS * Math.pow(2, retryCount);
+
+  // Cap at max delay
+  const cappedDelay = Math.min(exponentialDelay, BACKOFF_CONFIG.MAX_DELAY_MS);
+
+  // Add jitter (±30%)
+  const jitterRange = cappedDelay * BACKOFF_CONFIG.JITTER_PERCENT;
+  const jitter = (Math.random() * 2 - 1) * jitterRange; // Random between -jitterRange and +jitterRange
+
+  return Math.max(0, Math.round(cappedDelay + jitter));
+}
 
 class SyncService {
   constructor() {
@@ -8,10 +98,49 @@ class SyncService {
     this.syncInterval = null;
     this.listeners = new Set();
     this.conflictResolutionStrategy = 'last-write-wins'; // Options: 'last-write-wins', 'server-wins', 'client-wins', 'manual'
+    this.hadPermanentFailure = false; // Track if we had a permanent sync failure
+  }
+
+  /**
+   * Get current conflict resolution strategy
+   * @returns {string} Current strategy
+   */
+  getConflictStrategy() {
+    return this.conflictResolutionStrategy;
+  }
+
+  /**
+   * Set conflict resolution strategy
+   * @param {string} strategy - 'last-write-wins' | 'server-wins' | 'client-wins' | 'manual'
+   */
+  setConflictStrategy(strategy) {
+    const validStrategies = ['last-write-wins', 'server-wins', 'client-wins', 'manual'];
+    if (!validStrategies.includes(strategy)) {
+      console.warn(`Invalid conflict strategy: ${strategy}. Using 'last-write-wins'`);
+      strategy = 'last-write-wins';
+    }
+    this.conflictResolutionStrategy = strategy;
+    // Persist to localStorage
+    localStorage.setItem('medflow_conflict_strategy', strategy);
+    console.log(`[Sync] Conflict resolution strategy set to: ${strategy}`);
+  }
+
+  /**
+   * Load conflict strategy from localStorage
+   */
+  loadConflictStrategy() {
+    const saved = localStorage.getItem('medflow_conflict_strategy');
+    if (saved) {
+      this.conflictResolutionStrategy = saved;
+      console.log(`[Sync] Loaded conflict resolution strategy: ${saved}`);
+    }
   }
 
   // Initialize sync service
   init() {
+    // Load saved conflict strategy
+    this.loadConflictStrategy();
+
     // Listen for online/offline events
     window.addEventListener('online', () => this.handleOnline());
     window.addEventListener('offline', () => this.handleOffline());
@@ -24,11 +153,22 @@ class SyncService {
     // Listen for service worker messages
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data.type === 'SYNC_START') {
+        if (event.data.type === 'SYNC_START' || event.data.type === 'BACKGROUND_SYNC') {
+          console.log('[Sync] Received sync request from service worker');
           this.sync();
         }
       });
+
+      // Register global sync handler for service worker to call
+      window.__medflowSync = () => this.sync();
     }
+  }
+
+  // Trigger sync from service worker background sync event
+  async handleBackgroundSync() {
+    console.log('[Sync] Background sync triggered');
+    await this.sync();
+    return true;
   }
 
   // Handle online event
@@ -50,12 +190,13 @@ class SyncService {
   startAutoSync() {
     if (this.syncInterval) return;
 
-    // Sync every 30 seconds when online
+    // Sync every 15 minutes when online
+    // Balances data freshness with server load and unreliable connectivity
     this.syncInterval = setInterval(() => {
       if (navigator.onLine && !this.isSyncing) {
         this.sync();
       }
-    }, 30000);
+    }, 900000); // 15 minutes = 900000ms
   }
 
   // Stop automatic sync
@@ -89,10 +230,21 @@ class SyncService {
       // 4. Clean up completed sync items
       await databaseService.clearSyncQueue();
 
+      // 5. Check if we recovered from a permanent failure
+      if (this.hadPermanentFailure) {
+        toast.success(
+          'Synchronisation rétablie. Toutes les données ont été synchronisées.',
+          { toastId: 'sync-recovered' }
+        );
+        this.hadPermanentFailure = false;
+        this.notifyListeners('sync-recovered');
+      }
+
       this.notifyListeners('sync-complete');
-      console.log('Sync completed successfully');
+      console.log('[Sync] Completed successfully');
     } catch (error) {
-      console.error('Sync failed:', error);
+      // Only log sync failures at warning level to reduce console spam
+      console.warn('[Sync] Failed:', error.message || error);
       this.notifyListeners('sync-error', error);
     } finally {
       this.isSyncing = false;
@@ -105,31 +257,46 @@ class SyncService {
 
     if (syncQueue.length === 0) return;
 
-    console.log(`Processing ${syncQueue.length} queued operations`);
+    // Filter items ready for retry (nextRetryAt is null/undefined or in the past)
+    const now = new Date().toISOString();
+    const readyItems = syncQueue.filter(item =>
+      !item.nextRetryAt || item.nextRetryAt <= now
+    );
 
-    for (const item of syncQueue) {
+    if (readyItems.length === 0) {
+      const nextItem = syncQueue.reduce((earliest, item) =>
+        !earliest || (item.nextRetryAt && item.nextRetryAt < earliest.nextRetryAt) ? item : earliest
+      , null);
+      if (nextItem?.nextRetryAt) {
+        console.log(`[Sync] ${syncQueue.length} items waiting, next retry at ${nextItem.nextRetryAt}`);
+      }
+      return;
+    }
+
+    console.log(`[Sync] Processing ${readyItems.length} of ${syncQueue.length} queued operations`);
+
+    for (const item of readyItems) {
       try {
         await this.processSyncItem(item);
 
         // Mark as completed
         await databaseService.updateSyncItem(item.id, {
           status: 'completed',
-          syncedAt: new Date().toISOString()
+          syncedAt: new Date().toISOString(),
+          nextRetryAt: null
         });
       } catch (error) {
-        console.error(`Failed to sync item ${item.id}:`, error);
+        console.error(`[Sync] Failed to sync item ${item.id}:`, error.message || error);
 
-        // Increment retry count
-        await databaseService.updateSyncItem(item.id, {
-          status: 'failed',
-          retryCount: item.retryCount + 1,
-          lastError: error.message
-        });
+        const newRetryCount = (item.retryCount || 0) + 1;
 
         // If max retries reached, mark as error
-        if (item.retryCount >= 3) {
+        if (newRetryCount >= BACKOFF_CONFIG.MAX_RETRIES) {
           await databaseService.updateSyncItem(item.id, {
-            status: 'error'
+            status: 'error',
+            retryCount: newRetryCount,
+            lastError: error.message,
+            nextRetryAt: null
           });
 
           // Log conflict for manual resolution
@@ -141,6 +308,45 @@ class SyncService {
             'error',
             'system'
           );
+
+          console.error(`[Sync] Item ${item.id} exceeded max retries (${BACKOFF_CONFIG.MAX_RETRIES}), marked as error`);
+
+          // Notify user of permanent failure (only once)
+          if (!this.hadPermanentFailure) {
+            this.hadPermanentFailure = true;
+
+            // Get count of all pending items
+            const syncQueue = await databaseService.getSyncQueue();
+            const pendingCount = syncQueue.length;
+
+            toast.error(
+              'Échec de synchronisation après plusieurs tentatives. Vos données locales seront synchronisées dès que possible.',
+              {
+                autoClose: false, // Don't auto-dismiss - this is important
+                toastId: 'sync-permanent-failure' // Prevent duplicates
+              }
+            );
+
+            // Emit event for other components
+            this.notifyListeners('sync-permanent-failure', {
+              failedAt: new Date().toISOString(),
+              pendingCount,
+              lastError: error.message
+            });
+          }
+        } else {
+          // Calculate next retry time with exponential backoff
+          const backoffDelay = calculateBackoffDelay(newRetryCount - 1);
+          const nextRetryAt = new Date(Date.now() + backoffDelay).toISOString();
+
+          await databaseService.updateSyncItem(item.id, {
+            status: 'pending',
+            retryCount: newRetryCount,
+            lastError: error.message,
+            nextRetryAt
+          });
+
+          console.log(`[Sync] Item ${item.id} retry ${newRetryCount}/${BACKOFF_CONFIG.MAX_RETRIES}, next attempt in ${Math.round(backoffDelay / 1000)}s`);
         }
       }
     }
@@ -184,13 +390,7 @@ class SyncService {
       // Get changes from server since last sync
       const response = await api.post('/sync/pull', {
         lastSync,
-        entities: [
-          'patients',
-          'appointments',
-          'prescriptions',
-          'ophthalmologyExams',
-          'users'
-        ]
+        entities: SYNC_ENTITIES
       });
 
       if (!response.data.changes) return;
@@ -201,7 +401,16 @@ class SyncService {
         await this.processServerChanges(entity, items);
       }
     } catch (error) {
-      console.error('Failed to pull server changes:', error);
+      // Don't spam console with errors - just log once
+      if (error.response?.status === 401) {
+        console.warn('[Sync] Authentication required - token may be expired');
+      } else if (error.code === 'ECONNABORTED') {
+        console.warn('[Sync] Request timeout - server may be slow or unreachable');
+      } else if (!error.response) {
+        console.warn('[Sync] Network error - check internet connection');
+      } else {
+        console.error('[Sync] Failed to pull server changes:', error.message);
+      }
       throw error;
     }
   }
@@ -376,14 +585,34 @@ class SyncService {
     const lastSync = await databaseService.getSetting('lastSync');
     const stats = await databaseService.getStats();
 
+    // Calculate backoff statistics
+    const now = new Date().toISOString();
+    const readyItems = syncQueue.filter(item => !item.nextRetryAt || item.nextRetryAt <= now);
+    const waitingItems = syncQueue.filter(item => item.nextRetryAt && item.nextRetryAt > now);
+    const errorItems = syncQueue.filter(item => item.status === 'error');
+
+    // Find next scheduled retry
+    const nextRetry = waitingItems.reduce((earliest, item) =>
+      !earliest || item.nextRetryAt < earliest ? item.nextRetryAt : earliest
+    , null);
+
     return {
       isOnline: navigator.onLine,
       isSyncing: this.isSyncing,
       lastSync,
       pendingOperations: syncQueue.length,
+      readyToSync: readyItems.length,
+      waitingForRetry: waitingItems.length,
+      failedOperations: errorItems.length,
+      nextScheduledRetry: nextRetry,
       unresolvedConflicts: conflicts.filter(c => c.resolution === 'pending').length,
       totalConflicts: conflicts.length,
-      localRecords: stats
+      localRecords: stats,
+      backoffConfig: {
+        maxRetries: BACKOFF_CONFIG.MAX_RETRIES,
+        baseDelayMs: BACKOFF_CONFIG.BASE_DELAY_MS,
+        maxDelayMs: BACKOFF_CONFIG.MAX_DELAY_MS
+      }
     };
   }
 
@@ -392,6 +621,71 @@ class SyncService {
     await databaseService.db.syncQueue.clear();
     await databaseService.db.conflicts.clear();
     await databaseService.setSetting('lastSync', new Date().toISOString());
+  }
+
+  // Reset a failed sync item to retry immediately
+  async resetFailedItem(itemId) {
+    const item = await databaseService.db.syncQueue.get(itemId);
+    if (!item) throw new Error('Sync item not found');
+
+    if (item.status !== 'error') {
+      throw new Error('Can only reset items with error status');
+    }
+
+    await databaseService.updateSyncItem(itemId, {
+      status: 'pending',
+      retryCount: 0,
+      nextRetryAt: null,
+      lastError: null
+    });
+
+    console.log(`[Sync] Reset item ${itemId} for retry`);
+
+    // Trigger immediate sync attempt
+    if (navigator.onLine) {
+      this.sync();
+    }
+
+    return true;
+  }
+
+  // Reset all failed items
+  async resetAllFailedItems() {
+    const syncQueue = await databaseService.getSyncQueue();
+    const errorItems = syncQueue.filter(item => item.status === 'error');
+
+    for (const item of errorItems) {
+      await databaseService.updateSyncItem(item.id, {
+        status: 'pending',
+        retryCount: 0,
+        nextRetryAt: null,
+        lastError: null
+      });
+    }
+
+    console.log(`[Sync] Reset ${errorItems.length} failed items for retry`);
+
+    // Trigger immediate sync attempt
+    if (navigator.onLine && errorItems.length > 0) {
+      this.sync();
+    }
+
+    return errorItems.length;
+  }
+
+  // Get detailed queue info (for debugging)
+  async getQueueDetails() {
+    const syncQueue = await databaseService.getSyncQueue();
+    return syncQueue.map(item => ({
+      id: item.id,
+      entity: item.entity,
+      operation: item.operation,
+      status: item.status,
+      retryCount: item.retryCount || 0,
+      nextRetryAt: item.nextRetryAt,
+      lastError: item.lastError,
+      timestamp: item.timestamp
+    }));
   }
 }
 
@@ -402,5 +696,12 @@ const syncService = new SyncService();
 if (typeof window !== 'undefined') {
   syncService.init();
 }
+
+// Export config for testing
+export { BACKOFF_CONFIG };
+
+// Export conflict strategy methods
+export const getConflictStrategy = () => syncService.getConflictStrategy();
+export const setConflictStrategy = (strategy) => syncService.setConflictStrategy(strategy);
 
 export default syncService;

@@ -1,13 +1,17 @@
 const ConsultationSession = require('../models/ConsultationSession');
+const { asyncHandler } = require('../middleware/errorHandler');
+const { buildClinicQuery } = require('../middleware/clinicAuth');
 
 /**
  * Get active session for patient
+ * MULTI-CLINIC: Sessions are scoped to the current clinic context
  */
 exports.getActiveSession = async (req, res) => {
   try {
     const { patientId } = req.params;
 
-    const session = await ConsultationSession.getActiveSession(patientId, req.user._id);
+    // MULTI-CLINIC: Pass clinic context to filter sessions
+    const session = await ConsultationSession.getActiveSession(patientId, req.user._id, req.clinicId);
 
     res.json({
       success: true,
@@ -25,12 +29,14 @@ exports.getActiveSession = async (req, res) => {
 
 /**
  * Get recent sessions for doctor
+ * MULTI-CLINIC: Sessions filtered by current clinic context
  */
 exports.getRecentSessions = async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
 
-    const sessions = await ConsultationSession.getRecentSessions(req.user._id, limit);
+    // MULTI-CLINIC: Pass clinic context to filter sessions
+    const sessions = await ConsultationSession.getRecentSessions(req.user._id, req.clinicId, limit);
 
     res.json({
       success: true,
@@ -80,24 +86,49 @@ exports.getSessionById = async (req, res) => {
 
 /**
  * Create new consultation session
+ * MULTI-CLINIC: Session is created for the current clinic context
  */
 exports.createSession = async (req, res) => {
   try {
+    // MULTI-CLINIC: Determine clinic context
+    let clinicId = req.clinicId;
+
+    // If admin in "All Clinics" mode, try to get clinic from patient
+    if (!clinicId && req.accessAllClinics) {
+      const Patient = require('../models/Patient');
+      const patient = await Patient.findById(req.body.patient);
+      if (patient && patient.homeClinic) {
+        clinicId = patient.homeClinic;
+      } else if (req.user.primaryClinic) {
+        // Fallback to admin's primary clinic
+        clinicId = req.user.primaryClinic;
+      }
+    }
+
+    if (!clinicId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please select a specific clinic before starting a consultation, or ensure the patient has a home clinic assigned.'
+      });
+    }
+
     const sessionData = {
       ...req.body,
+      clinic: clinicId, // MULTI-CLINIC: Assign clinic to session
       doctor: req.user._id
     };
 
-    // Check if there's already an active session for this patient
+    // Check if there's already an active session for this patient at this clinic
     const existingSession = await ConsultationSession.getActiveSession(
       sessionData.patient,
-      req.user._id
+      req.user._id,
+      clinicId // MULTI-CLINIC: Check within same clinic
     );
 
     if (existingSession) {
       return res.status(400).json({
         success: false,
-        message: 'An active session already exists for this patient',
+        message: 'An active session already exists for this patient at this clinic',
         data: existingSession
       });
     }
@@ -105,6 +136,7 @@ exports.createSession = async (req, res) => {
     const session = new ConsultationSession(sessionData);
     await session.save();
 
+    await session.populate('clinic', 'clinicId name shortName');
     await session.populate('patient', 'firstName lastName patientId');
     await session.populate('doctor', 'firstName lastName');
 
@@ -198,6 +230,18 @@ exports.completeSession = async (req, res) => {
         success: false,
         message: 'You do not have permission to complete this session'
       });
+    }
+
+    // Update session with final data if provided (for dashboard mode)
+    if (req.body && Object.keys(req.body).length > 0) {
+      // CRITICAL FIX: Filter out 'status' from req.body to prevent accidentally
+      // overriding session.status with invalid enum values from frontend data
+      const { status, ...safeData } = req.body;
+      if (status && status !== 'active') {
+        console.warn(`[COMPLETE SESSION] Ignoring status="${status}" from frontend to prevent validation errors`);
+      }
+      Object.assign(session, safeData);
+      await session.save();
     }
 
     await session.complete(req.user._id);

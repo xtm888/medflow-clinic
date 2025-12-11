@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
+const { validatePassword } = require('../utils/passwordValidator');
 
 const userSchema = new mongoose.Schema({
   // Basic Information
@@ -23,8 +24,20 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
     required: [true, 'Password is required'],
-    minlength: [8, 'Password must be at least 8 characters'],
-    select: false
+    minlength: [12, 'Password must be at least 12 characters'],
+    select: false,
+    validate: {
+      validator: function(v) {
+        // Skip validation for existing hashed passwords
+        if (v && v.startsWith('$2')) return true;
+        const result = validatePassword(v);
+        return result.valid;
+      },
+      message: function(props) {
+        const result = validatePassword(props.value);
+        return result.errors.join('. ');
+      }
+    }
   },
 
   // Personal Information
@@ -52,7 +65,7 @@ const userSchema = new mongoose.Schema({
   // Professional Information
   role: {
     type: String,
-    enum: ['admin', 'doctor', 'nurse', 'receptionist', 'pharmacist', 'lab_technician', 'ophthalmologist'],
+    enum: ['admin', 'doctor', 'nurse', 'receptionist', 'pharmacist', 'lab_technician', 'ophthalmologist', 'manager', 'technician', 'orthoptist', 'optometrist', 'radiologist', 'accountant'],
     required: true,
     default: 'receptionist'
   },
@@ -63,6 +76,15 @@ const userSchema = new mongoose.Schema({
   licenseNumber: {
     type: String,
     required: function() { return this.role === 'doctor' || this.role === 'pharmacist' || this.role === 'ophthalmologist'; }
+  },
+  // DEA Number - Required for prescribing controlled substances in US
+  // For DRC/Congo, this can be used for equivalent regulatory numbers
+  deaNumber: {
+    type: String,
+    trim: true,
+    uppercase: true,
+    match: [/^[A-Z]{2}\d{7}$/, 'DEA number must be 2 letters followed by 7 digits (e.g., AB1234567)']
+    // Optional - only validated when prescribed controlled substances
   },
   department: {
     type: String,
@@ -85,6 +107,21 @@ const userSchema = new mongoose.Schema({
     default: 'morning'
   },
 
+  // Multi-Clinic Assignment
+  clinics: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic'
+  }],
+  primaryClinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic'
+  },
+  // Can access all clinics (for admins/managers)
+  accessAllClinics: {
+    type: Boolean,
+    default: false
+  },
+
   // Account Status
   isActive: {
     type: Boolean,
@@ -103,6 +140,15 @@ const userSchema = new mongoose.Schema({
     default: false
   },
   twoFactorSecret: String,
+  twoFactorBackupCodes: [{
+    code: String,
+    used: { type: Boolean, default: false },
+    usedAt: Date
+  }],
+  tokenVersion: {
+    type: Number,
+    default: 0
+  },
   loginAttempts: {
     type: Number,
     default: 0
@@ -254,17 +300,41 @@ userSchema.methods.isPasswordUsedBefore = async function(password) {
   return false;
 };
 
-// Sign JWT
+// Sign JWT (short-lived access token)
 userSchema.methods.getSignedJwtToken = function() {
   return jwt.sign(
     {
       id: this._id,
       role: this.role,
-      permissions: this.permissions
+      permissions: this.permissions,
+      tokenType: 'access'
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: process.env.JWT_EXPIRE
+      expiresIn: process.env.JWT_EXPIRE || '15m'
+    }
+  );
+};
+
+// SECURITY: Generate refresh token with separate secret
+// Refresh tokens are long-lived and use a different secret to limit blast radius
+userSchema.methods.getSignedRefreshToken = function() {
+  // Use a separate secret for refresh tokens - fall back to JWT_SECRET if not set
+  const refreshSecret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+
+  // Warn in development if using same secret
+  if (process.env.NODE_ENV !== 'production' && refreshSecret === process.env.JWT_SECRET) {
+    console.warn('[SECURITY] REFRESH_TOKEN_SECRET not set - using JWT_SECRET as fallback. Set a separate secret in production!');
+  }
+
+  return jwt.sign(
+    {
+      id: this._id,
+      tokenType: 'refresh' // Mark token type to prevent misuse
+    },
+    refreshSecret,
+    {
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '30d'
     }
   );
 };
@@ -337,6 +407,38 @@ userSchema.methods.hasPermission = function(module, action) {
 
   const permission = this.permissions.find(p => p.module === module);
   return permission && permission.actions.includes(action);
+};
+
+// Generate 2FA backup codes
+userSchema.methods.generateBackupCodes = function() {
+  const codes = [];
+  for (let i = 0; i < 10; i++) {
+    const code = crypto.randomBytes(4).toString('hex').toUpperCase();
+    codes.push({
+      code: crypto.createHash('sha256').update(code).digest('hex'),
+      used: false
+    });
+  }
+  this.twoFactorBackupCodes = codes;
+  // Return plain codes for user to save (only shown once)
+  return codes.map((_, i) => {
+    const plainCode = crypto.randomBytes(4).toString('hex').toUpperCase();
+    this.twoFactorBackupCodes[i].code = crypto.createHash('sha256').update(plainCode).digest('hex');
+    return plainCode;
+  });
+};
+
+// Verify and use backup code
+userSchema.methods.useBackupCode = function(code) {
+  const hashedCode = crypto.createHash('sha256').update(code.toUpperCase()).digest('hex');
+  const backupCode = this.twoFactorBackupCodes.find(bc => bc.code === hashedCode && !bc.used);
+
+  if (backupCode) {
+    backupCode.used = true;
+    backupCode.usedAt = new Date();
+    return true;
+  }
+  return false;
 };
 
 module.exports = mongoose.model('User', userSchema);

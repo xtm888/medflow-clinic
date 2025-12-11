@@ -195,18 +195,174 @@ class Logger {
         Sentry.init({
           dsn,
           environment: import.meta.env.MODE,
+
+          // Performance sampling (10%)
           tracesSampleRate: 0.1,
-          replaysSessionSampleRate: 0.1,
-          replaysOnErrorSampleRate: 1.0,
+
+          // Session replay (disabled for PHI compliance)
+          replaysSessionSampleRate: 0,
+          replaysOnErrorSampleRate: 0,
+
+          // App version
           release: import.meta.env.VITE_APP_VERSION || '1.0.0',
+
+          // PHI/PII Scrubbing - Remove sensitive medical data from error reports
+          beforeSend(event, hint) {
+            return scrubPHI(event);
+          },
+
+          // Also scrub breadcrumbs
+          beforeBreadcrumb(breadcrumb) {
+            if (breadcrumb.data) {
+              breadcrumb.data = scrubObjectPHI(breadcrumb.data);
+            }
+            return breadcrumb;
+          },
+
+          // Ignore specific error types
+          ignoreErrors: [
+            // Browser extensions
+            /^chrome-extension:\/\//,
+            /^moz-extension:\/\//,
+            // Network errors (already handled by offline system)
+            'Network Error',
+            'Failed to fetch',
+            'Load failed',
+            // Authentication errors (not actionable)
+            'Token expired',
+            'Invalid token'
+          ],
+
+          // Deny URLs
+          denyUrls: [
+            /localhost/,
+            /127\.0\.0\.1/,
+            /extensions\//i,
+            /^chrome:\/\//i
+          ]
         });
         sentryInitialized = true;
-        console.log('[Logger] Sentry initialized');
+        console.log('[Logger] Sentry initialized with PHI scrubbing');
       } catch (err) {
         console.warn('[Logger] Failed to initialize Sentry:', err.message);
       }
     }
   }
+}
+
+// PHI/PII fields that must be scrubbed from error reports
+const PHI_FIELDS = [
+  'firstName', 'lastName', 'name', 'fullName',
+  'nationalId', 'ssn', 'idNumber',
+  'phoneNumber', 'phone', 'mobile', 'telephone',
+  'email', 'emailAddress',
+  'address', 'streetAddress', 'city', 'postalCode', 'zipCode',
+  'dateOfBirth', 'dob', 'birthDate',
+  'diagnosis', 'chiefComplaint', 'medicalHistory',
+  'allergies', 'medications', 'prescription',
+  'findings', 'notes', 'clinicalNotes',
+  'results', 'labResults', 'interpretation',
+  'visualAcuity', 'refraction', 'intraocularPressure',
+  'password', 'token', 'accessToken', 'refreshToken',
+  'cardNumber', 'cvv', 'accountNumber'
+];
+
+/**
+ * Scrub PHI from an object recursively
+ * @param {object} obj - Object to scrub
+ * @returns {object} - Scrubbed object
+ */
+function scrubObjectPHI(obj) {
+  if (!obj || typeof obj !== 'object') return obj;
+
+  const scrubbed = Array.isArray(obj) ? [] : {};
+
+  for (const key of Object.keys(obj)) {
+    const lowerKey = key.toLowerCase();
+    const value = obj[key];
+
+    // Check if this is a PHI field
+    const isPHI = PHI_FIELDS.some(field =>
+      lowerKey.includes(field.toLowerCase())
+    );
+
+    if (isPHI) {
+      scrubbed[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      scrubbed[key] = scrubObjectPHI(value);
+    } else if (typeof value === 'string') {
+      // Scrub potential email patterns
+      if (value.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+        scrubbed[key] = '[EMAIL REDACTED]';
+      }
+      // Scrub potential phone patterns
+      else if (value.match(/^\+?[\d\s\-()]{8,}$/)) {
+        scrubbed[key] = '[PHONE REDACTED]';
+      }
+      // Scrub potential national ID patterns
+      else if (value.match(/^[A-Z0-9]{8,}$/i)) {
+        scrubbed[key] = '[ID REDACTED]';
+      }
+      else {
+        scrubbed[key] = value;
+      }
+    } else {
+      scrubbed[key] = value;
+    }
+  }
+
+  return scrubbed;
+}
+
+/**
+ * Scrub PHI from Sentry event
+ * @param {object} event - Sentry event
+ * @returns {object} - Scrubbed event
+ */
+function scrubPHI(event) {
+  // Scrub extra data
+  if (event.extra) {
+    event.extra = scrubObjectPHI(event.extra);
+  }
+
+  // Scrub contexts
+  if (event.contexts) {
+    event.contexts = scrubObjectPHI(event.contexts);
+  }
+
+  // Scrub tags
+  if (event.tags) {
+    event.tags = scrubObjectPHI(event.tags);
+  }
+
+  // Scrub exception message if it contains PHI patterns
+  if (event.exception?.values) {
+    event.exception.values = event.exception.values.map(exc => {
+      if (exc.value) {
+        // Redact email patterns in error messages
+        exc.value = exc.value.replace(
+          /[^\s@]+@[^\s@]+\.[^\s@]+/g,
+          '[EMAIL REDACTED]'
+        );
+        // Redact phone patterns
+        exc.value = exc.value.replace(
+          /\+?[\d\s\-()]{8,}/g,
+          '[PHONE REDACTED]'
+        );
+      }
+      return exc;
+    });
+  }
+
+  // Remove user PII (keep only ID and role)
+  if (event.user) {
+    event.user = {
+      id: event.user.id,
+      role: event.user.role
+    };
+  }
+
+  return event;
 }
 
 // Export singleton instance

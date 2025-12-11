@@ -292,6 +292,9 @@ const documentSchema = new mongoose.Schema({
 
 // Indexes
 documentSchema.index({ patient: 1, visit: 1 });
+documentSchema.index({ patient: 1, createdAt: -1 });
+documentSchema.index({ prescription: 1 });
+documentSchema.index({ appointment: 1 });
 documentSchema.index({ category: 1, subCategory: 1 });
 documentSchema.index({ status: 1 });
 documentSchema.index({ 'content.searchable': 'text', title: 'text', tags: 'text' });
@@ -344,44 +347,11 @@ documentSchema.methods.addAnnotation = function(annotationData) {
 };
 
 documentSchema.methods.transcribeAudio = async function(engine = 'whisper') {
-  if (this.type !== 'audio' || !this.file.path) {
-    throw new Error('Document is not an audio file');
-  }
-
-  // This would integrate with actual transcription service
-  // For now, return mock transcription
-  this.audio.transcription = {
-    text: 'Mock transcription of audio content',
-    confidence: 0.95,
-    language: 'en',
-    timestamp: new Date(),
-    engine: engine
-  };
-
-  // Extract keywords (mock)
-  this.audio.keywords = ['patient', 'examination', 'treatment'];
-
-  // Generate summary (mock)
-  this.audio.summary = 'Patient discussed symptoms and treatment options';
-
-  // Update searchable content
-  this.content.searchable = this.audio.transcription.text;
-
-  return this.save();
+  throw new Error('Audio transcription feature not available');
 };
 
 documentSchema.methods.ocrDocument = async function() {
-  if (this.type !== 'pdf' && this.type !== 'image') {
-    throw new Error('Document type not suitable for OCR');
-  }
-
-  // This would integrate with actual OCR service
-  // For now, return mock OCR result
-  this.content.extracted = 'Mock OCR extracted text from document';
-  this.content.searchable = this.content.extracted;
-  this.content.wordCount = 100;
-
-  return this.save();
+  throw new Error('OCR feature not available');
 };
 
 documentSchema.methods.shareWith = function(userId, permission = 'view', expiresInDays = null) {
@@ -492,6 +462,85 @@ documentSchema.statics.getRetentionExpired = async function() {
     'legal.retentionExpiry': { $lte: new Date() },
     deleted: false
   });
+};
+
+/**
+ * Track a generated PDF document in the Document collection
+ * This creates a record of system-generated documents for audit and retrieval
+ * @param {Object} options - Document tracking options
+ * @param {String} options.type - Type of document (invoice, prescription, report, etc.)
+ * @param {String} options.title - Document title
+ * @param {ObjectId} options.patientId - Associated patient ID
+ * @param {ObjectId} options.visitId - Associated visit ID (optional)
+ * @param {ObjectId} options.userId - User who generated the document
+ * @param {Object} options.metadata - Additional metadata (invoiceId, prescriptionId, etc.)
+ * @param {String} options.filename - Generated filename
+ * @param {Number} options.fileSize - Size of the PDF in bytes (optional)
+ * @returns {Promise<Document>} Created document record
+ */
+documentSchema.statics.trackGeneratedPDF = async function(options) {
+  const {
+    type,
+    title,
+    patientId,
+    visitId,
+    userId,
+    metadata = {},
+    filename,
+    fileSize = 0
+  } = options;
+
+  // Map type to category
+  const categoryMap = {
+    'invoice': 'administrative',
+    'receipt': 'administrative',
+    'statement': 'administrative',
+    'claim': 'insurance',
+    'prescription': 'clinical',
+    'lab_report': 'laboratory',
+    'patient_record': 'clinical',
+    'patient_list': 'administrative',
+    'company_statement': 'administrative',
+    'aging_report': 'administrative',
+    'batch_invoice': 'administrative'
+  };
+
+  try {
+    const doc = await this.create({
+      title,
+      category: categoryMap[type] || 'report',
+      subCategory: type,
+      patient: patientId,
+      visit: visitId,
+      type: 'pdf',
+      file: {
+        filename,
+        mimeType: 'application/pdf',
+        size: fileSize,
+        isGenerated: true,
+        generatedAt: new Date()
+      },
+      status: 'final',
+      metadata: {
+        documentType: type,
+        generatedBy: 'system',
+        ...metadata
+      },
+      createdBy: userId,
+      updatedBy: userId,
+      source: 'system',
+      access: {
+        level: 'restricted'
+      }
+    });
+
+    console.log(`[DOCUMENT] Tracked generated PDF: ${doc.documentId} - ${title}`);
+    return doc;
+  } catch (error) {
+    // Log error but don't fail the PDF generation
+    console.error(`[DOCUMENT] Error tracking generated PDF: ${error.message}`);
+    return null;
+  }
 };
 
 module.exports = mongoose.model('Document', documentSchema);

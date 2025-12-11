@@ -10,7 +10,8 @@ const uploadDirs = {
   lab: 'uploads/lab',
   imaging: 'uploads/imaging',
   prescriptions: 'uploads/prescriptions',
-  temp: 'uploads/temp'
+  temp: 'uploads/temp',
+  opticalTryons: 'uploads/optical-tryons'
 };
 
 // Ensure all directories exist
@@ -160,7 +161,36 @@ const uploads = {
     storage: createStorage('temp'),
     fileFilter: fileFilters.any,
     limits: { fileSize: sizeLimits.default }
-  }).array('files', 20)
+  }).array('files', 20),
+
+  // Optical shop try-on photos (exactly 2 photos: front + side)
+  tryOnPhotos: multer({
+    storage: multer.diskStorage({
+      destination: (req, file, cb) => {
+        const orderId = req.params.orderId || 'temp';
+        const orderDir = path.join(uploadDirs.opticalTryons, orderId);
+        if (!fs.existsSync(orderDir)) {
+          fs.mkdirSync(orderDir, { recursive: true });
+        }
+        cb(null, orderDir);
+      },
+      filename: (req, file, cb) => {
+        const uniqueSuffix = crypto.randomBytes(4).toString('hex');
+        const timestamp = Date.now();
+        const photoType = file.fieldname;
+        const ext = path.extname(file.originalname);
+        cb(null, `${photoType}_${timestamp}_${uniqueSuffix}${ext}`);
+      }
+    }),
+    fileFilter: fileFilters.images,
+    limits: {
+      fileSize: 10 * 1024 * 1024,
+      files: 2
+    }
+  }).fields([
+    { name: 'frontPhoto', maxCount: 1 },
+    { name: 'sidePhoto', maxCount: 1 }
+  ])
 };
 
 // Middleware to handle upload errors

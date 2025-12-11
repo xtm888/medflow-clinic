@@ -9,10 +9,12 @@ const { asyncHandler } = require('../middleware/errorHandler');
 const getPatientFromUser = async (userId) => {
   // For patient portal, we need to link user to patient
   // This could be via email match or a direct link
+  // Escape special regex characters to prevent ReDoS/injection attacks
+  const escapedUserId = userId.toString().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const patient = await Patient.findOne({
     $or: [
       { userId: userId },
-      { email: { $regex: new RegExp(`^${userId}$`, 'i') } }
+      { email: { $regex: new RegExp(`^${escapedUserId}$`, 'i') } }
     ]
   });
   return patient;

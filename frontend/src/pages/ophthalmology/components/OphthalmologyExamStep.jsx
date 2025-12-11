@@ -5,12 +5,13 @@
  * - Anterior segment examination
  * - Posterior segment examination
  * - Intraocular pressure
- * - Gonioscopy
+ * - Gonioscopy (simple or enhanced)
  * - Pathology findings
  */
 
 import { useState } from 'react';
-import { Eye, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Eye, AlertTriangle, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { GonioscopyPanel } from './gonioscopy';
 
 // Common pathology findings for quick selection
 const PATHOLOGY_OPTIONS = {
@@ -41,6 +42,9 @@ export default function OphthalmologyExamStep({ data = {}, onChange, readOnly = 
     iop: true,
     gonioscopy: false
   });
+  const [useEnhancedGonioscopy, setUseEnhancedGonioscopy] = useState(
+    data?.gonioscopy?.enhanced || false
+  );
 
   const exam = {
     anteriorSegment: {
@@ -415,60 +419,106 @@ export default function OphthalmologyExamStep({ data = {}, onChange, readOnly = 
         <SectionHeader title="Gonioscopie" section="gonioscopy" />
         {expandedSections.gonioscopy && (
           <div className="p-4">
-            <div className="grid grid-cols-2 gap-6">
-              {/* OD */}
-              <div>
-                <h5 className="font-medium text-sm text-gray-700 mb-3">OD (Shaffer)</h5>
-                <div className="grid grid-cols-2 gap-2">
-                  {['superior', 'inferior', 'nasal', 'temporal'].map((quadrant) => (
-                    <div key={quadrant}>
-                      <label className="block text-xs text-gray-500 mb-1 capitalize">
-                        {quadrant === 'superior' ? 'Supérieur' :
-                         quadrant === 'inferior' ? 'Inférieur' :
-                         quadrant === 'nasal' ? 'Nasal' : 'Temporal'}
-                      </label>
-                      <select
-                        value={exam.gonioscopy.OD[quadrant] || ''}
-                        onChange={(e) => updateField(`gonioscopy.OD.${quadrant}`, e.target.value)}
-                        className="w-full px-2 py-1 text-sm border rounded"
-                        disabled={readOnly}
-                      >
-                        <option value="">-</option>
-                        {GONIOSCOPY_GRADES.map(grade => (
-                          <option key={grade} value={grade}>{grade}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              {/* OS */}
-              <div>
-                <h5 className="font-medium text-sm text-gray-700 mb-3">OS (Shaffer)</h5>
-                <div className="grid grid-cols-2 gap-2">
-                  {['superior', 'inferior', 'nasal', 'temporal'].map((quadrant) => (
-                    <div key={quadrant}>
-                      <label className="block text-xs text-gray-500 mb-1 capitalize">
-                        {quadrant === 'superior' ? 'Supérieur' :
-                         quadrant === 'inferior' ? 'Inférieur' :
-                         quadrant === 'nasal' ? 'Nasal' : 'Temporal'}
-                      </label>
-                      <select
-                        value={exam.gonioscopy.OS[quadrant] || ''}
-                        onChange={(e) => updateField(`gonioscopy.OS.${quadrant}`, e.target.value)}
-                        className="w-full px-2 py-1 text-sm border rounded"
-                        disabled={readOnly}
-                      >
-                        <option value="">-</option>
-                        {GONIOSCOPY_GRADES.map(grade => (
-                          <option key={grade} value={grade}>{grade}</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </div>
+            {/* Mode Toggle */}
+            <div className="flex items-center justify-between mb-4 pb-4 border-b">
+              <span className="text-sm text-gray-600">Mode d'évaluation:</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    setUseEnhancedGonioscopy(false);
+                    updateField('gonioscopy.enhanced', false);
+                  }}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-all ${
+                    !useEnhancedGonioscopy
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  disabled={readOnly}
+                >
+                  Simple
+                </button>
+                <button
+                  onClick={() => {
+                    setUseEnhancedGonioscopy(true);
+                    updateField('gonioscopy.enhanced', true);
+                  }}
+                  className={`px-3 py-1.5 text-sm rounded-lg transition-all flex items-center gap-1 ${
+                    useEnhancedGonioscopy
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                  disabled={readOnly}
+                >
+                  <Settings className="h-4 w-4" />
+                  Avancé
+                </button>
               </div>
             </div>
+
+            {useEnhancedGonioscopy ? (
+              /* Enhanced Gonioscopy Panel */
+              <GonioscopyPanel
+                data={exam.gonioscopy}
+                onChange={(gonioscopyData) => updateField('gonioscopy', { ...gonioscopyData, enhanced: true })}
+                readOnly={readOnly}
+              />
+            ) : (
+              /* Simple Gonioscopy */
+              <div className="grid grid-cols-2 gap-6">
+                {/* OD */}
+                <div>
+                  <h5 className="font-medium text-sm text-gray-700 mb-3">OD (Shaffer)</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['superior', 'inferior', 'nasal', 'temporal'].map((quadrant) => (
+                      <div key={quadrant}>
+                        <label className="block text-xs text-gray-500 mb-1 capitalize">
+                          {quadrant === 'superior' ? 'Supérieur' :
+                           quadrant === 'inferior' ? 'Inférieur' :
+                           quadrant === 'nasal' ? 'Nasal' : 'Temporal'}
+                        </label>
+                        <select
+                          value={exam.gonioscopy.OD[quadrant] || ''}
+                          onChange={(e) => updateField(`gonioscopy.OD.${quadrant}`, e.target.value)}
+                          className="w-full px-2 py-1 text-sm border rounded"
+                          disabled={readOnly}
+                        >
+                          <option value="">-</option>
+                          {GONIOSCOPY_GRADES.map(grade => (
+                            <option key={grade} value={grade}>{grade}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {/* OS */}
+                <div>
+                  <h5 className="font-medium text-sm text-gray-700 mb-3">OS (Shaffer)</h5>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['superior', 'inferior', 'nasal', 'temporal'].map((quadrant) => (
+                      <div key={quadrant}>
+                        <label className="block text-xs text-gray-500 mb-1 capitalize">
+                          {quadrant === 'superior' ? 'Supérieur' :
+                           quadrant === 'inferior' ? 'Inférieur' :
+                           quadrant === 'nasal' ? 'Nasal' : 'Temporal'}
+                        </label>
+                        <select
+                          value={exam.gonioscopy.OS[quadrant] || ''}
+                          onChange={(e) => updateField(`gonioscopy.OS.${quadrant}`, e.target.value)}
+                          className="w-full px-2 py-1 text-sm border rounded"
+                          disabled={readOnly}
+                        >
+                          <option value="">-</option>
+                          {GONIOSCOPY_GRADES.map(grade => (
+                            <option key={grade} value={grade}>{grade}</option>
+                          ))}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

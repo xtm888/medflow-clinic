@@ -1,0 +1,1973 @@
+{
+  "timestamp": "2025-12-10T00:34:47.184484",
+  "total_tests": 111,
+  "passed": 111,
+  "failed": 0,
+  "success_rate": "100.0%",
+  "categories": {
+    "Dashboard": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Dashboard",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:44.373203"
+        },
+        {
+          "category": "Dashboard",
+          "test": "Stats cards present",
+          "passed": true,
+          "details": "Found 12 cards",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:44.384120"
+        },
+        {
+          "category": "Dashboard",
+          "test": "Quick actions present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:44.388837"
+        },
+        {
+          "category": "Dashboard",
+          "test": "Alerts section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:44.390508"
+        },
+        {
+          "category": "Dashboard",
+          "test": "Refresh button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:44.396252"
+        }
+      ]
+    },
+    "Patients": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Patients",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.938007"
+        },
+        {
+          "category": "Patients",
+          "test": "Search input present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.941000"
+        },
+        {
+          "category": "Patients",
+          "test": "Search type filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.943413"
+        },
+        {
+          "category": "Patients",
+          "test": "New patient button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.945798"
+        },
+        {
+          "category": "Patients",
+          "test": "Filters button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.947978"
+        },
+        {
+          "category": "Patients",
+          "test": "Patient table/list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.949733"
+        },
+        {
+          "category": "Patients",
+          "test": "Sort options present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:46.955826"
+        }
+      ]
+    },
+    "Patient Wizard": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Patient Wizard",
+          "test": "Step 1 (Photo) loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:49.999855"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "All 5 steps visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:50.008982"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Photo capture available",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:50.011113"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Next button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:50.012073"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Step 2 has name fields",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:50.693265"
+        }
+      ]
+    },
+    "Queue": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Queue",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:53.086475"
+        },
+        {
+          "category": "Queue",
+          "test": "Sort options present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:53.101040"
+        },
+        {
+          "category": "Queue",
+          "test": "Check-in button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:53.104983"
+        },
+        {
+          "category": "Queue",
+          "test": "Call next button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:53.108541"
+        },
+        {
+          "category": "Queue",
+          "test": "Queue stats visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:53.110570"
+        }
+      ]
+    },
+    "Appointments": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Appointments",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:55.602350"
+        },
+        {
+          "category": "Appointments",
+          "test": "View mode toggles present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:55.610398"
+        },
+        {
+          "category": "Appointments",
+          "test": "New appointment button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:55.613214"
+        },
+        {
+          "category": "Appointments",
+          "test": "Date navigation present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:55.615944"
+        },
+        {
+          "category": "Appointments",
+          "test": "Status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:55.617640"
+        },
+        {
+          "category": "Appointments",
+          "test": "Booking modal has patient field",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:56.809204"
+        },
+        {
+          "category": "Appointments",
+          "test": "Booking modal has date field",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:56.809219"
+        }
+      ]
+    },
+    "Ophthalmology": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Ophthalmology",
+          "test": "Dashboard title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:59.293336"
+        },
+        {
+          "category": "Ophthalmology",
+          "test": "Action cards present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:59.298858"
+        },
+        {
+          "category": "Ophthalmology",
+          "test": "Stats visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:59.312487"
+        },
+        {
+          "category": "Ophthalmology",
+          "test": "Equipment status visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:32:59.318364"
+        }
+      ]
+    },
+    "Consultation": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Consultation",
+          "test": "New consultation page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:02.453571"
+        },
+        {
+          "category": "Consultation",
+          "test": "Consultation types available",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:02.456381"
+        },
+        {
+          "category": "Consultation",
+          "test": "Patient search present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:02.460551"
+        }
+      ]
+    },
+    "Prescriptions": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Prescriptions",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:04.913272"
+        },
+        {
+          "category": "Prescriptions",
+          "test": "PA status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:04.924608"
+        },
+        {
+          "category": "Prescriptions",
+          "test": "New prescription button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:04.927817"
+        },
+        {
+          "category": "Prescriptions",
+          "test": "Search input present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:04.929973"
+        }
+      ]
+    },
+    "Pharmacy": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Pharmacy",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.398215"
+        },
+        {
+          "category": "Pharmacy",
+          "test": "Stats cards present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.403301"
+        },
+        {
+          "category": "Pharmacy",
+          "test": "Add medication button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.406073"
+        },
+        {
+          "category": "Pharmacy",
+          "test": "Search input present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.408063"
+        },
+        {
+          "category": "Pharmacy",
+          "test": "Category filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.410067"
+        },
+        {
+          "category": "Pharmacy",
+          "test": "Low stock section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.412228"
+        },
+        {
+          "category": "Pharmacy",
+          "test": "Expiring section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:07.414731"
+        }
+      ]
+    },
+    "Laboratory": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Laboratory",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:09.929408"
+        },
+        {
+          "category": "Laboratory",
+          "test": "Section tabs present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:09.948371"
+        },
+        {
+          "category": "Laboratory",
+          "test": "New order button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:09.954859"
+        }
+      ]
+    },
+    "IVT": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "IVT",
+          "test": "Dashboard title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:12.479733"
+        },
+        {
+          "category": "IVT",
+          "test": "Due injections section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:12.491039"
+        },
+        {
+          "category": "IVT",
+          "test": "New injection button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:12.492968"
+        }
+      ]
+    },
+    "Surgery": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Surgery",
+          "test": "Dashboard title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:14.964628"
+        },
+        {
+          "category": "Surgery",
+          "test": "Case list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:14.967831"
+        },
+        {
+          "category": "Surgery",
+          "test": "Status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:14.969619"
+        }
+      ]
+    },
+    "Invoicing": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Invoicing",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:17.434590"
+        },
+        {
+          "category": "Invoicing",
+          "test": "Category tabs present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:17.467847"
+        },
+        {
+          "category": "Invoicing",
+          "test": "Status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:17.469775"
+        },
+        {
+          "category": "Invoicing",
+          "test": "New invoice button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:17.475801"
+        },
+        {
+          "category": "Invoicing",
+          "test": "Search present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:17.479032"
+        }
+      ]
+    },
+    "Financial": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Financial",
+          "test": "Dashboard title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:22.400290"
+        },
+        {
+          "category": "Financial",
+          "test": "Revenue cards present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:22.404879"
+        },
+        {
+          "category": "Financial",
+          "test": "Dashboard sections present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:22.411085"
+        },
+        {
+          "category": "Financial",
+          "test": "Export button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:22.412783"
+        }
+      ]
+    },
+    "Companies": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Companies",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:25.009733"
+        },
+        {
+          "category": "Companies",
+          "test": "Add company button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:25.014717"
+        }
+      ]
+    },
+    "Approvals": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Approvals",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:27.959162"
+        },
+        {
+          "category": "Approvals",
+          "test": "Status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:27.968656"
+        }
+      ]
+    },
+    "Frame Inventory": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Frame Inventory",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:30.429375"
+        },
+        {
+          "category": "Frame Inventory",
+          "test": "Add frame button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:30.449912"
+        },
+        {
+          "category": "Frame Inventory",
+          "test": "Search present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:30.451906"
+        }
+      ]
+    },
+    "Optical Lens": {
+      "passed": 1,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Optical Lens",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:32.981116"
+        }
+      ]
+    },
+    "Glasses Orders": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Glasses Orders",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:35.569910"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "Order list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:35.572214"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "Status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:35.574189"
+        }
+      ]
+    },
+    "Devices": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Devices",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:38.070239"
+        },
+        {
+          "category": "Devices",
+          "test": "Add device button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:38.073792"
+        },
+        {
+          "category": "Devices",
+          "test": "Device list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:38.079267"
+        }
+      ]
+    },
+    "Discovery": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Discovery",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:40.615571"
+        },
+        {
+          "category": "Discovery",
+          "test": "Scan button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:40.618954"
+        }
+      ]
+    },
+    "Settings": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Settings",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:43.099250"
+        },
+        {
+          "category": "Settings",
+          "test": "Save button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:43.102097"
+        }
+      ]
+    },
+    "User Management": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "User Management",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:45.583054"
+        },
+        {
+          "category": "User Management",
+          "test": "Add user button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:45.586762"
+        },
+        {
+          "category": "User Management",
+          "test": "User list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:45.588643"
+        }
+      ]
+    },
+    "Audit Trail": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Audit Trail",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:48.095649"
+        },
+        {
+          "category": "Audit Trail",
+          "test": "Audit log present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:48.098397"
+        },
+        {
+          "category": "Audit Trail",
+          "test": "Date filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:48.100421"
+        }
+      ]
+    },
+    "Analytics": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Analytics",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:51.855063"
+        },
+        {
+          "category": "Analytics",
+          "test": "Charts present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:51.862395"
+        },
+        {
+          "category": "Analytics",
+          "test": "Date range selector present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:51.864619"
+        }
+      ]
+    },
+    "Templates": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Templates",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:54.404278"
+        },
+        {
+          "category": "Templates",
+          "test": "Template list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:54.407386"
+        },
+        {
+          "category": "Templates",
+          "test": "Add template button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:54.411467"
+        }
+      ]
+    },
+    "Visits": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Visits",
+          "test": "Page title present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:56.873945"
+        },
+        {
+          "category": "Visits",
+          "test": "Visit list present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:56.878118"
+        },
+        {
+          "category": "Visits",
+          "test": "Status filter present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:56.881585"
+        }
+      ]
+    },
+    "Public Booking": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Public Booking",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:58.813097"
+        },
+        {
+          "category": "Public Booking",
+          "test": "Name field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:58.824091"
+        },
+        {
+          "category": "Public Booking",
+          "test": "Date field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:33:58.825518"
+        }
+      ]
+    },
+    "Display Board": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Display Board",
+          "test": "Page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:00.883016"
+        },
+        {
+          "category": "Display Board",
+          "test": "Queue display visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:00.905873"
+        }
+      ]
+    },
+    "Responsive": {
+      "passed": 6,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Responsive",
+          "test": "Layout works at 1920x1080",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:07.762426"
+        },
+        {
+          "category": "Responsive",
+          "test": "Layout works at 1366x768",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:14.309491"
+        },
+        {
+          "category": "Responsive",
+          "test": "Layout works at 1024x768",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:20.912264"
+        },
+        {
+          "category": "Responsive",
+          "test": "Layout works at 768x1024",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:30.754402"
+        },
+        {
+          "category": "Responsive",
+          "test": "Layout works at 414x896",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:37.480726"
+        },
+        {
+          "category": "Responsive",
+          "test": "Layout works at 375x667",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:44.091872"
+        }
+      ]
+    },
+    "Keyboard": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Keyboard",
+          "test": "/ focuses search (Patients)",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:46.313525"
+        },
+        {
+          "category": "Keyboard",
+          "test": "? shows shortcuts help",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-10T00:34:47.139058"
+        }
+      ]
+    }
+  },
+  "results": [
+    {
+      "category": "Dashboard",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:44.373203"
+    },
+    {
+      "category": "Dashboard",
+      "test": "Stats cards present",
+      "passed": true,
+      "details": "Found 12 cards",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:44.384120"
+    },
+    {
+      "category": "Dashboard",
+      "test": "Quick actions present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:44.388837"
+    },
+    {
+      "category": "Dashboard",
+      "test": "Alerts section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:44.390508"
+    },
+    {
+      "category": "Dashboard",
+      "test": "Refresh button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:44.396252"
+    },
+    {
+      "category": "Patients",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.938007"
+    },
+    {
+      "category": "Patients",
+      "test": "Search input present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.941000"
+    },
+    {
+      "category": "Patients",
+      "test": "Search type filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.943413"
+    },
+    {
+      "category": "Patients",
+      "test": "New patient button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.945798"
+    },
+    {
+      "category": "Patients",
+      "test": "Filters button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.947978"
+    },
+    {
+      "category": "Patients",
+      "test": "Patient table/list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.949733"
+    },
+    {
+      "category": "Patients",
+      "test": "Sort options present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:46.955826"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 1 (Photo) loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:49.999855"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "All 5 steps visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:50.008982"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Photo capture available",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:50.011113"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Next button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:50.012073"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 2 has name fields",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:50.693265"
+    },
+    {
+      "category": "Queue",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:53.086475"
+    },
+    {
+      "category": "Queue",
+      "test": "Sort options present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:53.101040"
+    },
+    {
+      "category": "Queue",
+      "test": "Check-in button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:53.104983"
+    },
+    {
+      "category": "Queue",
+      "test": "Call next button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:53.108541"
+    },
+    {
+      "category": "Queue",
+      "test": "Queue stats visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:53.110570"
+    },
+    {
+      "category": "Appointments",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:55.602350"
+    },
+    {
+      "category": "Appointments",
+      "test": "View mode toggles present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:55.610398"
+    },
+    {
+      "category": "Appointments",
+      "test": "New appointment button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:55.613214"
+    },
+    {
+      "category": "Appointments",
+      "test": "Date navigation present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:55.615944"
+    },
+    {
+      "category": "Appointments",
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:55.617640"
+    },
+    {
+      "category": "Appointments",
+      "test": "Booking modal has patient field",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:56.809204"
+    },
+    {
+      "category": "Appointments",
+      "test": "Booking modal has date field",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:56.809219"
+    },
+    {
+      "category": "Ophthalmology",
+      "test": "Dashboard title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:59.293336"
+    },
+    {
+      "category": "Ophthalmology",
+      "test": "Action cards present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:59.298858"
+    },
+    {
+      "category": "Ophthalmology",
+      "test": "Stats visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:59.312487"
+    },
+    {
+      "category": "Ophthalmology",
+      "test": "Equipment status visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:32:59.318364"
+    },
+    {
+      "category": "Consultation",
+      "test": "New consultation page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:02.453571"
+    },
+    {
+      "category": "Consultation",
+      "test": "Consultation types available",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:02.456381"
+    },
+    {
+      "category": "Consultation",
+      "test": "Patient search present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:02.460551"
+    },
+    {
+      "category": "Prescriptions",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:04.913272"
+    },
+    {
+      "category": "Prescriptions",
+      "test": "PA status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:04.924608"
+    },
+    {
+      "category": "Prescriptions",
+      "test": "New prescription button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:04.927817"
+    },
+    {
+      "category": "Prescriptions",
+      "test": "Search input present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:04.929973"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.398215"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Stats cards present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.403301"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Add medication button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.406073"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Search input present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.408063"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Category filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.410067"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Low stock section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.412228"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Expiring section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:07.414731"
+    },
+    {
+      "category": "Laboratory",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:09.929408"
+    },
+    {
+      "category": "Laboratory",
+      "test": "Section tabs present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:09.948371"
+    },
+    {
+      "category": "Laboratory",
+      "test": "New order button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:09.954859"
+    },
+    {
+      "category": "IVT",
+      "test": "Dashboard title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:12.479733"
+    },
+    {
+      "category": "IVT",
+      "test": "Due injections section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:12.491039"
+    },
+    {
+      "category": "IVT",
+      "test": "New injection button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:12.492968"
+    },
+    {
+      "category": "Surgery",
+      "test": "Dashboard title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:14.964628"
+    },
+    {
+      "category": "Surgery",
+      "test": "Case list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:14.967831"
+    },
+    {
+      "category": "Surgery",
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:14.969619"
+    },
+    {
+      "category": "Invoicing",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:17.434590"
+    },
+    {
+      "category": "Invoicing",
+      "test": "Category tabs present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:17.467847"
+    },
+    {
+      "category": "Invoicing",
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:17.469775"
+    },
+    {
+      "category": "Invoicing",
+      "test": "New invoice button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:17.475801"
+    },
+    {
+      "category": "Invoicing",
+      "test": "Search present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:17.479032"
+    },
+    {
+      "category": "Financial",
+      "test": "Dashboard title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:22.400290"
+    },
+    {
+      "category": "Financial",
+      "test": "Revenue cards present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:22.404879"
+    },
+    {
+      "category": "Financial",
+      "test": "Dashboard sections present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:22.411085"
+    },
+    {
+      "category": "Financial",
+      "test": "Export button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:22.412783"
+    },
+    {
+      "category": "Companies",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:25.009733"
+    },
+    {
+      "category": "Companies",
+      "test": "Add company button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:25.014717"
+    },
+    {
+      "category": "Approvals",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:27.959162"
+    },
+    {
+      "category": "Approvals",
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:27.968656"
+    },
+    {
+      "category": "Frame Inventory",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:30.429375"
+    },
+    {
+      "category": "Frame Inventory",
+      "test": "Add frame button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:30.449912"
+    },
+    {
+      "category": "Frame Inventory",
+      "test": "Search present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:30.451906"
+    },
+    {
+      "category": "Optical Lens",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:32.981116"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:35.569910"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Order list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:35.572214"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:35.574189"
+    },
+    {
+      "category": "Devices",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:38.070239"
+    },
+    {
+      "category": "Devices",
+      "test": "Add device button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:38.073792"
+    },
+    {
+      "category": "Devices",
+      "test": "Device list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:38.079267"
+    },
+    {
+      "category": "Discovery",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:40.615571"
+    },
+    {
+      "category": "Discovery",
+      "test": "Scan button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:40.618954"
+    },
+    {
+      "category": "Settings",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:43.099250"
+    },
+    {
+      "category": "Settings",
+      "test": "Save button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:43.102097"
+    },
+    {
+      "category": "User Management",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:45.583054"
+    },
+    {
+      "category": "User Management",
+      "test": "Add user button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:45.586762"
+    },
+    {
+      "category": "User Management",
+      "test": "User list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:45.588643"
+    },
+    {
+      "category": "Audit Trail",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:48.095649"
+    },
+    {
+      "category": "Audit Trail",
+      "test": "Audit log present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:48.098397"
+    },
+    {
+      "category": "Audit Trail",
+      "test": "Date filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:48.100421"
+    },
+    {
+      "category": "Analytics",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:51.855063"
+    },
+    {
+      "category": "Analytics",
+      "test": "Charts present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:51.862395"
+    },
+    {
+      "category": "Analytics",
+      "test": "Date range selector present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:51.864619"
+    },
+    {
+      "category": "Templates",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:54.404278"
+    },
+    {
+      "category": "Templates",
+      "test": "Template list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:54.407386"
+    },
+    {
+      "category": "Templates",
+      "test": "Add template button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:54.411467"
+    },
+    {
+      "category": "Visits",
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:56.873945"
+    },
+    {
+      "category": "Visits",
+      "test": "Visit list present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:56.878118"
+    },
+    {
+      "category": "Visits",
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:56.881585"
+    },
+    {
+      "category": "Public Booking",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:58.813097"
+    },
+    {
+      "category": "Public Booking",
+      "test": "Name field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:58.824091"
+    },
+    {
+      "category": "Public Booking",
+      "test": "Date field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:33:58.825518"
+    },
+    {
+      "category": "Display Board",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:00.883016"
+    },
+    {
+      "category": "Display Board",
+      "test": "Queue display visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:00.905873"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout works at 1920x1080",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:07.762426"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout works at 1366x768",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:14.309491"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout works at 1024x768",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:20.912264"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout works at 768x1024",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:30.754402"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout works at 414x896",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:37.480726"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout works at 375x667",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:44.091872"
+    },
+    {
+      "category": "Keyboard",
+      "test": "/ focuses search (Patients)",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:46.313525"
+    },
+    {
+      "category": "Keyboard",
+      "test": "? shows shortcuts help",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-10T00:34:47.139058"
+    }
+  ]
+}

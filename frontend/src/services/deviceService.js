@@ -1,7 +1,9 @@
 import api, { apiHelpers } from './apiConfig';
+import offlineWrapper from './offlineWrapper';
+import { db } from './database';
 
 /**
- * Device Service
+ * Device Service - Offline-First
  *
  * Handles all device integration API calls including:
  * - Device management (CRUD)
@@ -10,39 +12,46 @@ import api, { apiHelpers } from './apiConfig';
  * - Manual data import
  * - Device statistics and monitoring
  * - Integration logs
+ *
+ * Read operations (getDevices, getDevice, getDeviceHealth) work offline with cached data
+ * Write operations and device operations (sync, mount, etc.) require online connection
  */
 
 const deviceService = {
   // ==================== Device Management ====================
 
   /**
-   * Get all devices with optional filtering and pagination
+   * Get all devices with optional filtering and pagination - WORKS OFFLINE
    * @param {Object} params - Query parameters (page, limit, type, status, manufacturer)
    * @returns {Promise<Object>} - { success, data, pagination }
    */
   async getDevices(params = {}) {
-    try {
-      const response = await api.get('/devices', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/devices', { params }),
+      'devices',
+      params,
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 1800 // 30 minutes - devices don't change frequently
+      }
+    );
   },
 
   /**
-   * Get single device by ID
+   * Get single device by ID - WORKS OFFLINE
    * @param {String} id - Device ID
    * @returns {Promise<Object>} - { success, data }
    */
   async getDevice(id) {
-    try {
-      const response = await api.get(`/devices/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching device:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/devices/${id}`),
+      'devices',
+      id,
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 1800 // 30 minutes
+      }
+    );
   },
 
   /**
@@ -176,19 +185,21 @@ const deviceService = {
   // ==================== Device Statistics ====================
 
   /**
-   * Get device statistics
+   * Get device statistics - WORKS OFFLINE
    * @param {String} id - Device ID
    * @param {Object} params - Query params (startDate, endDate, groupBy)
    * @returns {Promise<Object>} - Device statistics
    */
   async getDeviceStats(id, params = {}) {
-    try {
-      const response = await api.get(`/devices/${id}/stats`, { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching device stats:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/devices/${id}/stats`, { params }),
+      'devices',
+      { type: 'stats', deviceId: id, ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 3600 // 1 hour - stats don't change frequently
+      }
+    );
   },
 
   /**
@@ -381,18 +392,20 @@ const deviceService = {
   // ==================== Device Health & Status ====================
 
   /**
-   * Get device health status
+   * Get device health status - WORKS OFFLINE
    * @param {String} id - Device ID
    * @returns {Promise<Object>} - Health status
    */
   async getDeviceHealth(id) {
-    try {
-      const response = await api.get(`/devices/${id}/health`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching device health:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/devices/${id}/health`),
+      'devices',
+      { type: 'health', deviceId: id },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300 // 5 minutes - health status should be fresher
+      }
+    );
   },
 
   /**
@@ -517,6 +530,239 @@ const deviceService = {
       return response.data;
     } catch (error) {
       console.error('Error batch importing files:', error);
+      throw error;
+    }
+  },
+
+  // ==================== SMB Share Mounting ====================
+
+  /**
+   * Mount SMB share for a device
+   * @param {String} deviceId - Device ID
+   * @returns {Promise<Object>} - Mount result
+   */
+  async mountShare(deviceId) {
+    try {
+      const response = await api.post(`/devices/${deviceId}/mount`);
+      return response.data;
+    } catch (error) {
+      console.error('Error mounting share:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Unmount SMB share for a device
+   * @param {String} deviceId - Device ID
+   * @returns {Promise<Object>} - Unmount result
+   */
+  async unmountShare(deviceId) {
+    try {
+      const response = await api.post(`/devices/${deviceId}/unmount`);
+      return response.data;
+    } catch (error) {
+      console.error('Error unmounting share:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get mount status for a device
+   * @param {String} deviceId - Device ID
+   * @returns {Promise<Object>} - Mount status
+   */
+  async getMountStatus(deviceId) {
+    try {
+      const response = await api.get(`/devices/${deviceId}/mount-status`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting mount status:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Mount all configured device shares
+   * @returns {Promise<Object>} - Results for all mounts
+   */
+  async mountAllShares() {
+    try {
+      const response = await api.post('/devices/mount-all');
+      return response.data;
+    } catch (error) {
+      console.error('Error mounting all shares:', error);
+      throw error;
+    }
+  },
+
+  // ==================== File Browsing ====================
+
+  /**
+   * Browse files in a device share
+   * @param {String} deviceId - Device ID
+   * @param {String} subpath - Subdirectory path
+   * @param {Number} limit - Max entries to return
+   * @returns {Promise<Object>} - Directory contents
+   */
+  async browseDeviceFiles(deviceId, subpath = '', limit = 100) {
+    try {
+      const response = await api.get(`/devices/${deviceId}/browse`, {
+        params: { subpath, limit }
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error browsing device files:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get URL to serve a file from device share
+   * @param {String} deviceId - Device ID
+   * @param {String} filePath - File path within share
+   * @returns {String} - File URL
+   */
+  getDeviceFileUrl(deviceId, filePath) {
+    const baseURL = api.defaults.baseURL;
+    return `${baseURL}/devices/${deviceId}/files/${encodeURIComponent(filePath)}`;
+  },
+
+  /**
+   * Scan archive folder for auto-mapping
+   * @param {String} deviceId - Device ID
+   * @param {String} folderId - Folder ID to scan
+   * @returns {Promise<Object>} - Scan results
+   */
+  async scanArchiveFolder(deviceId, folderId) {
+    try {
+      const response = await api.post(`/devices/${deviceId}/scan-archive`, { folderId });
+      return response.data;
+    } catch (error) {
+      console.error('Error scanning archive folder:', error);
+      throw error;
+    }
+  },
+
+  // ==================== Legacy Patient Mapping ====================
+
+  /**
+   * Find patient by legacy DMI ID
+   * @param {String} dmiId - Legacy DMI ID (e.g., 10001A01)
+   * @returns {Promise<Object>} - Patient data or not found
+   */
+  async findPatientByLegacyId(dmiId) {
+    try {
+      const response = await api.get(`/devices/legacy/patients/${dmiId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error finding patient by legacy ID:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Get patient's archive files from legacy system
+   * @param {String} dmiId - Legacy DMI ID
+   * @returns {Promise<Object>} - Patient files
+   */
+  async getPatientArchiveFiles(dmiId) {
+    try {
+      const response = await api.get(`/devices/legacy/patients/${dmiId}/files`);
+      return response.data;
+    } catch (error) {
+      console.error('Error getting patient archive files:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Create legacy ID mapping for a patient
+   * @param {String} patientId - MedFlow patient ID
+   * @param {Object} mappingData - { dmiId?, deviceType?, folderId?, folderPath? }
+   * @returns {Promise<Object>} - Mapping result
+   */
+  async createLegacyMapping(patientId, mappingData) {
+    try {
+      const response = await api.post(`/devices/legacy/patients/${patientId}/map`, mappingData);
+      return response.data;
+    } catch (error) {
+      console.error('Error creating legacy mapping:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Bulk import legacy patient mappings
+   * @param {Array} mappings - Array of { dmiId, firstName, lastName, dateOfBirth, phone }
+   * @returns {Promise<Object>} - Import statistics
+   */
+  async bulkImportLegacyMappings(mappings) {
+    try {
+      const response = await api.post('/devices/legacy/patients/bulk-import', { mappings });
+      return response.data;
+    } catch (error) {
+      console.error('Error bulk importing legacy mappings:', error);
+      throw error;
+    }
+  },
+
+  // ==================== Folder Sync Service ====================
+
+  /**
+   * Get folder sync service statistics
+   * @returns {Promise<Object>} - Sync service stats
+   */
+  async getFolderSyncStats() {
+    try {
+      const response = await api.get('/devices/folder-sync/stats');
+      return response.data;
+    } catch (error) {
+      console.error('Error getting folder sync stats:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Start folder watcher for a device
+   * @param {String} deviceId - Device ID
+   * @returns {Promise<Object>} - Start result
+   */
+  async startFolderWatcher(deviceId) {
+    try {
+      const response = await api.post(`/devices/${deviceId}/watcher/start`);
+      return response.data;
+    } catch (error) {
+      console.error('Error starting folder watcher:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Stop folder watcher for a device
+   * @param {String} deviceId - Device ID
+   * @returns {Promise<Object>} - Stop result
+   */
+  async stopFolderWatcher(deviceId) {
+    try {
+      const response = await api.post(`/devices/${deviceId}/watcher/stop`);
+      return response.data;
+    } catch (error) {
+      console.error('Error stopping folder watcher:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Trigger full sync for a device
+   * @param {String} deviceId - Device ID
+   * @returns {Promise<Object>} - Sync result
+   */
+  async triggerFullSync(deviceId) {
+    try {
+      const response = await api.post(`/devices/${deviceId}/watcher/sync`);
+      return response.data;
+    } catch (error) {
+      console.error('Error triggering full sync:', error);
       throw error;
     }
   },

@@ -26,12 +26,12 @@ export default function VisitDashboard() {
   const fetchVisits = async () => {
     try {
       setLoading(true);
-      let endpoint = '/api/visits/today';
+      let endpoint = '/visits/today';
 
       if (activeTab === 'all') {
-        endpoint = '/api/visits';
+        endpoint = '/visits';
       } else if (activeTab === 'pending') {
-        endpoint = '/api/visits?status=in-progress';
+        endpoint = '/visits?status=in-progress';
       }
 
       const response = await api.get(endpoint);
@@ -45,7 +45,7 @@ export default function VisitDashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/api/visits/stats');
+      const response = await api.get('/visits/stats');
       setStats(response.data.data);
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -54,7 +54,7 @@ export default function VisitDashboard() {
 
   const handleStartVisit = async (visitId) => {
     try {
-      await api.put(`/api/visits/${visitId}`, {
+      await api.put(`/visits/${visitId}`, {
         status: 'in-progress',
         startTime: new Date()
       });
@@ -66,7 +66,7 @@ export default function VisitDashboard() {
 
   const handleCompleteVisit = async (visitId) => {
     try {
-      await api.put(`/api/visits/${visitId}/complete`);
+      await api.put(`/visits/${visitId}/complete`);
       fetchVisits();
       setSelectedVisit(null);
     } catch (error) {
@@ -107,7 +107,7 @@ export default function VisitDashboard() {
       <div className="bg-white rounded-lg shadow-sm p-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Visit Management</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Gestion des Visites</h1>
             <p className="text-gray-600 mt-1">Manage patient visits and clinical encounters</p>
           </div>
           <button
@@ -382,7 +382,7 @@ export default function VisitDashboard() {
           ) : (
             <div className="text-center text-gray-500">
               <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-              <p>Select a visit to view details</p>
+              <p>Sélectionnez une visite pour voir les détails</p>
             </div>
           )}
         </div>

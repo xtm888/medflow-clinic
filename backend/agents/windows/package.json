@@ -1,0 +1,17 @@
+{
+  "name": "medflow-agent",
+  "version": "1.0.0",
+  "description": "MedFlow Windows Agent - File watcher and uploader for medical devices",
+  "main": "medflow-agent.js",
+  "scripts": {
+    "start": "node medflow-agent.js",
+    "install-service": "node install-service.js",
+    "uninstall-service": "node uninstall-service.js"
+  },
+  "keywords": ["medflow", "medical", "device", "sync"],
+  "author": "MedFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "node-windows": "^1.0.0-beta.8"
+  }
+}

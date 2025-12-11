@@ -108,9 +108,9 @@ export default function StatsWidget({
   // Format value
   const formatValue = (value, format) => {
     if (format === 'currency') {
-      return new Intl.NumberFormat('fr-FR', {
+      return new Intl.NumberFormat('fr-CD', {
         style: 'currency',
-        currency: 'XAF',
+        currency: 'CDF',
         maximumFractionDigits: 0
       }).format(value);
     }

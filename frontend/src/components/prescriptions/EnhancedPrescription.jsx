@@ -89,20 +89,29 @@ export default function EnhancedPrescription({ patientId }) {
       return;
     }
 
-    try {
-      const renewalPromises = activePrescriptions.map(p =>
-        api.post(`/api/prescriptions/renew/${p._id}`, {
-          validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        })
-      );
+    // Use Promise.allSettled for partial failure handling
+    const renewalPromises = activePrescriptions.map(p =>
+      api.post(`/api/prescriptions/renew/${p._id}`, {
+        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+      })
+    );
 
-      const results = await Promise.all(renewalPromises);
-      const renewedPrescriptions = results.map(r => r.data.data);
+    const results = await Promise.allSettled(renewalPromises);
+
+    const renewedPrescriptions = results
+      .filter(r => r.status === 'fulfilled')
+      .map(r => r.value.data.data);
+
+    const failedCount = results.filter(r => r.status === 'rejected').length;
+
+    if (renewedPrescriptions.length > 0) {
       setPrescriptions([...renewedPrescriptions, ...prescriptions]);
       showNotification(`${renewedPrescriptions.length} prescriptions renewed`, 'success');
-    } catch (error) {
-      console.error('Error renewing prescriptions:', error);
-      showNotification('Failed to renew some prescriptions', 'error');
+    }
+
+    if (failedCount > 0) {
+      console.error('Failed to renew some prescriptions:', results.filter(r => r.status === 'rejected'));
+      showNotification(`Failed to renew ${failedCount} prescription(s)`, 'error');
     }
   };
 
@@ -209,9 +218,9 @@ export default function EnhancedPrescription({ patientId }) {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      month: 'short',
+    return new Date(date).toLocaleDateString('fr-FR', {
       day: 'numeric',
+      month: 'short',
       year: 'numeric'
     });
   };
@@ -417,12 +426,53 @@ export default function EnhancedPrescription({ patientId }) {
                           <div className="space-y-2">
                             {prescription.medications.map((med, index) => (
                               <div key={index} className="bg-white p-3 rounded border border-gray-200">
-                                <p className="font-medium">{med.name}</p>
-                                <p className="text-sm text-gray-600">
+                                <div className="flex items-center justify-between">
+                                  <p className="font-medium">{med.name}</p>
+                                  <div className="flex items-center space-x-2">
+                                    {/* Route badge */}
+                                    {med.route && (
+                                      <span className="px-2 py-0.5 text-xs rounded bg-gray-100 text-gray-600">
+                                        {med.route === 'ophthalmic' ? 'Collyre' :
+                                         med.route === 'oral' ? 'Oral' :
+                                         med.route === 'intravitreal' ? 'Intravitréen' :
+                                         med.route}
+                                      </span>
+                                    )}
+                                    {/* Eye badge for ophthalmic meds */}
+                                    {med.applicationLocation?.eye && (
+                                      <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700 font-medium">
+                                        <Eye className="w-3 h-3 inline mr-1" />
+                                        {med.applicationLocation.eye}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-sm text-gray-600 mt-1">
                                   {med.dosage} - {med.frequency} for {med.duration}
                                 </p>
                                 {med.instructions && (
                                   <p className="text-sm text-gray-500 mt-1">{med.instructions}</p>
+                                )}
+                                {/* Tapering schedule */}
+                                {med.tapering?.enabled && med.tapering.schedule?.length > 0 && (
+                                  <div className="mt-2 p-2 bg-amber-50 rounded border border-amber-200">
+                                    <p className="text-xs font-medium text-amber-700 flex items-center">
+                                      <Clock className="w-3 h-3 mr-1" />
+                                      Tapering Schedule ({med.tapering.totalDurationDays || '?'} days)
+                                    </p>
+                                    <div className="mt-1 space-y-0.5">
+                                      {med.tapering.schedule.slice(0, 3).map((step, i) => (
+                                        <p key={i} className="text-xs text-amber-600">
+                                          Step {step.stepNumber}: {step.frequency} for {step.durationDays} days
+                                        </p>
+                                      ))}
+                                      {med.tapering.schedule.length > 3 && (
+                                        <p className="text-xs text-amber-500 italic">
+                                          +{med.tapering.schedule.length - 3} more steps...
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
                                 )}
                                 <div className="mt-2 flex items-center text-xs text-gray-500">
                                   <Info className="w-3 h-3 mr-1" />

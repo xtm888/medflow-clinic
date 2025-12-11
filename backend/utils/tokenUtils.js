@@ -10,20 +10,36 @@ exports.generateToken = (userId) => {
   );
 };
 
-// Send token response
-exports.sendTokenResponse = (user, statusCode, res, message = '') => {
-  const token = user.getSignedJwtToken();
+// Send token response with separate access and refresh tokens
+exports.sendTokenResponse = (user, statusCode, res, message = '', extraData = {}) => {
+  // Generate short-lived access token
+  const accessToken = user.getSignedJwtToken();
 
-  const options = {
+  // Generate long-lived refresh token with separate secret
+  const refreshToken = user.getSignedRefreshToken();
+
+  // Cookie options for access token (short-lived)
+  const accessTokenOptions = {
     expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+      Date.now() + 15 * 60 * 1000 // 15 minutes
     ),
     httpOnly: true,
     sameSite: 'strict'
   };
 
+  // Cookie options for refresh token (long-lived, more restrictive)
+  const refreshTokenOptions = {
+    expires: new Date(
+      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
+    ),
+    httpOnly: true,
+    sameSite: 'strict',
+    path: '/api/auth/refresh' // Only send refresh token to refresh endpoint
+  };
+
   if (process.env.NODE_ENV === 'production') {
-    options.secure = true;
+    accessTokenOptions.secure = true;
+    refreshTokenOptions.secure = true;
   }
 
   // Remove sensitive data
@@ -36,23 +52,42 @@ exports.sendTokenResponse = (user, statusCode, res, message = '') => {
     role: user.role,
     department: user.department,
     isEmailVerified: user.isEmailVerified,
-    avatar: user.avatar
+    avatar: user.avatar,
+    twoFactorEnabled: user.twoFactorEnabled || false
   };
 
   res
     .status(statusCode)
-    .cookie('token', token, options)
+    .cookie('token', accessToken, accessTokenOptions)
+    .cookie('refreshToken', refreshToken, refreshTokenOptions)
     .json({
       success: true,
       message,
-      token,
-      user: userData
+      token: accessToken,
+      refreshToken, // Include refresh token in response for clients that need it
+      expiresIn: 900, // 15 minutes in seconds
+      user: userData,
+      ...extraData
     });
 };
 
-// Verify JWT Token
+// Verify JWT Token (access token)
 exports.verifyToken = (token) => {
   return jwt.verify(token, process.env.JWT_SECRET);
+};
+
+// SECURITY: Verify refresh token with separate secret
+exports.verifyRefreshToken = (token) => {
+  const refreshSecret = process.env.REFRESH_TOKEN_SECRET || process.env.JWT_SECRET;
+
+  const decoded = jwt.verify(token, refreshSecret);
+
+  // Ensure this is actually a refresh token, not an access token being misused
+  if (decoded.tokenType !== 'refresh') {
+    throw new Error('Invalid token type - expected refresh token');
+  }
+
+  return decoded;
 };
 
 // Generate random token

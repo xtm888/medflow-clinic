@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   FileText, Eye, Activity, Stethoscope, Pill, TestTube,
   ClipboardList, Printer, Download, ChevronDown, ChevronUp,
-  AlertTriangle, CheckCircle, Clock
+  AlertTriangle, CheckCircle, Clock, Loader2
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import ApprovalWarningBanner, { ApprovalWarningInline, useApprovalWarnings } from '../../../components/ApprovalWarningBanner';
+import { safeString } from '../../../utils/apiHelpers';
 
 /**
  * SummaryStep - Auto-generated consultation summary (Fermer's Résumé)
@@ -16,7 +19,8 @@ export default function SummaryStep({
   patient,
   allStepData = {},
   previousExams = [],
-  readOnly = false
+  readOnly = false,
+  examId = null
 }) {
   const [expandedSections, setExpandedSections] = useState({
     refraction: true,
@@ -26,6 +30,49 @@ export default function SummaryStep({
     procedures: true,
     laboratory: true
   });
+  const [printing, setPrinting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  // Approval warnings hook
+  const { warnings, company, loading: warningsLoading, checkWarnings, hasBlockingWarnings } = useApprovalWarnings();
+
+  // Collect all act codes from procedures and laboratory orders
+  const allActCodes = useMemo(() => {
+    const codes = [];
+    if (Array.isArray(allStepData.procedures)) {
+      allStepData.procedures.forEach(p => {
+        if (p.code) codes.push(p.code);
+      });
+    }
+    if (Array.isArray(allStepData.laboratory)) {
+      allStepData.laboratory.forEach(l => {
+        if (l.code) codes.push(l.code);
+      });
+    }
+    return codes;
+  }, [allStepData.procedures, allStepData.laboratory]);
+
+  // Check approval warnings when patient or acts change
+  useEffect(() => {
+    if (patient?._id && allActCodes.length > 0) {
+      checkWarnings(patient._id, allActCodes);
+    }
+  }, [patient?._id, allActCodes.length]);
+
+  // Build approval status map for inline display
+  const approvalStatusMap = useMemo(() => {
+    const map = {};
+    warnings.blocking.forEach(w => {
+      map[w.actCode] = { requiresApproval: true, status: 'needs_approval', reason: w.reason };
+    });
+    warnings.warning.forEach(w => {
+      map[w.actCode] = { requiresApproval: true, status: 'pending' };
+    });
+    warnings.info.forEach(w => {
+      map[w.actCode] = { requiresApproval: true, status: 'approved' };
+    });
+    return map;
+  }, [warnings]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -77,6 +124,78 @@ export default function SummaryStep({
 
   const iop = getIOP();
 
+  // Print summary
+  const handlePrint = async () => {
+    setPrinting(true);
+    try {
+      // If we have an examId, try to fetch PDF from server
+      if (examId) {
+        const response = await fetch(`/api/ophthalmology/exams/${examId}/report`, {
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', `consultation-${examId}.pdf`);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          toast.success('Rapport téléchargé');
+          setPrinting(false);
+          return;
+        }
+      }
+      // Fallback to browser print
+      window.print();
+    } catch (err) {
+      console.error('Print error:', err);
+      window.print();
+    } finally {
+      setPrinting(false);
+    }
+  };
+
+  // Export summary as JSON/CSV
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const exportData = {
+        patient: patient ? {
+          name: `${patient.lastName} ${patient.firstName}`,
+          dob: patient.dateOfBirth,
+          mrn: patient.mrn
+        } : null,
+        date: new Date().toISOString(),
+        complaint: allStepData.complaint,
+        refraction: allStepData.refraction,
+        examination: allStepData.examination,
+        diagnosis: allStepData.diagnosis,
+        prescription: allStepData.prescription,
+        procedures: allStepData.procedures,
+        laboratory: allStepData.laboratory
+      };
+
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `consultation-${patient?.mrn || 'export'}-${new Date().toISOString().split('T')[0]}.json`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success('Données exportées');
+    } catch (err) {
+      console.error('Export error:', err);
+      toast.error('Erreur lors de l\'exportation');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Section component
   const Section = ({ id, title, icon: Icon, color, children }) => (
     <div className={`border rounded-lg overflow-hidden mb-4 bg-${color}-50`}>
@@ -108,12 +227,28 @@ export default function SummaryStep({
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-gray-900">Résumé de Consultation</h2>
         <div className="flex space-x-2">
-          <button className="flex items-center px-3 py-2 border rounded-lg hover:bg-gray-50">
-            <Printer className="w-4 h-4 mr-2" />
+          <button
+            onClick={handlePrint}
+            disabled={printing}
+            className="flex items-center px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            {printing ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Printer className="w-4 h-4 mr-2" />
+            )}
             Imprimer
           </button>
-          <button className="flex items-center px-3 py-2 border rounded-lg hover:bg-gray-50">
-            <Download className="w-4 h-4 mr-2" />
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="flex items-center px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+          >
+            {exporting ? (
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+            ) : (
+              <Download className="w-4 h-4 mr-2" />
+            )}
             Exporter
           </button>
         </div>
@@ -137,6 +272,27 @@ export default function SummaryStep({
               <div>Heure: {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Approval Warnings Banner - Show prominently before completing consultation */}
+      {(warnings.blocking.length > 0 || warnings.warning.length > 0 || warnings.info.length > 0) && (
+        <div className="mb-6">
+          <ApprovalWarningBanner
+            warnings={warnings}
+            company={company}
+            patient={patient}
+            showRequestButton={!readOnly}
+            compact={false}
+          />
+          {hasBlockingWarnings && (
+            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-sm text-red-700 font-medium flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                Attention: Des actes nécessitent une délibération avant facturation à l'entreprise.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -327,39 +483,67 @@ export default function SummaryStep({
       {Array.isArray(allStepData.procedures) && allStepData.procedures.length > 0 && (
         <Section id="procedures" title="Examens Complémentaires" icon={ClipboardList} color="indigo">
           <div className="space-y-2">
-            {allStepData.procedures.map((proc, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span>{proc.name || proc.code}</span>
-                <div className="flex items-center space-x-2">
-                  {proc.laterality && (
-                    <span className="text-xs bg-gray-200 px-2 py-0.5 rounded">{proc.laterality}</span>
-                  )}
-                  {proc.priority === 'urgent' && (
-                    <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Urgent</span>
-                  )}
+            {allStepData.procedures.map((proc, index) => {
+              const approvalInfo = approvalStatusMap[proc.code];
+              return (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <span>{proc.name || proc.code}</span>
+                    {approvalInfo && (
+                      <ApprovalWarningInline
+                        actCode={proc.code}
+                        actName={proc.name}
+                        requiresApproval={approvalInfo.requiresApproval}
+                        approvalStatus={approvalInfo.status}
+                        reason={approvalInfo.reason}
+                      />
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {proc.laterality && (
+                      <span className="text-xs bg-gray-200 px-2 py-0.5 rounded">{proc.laterality}</span>
+                    )}
+                    {proc.priority === 'urgent' && (
+                      <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">Urgent</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Section>
       )}
 
       {/* Laboratory */}
       {Array.isArray(allStepData.laboratory) && allStepData.laboratory.length > 0 && (
-        <Section id="laboratory" title="Analyses Laboratoire" icon={Flask} color="teal">
+        <Section id="laboratory" title="Analyses Laboratoire" icon={TestTube} color="teal">
           <div className="space-y-2">
-            {allStepData.laboratory.map((lab, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                <span>{lab.name || lab.code}</span>
-                {lab.urgency && (
-                  <span className={`text-xs px-2 py-0.5 rounded ${
-                    lab.urgency === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-gray-200'
-                  }`}>
-                    {lab.urgency}
-                  </span>
-                )}
-              </div>
-            ))}
+            {allStepData.laboratory.map((lab, index) => {
+              const approvalInfo = approvalStatusMap[lab.code];
+              return (
+                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div className="flex items-center gap-2">
+                    <span>{lab.name || lab.code}</span>
+                    {approvalInfo && (
+                      <ApprovalWarningInline
+                        actCode={lab.code}
+                        actName={lab.name}
+                        requiresApproval={approvalInfo.requiresApproval}
+                        approvalStatus={approvalInfo.status}
+                        reason={approvalInfo.reason}
+                      />
+                    )}
+                  </div>
+                  {lab.urgency && (
+                    <span className={`text-xs px-2 py-0.5 rounded ${
+                      lab.urgency === 'urgent' ? 'bg-red-100 text-red-700' : 'bg-gray-200'
+                    }`}>
+                      {lab.urgency}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </Section>
       )}
@@ -394,9 +578,37 @@ export default function SummaryStep({
                 <div className="space-y-2">
                   {allStepData.prescription.medications.map((med, index) => (
                     <div key={index} className="p-2 bg-gray-50 rounded text-sm">
-                      <div className="font-medium">{med.name}</div>
-                      {med.dosage && <div className="text-gray-600">{med.dosage}</div>}
-                      {med.duration && <div className="text-gray-500">Durée: {med.duration}</div>}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-medium">{med.name}</span>
+                        {med.route && (
+                          <span className={`px-2 py-0.5 text-xs rounded ${
+                            med.route === 'oral' ? 'bg-gray-100 text-gray-600' : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {med.route === 'ophthalmic' ? 'Collyre' : med.route}
+                          </span>
+                        )}
+                        {med.applicationLocation?.eye && (
+                          <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700 font-medium">
+                            {med.applicationLocation.eye}
+                          </span>
+                        )}
+                        {med.taperingName && (
+                          <span className="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">
+                            ↘ {med.taperingName}
+                          </span>
+                        )}
+                      </div>
+                      {med.dosage && <div className="text-gray-600 mt-1">{safeString(med.dosage, '')}</div>}
+                      {med.duration && <div className="text-gray-500">Durée: {safeString(med.duration, '')}</div>}
+                      {med.taperingSchedule && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {med.taperingSchedule.map((step, idx) => (
+                            <span key={idx} className="px-1.5 py-0.5 text-xs bg-amber-50 text-amber-600 rounded">
+                              J{step.days}: {step.frequency}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

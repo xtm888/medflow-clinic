@@ -1,0 +1,206 @@
+{
+  "journey_name": "Complete Patient Visit Journey",
+  "timestamp": "2025-12-10T00:32:32.699475",
+  "patient": {
+    "patient_id": "693837afe92ff56958f479a7",
+    "patient_name": "MedFlow",
+    "visit_id": null,
+    "consultation_id": null,
+    "prescription_id": null,
+    "invoice_id": null,
+    "queue_number": null
+  },
+  "summary": {
+    "total_steps": 8,
+    "success": 8,
+    "warnings": 0,
+    "failed": 0,
+    "completion_rate": "100.0%"
+  },
+  "steps": [
+    {
+      "step": 1,
+      "name": "Patient Selection",
+      "status": "success",
+      "details": "Selected patient: MedFlow (ID: 693837afe92ff56958f479a7)",
+      "data": {
+        "patient_id": "693837afe92ff56958f479a7"
+      },
+      "timestamp": "2025-12-10T00:31:46.803453"
+    },
+    {
+      "step": 2,
+      "name": "Queue Check-in",
+      "status": "success",
+      "details": "Patient added to queue",
+      "data": null,
+      "timestamp": "2025-12-10T00:31:51.934191"
+    },
+    {
+      "step": 3,
+      "name": "Ophthalmology Consultation",
+      "status": "success",
+      "details": "Consultation completed",
+      "data": null,
+      "timestamp": "2025-12-10T00:32:17.123784"
+    },
+    {
+      "step": 4,
+      "name": "Prescription Verification",
+      "status": "success",
+      "details": "Found prescription(s) for patient: MedFlow",
+      "data": null,
+      "timestamp": "2025-12-10T00:32:20.769612"
+    },
+    {
+      "step": 5,
+      "name": "Invoice Verification",
+      "status": "success",
+      "details": "Found invoice(s) in the system",
+      "data": null,
+      "timestamp": "2025-12-10T00:32:24.387726"
+    },
+    {
+      "step": 6,
+      "name": "Payment Processing",
+      "status": "success",
+      "details": "Invoicing system with payment capability accessed",
+      "data": null,
+      "timestamp": "2025-12-10T00:32:27.849031"
+    },
+    {
+      "step": 7,
+      "name": "Pharmacy Dispensing",
+      "status": "success",
+      "details": "Pharmacy queue system is accessible - no pending prescriptions",
+      "data": null,
+      "timestamp": "2025-12-10T00:32:29.866567"
+    },
+    {
+      "step": 8,
+      "name": "Patient Dispatch",
+      "status": "success",
+      "details": "Queue system accessible - patient dispatch workflow available",
+      "data": null,
+      "timestamp": "2025-12-10T00:32:32.646996"
+    }
+  ],
+  "screenshots": [
+    {
+      "name": "01_patients_list",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/01_patients_list.png"
+    },
+    {
+      "name": "02_patient_selected_row",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/02_patient_selected_row.png"
+    },
+    {
+      "name": "03_patient_detail",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/03_patient_detail.png"
+    },
+    {
+      "name": "08_queue_page",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/08_queue_page.png"
+    },
+    {
+      "name": "10_checkin_modal",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/10_checkin_modal.png"
+    },
+    {
+      "name": "11_checkin_complete",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/11_checkin_complete.png"
+    },
+    {
+      "name": "12_consultation_start",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/12_consultation_start.png"
+    },
+    {
+      "name": "12b_consultation_with_patient_id",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/12b_consultation_with_patient_id.png"
+    },
+    {
+      "name": "13b_consultation_patient_selected",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/13b_consultation_patient_selected.png"
+    },
+    {
+      "name": "13c_consultation_type_selected",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/13c_consultation_type_selected.png"
+    },
+    {
+      "name": "14_consultation_workflow",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/14_consultation_workflow.png"
+    },
+    {
+      "name": "15_consultation_visual_acuity",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/15_consultation_visual_acuity.png"
+    },
+    {
+      "name": "17_consultation_diagnosis",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/17_consultation_diagnosis.png"
+    },
+    {
+      "name": "18_consultation_complete",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/18_consultation_complete.png"
+    },
+    {
+      "name": "19_prescriptions_list",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/19_prescriptions_list.png"
+    },
+    {
+      "name": "20_prescription_search",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/20_prescription_search.png"
+    },
+    {
+      "name": "21_prescription_found",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/21_prescription_found.png"
+    },
+    {
+      "name": "23_invoicing_page",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/23_invoicing_page.png"
+    },
+    {
+      "name": "24_invoice_search",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/24_invoice_search.png"
+    },
+    {
+      "name": "25_invoices_found",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/25_invoices_found.png"
+    },
+    {
+      "name": "27_invoices_pending",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/27_invoices_pending.png"
+    },
+    {
+      "name": "27b_invoices_found",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/27b_invoices_found.png"
+    },
+    {
+      "name": "27c_invoice_expanded",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/27c_invoice_expanded.png"
+    },
+    {
+      "name": "30_pharmacy_queue",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/30_pharmacy_queue.png"
+    },
+    {
+      "name": "30b_pharmacy_stats",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/30b_pharmacy_stats.png"
+    },
+    {
+      "name": "33_queue_for_dispatch",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/33_queue_for_dispatch.png"
+    },
+    {
+      "name": "33b_queue_loaded",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/33b_queue_loaded.png"
+    },
+    {
+      "name": "34_dispatch_confirm",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/34_dispatch_confirm.png"
+    },
+    {
+      "name": "34b_dispatch_done",
+      "path": "/Users/xtm888/magloire/tests/playwright/screenshots/e2e_journey/34b_dispatch_done.png"
+    }
+  ]
+}

@@ -1,0 +1,70 @@
+version: '3.8'
+
+services:
+  # OCR FastAPI Service
+  ocr-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5003:5003"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OCR_LANG=fr
+      - OCR_USE_GPU=false
+      - MEDFLOW_BACKEND_URL=http://host.docker.internal:5001
+    volumes:
+      # Mount network shares (read-only)
+      - /Volumes/ZEISS RETINO:/Volumes/ZEISS RETINO:ro
+      - /Volumes/Export Solix OCT:/Volumes/Export Solix OCT:ro
+      - /Volumes/TOMEY DATA:/Volumes/TOMEY DATA:ro
+      - /Volumes/Export:/Volumes/Export:ro
+      - /Volumes/Archives:/Volumes/Archives:ro
+      # Thumbnail cache
+      - ocr_thumbnails:/tmp/medflow_thumbnails
+    depends_on:
+      - redis
+    networks:
+      - medflow
+
+  # Celery Worker for async OCR tasks
+  ocr-worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OCR_LANG=fr
+      - OCR_USE_GPU=false
+    volumes:
+      - /Volumes/ZEISS RETINO:/Volumes/ZEISS RETINO:ro
+      - /Volumes/Export Solix OCT:/Volumes/Export Solix OCT:ro
+      - /Volumes/TOMEY DATA:/Volumes/TOMEY DATA:ro
+      - /Volumes/Export:/Volumes/Export:ro
+      - /Volumes/Archives:/Volumes/Archives:ro
+      - ocr_thumbnails:/tmp/medflow_thumbnails
+    depends_on:
+      - redis
+    networks:
+      - medflow
+
+  # Redis (if not using existing MedFlow Redis)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"  # Use 6380 to avoid conflict with existing Redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - medflow
+
+volumes:
+  redis_data:
+  ocr_thumbnails:
+
+networks:
+  medflow:
+    driver: bridge

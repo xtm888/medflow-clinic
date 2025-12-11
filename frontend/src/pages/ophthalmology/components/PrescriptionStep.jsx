@@ -1,18 +1,26 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Glasses, Eye, FileText, Printer, Send, Check, Package, X, MessageSquare, FileEdit, Pill } from 'lucide-react';
+import { Glasses, Eye, FileText, Printer, Send, Check, CheckCircle, Package, X, MessageSquare, FileEdit, Pill, Save, AlertTriangle, Loader2 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { formatPrescription, calculateReadingAdd, vertexCorrection } from '../../../utils/ophthalmologyCalculations';
 import { spectacleLensOptions, contactLensOptions, frameOptions } from '../../../data/ophthalmologyData';
 import commentTemplateService from '../../../services/commentTemplateService';
 import ophthalmologyService from '../../../services/ophthalmologyService';
+import prescriptionService from '../../../services/prescriptionService';
 import QuickTreatmentBuilder from '../../../components/QuickTreatmentBuilder';
 import MedicationTemplateSelector from '../../../components/MedicationTemplateSelector';
+import MedicationEntryForm from '../../../components/MedicationEntryForm';
+import ApprovalWarningBanner, { useApprovalWarnings } from '../../../components/ApprovalWarningBanner';
+import { ADMINISTRATION_ROUTES, EYE_OPTIONS, routeRequiresEye } from '../../../data/medicationRoutes';
 
-export default function PrescriptionStep({ data, onChange, patient, patientId }) {
+export default function PrescriptionStep({ data, onChange, patient, patientId, visitId, consultationSessionId, examId }) {
   const navigate = useNavigate();
   const [prescriptionType, setPrescriptionType] = useState('glasses');
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [showVertexCorrection, setShowVertexCorrection] = useState(false);
+  const [savingMedication, setSavingMedication] = useState(false);
+  const [savingOptical, setSavingOptical] = useState(false);
+  const [savedPrescriptions, setSavedPrescriptions] = useState({ medication: null, optical: null });
 
   // Initialize data structures if not present
   if (!data.subjective) {
@@ -53,6 +61,32 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
   const [keratometrySummary, setKeratometrySummary] = useState('');
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [generatingSummary, setGeneratingSummary] = useState(false);
+
+  // Approval warnings hook
+  const { warnings, company, loading: warningsLoading, checkWarnings, hasBlockingWarnings } = useApprovalWarnings();
+
+  // Build act codes for approval check based on prescription type and lens types
+  const opticalActCodes = useMemo(() => {
+    const codes = [];
+
+    if (prescriptionType === 'glasses') {
+      codes.push('OPT-LUNETTES');
+      if (selectedLensTypes.includes('progressive')) codes.push('OPT-PROGRESSIFS');
+      if (selectedLensTypes.includes('bifocal')) codes.push('OPT-BIFOCAUX');
+    } else if (prescriptionType === 'contacts') {
+      codes.push('OPT-LENTILLES');
+    }
+
+    return codes;
+  }, [prescriptionType, selectedLensTypes]);
+
+  // Check approval warnings when patient or prescription changes
+  useEffect(() => {
+    const pid = patient?._id || patientId;
+    if (pid && opticalActCodes.length > 0) {
+      checkWarnings(pid, opticalActCodes);
+    }
+  }, [patient?._id, patientId, opticalActCodes.length]);
 
   // Lens types from the screenshot
   const LENS_TYPES = [
@@ -349,9 +383,185 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
     setMedicationList(prev => [...prev, medication]);
   };
 
-  // Handle prescription completion
+  // Save medication prescription - CRITICAL: Called when user completes medication selection
+  const handleSaveMedicationPrescription = async () => {
+    if (medicationList.length === 0) {
+      toast.warning('Aucun médicament sélectionné');
+      return;
+    }
+
+    const pid = patient?._id || patientId;
+    if (!pid) {
+      toast.error('Patient non identifié');
+      return;
+    }
+
+    setSavingMedication(true);
+    try {
+      const prescriptionData = {
+        patient: pid,
+        type: 'medication',
+        visit: visitId || null,
+        consultationSession: consultationSessionId || null,
+        medications: medicationList.map(med => ({
+          name: med.name,
+          genericName: med.genericName || med.name,
+          quantity: med.quantity || 1,
+          unit: med.unit || 'comprimé',
+
+          // Administration Route (Enhanced)
+          route: med.route || 'oral',
+
+          // Application Location (for ophthalmic)
+          applicationLocation: {
+            eye: med.applicationLocation?.eye || null,
+            eyeArea: med.applicationLocation?.eyeArea || null,
+            bodyPart: med.applicationLocation?.bodyPart || null,
+            specificLocation: med.applicationLocation?.specificLocation || null
+          },
+
+          // Tapering Schedule
+          tapering: med.tapering?.enabled ? {
+            enabled: true,
+            reason: med.tapering.reason || '',
+            template: med.tapering.template || null,
+            schedule: (med.tapering.schedule || []).map(step => ({
+              stepNumber: step.stepNumber,
+              dose: step.dose,
+              frequency: step.frequency,
+              frequencyTimes: step.frequencyTimes,
+              durationDays: step.durationDays,
+              startDay: step.startDay,
+              endDay: step.endDay,
+              instructions: step.instructions
+            })),
+            totalDurationDays: med.tapering.totalDurationDays || 0
+          } : { enabled: false },
+
+          // Dosage instructions
+          dosage: {
+            amount: med.dosage?.amount || med.dosageAmount || 1,
+            unit: med.dosage?.unit || med.dosageUnit || 'goutte',
+            frequency: med.tapering?.enabled
+              ? med.tapering.schedule?.[0]?.frequency // Use first step frequency for tapering
+              : (med.dosage?.frequency || med.frequency),
+            duration: med.tapering?.enabled
+              ? { value: med.tapering.totalDurationDays, unit: 'days' }
+              : (med.dosage?.duration || { value: parseInt(med.duration) || 7, unit: 'days' }),
+            withFood: med.dosage?.withFood || med.withFood || 'anytime',
+            instructions: med.dosage?.instructions || med.instructions || ''
+          },
+
+          indication: med.indication || '',
+          notes: med.notes || ''
+        })),
+        status: 'pending'
+      };
+
+      const result = await prescriptionService.createDrugPrescription(prescriptionData);
+
+      if (result.success !== false) {
+        toast.success('Ordonnance médicale enregistrée');
+        setSavedPrescriptions(prev => ({ ...prev, medication: result.data || result }));
+
+        // Update parent data with saved prescription ID
+        onChange(prev => ({
+          ...prev,
+          savedMedicationPrescriptionId: (result.data || result)._id
+        }));
+      } else {
+        throw new Error(result.error || 'Échec de l\'enregistrement');
+      }
+    } catch (error) {
+      console.error('Error saving medication prescription:', error);
+      toast.error(error.message || 'Erreur lors de l\'enregistrement de l\'ordonnance médicale');
+    } finally {
+      setSavingMedication(false);
+    }
+  };
+
+  // Save optical prescription
+  const handleSaveOpticalPrescription = async () => {
+    const pid = patient?._id || patientId;
+    if (!pid) {
+      toast.error('Patient non identifié');
+      return;
+    }
+
+    if (prescriptionStatus !== 'prescribed' && prescriptionStatus !== 'renewed') {
+      toast.warning('Aucune prescription optique à enregistrer');
+      return;
+    }
+
+    setSavingOptical(true);
+    try {
+      const opticalData = {
+        patient: pid,
+        type: 'optical',
+        visit: visitId || null,
+        consultationSession: consultationSessionId || null,
+        optical: {
+          type: prescriptionType,
+          OD: {
+            sphere: data.subjective?.OD?.sphere || 0,
+            cylinder: data.subjective?.OD?.cylinder || 0,
+            axis: data.subjective?.OD?.axis || 0,
+            add: readingAdd?.recommended || data.subjective?.add || 0
+          },
+          OS: {
+            sphere: data.subjective?.OS?.sphere || 0,
+            cylinder: data.subjective?.OS?.cylinder || 0,
+            axis: data.subjective?.OS?.axis || 0,
+            add: readingAdd?.recommended || data.subjective?.add || 0
+          },
+          pupilDistance: data.pupilDistance,
+          lensType: selectedLensTypes,
+          material: selectedMaterial,
+          features: selectedFeatures,
+          index: selectedIndex,
+          usageType: selectedUsageType,
+          activities: selectedActivities
+        },
+        notes: prescriptionNotes,
+        recommendations: data.finalPrescription?.recommendations || [],
+        status: 'active'
+      };
+
+      const result = await prescriptionService.createPrescription(opticalData);
+
+      if (result.success !== false) {
+        toast.success('Ordonnance optique enregistrée');
+        setSavedPrescriptions(prev => ({ ...prev, optical: result.data || result }));
+
+        // Update parent data
+        onChange(prev => ({
+          ...prev,
+          savedOpticalPrescriptionId: (result.data || result)._id,
+          finalPrescription: {
+            ...prev.finalPrescription,
+            savedAt: new Date().toISOString()
+          }
+        }));
+      } else {
+        throw new Error(result.error || 'Échec de l\'enregistrement');
+      }
+    } catch (error) {
+      console.error('Error saving optical prescription:', error);
+      toast.error(error.message || 'Erreur lors de l\'enregistrement de l\'ordonnance optique');
+    } finally {
+      setSavingOptical(false);
+    }
+  };
+
+  // Handle prescription completion (from QuickTreatmentBuilder)
   const handlePrescriptionComplete = (medications) => {
-    // Save to data or backend
+    if (medications && medications.length > 0) {
+      setMedicationList(medications);
+      // Auto-save if we have all required info
+      if (patient?._id || patientId) {
+        toast.info('Cliquez sur "Enregistrer ordonnance" pour sauvegarder');
+      }
+    }
   };
 
   return (
@@ -360,6 +570,19 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
         <Glasses className="w-5 h-5 mr-2 text-blue-600" />
         Prescription Finale
       </h2>
+
+      {/* Approval Warnings Banner */}
+      {(warnings.blocking.length > 0 || warnings.warning.length > 0 || warnings.info.length > 0) && (
+        <div className="mb-6">
+          <ApprovalWarningBanner
+            warnings={warnings}
+            company={company}
+            patient={patient}
+            showRequestButton={true}
+            compact={true}
+          />
+        </div>
+      )}
 
       {/* Tab Navigation */}
       <div className="flex border-b mb-6">
@@ -387,29 +610,30 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
         </button>
       </div>
 
-      {/* Medication Tab - Fermer-style Template Selector */}
+      {/* Medication Tab - Enhanced with Route, Location, Tapering */}
       {activeTab === 'medication' && (
         <div className="mb-6">
-          {/* Current Medications List */}
+          {/* Current Medications List with Full Entry Form */}
           {medicationList.length > 0 && (
-            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4">
-              <h4 className="font-medium text-green-800 mb-2">Médicaments prescrits ({medicationList.length})</h4>
-              <div className="space-y-2">
+            <div className="mb-4">
+              <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+                <Pill className="w-5 h-5 text-green-600" />
+                Médicaments prescrits ({medicationList.length})
+              </h4>
+              <div className="space-y-4">
                 {medicationList.map((med, index) => (
-                  <div key={med.id || index} className="flex items-center justify-between bg-white p-2 rounded border">
-                    <div>
-                      <span className="font-medium">{med.name}</span>
-                      <span className="text-gray-500 text-sm ml-2">
-                        {med.dosage} - {med.duration}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => setMedicationList(prev => prev.filter((_, i) => i !== index))}
-                      className="p-1 text-red-500 hover:bg-red-50 rounded"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
+                  <MedicationEntryForm
+                    key={med.id || index}
+                    medication={med}
+                    onUpdate={(updatedMed) => {
+                      setMedicationList(prev => prev.map((m, i) =>
+                        i === index ? updatedMed : m
+                      ));
+                    }}
+                    onRemove={() => setMedicationList(prev => prev.filter((_, i) => i !== index))}
+                    showTapering={true}
+                    compact={false}
+                  />
                 ))}
               </div>
             </div>
@@ -418,7 +642,16 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
           {/* Fermer-style Medication Selector */}
           <div className="border rounded-lg h-[500px] overflow-hidden">
             <MedicationTemplateSelector
-              onAddMedication={(med) => setMedicationList(prev => [...prev, med])}
+              onAddMedication={(med) => {
+                // Add with default ophthalmic route for eye medications
+                const enhancedMed = {
+                  ...med,
+                  route: med.route || 'ophthalmic',
+                  applicationLocation: med.applicationLocation || { eye: 'OU' },
+                  tapering: med.tapering || { enabled: false }
+                };
+                setMedicationList(prev => [...prev, enhancedMed]);
+              }}
             />
           </div>
 
@@ -438,6 +671,49 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
               </div>
             </details>
           </div>
+
+          {/* Save Medication Prescription Button */}
+          {medicationList.length > 0 && (
+            <div className="mt-6 pt-4 border-t flex items-center justify-between">
+              {savedPrescriptions.medication ? (
+                <div className="flex items-center text-green-600">
+                  <CheckCircle className="w-5 h-5 mr-2" />
+                  <span>Ordonnance médicale enregistrée (ID: {savedPrescriptions.medication.prescriptionId || savedPrescriptions.medication._id})</span>
+                </div>
+              ) : (
+                <div className="flex items-center text-amber-600">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  <span>{medicationList.length} médicament(s) non enregistré(s)</span>
+                </div>
+              )}
+              <button
+                onClick={handleSaveMedicationPrescription}
+                disabled={savingMedication || savedPrescriptions.medication}
+                className={`flex items-center px-6 py-3 rounded-lg font-medium transition-colors ${
+                  savedPrescriptions.medication
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {savingMedication ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    Enregistrement...
+                  </>
+                ) : savedPrescriptions.medication ? (
+                  <>
+                    <Check className="w-5 h-5 mr-2" />
+                    Enregistré
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-5 h-5 mr-2" />
+                    Enregistrer ordonnance médicale
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -1016,6 +1292,23 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
         </div>
       </div>
 
+      {/* Optical Prescription Save Status */}
+      {(prescriptionStatus === 'prescribed' || prescriptionStatus === 'renewed') && (
+        <div className="mb-4 p-3 rounded-lg border flex items-center justify-between bg-blue-50 border-blue-200">
+          {savedPrescriptions.optical ? (
+            <div className="flex items-center text-green-600">
+              <CheckCircle className="w-5 h-5 mr-2" />
+              <span>Ordonnance optique enregistrée (ID: {savedPrescriptions.optical.prescriptionId || savedPrescriptions.optical._id})</span>
+            </div>
+          ) : (
+            <div className="flex items-center text-amber-600">
+              <AlertTriangle className="w-5 h-5 mr-2" />
+              <span>Ordonnance optique non enregistrée - Cliquez sur "Enregistrer" pour sauvegarder</span>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Action Buttons */}
       <div className="flex flex-wrap justify-between gap-4">
         <div className="flex flex-wrap gap-2">
@@ -1026,6 +1319,37 @@ export default function PrescriptionStep({ data, onChange, patient, patientId })
             <Check className="w-4 h-4 mr-2" />
             Valider Prescription
           </button>
+
+          {/* CRITICAL: Save optical prescription button */}
+          {(prescriptionStatus === 'prescribed' || prescriptionStatus === 'renewed') && (
+            <button
+              onClick={handleSaveOpticalPrescription}
+              disabled={savingOptical || savedPrescriptions.optical}
+              className={`flex items-center px-4 py-2 rounded-lg ${
+                savedPrescriptions.optical
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-700'
+              }`}
+            >
+              {savingOptical ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : savedPrescriptions.optical ? (
+                <>
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  Enregistré
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 mr-2" />
+                  Enregistrer
+                </>
+              )}
+            </button>
+          )}
+
           <button
             onClick={() => setShowPrescriptionPreview(true)}
             className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"

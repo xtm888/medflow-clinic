@@ -107,6 +107,33 @@ export const SHORTCUTS = {
 };
 
 /**
+ * Queue page specific shortcuts
+ */
+export const QUEUE_SHORTCUTS = {
+  'n': { description: 'Appeler patient suivant', category: 'File d\'attente' },
+  'c': { description: 'Enregistrer arrivée (check-in)', category: 'File d\'attente' },
+  'w': { description: 'Patient sans RDV (walk-in)', category: 'File d\'attente' },
+  'r': { description: 'Rafraîchir la file', category: 'File d\'attente' },
+  '1': { description: 'Appeler patient #1', category: 'File d\'attente' },
+  '2': { description: 'Appeler patient #2', category: 'File d\'attente' },
+  '3': { description: 'Appeler patient #3', category: 'File d\'attente' },
+  'esc': { description: 'Fermer modal', category: 'Interface' },
+  '?': { description: 'Afficher raccourcis', category: 'Interface' },
+};
+
+/**
+ * Consultation page specific shortcuts
+ */
+export const CONSULTATION_SHORTCUTS = {
+  'ctrl+s': { description: 'Sauvegarder', category: 'Consultation' },
+  'ctrl+enter': { description: 'Terminer consultation', category: 'Consultation' },
+  'alt+left': { description: 'Étape précédente', category: 'Consultation' },
+  'alt+right': { description: 'Étape suivante', category: 'Consultation' },
+  'esc': { description: 'Annuler / Fermer', category: 'Interface' },
+  '?': { description: 'Afficher raccourcis', category: 'Interface' },
+};
+
+/**
  * Format key combination for display
  */
 export function formatShortcut(combination) {

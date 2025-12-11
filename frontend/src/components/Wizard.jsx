@@ -17,7 +17,8 @@ const Wizard = ({
   onStepChange,
   onComplete,
   children,
-  className = ''
+  className = '',
+  hideNavigation = false  // Hide navigation buttons (e.g., during duplicate check)
 }) => {
   const totalSteps = steps.length;
   const progress = ((currentStep + 1) / totalSteps) * 100;
@@ -119,28 +120,30 @@ const Wizard = ({
       {/* Step Content */}
       <div className="wizard-content p-6">{children}</div>
 
-      {/* Navigation Buttons */}
-      <div className="wizard-footer px-6 pb-6 flex gap-3">
-        {!isFirstStep && (
+      {/* Navigation Buttons - Hidden during duplicate check */}
+      {!hideNavigation && (
+        <div className="wizard-footer px-6 pb-6 flex gap-3">
+          {!isFirstStep && (
+            <button
+              type="button"
+              onClick={handlePrevious}
+              className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold text-lg hover:bg-gray-300 transition shadow-md hover:shadow-lg"
+            >
+              ← Retour
+            </button>
+          )}
+
           <button
             type="button"
-            onClick={handlePrevious}
-            className="flex-1 px-6 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold text-lg hover:bg-gray-300 transition shadow-md hover:shadow-lg"
+            onClick={handleNext}
+            className={`${
+              isFirstStep ? 'w-full' : 'flex-1'
+            } px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg`}
           >
-            ← Retour
+            {isLastStep ? '✓ Terminer' : 'Suivant →'}
           </button>
-        )}
-
-        <button
-          type="button"
-          onClick={handleNext}
-          className={`${
-            isFirstStep ? 'w-full' : 'flex-1'
-          } px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-lg font-bold text-lg hover:from-blue-700 hover:to-blue-800 transition shadow-md hover:shadow-lg`}
-        >
-          {isLastStep ? '✓ Terminer' : 'Suivant →'}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 };

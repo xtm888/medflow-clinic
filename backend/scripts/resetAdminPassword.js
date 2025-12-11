@@ -1,25 +1,29 @@
+/**
+ * Reset Admin Password Script
+ * Uses centralized password from config/defaults.js
+ */
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
-require('dotenv').config({ path: '../.env' });
+const defaults = require('../config/defaults');
+require('dotenv').config();
 
 const resetAdminPassword = async () => {
   try {
-    // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');
     console.log('Connected to MongoDB');
 
     // Find admin user
-    const adminUser = await User.findOne({ email: 'admin@carevision.com' });
+    const adminUser = await User.findOne({ role: 'admin' });
 
     if (!adminUser) {
       console.log('Admin user not found!');
       process.exit(1);
     }
 
-    // Hash new password
+    // Hash new password using centralized default
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('admin123', salt);
+    const hashedPassword = await bcrypt.hash(defaults.admin.password, salt);
 
     // Update password
     adminUser.password = hashedPassword;
@@ -27,8 +31,8 @@ const resetAdminPassword = async () => {
 
     console.log('Admin password reset successfully!');
     console.log('New login credentials:');
-    console.log('Email: admin@carevision.com');
-    console.log('Password: admin123');
+    console.log('Email:', adminUser.email);
+    console.log('Password:', defaults.admin.password);
 
     await mongoose.connection.close();
   } catch (error) {

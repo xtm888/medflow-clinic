@@ -127,10 +127,12 @@ exports.getTemplates = asyncHandler(async (req, res, next) => {
   if (subCategory) query.subCategory = subCategory;
   if (specialty) query.specialty = specialty;
   if (search) {
+    // Escape special regex characters to prevent ReDoS/injection attacks
+    const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     query.$or = [
-      { name: new RegExp(search, 'i') },
-      { nameEn: new RegExp(search, 'i') },
-      { tags: new RegExp(search, 'i') }
+      { name: new RegExp(escapedSearch, 'i') },
+      { nameEn: new RegExp(escapedSearch, 'i') },
+      { tags: new RegExp(escapedSearch, 'i') }
     ];
   }
 

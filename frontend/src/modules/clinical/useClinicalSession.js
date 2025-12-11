@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import consultationSessionService from '../../services/consultationSessionService';
+import patientService from '../../services/patientService';
+import { useClinic } from '../../contexts/ClinicContext';
 
 /**
  * useClinicalSession - Hook for managing clinical consultation sessions
@@ -14,6 +16,7 @@ export default function useClinicalSession(options = {}) {
   const {
     patientId,
     visitId,
+    appointmentId,
     workflowType = 'ophthalmology',
     autoCreate = true,
     autoResume = true
@@ -24,6 +27,9 @@ export default function useClinicalSession(options = {}) {
   const [sessionError, setSessionError] = useState(null);
   const [isDraft, setIsDraft] = useState(false);
   const sessionRef = useRef(null);
+
+  // Get clinic context for auto-selecting patient's home clinic
+  const { isAllClinicsSelected, selectClinicById, clinics } = useClinic();
 
   // LocalStorage key for draft recovery
   const draftKey = patientId
@@ -78,6 +84,47 @@ export default function useClinicalSession(options = {}) {
     }
   }, [draftKey]);
 
+  // Auto-select patient's home clinic when in "All Clinics" mode
+  const ensureClinicContext = useCallback(async () => {
+    if (!isAllClinicsSelected || !patientId) {
+      return true; // Already have a clinic selected or no patient
+    }
+
+    try {
+      console.log('[useClinicalSession] In All Clinics mode, fetching patient homeClinic...');
+      const response = await patientService.getPatient(patientId);
+      const patient = response.data || response;
+
+      if (patient?.homeClinic) {
+        const homeClinicId = patient.homeClinic._id || patient.homeClinic;
+        console.log('[useClinicalSession] Auto-selecting patient homeClinic:', homeClinicId);
+
+        // Check if clinic exists in available clinics
+        const clinicExists = clinics.some(c => c._id === homeClinicId || c.clinicId === homeClinicId);
+        if (clinicExists) {
+          selectClinicById(homeClinicId);
+          // Small delay to let localStorage update propagate to API interceptor
+          await new Promise(resolve => setTimeout(resolve, 100));
+          return true;
+        }
+      }
+
+      // If patient has no homeClinic and there are available clinics, use the first one
+      if (clinics.length > 0) {
+        console.log('[useClinicalSession] Patient has no homeClinic, using first available clinic:', clinics[0].name);
+        selectClinicById(clinics[0]._id);
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return true;
+      }
+
+      console.warn('[useClinicalSession] No clinic available to select');
+      return false;
+    } catch (error) {
+      console.error('[useClinicalSession] Error fetching patient for clinic context:', error);
+      return false;
+    }
+  }, [isAllClinicsSelected, patientId, clinics, selectClinicById]);
+
   // Create new session
   const createSession = useCallback(async (initialData = {}) => {
     if (!patientId) return null;
@@ -86,9 +133,16 @@ export default function useClinicalSession(options = {}) {
     setSessionError(null);
 
     try {
+      // Ensure clinic context before creating session
+      const hasClinic = await ensureClinicContext();
+      if (!hasClinic) {
+        throw new Error('Veuillez sélectionner une clinique avant de démarrer la consultation.');
+      }
+
       const response = await consultationSessionService.createSession({
-        patientId,
-        visitId,
+        patient: patientId,
+        visit: visitId,
+        appointment: appointmentId,
         workflowType,
         ...initialData
       });
@@ -104,7 +158,7 @@ export default function useClinicalSession(options = {}) {
     } finally {
       setSessionLoading(false);
     }
-  }, [patientId, visitId, workflowType]);
+  }, [patientId, visitId, workflowType, ensureClinicContext]);
 
   // Load existing session
   const loadSession = useCallback(async (sessionId) => {
@@ -218,17 +272,22 @@ export default function useClinicalSession(options = {}) {
 
   // Complete session
   const completeSession = useCallback(async (finalData = {}) => {
-    if (!session?._id) return;
+    if (!session?._id) {
+      console.error('Cannot complete session: No session ID found', { session, finalData });
+      throw new Error('No active session to complete. Please create a session first.');
+    }
 
     setSessionLoading(true);
 
     try {
+      console.log('Completing session:', session._id, finalData);
       const response = await consultationSessionService.completeSession(
         session._id,
         finalData
       );
 
       const completedSession = response.data || response;
+      console.log('Session completed successfully:', completedSession);
       setSession(completedSession);
       sessionRef.current = completedSession;
 
@@ -269,24 +328,44 @@ export default function useClinicalSession(options = {}) {
   // Initialize session
   useEffect(() => {
     const initializeSession = async () => {
-      if (!patientId) return;
+      console.log('[useClinicalSession] Initializing session for patientId:', patientId);
+
+      if (!patientId) {
+        console.warn('[useClinicalSession] No patientId, skipping initialization');
+        return;
+      }
 
       // Try to find active session
       if (autoResume) {
+        console.log('[useClinicalSession] Looking for active session...');
         const activeSession = await findActiveSession();
-        if (activeSession) return;
+        console.log('[useClinicalSession] findActiveSession returned:', activeSession);
+        if (activeSession && activeSession._id) {
+          console.log('[useClinicalSession] Found active session:', activeSession._id);
+          return;
+        }
+        console.log('[useClinicalSession] No active session found');
       }
 
       // Check for draft
       const draft = loadDraft();
       if (draft) {
+        console.log('[useClinicalSession] Found draft data');
         setIsDraft(true);
         // Could show UI to ask user if they want to restore
       }
 
       // Auto-create new session
       if (autoCreate && !session) {
-        await createSession();
+        console.log('[useClinicalSession] Auto-creating new session...');
+        try {
+          const newSession = await createSession();
+          console.log('[useClinicalSession] Session created successfully:', newSession?._id);
+        } catch (error) {
+          console.error('[useClinicalSession] Failed to create session:', error);
+        }
+      } else {
+        console.log('[useClinicalSession] Not creating session - autoCreate:', autoCreate, 'session:', session?._id);
       }
     };
 

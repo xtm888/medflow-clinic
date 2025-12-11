@@ -8,6 +8,15 @@ const ophthalmologyExamSchema = new mongoose.Schema({
     required: false // Auto-generated in pre-save hook
   },
 
+  // Multi-Clinic: Which clinic this exam was performed at
+  // This allows a patient from Clinic A to have exams at Clinic B
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    required: true,
+    index: true
+  },
+
   // Patient and Provider
   patient: {
     type: mongoose.Schema.ObjectId,
@@ -635,9 +644,151 @@ const ophthalmologyExamSchema = new mongoose.Schema({
       }
     },
     gonioscopy: {
-      performed: Boolean,
+      performed: {
+        type: Boolean,
+        default: false
+      },
+      method: {
+        type: String,
+        enum: ['indentation', 'compression', 'static']
+      },
+      lens: {
+        type: String,
+        enum: ['zeiss_4_mirror', 'goldmann_3_mirror', 'sussman', 'posner', 'other']
+      },
+      // Legacy fields for backward compatibility
       OD: String,
-      OS: String
+      OS: String,
+      // Enhanced grading data
+      gradingSystem: {
+        type: String,
+        enum: ['shaffer', 'scheie', 'spaeth', 'van_herick'],
+        default: 'shaffer'
+      },
+      ODDetailed: {
+        quadrants: {
+          superior: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          },
+          inferior: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          },
+          nasal: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          },
+          temporal: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          }
+        },
+        synechiae: {
+          pas: {
+            present: { type: Boolean, default: false },
+            extent: { type: Number, min: 0, max: 12 }, // clock hours
+            locations: [String] // e.g., ['12_oclock', '1_oclock']
+          },
+          posterior: {
+            present: { type: Boolean, default: false },
+            extent: { type: String, enum: ['minimal', 'partial', 'extensive', 'secluded_pupil'] }
+          }
+        },
+        neovascularization: {
+          present: { type: Boolean, default: false },
+          location: [String],
+          extent: { type: String, enum: ['trace', 'mild', 'moderate', 'severe'] }
+        },
+        bloodInCanal: { type: Boolean, default: false },
+        notes: String
+      },
+      OSDetailed: {
+        quadrants: {
+          superior: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          },
+          inferior: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          },
+          nasal: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          },
+          temporal: {
+            shaffer: { type: String, enum: ['0', 'I', 'II', 'III', 'IV'] },
+            scheie: { type: String, enum: ['wide_open', 'grade_I', 'grade_II', 'grade_III', 'grade_IV'] },
+            spaeth: {
+              irisInsertion: { type: String, enum: ['A', 'B', 'C', 'D', 'E'] },
+              angularWidth: { type: Number, min: 0, max: 45 },
+              irisConfiguration: { type: String, enum: ['s', 'r', 'q', 'f', 'b', 'p'] }
+            },
+            pigmentation: { type: Number, min: 0, max: 4 }
+          }
+        },
+        synechiae: {
+          pas: {
+            present: { type: Boolean, default: false },
+            extent: { type: Number, min: 0, max: 12 },
+            locations: [String]
+          },
+          posterior: {
+            present: { type: Boolean, default: false },
+            extent: { type: String, enum: ['minimal', 'partial', 'extensive', 'secluded_pupil'] }
+          }
+        },
+        neovascularization: {
+          present: { type: Boolean, default: false },
+          location: [String],
+          extent: { type: String, enum: ['trace', 'mild', 'moderate', 'severe'] }
+        },
+        bloodInCanal: { type: Boolean, default: false },
+        notes: String
+      }
     },
     oct: {
       performed: Boolean,
@@ -717,7 +868,7 @@ const ophthalmologyExamSchema = new mongoose.Schema({
 
   // Images and Attachments
   images: [{
-    type: String, // fundus, oct, visual-field, etc.
+    type: { type: String }, // fundus, oct, visual-field, etc.
     eye: {
       type: String,
       enum: ['OD', 'OS', 'OU']
@@ -861,10 +1012,12 @@ const ophthalmologyExamSchema = new mongoose.Schema({
 });
 
 // Indexes
-ophthalmologyExamSchema.index({ patient: 1, createdAt: -1 });
-ophthalmologyExamSchema.index({ examiner: 1, status: 1 });
+ophthalmologyExamSchema.index({ clinic: 1, patient: 1, createdAt: -1 });
+ophthalmologyExamSchema.index({ clinic: 1, examiner: 1, status: 1 });
 ophthalmologyExamSchema.index({ examId: 1 });
 ophthalmologyExamSchema.index({ appointment: 1 });
+// Index for cross-clinic patient history lookup (all exams for a patient regardless of clinic)
+ophthalmologyExamSchema.index({ patient: 1, createdAt: -1 });
 
 // Generate exam ID
 ophthalmologyExamSchema.pre('save', async function(next) {

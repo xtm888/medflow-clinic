@@ -1,21 +1,31 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import websocketService from '../services/websocketService';
-import { useAuth } from './useRedux';
+import { useAuth } from '../contexts/AuthContext';
 
 // Main WebSocket hook
 export const useWebSocket = () => {
-  const { token, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
+  const token = localStorage.getItem('token');
   const [connected, setConnected] = useState(websocketService.isConnected());
 
   useEffect(() => {
-    const handleConnected = () => setConnected(true);
-    const handleDisconnected = () => setConnected(false);
+    console.log('[useWebSocket] Effect running, isAuthenticated:', isAuthenticated, 'hasToken:', !!token);
+
+    const handleConnected = () => {
+      console.log('[useWebSocket] Connected event received');
+      setConnected(true);
+    };
+    const handleDisconnected = () => {
+      console.log('[useWebSocket] Disconnected event received');
+      setConnected(false);
+    };
 
     const unsubscribeConnected = websocketService.on('connected', handleConnected);
     const unsubscribeDisconnected = websocketService.on('disconnected', handleDisconnected);
 
     // Connect if authenticated but not connected
     if (isAuthenticated && token && !websocketService.isConnected()) {
+      console.log('[useWebSocket] Triggering connect...');
       websocketService.connect(token);
     }
 
@@ -160,6 +170,77 @@ export const useLabResults = (patientId) => {
   return results;
 };
 
+// Hook for lab worklist updates (for lab dashboard real-time updates)
+export const useLabWorklist = (onUpdate) => {
+  const [worklistUpdate, setWorklistUpdate] = useState(null);
+  const [lastUpdateTime, setLastUpdateTime] = useState(null);
+
+  // Listen for worklist updates
+  useWebSocketEvent('lab_worklist_update', (data) => {
+    setWorklistUpdate(data);
+    setLastUpdateTime(new Date());
+    if (onUpdate) {
+      onUpdate(data);
+    }
+  });
+
+  // Listen for order status changes
+  useWebSocketEvent('lab:order:status', (data) => {
+    setWorklistUpdate({ action: 'status_change', ...data });
+    setLastUpdateTime(new Date());
+    if (onUpdate) {
+      onUpdate({ action: 'status_change', ...data });
+    }
+  });
+
+  // Listen for specimen collections
+  useWebSocketEvent('lab:specimen:collected', (data) => {
+    setWorklistUpdate({ action: 'specimen_collected', ...data });
+    setLastUpdateTime(new Date());
+    if (onUpdate) {
+      onUpdate({ action: 'specimen_collected', ...data });
+    }
+  });
+
+  return { worklistUpdate, lastUpdateTime };
+};
+
+// Hook for lab critical values
+export const useLabCriticalAlerts = (onCritical) => {
+  const [criticalAlerts, setCriticalAlerts] = useState([]);
+
+  useWebSocketEvent('lab:critical', (data) => {
+    setCriticalAlerts((prev) => [...prev, data]);
+    if (onCritical) {
+      onCritical(data);
+    }
+  });
+
+  const clearAlert = useCallback((alertId) => {
+    setCriticalAlerts((prev) => prev.filter((a) => a.orderId !== alertId));
+  }, []);
+
+  return { criticalAlerts, clearAlert };
+};
+
+// Hook for QC failures
+export const useQCFailures = (onFailure) => {
+  const [qcFailures, setQcFailures] = useState([]);
+
+  useWebSocketEvent('lab:qc:failure', (data) => {
+    setQcFailures((prev) => [...prev, data]);
+    if (onFailure) {
+      onFailure(data);
+    }
+  });
+
+  const clearFailure = useCallback((testCode) => {
+    setQcFailures((prev) => prev.filter((f) => f.testCode !== testCode));
+  }, []);
+
+  return { qcFailures, clearFailure };
+};
+
 // Hook for prescription ready notifications
 export const usePrescriptionReady = (patientId) => {
   const [prescriptions, setPrescriptions] = useState([]);
@@ -240,6 +321,9 @@ export default {
   usePrivateMessages,
   useEmergencyAlerts,
   useLabResults,
+  useLabWorklist,
+  useLabCriticalAlerts,
+  useQCFailures,
   usePrescriptionReady,
   useBillingUpdates,
   useRoom,

@@ -1,0 +1,356 @@
+const mongoose = require('mongoose');
+
+/**
+ * ClinicalAlert Model
+ *
+ * Stores clinical alerts triggered during patient examinations.
+ * Supports emergency (blocking), urgent, warning, and info severity levels.
+ */
+
+const clinicalAlertSchema = new mongoose.Schema({
+  // Unique alert identifier
+  alertId: {
+    type: String,
+    unique: true,
+    sparse: true
+  },
+
+  // Context - which patient/exam triggered this alert
+  patient: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Patient',
+    required: true,
+    index: true
+  },
+  exam: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'OphthalmologyExam'
+  },
+  visit: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Visit'
+  },
+
+  // Alert Classification
+  severity: {
+    type: String,
+    enum: ['EMERGENCY', 'URGENT', 'WARNING', 'INFO'],
+    required: true,
+    index: true
+  },
+  category: {
+    type: String,
+    enum: ['clinical', 'measurement', 'history', 'medication', 'follow_up', 'safety'],
+    default: 'clinical'
+  },
+  code: {
+    type: String,
+    required: true,
+    enum: [
+      // Emergency alerts (blocking)
+      'NPL',                      // No light perception
+      'ACUTE_ANGLE_CLOSURE',      // Acute angle closure glaucoma
+      'ENDOPHTHALMITIS',          // Suspected endophthalmitis
+      'RETINAL_DETACHMENT',       // Retinal detachment signs
+      'CHEMICAL_BURN',            // Chemical eye injury
+      'ORBITAL_FRACTURE',         // Orbital fracture suspected
+      'CENTRAL_RETINAL_ARTERY_OCCLUSION', // CRAO - sight threatening emergency
+
+      // Urgent alerts (non-blocking banner)
+      'SUDDEN_VISION_LOSS',       // Sudden significant vision loss
+      'IOP_CRITICAL',             // IOP > 30 mmHg
+      'VITREOUS_HEMORRHAGE',      // Vitreous hemorrhage
+      'CORNEAL_ULCER',            // Active corneal ulcer
+      'HYPHEMA',                  // Blood in anterior chamber
+
+      // Warning alerts (non-blocking banner)
+      'IOP_ELEVATED',             // IOP 21-30 mmHg
+      'RAPD_DETECTED',            // Relative afferent pupillary defect
+      'NARROW_ANGLE',             // Narrow angle on gonioscopy
+      'CUP_DISC_HIGH',            // Cup/disc ratio > 0.7
+      'MYOPIA_PROGRESSION',       // Significant myopia progression
+      'DRUG_ALLERGY_CONFLICT',    // Prescribed medication conflicts with allergy
+      'DRUG_INTERACTION',         // Drug-drug interaction detected
+
+      // Info alerts (inline)
+      'DIABETES_SCREENING_DUE',   // Diabetic patient needs retinal screening
+      'FOLLOW_UP_OVERDUE',        // Patient overdue for follow-up
+      'PRESCRIPTION_EXPIRED',     // Prescription has expired
+      'CONTACT_LENS_REVIEW'       // Contact lens patient needs review
+    ]
+  },
+
+  // Alert Content
+  title: {
+    type: String,
+    required: true
+  },
+  message: {
+    type: String,
+    required: true
+  },
+  eye: {
+    type: String,
+    enum: ['OD', 'OS', 'OU']
+  },
+
+  // What triggered this alert
+  triggerField: String,           // e.g., 'visualAcuity.distance.OD.corrected'
+  triggerValue: String,           // e.g., 'NPL'
+  triggerThreshold: String,       // e.g., '> 30 mmHg'
+  triggerComparison: {            // For trend-based alerts
+    previousValue: String,
+    currentValue: String,
+    changePercent: Number
+  },
+
+  // Recommended Actions
+  recommendedActions: [{
+    action: String,
+    priority: {
+      type: Number,
+      min: 1,
+      max: 5
+    },
+    completed: {
+      type: Boolean,
+      default: false
+    },
+    completedAt: Date,
+    completedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  }],
+
+  // Status Tracking
+  status: {
+    type: String,
+    enum: ['active', 'acknowledged', 'resolved', 'escalated', 'dismissed'],
+    default: 'active',
+    index: true
+  },
+  acknowledgedAt: Date,
+  acknowledgedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
+  acknowledgedReason: String,
+  resolvedAt: Date,
+  resolvedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
+  resolution: String,
+
+  // EMERGENCY alert acknowledgment - requires additional documentation for patient safety
+  emergencyAcknowledgment: {
+    clinicalJustification: String, // Why is it safe to proceed despite the emergency
+    actionsTaken: [String],        // What actions were taken to address the alert
+    acknowledgedAt: Date,
+    acknowledgedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    }
+  },
+
+  escalatedTo: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
+  escalatedAt: Date,
+  escalationReason: String,
+
+  // Notification tracking
+  notifiedUsers: [{
+    user: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    notifiedAt: Date,
+    method: {
+      type: String,
+      enum: ['in_app', 'email', 'sms', 'push']
+    },
+    delivered: {
+      type: Boolean,
+      default: false
+    }
+  }],
+
+  // Metadata
+  autoGenerated: {
+    type: Boolean,
+    default: true
+  },
+  createdBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
+  },
+
+  // For duplicate prevention
+  alertHash: {
+    type: String,
+    index: true
+  },
+
+  // Priority for ordering
+  priority: {
+    type: Number,
+    default: 5,
+    min: 1,
+    max: 10
+  },
+
+  // Expiration (for time-sensitive alerts)
+  expiresAt: Date
+}, {
+  timestamps: true
+});
+
+// Indexes for efficient querying
+clinicalAlertSchema.index({ patient: 1, status: 1 });
+clinicalAlertSchema.index({ patient: 1, createdAt: -1 });
+clinicalAlertSchema.index({ exam: 1, code: 1 });
+clinicalAlertSchema.index({ severity: 1, status: 1 });
+clinicalAlertSchema.index({ createdAt: -1 });
+clinicalAlertSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
+
+// Pre-save: Generate alert ID and hash
+clinicalAlertSchema.pre('save', async function(next) {
+  if (!this.alertId) {
+    const timestamp = Date.now().toString(36);
+    const random = Math.random().toString(36).substr(2, 5);
+    this.alertId = `ALT-${timestamp}-${random}`.toUpperCase();
+  }
+
+  // Generate hash for duplicate detection
+  if (!this.alertHash) {
+    this.alertHash = `${this.patient}-${this.exam || 'no-exam'}-${this.code}-${this.eye || 'both'}`;
+  }
+
+  // Set priority based on severity
+  if (!this.priority || this.isNew) {
+    const priorityMap = {
+      'EMERGENCY': 1,
+      'URGENT': 3,
+      'WARNING': 5,
+      'INFO': 7
+    };
+    this.priority = priorityMap[this.severity] || 5;
+  }
+
+  next();
+});
+
+// Static: Get active alerts for patient
+clinicalAlertSchema.statics.getActiveForPatient = async function(patientId, options = {}) {
+  const { severity, limit = 50 } = options;
+
+  const query = {
+    patient: patientId,
+    status: { $in: ['active', 'acknowledged'] }
+  };
+
+  if (severity) {
+    query.severity = severity;
+  }
+
+  return this.find(query)
+    .sort({ priority: 1, createdAt: -1 })
+    .limit(limit)
+    .populate('acknowledgedBy', 'firstName lastName')
+    .lean();
+};
+
+// Static: Get unacknowledged emergency alerts for exam
+clinicalAlertSchema.statics.getEmergencyForExam = async function(examId) {
+  return this.find({
+    exam: examId,
+    severity: 'EMERGENCY',
+    status: 'active'
+  })
+  .sort({ createdAt: -1 })
+  .lean();
+};
+
+// Static: Check if alert already exists (prevent duplicates)
+clinicalAlertSchema.statics.alertExists = async function(patient, exam, code, eye) {
+  const hash = `${patient}-${exam || 'no-exam'}-${code}-${eye || 'both'}`;
+  const existing = await this.findOne({
+    alertHash: hash,
+    status: { $in: ['active', 'acknowledged'] }
+  });
+  return !!existing;
+};
+
+// Static: Get alert counts by severity for patient
+clinicalAlertSchema.statics.getCountsBySeverity = async function(patientId) {
+  const results = await this.aggregate([
+    {
+      $match: {
+        patient: new mongoose.Types.ObjectId(patientId),
+        status: { $in: ['active', 'acknowledged'] }
+      }
+    },
+    {
+      $group: {
+        _id: '$severity',
+        count: { $sum: 1 }
+      }
+    }
+  ]);
+
+  const counts = {
+    EMERGENCY: 0,
+    URGENT: 0,
+    WARNING: 0,
+    INFO: 0,
+    total: 0
+  };
+
+  results.forEach(r => {
+    counts[r._id] = r.count;
+    counts.total += r.count;
+  });
+
+  return counts;
+};
+
+// Instance: Acknowledge the alert
+clinicalAlertSchema.methods.acknowledge = async function(userId, reason = '') {
+  this.status = 'acknowledged';
+  this.acknowledgedAt = new Date();
+  this.acknowledgedBy = userId;
+  this.acknowledgedReason = reason;
+  return this.save();
+};
+
+// Instance: Resolve the alert
+clinicalAlertSchema.methods.resolve = async function(userId, resolution = '') {
+  this.status = 'resolved';
+  this.resolvedAt = new Date();
+  this.resolvedBy = userId;
+  this.resolution = resolution;
+  return this.save();
+};
+
+// Instance: Escalate the alert
+clinicalAlertSchema.methods.escalate = async function(userId, toUserId, reason = '') {
+  this.status = 'escalated';
+  this.escalatedAt = new Date();
+  this.escalatedTo = toUserId;
+  this.escalationReason = reason;
+
+  // Add notification for escalated user
+  this.notifiedUsers.push({
+    user: toUserId,
+    notifiedAt: new Date(),
+    method: 'in_app',
+    delivered: false
+  });
+
+  return this.save();
+};
+
+module.exports = mongoose.model('ClinicalAlert', clinicalAlertSchema);

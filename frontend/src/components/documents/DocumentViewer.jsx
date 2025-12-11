@@ -231,7 +231,7 @@ const DocumentViewer = ({ document, onClose, onUpdate }) => {
                   <button
                     onClick={() => setZoom(Math.max(25, zoom - 25))}
                     className="p-2 hover:bg-gray-100 rounded"
-                    title="Zoom out"
+                    title="Zoom arrière"
                   >
                     <ZoomOut size={20} />
                   </button>
@@ -241,7 +241,7 @@ const DocumentViewer = ({ document, onClose, onUpdate }) => {
                   <button
                     onClick={() => setZoom(Math.min(200, zoom + 25))}
                     className="p-2 hover:bg-gray-100 rounded"
-                    title="Zoom in"
+                    title="Zoom avant"
                   >
                     <ZoomIn size={20} />
                   </button>
@@ -249,7 +249,7 @@ const DocumentViewer = ({ document, onClose, onUpdate }) => {
                     <button
                       onClick={() => setRotation((rotation + 90) % 360)}
                       className="p-2 hover:bg-gray-100 rounded"
-                      title="Rotate"
+                      title="Pivoter"
                     >
                       <RotateCw size={20} />
                     </button>
@@ -262,21 +262,21 @@ const DocumentViewer = ({ document, onClose, onUpdate }) => {
               <button
                 onClick={handleDownload}
                 className="p-2 hover:bg-gray-100 rounded"
-                title="Download"
+                title="Télécharger"
               >
                 <Download size={20} />
               </button>
               <button
                 onClick={() => setIsEditing(!isEditing)}
                 className="p-2 hover:bg-gray-100 rounded"
-                title="Edit"
+                title="Modifier"
               >
                 <Edit3 size={20} />
               </button>
               <button
                 onClick={onClose}
                 className="p-2 hover:bg-gray-100 rounded"
-                title="Close"
+                title="Fermer"
               >
                 <X size={20} />
               </button>

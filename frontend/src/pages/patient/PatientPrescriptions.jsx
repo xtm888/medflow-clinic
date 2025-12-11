@@ -3,6 +3,7 @@ import { Pill, Loader2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import api from '../../services/apiConfig';
+import { safeString } from '../../utils/apiHelpers';
 import authService from '../../services/authService';
 
 export default function PatientPrescriptions() {
@@ -81,18 +82,49 @@ export default function PatientPrescriptions() {
                   <div className="flex items-start">
                     <Pill className="h-5 w-5 text-green-600 mr-3 flex-shrink-0 mt-0.5" />
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-900">
-                        {med.name || med.medication || (typeof med.drug === 'object' ? med.drug.name : med.drug) || 'Médicament'}
-                      </p>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-gray-900">
+                          {med.name || med.medication || (typeof med.drug === 'object' ? med.drug.name : med.drug) || 'Médicament'}
+                        </p>
+                        {med.route && (
+                          <span className={`px-2 py-0.5 text-xs rounded ${
+                            med.route === 'oral' ? 'bg-gray-100 text-gray-600' : 'bg-purple-100 text-purple-700'
+                          }`}>
+                            {med.route === 'ophthalmic' ? 'Collyre' : med.route}
+                          </span>
+                        )}
+                        {med.applicationLocation?.eye && (
+                          <span className="px-2 py-0.5 text-xs rounded bg-blue-100 text-blue-700 font-medium">
+                            {med.applicationLocation.eye}
+                          </span>
+                        )}
+                        {med.taperingName && (
+                          <span className="px-2 py-0.5 text-xs rounded bg-amber-100 text-amber-700">
+                            ↘ {med.taperingName}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-sm text-gray-600 mt-1">
-                        <strong>Posologie:</strong> {med.dosage || 'Non spécifié'}
+                        <strong>Posologie:</strong> {safeString(med.dosage, 'Non spécifié')}
                       </p>
                       <p className="text-sm text-gray-600">
-                        <strong>Durée:</strong> {med.duration || 'Non spécifié'}
+                        <strong>Durée:</strong> {safeString(med.duration, 'Non spécifié')}
                       </p>
                       <p className="text-sm text-gray-600">
                         <strong>Quantité:</strong> {med.quantity || 'Non spécifié'}
                       </p>
+                      {med.taperingSchedule && (
+                        <div className="mt-2 p-2 bg-amber-50 rounded">
+                          <p className="text-xs font-medium text-amber-700 mb-1">Schéma de dégression:</p>
+                          <div className="flex flex-wrap gap-1">
+                            {med.taperingSchedule.map((step, stepIdx) => (
+                              <span key={stepIdx} className="px-2 py-0.5 text-xs bg-white text-amber-600 rounded border border-amber-200">
+                                J{step.days}: {step.frequency}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                       {med.instructions && (
                         <p className="text-sm text-gray-500 mt-2 italic">
                           {med.instructions}

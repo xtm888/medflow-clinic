@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const crypto = require('crypto');
 const { protect, authorize } = require('../middleware/auth');
+const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const Document = require('../models/Document');
 const documentController = require('../controllers/documentController');
 
@@ -63,8 +64,8 @@ function determineDocumentType(mimeType, filename) {
 
 // @desc    Upload document
 // @route   POST /api/documents/upload
-// @access  Private
-router.post('/upload', protect, upload.single('document'), async (req, res) => {
+// @access  Private (Medical staff)
+router.post('/upload', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'radiologist', 'technician'), logAction('DOCUMENT_UPLOAD'), upload.single('document'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -124,18 +125,6 @@ router.post('/upload', protect, upload.single('document'), async (req, res) => {
 
     const document = await Document.create(documentData);
 
-    // If it's an audio file, initiate transcription
-    if (docType === 'audio' && req.body.transcribe === 'true') {
-      // Async transcription - don't wait for it
-      document.transcribeAudio().catch(console.error);
-    }
-
-    // If it's a PDF or image, initiate OCR
-    if ((docType === 'pdf' || docType === 'image') && req.body.ocr === 'true') {
-      // Async OCR - don't wait for it
-      document.ocrDocument().catch(console.error);
-    }
-
     res.status(201).json({
       success: true,
       data: document
@@ -157,8 +146,8 @@ router.post('/upload', protect, upload.single('document'), async (req, res) => {
 
 // @desc    Record audio note
 // @route   POST /api/documents/audio
-// @access  Private
-router.post('/audio', protect, upload.single('audio'), async (req, res) => {
+// @access  Private (Medical staff)
+router.post('/audio', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), logAction('DOCUMENT_UPLOAD'), upload.single('audio'), async (req, res) => {
   try {
     const documentData = {
       title: req.body.title || `Audio Note - ${new Date().toLocaleString()}`,
@@ -188,11 +177,6 @@ router.post('/audio', protect, upload.single('audio'), async (req, res) => {
 
     const document = await Document.create(documentData);
 
-    // Initiate transcription
-    if (req.body.transcribe !== 'false') {
-      document.transcribeAudio().catch(console.error);
-    }
-
     res.status(201).json({
       success: true,
       data: document
@@ -213,8 +197,8 @@ router.post('/audio', protect, upload.single('audio'), async (req, res) => {
 
 // @desc    Search documents
 // @route   GET /api/documents/search
-// @access  Private
-router.get('/search', protect, async (req, res) => {
+// @access  Private (Medical staff)
+router.get('/search', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'), logAction('DOCUMENT_SEARCH'), async (req, res) => {
   try {
     const { q, patientId, visitId, category, dateFrom, dateTo, limit } = req.query;
 
@@ -253,7 +237,7 @@ router.get('/search', protect, async (req, res) => {
 // @desc    Get documents by patient
 // @route   GET /api/documents/patient/:patientId
 // @access  Private (Medical staff only)
-router.get('/patient/:patientId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
+router.get('/patient/:patientId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), logAction('DOCUMENT_VIEW'), async (req, res) => {
   try {
     const { category, type, limit, offset } = req.query;
 
@@ -292,7 +276,7 @@ router.get('/patient/:patientId', protect, authorize('admin', 'doctor', 'ophthal
 // @desc    Get documents by visit
 // @route   GET /api/documents/visit/:visitId
 // @access  Private (Medical staff only)
-router.get('/visit/:visitId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
+router.get('/visit/:visitId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), logAction('DOCUMENT_VIEW'), async (req, res) => {
   try {
     const documents = await Document.getByVisit(req.params.visitId);
 
@@ -313,7 +297,7 @@ router.get('/visit/:visitId', protect, authorize('admin', 'doctor', 'ophthalmolo
 // @desc    Get recent audio notes
 // @route   GET /api/documents/audio/recent/:patientId
 // @access  Private (Medical staff only)
-router.get('/audio/recent/:patientId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
+router.get('/audio/recent/:patientId', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), logAction('DOCUMENT_VIEW'), async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
     const audioNotes = await Document.getRecentAudioNotes(req.params.patientId, limit);
@@ -334,8 +318,8 @@ router.get('/audio/recent/:patientId', protect, authorize('admin', 'doctor', 'op
 
 // @desc    Get document by ID
 // @route   GET /api/documents/:id
-// @access  Private
-router.get('/:id', protect, async (req, res) => {
+// @access  Private (Medical staff)
+router.get('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist', 'radiologist', 'technician'), logAction('DOCUMENT_VIEW'), async (req, res) => {
   try {
     const document = await Document.findById(req.params.id)
       .populate('patient', 'firstName lastName')
@@ -367,8 +351,8 @@ router.get('/:id', protect, async (req, res) => {
 
 // @desc    Add annotation to image
 // @route   POST /api/documents/:id/annotate
-// @access  Private
-router.post('/:id/annotate', protect, async (req, res) => {
+// @access  Private (Medical staff)
+router.post('/:id/annotate', protect, authorize('admin', 'doctor', 'ophthalmologist', 'radiologist'), logAction('DOCUMENT_ANNOTATE'), async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
 
@@ -406,75 +390,12 @@ router.post('/:id/annotate', protect, async (req, res) => {
   }
 });
 
-// @desc    Transcribe audio document
-// @route   POST /api/documents/:id/transcribe
-// @access  Private
-router.post('/:id/transcribe', protect, async (req, res) => {
-  try {
-    const document = await Document.findById(req.params.id);
-
-    if (!document || document.deleted) {
-      return res.status(404).json({
-        success: false,
-        error: 'Document not found'
-      });
-    }
-
-    if (document.type !== 'audio') {
-      return res.status(400).json({
-        success: false,
-        error: 'Only audio documents can be transcribed'
-      });
-    }
-
-    await document.transcribeAudio(req.body.engine || 'whisper');
-
-    res.json({
-      success: true,
-      data: document
-    });
-  } catch (error) {
-    console.error('Error transcribing document:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// @desc    OCR document
-// @route   POST /api/documents/:id/ocr
-// @access  Private
-router.post('/:id/ocr', protect, async (req, res) => {
-  try {
-    const document = await Document.findById(req.params.id);
-
-    if (!document || document.deleted) {
-      return res.status(404).json({
-        success: false,
-        error: 'Document not found'
-      });
-    }
-
-    await document.ocrDocument();
-
-    res.json({
-      success: true,
-      data: document
-    });
-  } catch (error) {
-    console.error('Error performing OCR:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
+// Note: Transcribe and OCR routes removed - features not currently available
 
 // @desc    Share document
 // @route   POST /api/documents/:id/share
-// @access  Private
-router.post('/:id/share', protect, async (req, res) => {
+// @access  Private (Admin, Doctor)
+router.post('/:id/share', protect, authorize('admin', 'doctor', 'ophthalmologist'), logAction('DOCUMENT_SHARE'), async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
 
@@ -504,8 +425,8 @@ router.post('/:id/share', protect, async (req, res) => {
 
 // @desc    Update document
 // @route   PUT /api/documents/:id
-// @access  Private
-router.put('/:id', protect, async (req, res) => {
+// @access  Private (Medical staff)
+router.put('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), logAction('DOCUMENT_UPDATE'), async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
 
@@ -543,7 +464,7 @@ router.put('/:id', protect, async (req, res) => {
 // @desc    Delete document (soft delete)
 // @route   DELETE /api/documents/:id
 // @access  Private (Admin and document creator only)
-router.delete('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist'), async (req, res) => {
+router.delete('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist'), logCriticalOperation('DOCUMENT_DELETE'), async (req, res) => {
   try {
     const document = await Document.findById(req.params.id);
 
@@ -579,31 +500,31 @@ router.delete('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist'), 
 // @desc    Generate prescription PDF
 // @route   POST /api/documents/generate/prescription
 // @access  Private (doctor, ophthalmologist)
-router.post('/generate/prescription', protect, authorize(['doctor', 'ophthalmologist', 'admin']), documentController.generatePrescription);
+router.post('/generate/prescription', protect, authorize(['doctor', 'ophthalmologist', 'admin']), logAction('DOCUMENT_GENERATE'), documentController.generatePrescription);
 
 // @desc    Generate medical certificate PDF
 // @route   POST /api/documents/generate/certificate
 // @access  Private (doctor, ophthalmologist)
-router.post('/generate/certificate', protect, authorize(['doctor', 'ophthalmologist', 'admin']), documentController.generateMedicalCertificate);
+router.post('/generate/certificate', protect, authorize(['doctor', 'ophthalmologist', 'admin']), logAction('DOCUMENT_GENERATE'), documentController.generateMedicalCertificate);
 
 // @desc    Generate sick leave certificate PDF
 // @route   POST /api/documents/generate/sick-leave
 // @access  Private (doctor, ophthalmologist)
-router.post('/generate/sick-leave', protect, authorize(['doctor', 'ophthalmologist', 'admin']), documentController.generateSickLeave);
+router.post('/generate/sick-leave', protect, authorize(['doctor', 'ophthalmologist', 'admin']), logAction('DOCUMENT_GENERATE'), documentController.generateSickLeave);
 
 // @desc    Generate invoice PDF
 // @route   POST /api/documents/generate/invoice
 // @access  Private (doctor, receptionist, accountant, admin)
-router.post('/generate/invoice', protect, authorize(['doctor', 'ophthalmologist', 'receptionist', 'accountant', 'admin']), documentController.generateInvoice);
+router.post('/generate/invoice', protect, authorize(['doctor', 'ophthalmologist', 'receptionist', 'accountant', 'admin']), logAction('DOCUMENT_GENERATE'), documentController.generateInvoice);
 
 // @desc    Download generated document
 // @route   GET /api/documents/download/:filename
-// @access  Private
-router.get('/download/:filename', protect, documentController.downloadDocument);
+// @access  Private (Medical staff)
+router.get('/download/:filename', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist', 'accountant'), logAction('DOCUMENT_DOWNLOAD'), documentController.downloadDocument);
 
 // @desc    Delete generated document
 // @route   DELETE /api/documents/delete/:filename
 // @access  Private
-router.delete('/delete/:filename', protect, authorize(['doctor', 'admin']), documentController.deleteDocument);
+router.delete('/delete/:filename', protect, authorize(['doctor', 'admin']), logCriticalOperation('DOCUMENT_DELETE'), documentController.deleteDocument);
 
 module.exports = router;

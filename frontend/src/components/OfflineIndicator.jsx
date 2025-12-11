@@ -1,16 +1,49 @@
 import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, RefreshCw, AlertTriangle, Check, Clock } from 'lucide-react';
 import syncService from '../services/syncService';
+import ConflictResolutionModal from './ConflictResolutionModal';
 
 export default function OfflineIndicator() {
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  // Start with true to avoid showing offline banner on initial load
+  const [isOnline, setIsOnline] = useState(true);
   const [syncStatus, setSyncStatus] = useState('idle');
   const [pendingOperations, setPendingOperations] = useState(0);
   const [lastSync, setLastSync] = useState(null);
   const [conflicts, setConflicts] = useState(0);
   const [showDetails, setShowDetails] = useState(false);
+  const [hasCheckedConnectivity, setHasCheckedConnectivity] = useState(false);
+  const [selectedConflict, setSelectedConflict] = useState(null);
+  const [conflictList, setConflictList] = useState([]);
 
   useEffect(() => {
+    // Check actual connectivity on mount with a small delay
+    // This gives the page time to fully load before checking
+    const checkConnectivity = async () => {
+      // Wait a moment before checking to avoid false negatives on hard refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      try {
+        // Try to fetch the API health endpoint (doesn't require auth)
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        const response = await fetch('/api/auth/me', {
+          method: 'HEAD',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        setIsOnline(response.ok || response.status === 401 || navigator.onLine);
+      } catch {
+        // If fetch fails, fall back to navigator.onLine
+        // But also check if the app is actually loaded (page visible)
+        setIsOnline(navigator.onLine);
+      }
+      setHasCheckedConnectivity(true);
+    };
+
+    checkConnectivity();
+
     // Update online status
     const handleOnline = () => {
       setIsOnline(true);
@@ -50,8 +83,12 @@ export default function OfflineIndicator() {
     });
 
     // Update status periodically
-    const interval = setInterval(updateStatus, 10000);
+    const interval = setInterval(() => {
+      updateStatus();
+      fetchConflicts();
+    }, 10000);
     updateStatus();
+    fetchConflicts();
 
     return () => {
       window.removeEventListener('online', handleOnline);
@@ -71,6 +108,24 @@ export default function OfflineIndicator() {
       }
     } catch (error) {
       console.error('Failed to get sync status:', error);
+    }
+  };
+
+  const fetchConflicts = async () => {
+    try {
+      const status = await syncService.getStatus();
+      if (status.unresolvedConflicts > 0) {
+        // Fetch actual conflict data from database
+        const { db } = await import('../services/database');
+        const conflicts = await db.conflicts
+          .filter(c => c.resolution === 'pending' || !c.resolution)
+          .toArray();
+        setConflictList(conflicts);
+      } else {
+        setConflictList([]);
+      }
+    } catch (error) {
+      console.error('Failed to fetch conflicts:', error);
     }
   };
 
@@ -104,6 +159,14 @@ export default function OfflineIndicator() {
     if (isOnline && syncStatus !== 'syncing') {
       syncService.sync();
     }
+  };
+
+  const handleConflictResolved = (conflictId) => {
+    setConflictList(prev => prev.filter(c => c.id !== conflictId));
+    setConflicts(prev => Math.max(0, prev - 1));
+    setSelectedConflict(null);
+    updateStatus();
+    fetchConflicts();
   };
 
   const getStatusColor = () => {
@@ -212,6 +275,27 @@ export default function OfflineIndicator() {
                 </div>
               )}
 
+              {/* Conflict Resolution */}
+              {conflictList.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-gray-100">
+                  <p className="text-xs font-medium text-gray-700 mb-2">Conflits a resoudre:</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {conflictList.slice(0, 5).map(conflict => (
+                      <button
+                        key={conflict.id}
+                        onClick={() => setSelectedConflict(conflict)}
+                        className="w-full text-left px-2 py-1 text-xs bg-yellow-50 hover:bg-yellow-100 rounded border border-yellow-200 transition-colors"
+                      >
+                        <span className="font-medium">{conflict.entity}</span>
+                        <span className="text-gray-500 ml-1">
+                          ({conflict.entityId?.substring(0, 8)}...)
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Sync Button */}
               {isOnline && (
                 <button
@@ -237,14 +321,22 @@ export default function OfflineIndicator() {
         )}
       </div>
 
-      {/* Toast Notification for Offline */}
-      {!isOnline && (
+      {/* Toast Notification for Offline - Only show after connectivity check */}
+      {!isOnline && hasCheckedConnectivity && (
         <div className="fixed top-0 left-0 right-0 bg-yellow-500 text-white text-center py-1.5 px-4 z-50">
           <p className="text-xs font-medium">
             Mode hors ligne - Les modifications seront synchronisees automatiquement
           </p>
         </div>
       )}
+
+      {/* Conflict Resolution Modal */}
+      <ConflictResolutionModal
+        isOpen={!!selectedConflict}
+        conflict={selectedConflict}
+        onClose={() => setSelectedConflict(null)}
+        onResolved={handleConflictResolved}
+      />
     </>
   );
 }

@@ -1,0 +1,601 @@
+const mongoose = require('mongoose');
+
+/**
+ * InventoryTransfer Model
+ * Manages stock transfers between clinics and from depot
+ * Supports approval workflow and tracking
+ */
+const inventoryTransferSchema = new mongoose.Schema({
+  // Transfer identification
+  transferNumber: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+
+  // Transfer type
+  type: {
+    type: String,
+    enum: ['depot-to-clinic', 'clinic-to-clinic', 'return-to-depot', 'adjustment'],
+    required: true,
+    index: true
+  },
+
+  // Source location
+  source: {
+    clinic: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Clinic'
+    },
+    isDepot: {
+      type: Boolean,
+      default: false
+    },
+    name: String // Cached name for display
+  },
+
+  // Destination location
+  destination: {
+    clinic: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Clinic',
+      required: true
+    },
+    name: String // Cached name for display
+  },
+
+  // Items being transferred
+  items: [{
+    inventoryType: {
+      type: String,
+      enum: ['pharmacy', 'frame', 'contactLens', 'labConsumable', 'reagent'],
+      required: true
+    },
+    inventoryId: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: true,
+      refPath: 'items.inventoryModel'
+    },
+    inventoryModel: {
+      type: String,
+      enum: ['PharmacyInventory', 'FrameInventory', 'ContactLensInventory', 'LabConsumableInventory', 'ReagentInventory']
+    },
+    // Product details (cached for display and history)
+    productName: {
+      type: String,
+      required: true
+    },
+    productSku: String,
+    productDetails: String, // e.g., "Timolol 0.5% - 5ml"
+
+    // Quantities
+    requestedQuantity: {
+      type: Number,
+      required: true,
+      min: 1
+    },
+    approvedQuantity: {
+      type: Number,
+      min: 0
+    },
+    shippedQuantity: {
+      type: Number,
+      min: 0
+    },
+    receivedQuantity: {
+      type: Number,
+      min: 0
+    },
+
+    // Batch/lot information (optional)
+    lotNumber: String,
+    expirationDate: Date,
+
+    // Item-level status
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected', 'shipped', 'received', 'partial'],
+      default: 'pending'
+    },
+
+    // Notes per item
+    notes: String,
+    rejectionReason: String
+  }],
+
+  // Overall transfer status
+  status: {
+    type: String,
+    enum: [
+      'draft',           // Being prepared
+      'requested',       // Submitted for approval
+      'approved',        // Approved, ready to ship
+      'partially-approved', // Some items approved
+      'rejected',        // Rejected
+      'in-transit',      // Shipped, awaiting receipt
+      'partially-received', // Some items received
+      'completed',       // All items received
+      'cancelled'        // Cancelled
+    ],
+    default: 'draft',
+    index: true
+  },
+
+  // Priority
+  priority: {
+    type: String,
+    enum: ['low', 'normal', 'high', 'urgent'],
+    default: 'normal',
+    index: true
+  },
+
+  // Reason for transfer
+  reason: {
+    type: String,
+    enum: [
+      'replenishment',      // Regular restocking
+      'stock-out',          // Emergency - item out of stock
+      'rebalancing',        // Moving surplus to needy clinic
+      'expiring-soon',      // Moving items before expiry
+      'patient-request',    // Specific patient needs item
+      'consolidation',      // Consolidating inventory
+      'other'
+    ],
+    default: 'replenishment'
+  },
+  reasonNotes: String,
+
+  // People involved
+  requestedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  rejectedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  shippedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  receivedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+
+  // Important dates
+  dates: {
+    requested: {
+      type: Date,
+      default: Date.now
+    },
+    approved: Date,
+    rejected: Date,
+    shipped: Date,
+    expectedDelivery: Date,
+    received: Date,
+    completed: Date
+  },
+
+  // Shipping details
+  shipping: {
+    method: {
+      type: String,
+      enum: ['internal-courier', 'external-courier', 'pickup', 'other'],
+      default: 'internal-courier'
+    },
+    trackingNumber: String,
+    carrier: String,
+    notes: String
+  },
+
+  // Notes and comments
+  notes: String,
+  internalNotes: String, // Admin only
+
+  // Approval workflow history
+  approvalHistory: [{
+    action: {
+      type: String,
+      enum: ['created', 'submitted', 'approved', 'rejected', 'modified', 'shipped', 'received', 'completed', 'cancelled']
+    },
+    performedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    date: {
+      type: Date,
+      default: Date.now
+    },
+    notes: String,
+    previousStatus: String,
+    newStatus: String
+  }],
+
+  // Auto-generated from recommendation system
+  isAutoGenerated: {
+    type: Boolean,
+    default: false
+  },
+  recommendationId: String // Reference to the recommendation that generated this
+
+}, {
+  timestamps: true,
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Indexes
+inventoryTransferSchema.index({ transferNumber: 1 }, { unique: true });
+inventoryTransferSchema.index({ status: 1, 'dates.requested': -1 });
+inventoryTransferSchema.index({ 'source.clinic': 1, status: 1 });
+inventoryTransferSchema.index({ 'destination.clinic': 1, status: 1 });
+inventoryTransferSchema.index({ requestedBy: 1 });
+inventoryTransferSchema.index({ priority: 1, status: 1 });
+inventoryTransferSchema.index({ createdAt: -1 });
+
+// Virtual: Total items count
+inventoryTransferSchema.virtual('totalItems').get(function() {
+  return this.items?.length || 0;
+});
+
+// Virtual: Total requested quantity
+inventoryTransferSchema.virtual('totalRequestedQuantity').get(function() {
+  return this.items?.reduce((sum, item) => sum + (item.requestedQuantity || 0), 0) || 0;
+});
+
+// Virtual: Total received quantity
+inventoryTransferSchema.virtual('totalReceivedQuantity').get(function() {
+  return this.items?.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0) || 0;
+});
+
+// Pre-save: Generate transfer number
+inventoryTransferSchema.pre('save', async function(next) {
+  if (this.isNew && !this.transferNumber) {
+    const year = new Date().getFullYear();
+    const count = await this.constructor.countDocuments({
+      createdAt: {
+        $gte: new Date(year, 0, 1),
+        $lt: new Date(year + 1, 0, 1)
+      }
+    });
+    this.transferNumber = `TRF-${year}-${String(count + 1).padStart(4, '0')}`;
+  }
+  next();
+});
+
+// Static: Get transfers for a clinic (incoming or outgoing)
+inventoryTransferSchema.statics.getForClinic = async function(clinicId, options = {}) {
+  const { direction = 'both', status, limit = 50 } = options;
+
+  const query = {};
+
+  if (direction === 'incoming') {
+    query['destination.clinic'] = clinicId;
+  } else if (direction === 'outgoing') {
+    query['source.clinic'] = clinicId;
+  } else {
+    query.$or = [
+      { 'destination.clinic': clinicId },
+      { 'source.clinic': clinicId }
+    ];
+  }
+
+  if (status) {
+    query.status = Array.isArray(status) ? { $in: status } : status;
+  }
+
+  return this.find(query)
+    .sort({ 'dates.requested': -1 })
+    .limit(limit)
+    .populate('requestedBy', 'firstName lastName')
+    .populate('approvedBy', 'firstName lastName')
+    .populate('source.clinic', 'name shortName')
+    .populate('destination.clinic', 'name shortName')
+    .lean();
+};
+
+// Static: Get pending transfers requiring approval
+inventoryTransferSchema.statics.getPendingApproval = async function(options = {}) {
+  const { clinicId } = options;
+
+  const query = { status: 'requested' };
+
+  // If clinicId provided, filter by source clinic (outgoing transfers need approval)
+  if (clinicId) {
+    query['source.clinic'] = clinicId;
+  }
+
+  return this.find(query)
+    .sort({ priority: -1, 'dates.requested': 1 }) // Urgent first, then oldest
+    .populate('requestedBy', 'firstName lastName')
+    .populate('source.clinic', 'name shortName')
+    .populate('destination.clinic', 'name shortName')
+    .lean();
+};
+
+// Method: Submit for approval
+inventoryTransferSchema.methods.submit = async function(userId) {
+  if (this.status !== 'draft') {
+    throw new Error('Only draft transfers can be submitted');
+  }
+
+  this.status = 'requested';
+  this.dates.requested = new Date();
+  this.approvalHistory.push({
+    action: 'submitted',
+    performedBy: userId,
+    previousStatus: 'draft',
+    newStatus: 'requested'
+  });
+
+  return this.save();
+};
+
+// Method: Approve transfer
+inventoryTransferSchema.methods.approve = async function(userId, approvedItems = null) {
+  if (!['requested', 'partially-approved'].includes(this.status)) {
+    throw new Error('Transfer cannot be approved in current status');
+  }
+
+  // If specific items approved, update each
+  if (approvedItems) {
+    for (const item of this.items) {
+      const approved = approvedItems.find(a => a.itemId.toString() === item._id.toString());
+      if (approved) {
+        item.approvedQuantity = approved.quantity;
+        item.status = approved.quantity > 0 ? 'approved' : 'rejected';
+        if (approved.rejectionReason) {
+          item.rejectionReason = approved.rejectionReason;
+        }
+      }
+    }
+  } else {
+    // Approve all items as requested
+    for (const item of this.items) {
+      item.approvedQuantity = item.requestedQuantity;
+      item.status = 'approved';
+    }
+  }
+
+  // Check if all, some, or none approved
+  const approvedCount = this.items.filter(i => i.status === 'approved').length;
+  if (approvedCount === this.items.length) {
+    this.status = 'approved';
+  } else if (approvedCount > 0) {
+    this.status = 'partially-approved';
+  } else {
+    this.status = 'rejected';
+  }
+
+  this.approvedBy = userId;
+  this.dates.approved = new Date();
+  this.approvalHistory.push({
+    action: 'approved',
+    performedBy: userId,
+    previousStatus: 'requested',
+    newStatus: this.status
+  });
+
+  return this.save();
+};
+
+// Method: Mark as shipped
+// CRITICAL FIX: Now actually deducts stock from source inventory
+inventoryTransferSchema.methods.ship = async function(userId, shippingInfo = {}) {
+  if (!['approved', 'partially-approved'].includes(this.status)) {
+    throw new Error('Transfer must be approved before shipping');
+  }
+
+  // Get inventory models
+  const PharmacyInventory = require('./PharmacyInventory');
+  const FrameInventory = require('./FrameInventory');
+  const ContactLensInventory = require('./ContactLensInventory');
+  const LabConsumableInventory = require('./LabConsumableInventory');
+  const ReagentInventory = require('./ReagentInventory');
+
+  const inventoryModels = {
+    PharmacyInventory,
+    FrameInventory,
+    ContactLensInventory,
+    LabConsumableInventory,
+    ReagentInventory
+  };
+
+  // Update shipped quantities and DEDUCT from source inventory
+  for (const item of this.items) {
+    if (item.status === 'approved') {
+      item.shippedQuantity = item.approvedQuantity;
+      item.status = 'shipped';
+
+      // CRITICAL FIX: Actually deduct from source inventory
+      try {
+        const Model = inventoryModels[item.inventoryModel];
+        if (Model) {
+          const inventoryItem = await Model.findById(item.inventoryId);
+          if (inventoryItem) {
+            // Deduct from current stock
+            if (inventoryItem.inventory) {
+              inventoryItem.inventory.currentStock = Math.max(0,
+                (inventoryItem.inventory.currentStock || 0) - item.shippedQuantity
+              );
+            }
+            // Add transaction record if method exists
+            if (typeof inventoryItem.addTransaction === 'function') {
+              await inventoryItem.addTransaction({
+                type: 'transfer_out',
+                quantity: -item.shippedQuantity,
+                reference: this.transferNumber,
+                notes: `Transferred to ${this.destination.name || 'destination clinic'}`,
+                performedBy: userId
+              });
+            }
+            await inventoryItem.save();
+            console.log(`[TRANSFER] Deducted ${item.shippedQuantity} of ${item.productName} from source`);
+          }
+        }
+      } catch (invError) {
+        console.error(`[TRANSFER] Error deducting from source inventory:`, invError);
+        // Continue - don't fail the entire shipment
+      }
+    }
+  }
+
+  this.status = 'in-transit';
+  this.shippedBy = userId;
+  this.dates.shipped = new Date();
+
+  if (shippingInfo.method) this.shipping.method = shippingInfo.method;
+  if (shippingInfo.trackingNumber) this.shipping.trackingNumber = shippingInfo.trackingNumber;
+  if (shippingInfo.carrier) this.shipping.carrier = shippingInfo.carrier;
+  if (shippingInfo.expectedDelivery) this.dates.expectedDelivery = shippingInfo.expectedDelivery;
+
+  this.approvalHistory.push({
+    action: 'shipped',
+    performedBy: userId,
+    previousStatus: 'approved',
+    newStatus: 'in-transit',
+    notes: shippingInfo.notes
+  });
+
+  return this.save();
+};
+
+// Method: Receive items
+// CRITICAL FIX: Now actually adds stock to destination inventory
+inventoryTransferSchema.methods.receive = async function(userId, receivedItems) {
+  if (this.status !== 'in-transit') {
+    throw new Error('Transfer must be in-transit to receive');
+  }
+
+  // Get inventory models
+  const PharmacyInventory = require('./PharmacyInventory');
+  const FrameInventory = require('./FrameInventory');
+  const ContactLensInventory = require('./ContactLensInventory');
+  const LabConsumableInventory = require('./LabConsumableInventory');
+  const ReagentInventory = require('./ReagentInventory');
+
+  const inventoryModels = {
+    PharmacyInventory,
+    FrameInventory,
+    ContactLensInventory,
+    LabConsumableInventory,
+    ReagentInventory
+  };
+
+  let allReceived = true;
+
+  for (const item of this.items) {
+    if (item.status !== 'shipped') continue;
+
+    const received = receivedItems.find(r => r.itemId.toString() === item._id.toString());
+    if (received) {
+      item.receivedQuantity = received.quantity;
+      item.status = received.quantity >= item.shippedQuantity ? 'received' : 'partial';
+      if (received.notes) item.notes = received.notes;
+
+      if (item.status === 'partial') allReceived = false;
+
+      // CRITICAL FIX: Actually add to destination inventory
+      if (received.quantity > 0) {
+        try {
+          const Model = inventoryModels[item.inventoryModel];
+          if (Model) {
+            // Find or create inventory item at destination clinic
+            let destInventory = await Model.findOne({
+              clinic: this.destination.clinic,
+              $or: [
+                { 'product.sku': item.productSku },
+                { 'medication.name': item.productName },
+                { 'frame.sku': item.productSku },
+                { 'lens.sku': item.productSku },
+                { name: item.productName }
+              ]
+            });
+
+            if (destInventory) {
+              // Add to existing inventory
+              if (destInventory.inventory) {
+                destInventory.inventory.currentStock =
+                  (destInventory.inventory.currentStock || 0) + received.quantity;
+              }
+              // Add batch if lot number provided
+              if (item.lotNumber && typeof destInventory.addBatch === 'function') {
+                await destInventory.addBatch({
+                  lotNumber: item.lotNumber,
+                  quantity: received.quantity,
+                  expirationDate: item.expirationDate,
+                  source: 'transfer',
+                  transferNumber: this.transferNumber
+                }, userId);
+              }
+              // Add transaction record if method exists
+              if (typeof destInventory.addTransaction === 'function') {
+                await destInventory.addTransaction({
+                  type: 'transfer_in',
+                  quantity: received.quantity,
+                  reference: this.transferNumber,
+                  notes: `Received from ${this.source.name || 'source clinic'}`,
+                  performedBy: userId
+                });
+              }
+              await destInventory.save();
+              console.log(`[TRANSFER] Added ${received.quantity} of ${item.productName} to destination`);
+            } else {
+              // Log warning - destination inventory item doesn't exist
+              console.warn(`[TRANSFER] Destination inventory item not found for ${item.productName} at clinic ${this.destination.clinic}. Manual creation required.`);
+            }
+          }
+        } catch (invError) {
+          console.error(`[TRANSFER] Error adding to destination inventory:`, invError);
+          // Continue - don't fail the entire receipt
+        }
+      }
+    } else {
+      allReceived = false;
+    }
+  }
+
+  this.status = allReceived ? 'completed' : 'partially-received';
+  this.receivedBy = userId;
+  this.dates.received = new Date();
+  if (allReceived) this.dates.completed = new Date();
+
+  this.approvalHistory.push({
+    action: allReceived ? 'completed' : 'received',
+    performedBy: userId,
+    previousStatus: 'in-transit',
+    newStatus: this.status
+  });
+
+  return this.save();
+};
+
+// Method: Cancel transfer
+inventoryTransferSchema.methods.cancel = async function(userId, reason) {
+  if (['completed', 'cancelled'].includes(this.status)) {
+    throw new Error('Cannot cancel completed or already cancelled transfer');
+  }
+
+  const previousStatus = this.status;
+  this.status = 'cancelled';
+  this.notes = reason || this.notes;
+
+  this.approvalHistory.push({
+    action: 'cancelled',
+    performedBy: userId,
+    previousStatus,
+    newStatus: 'cancelled',
+    notes: reason
+  });
+
+  return this.save();
+};
+
+module.exports = mongoose.model('InventoryTransfer', inventoryTransferSchema);

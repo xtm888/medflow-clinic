@@ -3,10 +3,13 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const Correspondence = require('../models/Correspondence');
 
+// All routes require authentication
+router.use(protect);
+
 // @desc    Create new correspondence
 // @route   POST /api/correspondence
-// @access  Private
-router.post('/', protect, async (req, res) => {
+// @access  Private (Admin, Doctor, Ophthalmologist, Nurse)
+router.post('/', authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
   try {
     const correspondence = await Correspondence.create({
       ...req.body,
@@ -32,8 +35,8 @@ router.post('/', protect, async (req, res) => {
 
 // @desc    Get correspondence history for patient
 // @route   GET /api/correspondence/patient/:patientId
-// @access  Private
-router.get('/patient/:patientId', protect, async (req, res) => {
+// @access  Private (Admin, Doctor, Ophthalmologist, Nurse, Receptionist)
+router.get('/patient/:patientId', authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'), async (req, res) => {
   try {
     const correspondence = await Correspondence.getHistory(req.params.patientId, req.query.limit);
 
@@ -52,8 +55,8 @@ router.get('/patient/:patientId', protect, async (req, res) => {
 
 // @desc    Send correspondence
 // @route   POST /api/correspondence/:id/send
-// @access  Private
-router.post('/:id/send', protect, async (req, res) => {
+// @access  Private (Admin, Doctor, Ophthalmologist, Nurse)
+router.post('/:id/send', authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), async (req, res) => {
   try {
     const correspondence = await Correspondence.findById(req.params.id);
 

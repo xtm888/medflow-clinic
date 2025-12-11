@@ -19,6 +19,26 @@ const visitSchema = new mongoose.Schema({
     ref: 'Appointment'
   },
 
+  consultationSession: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ConsultationSession'
+  },
+
+  // Link to surgery case if this visit involves surgery
+  // Bidirectional: SurgeryCase.visit ↔ Visit.surgeryCase
+  surgeryCase: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SurgeryCase',
+    index: true
+  },
+
+  // Multi-Clinic: Which clinic this visit occurred at
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   visitDate: {
     type: Date,
     default: Date.now,
@@ -59,6 +79,24 @@ const visitSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       required: true
+    },
+    price: {
+      type: Number,
+      default: 0
+    },
+    // Price audit trail fields (HIGH PRIORITY FIX: Track price capture at service time)
+    feeScheduleRef: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'FeeSchedule',
+      index: true
+    },
+    priceCapturedAt: {
+      type: Date
+    },
+    priceSource: {
+      type: String,
+      enum: ['manual', 'fee-schedule', 'fee-schedule-fallback'],
+      default: 'fee-schedule'
     },
     startTime: Date,
     endTime: Date,
@@ -203,7 +241,8 @@ const visitSchema = new mongoose.Schema({
     value: String, // Optional additional value/description
     laterality: {
       type: String,
-      enum: ['OD', 'OG', 'ODG', 'Droite', 'Gauche', 'Bilatéral']
+      // OD=Right eye, OS/OG=Left eye, OU/ODG=Both eyes (supporting both standards)
+      enum: ['OD', 'OS', 'OU', 'OG', 'ODG']
     },
     severity: {
       type: String,
@@ -229,6 +268,7 @@ const visitSchema = new mongoose.Schema({
   }],
 
   // Laboratory Orders (Template-based lab test orders)
+  // CRITICAL: These can be synced from standalone LabOrder documents via labOrderId
   laboratoryOrders: [{
     template: {
       type: mongoose.Schema.Types.ObjectId,
@@ -269,7 +309,13 @@ const visitSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
     },
-    notes: String
+    notes: String,
+    // CRITICAL FIX: Link to standalone LabOrder for bidirectional sync
+    labOrderId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'LabOrder'
+    },
+    labOrderNum: String // e.g., "LAB2025000123"
   }],
 
   // Examination Orders (Template-based examination/procedure orders)
@@ -448,6 +494,200 @@ const visitSchema = new mongoose.Schema({
     invoice: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Invoice'
+    },
+    // CRITICAL: Convention snapshot at check-in time
+    // Prevents pricing issues if patient's convention changes mid-visit
+    // IMMUTABLE SNAPSHOT: Stores calculated values at capture time, not mutable configuration
+    conventionSnapshot: {
+      conventionId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Company'
+      },
+      conventionName: String,
+      conventionCode: String,
+      capturedAt: {
+        type: Date,
+        default: Date.now
+      },
+      isFrozen: {
+        type: Boolean,
+        default: true
+      },
+      // Store CALCULATED values at capture time, not mutable rules
+      patientSharePercentage: Number,  // The actual % patient pays
+      companySharePercentage: Number,  // The actual % company pays
+      maxCoverage: Number              // Max amount company covers
+      // REMOVED: discountPercentage (can be derived from company)
+      // REMOVED: coverageRules (too complex, mutable, can change)
+    }
+  },
+
+  // ============================================
+  // EXTERNAL FULFILLMENT TRACKING
+  // For services to be performed outside this clinic
+  // Patient pays here, gets dispatched elsewhere
+  // ============================================
+  externalFulfillment: {
+    // Does this visit have external services?
+    hasExternalServices: {
+      type: Boolean,
+      default: false
+    },
+
+    // Summary of external fulfillment status
+    summary: {
+      totalServices: { type: Number, default: 0 },
+      pendingDispatch: { type: Number, default: 0 },
+      dispatched: { type: Number, default: 0 },
+      completed: { type: Number, default: 0 }
+    },
+
+    // Individual external service dispatches
+    services: [{
+      // Type of service being dispatched
+      serviceType: {
+        type: String,
+        enum: [
+          'surgery',           // External surgery
+          'pharmacy',          // External pharmacy
+          'laboratory',        // External lab
+          'imaging',           // External imaging center
+          'therapy',           // External therapy (PT, OT, etc.)
+          'specialist',        // Specialist consultation
+          'optical',           // External optical shop
+          'injection',         // External injection service
+          'other'
+        ],
+        required: true
+      },
+
+      // What is being ordered/referred
+      description: String,
+      serviceCode: String, // CPT or service code
+      quantity: { type: Number, default: 1 },
+
+      // Linked invoice item (for payment tracking)
+      invoiceItemId: String,
+
+      // External facility
+      externalFacility: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ExternalFacility'
+      },
+
+      // Manual facility info (if not in directory)
+      facilityInfo: {
+        name: String,
+        type: String,
+        address: String,
+        phone: String,
+        email: String,
+        contactPerson: String
+      },
+
+      // Dispatch status
+      status: {
+        type: String,
+        enum: ['pending', 'dispatched', 'acknowledged', 'in_progress', 'completed', 'cancelled', 'failed'],
+        default: 'pending'
+      },
+
+      // Dispatch details
+      dispatchedAt: Date,
+      dispatchedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      dispatchMethod: {
+        type: String,
+        enum: ['email', 'fax', 'print', 'api', 'phone', 'manual']
+      },
+
+      // Reference documents
+      referralLetter: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document'
+      },
+      prescriptionRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Prescription'
+      },
+      labOrderRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'LabOrder'
+      },
+      imagingOrderRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'ImagingOrder'
+      },
+      surgeryRef: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'SurgeryCase'
+      },
+
+      // External tracking
+      externalReference: String, // Reference number from external facility
+      estimatedCompletionDate: Date,
+
+      // Acknowledgment
+      acknowledgedAt: Date,
+      acknowledgedBy: String,
+
+      // Completion
+      completedAt: Date,
+      completedBy: String,
+      completionProof: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document'
+      },
+      completionNotes: String,
+      resultReceived: Boolean,
+      resultDocument: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Document'
+      },
+
+      // Link to unified FulfillmentDispatch record
+      fulfillmentDispatch: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FulfillmentDispatch'
+      },
+
+      // Priority
+      priority: {
+        type: String,
+        enum: ['routine', 'urgent', 'stat'],
+        default: 'routine'
+      },
+
+      // Instructions
+      instructions: String,
+      patientInstructions: String, // Instructions given to patient
+
+      // Status history
+      statusHistory: [{
+        status: String,
+        timestamp: { type: Date, default: Date.now },
+        by: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        notes: String
+      }],
+
+      // Created tracking
+      createdAt: { type: Date, default: Date.now },
+      createdBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    }],
+
+    // Overall dispatch notes
+    notes: String,
+
+    // Last updated
+    lastUpdatedAt: Date,
+    lastUpdatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
     }
   },
 
@@ -521,7 +761,14 @@ visitSchema.index({ patient: 1, visitDate: -1 });
 visitSchema.index({ visitId: 1 }, { unique: true, sparse: true });
 visitSchema.index({ primaryProvider: 1, visitDate: -1 });
 visitSchema.index({ status: 1 });
+// Index on appointment for queries (non-unique to allow multiple walk-in consultations)
 visitSchema.index({ 'appointment': 1 });
+
+// CRITICAL: Multi-clinic indexes for data isolation
+visitSchema.index({ clinic: 1, visitDate: -1 }); // Clinic-scoped visit list
+visitSchema.index({ clinic: 1, status: 1 }); // Clinic-scoped status filtering
+visitSchema.index({ clinic: 1, patient: 1 }); // Clinic-scoped patient visits
+visitSchema.index({ clinic: 1, primaryProvider: 1, visitDate: -1 }); // Clinic-scoped provider visits
 
 // CRITICAL: Validate dates to prevent future dates where inappropriate
 visitSchema.pre('save', function(next) {
@@ -590,6 +837,51 @@ visitSchema.pre('save', async function(next) {
   next();
 });
 
+// HIGH PRIORITY FIX: Auto-populate clinical act prices from FeeSchedule at service time
+visitSchema.pre('save', async function(next) {
+  // Only process if clinicalActs have been modified
+  if (this.isModified('clinicalActs') && this.clinicalActs?.length > 0) {
+    const FeeSchedule = mongoose.model('FeeSchedule');
+
+    for (const act of this.clinicalActs) {
+      // Only auto-populate price if:
+      // 1. Price is missing (undefined/null/0)
+      // 2. AND we have an actCode to look up
+      // 3. AND price hasn't already been captured (no priceCapturedAt timestamp)
+      if ((act.price === undefined || act.price === null || act.price === 0) &&
+          act.actCode &&
+          !act.priceCapturedAt) {
+
+        try {
+          // Look up current price from FeeSchedule
+          const fee = await FeeSchedule.findOne({
+            code: act.actCode,
+            active: true,
+            $or: [
+              { effectiveFrom: { $lte: new Date() }, effectiveTo: { $gte: new Date() } },
+              { effectiveFrom: { $lte: new Date() }, effectiveTo: null }
+            ]
+          });
+
+          if (fee) {
+            act.price = fee.price;
+            act.feeScheduleRef = fee._id;
+            act.priceCapturedAt = new Date();
+            act.priceSource = 'fee-schedule';
+            console.log(`[Visit.pre('save')] Auto-populated price for act ${act.actCode}: ${fee.price} CFA from FeeSchedule`);
+          } else {
+            console.warn(`[Visit.pre('save')] No FeeSchedule entry found for actCode: ${act.actCode}`);
+          }
+        } catch (err) {
+          console.error(`[Visit.pre('save')] Error looking up FeeSchedule for actCode ${act.actCode}:`, err.message);
+          // Don't block save on FeeSchedule lookup errors
+        }
+      }
+    }
+  }
+  next();
+});
+
 // Virtual for visit duration
 visitSchema.virtual('duration').get(function() {
   if (this.startTime && this.endTime) {
@@ -622,6 +914,86 @@ visitSchema.methods.addIVTTreatment = async function(ivtTreatmentId) {
   return this;
 };
 
+/**
+ * Capture patient's convention at check-in time
+ * CRITICAL: This snapshot prevents pricing issues if convention changes mid-visit
+ */
+visitSchema.methods.captureConventionSnapshot = async function() {
+  try {
+    const Patient = require('./Patient');
+    const Company = require('./Company');
+
+    const patient = await Patient.findById(this.patient)
+      .select('convention')
+      .populate('convention.company', 'name companyId contract.status defaultCoverage coverageRules');
+
+    if (!patient || !patient.convention?.company) {
+      // No convention - that's OK, patient pays full price
+      return null;
+    }
+
+    const convention = patient.convention;
+    const company = convention.company;
+
+    // Only capture if convention is active
+    if (convention.status !== 'active' || company.contract?.status !== 'active') {
+      return null;
+    }
+
+    // CRITICAL FIX: Also check validity dates
+    const now = new Date();
+    if (convention.validUntil && new Date(convention.validUntil) < now) {
+      console.log(`[VISIT] Convention expired (validUntil: ${convention.validUntil})`);
+      return null;
+    }
+    if (convention.validFrom && new Date(convention.validFrom) > now) {
+      console.log(`[VISIT] Convention not yet active (validFrom: ${convention.validFrom})`);
+      return null;
+    }
+
+    // Calculate IMMUTABLE values at capture time
+    const companySharePercentage = convention.coveragePercentage || company.defaultCoverage?.percentage || 0;
+    const patientSharePercentage = 100 - companySharePercentage;
+    const maxCoverage = company.defaultCoverage?.maxAmount || company.coverageRules?.maxAmount || null;
+
+    // Capture the IMMUTABLE snapshot - only calculated values, no mutable config
+    this.billing.conventionSnapshot = {
+      conventionId: company._id,
+      conventionName: company.name,
+      conventionCode: company.companyId,
+      capturedAt: new Date(),
+      isFrozen: true,
+      // Store calculated percentages (immutable)
+      patientSharePercentage,
+      companySharePercentage,
+      maxCoverage
+    };
+
+    await this.save();
+
+    console.log(`[VISIT] Convention snapshot captured for visit ${this.visitId}: ${company.name} (${company.companyId})`);
+
+    return this.billing.conventionSnapshot;
+  } catch (error) {
+    console.error(`[VISIT] Error capturing convention snapshot:`, error.message);
+    return null;
+  }
+};
+
+/**
+ * Static method to create visit with convention snapshot
+ */
+visitSchema.statics.createWithConventionSnapshot = async function(visitData, options = {}) {
+  const visit = await this.create(visitData);
+
+  // Capture convention if patient has one
+  if (visit.patient) {
+    await visit.captureConventionSnapshot();
+  }
+
+  return visit;
+};
+
 // Method to get complete visit summary
 visitSchema.methods.getCompleteSummary = async function() {
   await this.populate([
@@ -648,36 +1020,165 @@ visitSchema.methods.getCompleteSummary = async function() {
   };
 };
 
-// Method to complete visit with full cascade logic (WITH TRANSACTION SUPPORT)
+// Valid visit status transitions (state machine)
+const VALID_STATUS_TRANSITIONS = {
+  'scheduled': ['checked-in', 'cancelled', 'no-show'],
+  'checked-in': ['in-progress', 'cancelled', 'no-show'],
+  'in-progress': ['completed', 'cancelled'],
+  'completed': [], // Terminal state - no transitions allowed
+  'cancelled': [], // Terminal state
+  'no-show': ['checked-in'] // Can reschedule no-show
+};
+
+// Method to validate status transition
+visitSchema.methods.canTransitionTo = function(newStatus) {
+  const allowedTransitions = VALID_STATUS_TRANSITIONS[this.status] || [];
+  return allowedTransitions.includes(newStatus);
+};
+
+// Method to complete visit with full cascade logic (WITH OPTIONAL TRANSACTION SUPPORT)
 visitSchema.methods.completeVisit = async function(userId) {
   const mongoose = require('mongoose');
   const Invoice = require('./Invoice');
   const Prescription = require('./Prescription');
   const Appointment = require('./Appointment');
 
-  // Start MongoDB transaction for data consistency
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  // CRITICAL: Idempotency check - prevent double completion
+  if (this.status === 'completed') {
+    console.log(`Visit ${this.visitId} already completed at ${this.completedAt}`);
+    return {
+      success: true,
+      visit: this,
+      alreadyCompleted: true,
+      message: 'Visit was already completed'
+    };
+  }
+
+  // CRITICAL: Status transition validation
+  if (!this.canTransitionTo('completed')) {
+    throw new Error(`Cannot complete visit from status '${this.status}'. Visit must be 'in-progress' first.`);
+  }
+
+  // Try to start MongoDB transaction (only works with replica set)
+  let session = null;
+  let useTransaction = false;
 
   try {
+    session = await mongoose.startSession();
+    await session.startTransaction();
+    useTransaction = true;
+    console.log(`[VISIT COMPLETION] Using MongoDB transaction for data consistency`);
+  } catch (transactionError) {
+    console.warn(`[VISIT COMPLETION] Transactions not available (standalone mode), proceeding without transaction`);
+    if (session) {
+      session.endSession();
+      session = null;
+    }
+  }
+
+  console.log(`[VISIT COMPLETION] Starting completion for Visit ${this.visitId} (${this._id}) - Patient: ${this.patient}`);
+  console.log(`[VISIT COMPLETION] Visit has ${this.prescriptions.length} prescriptions to process`);
+
+  // Track operations for compensating rollback (used when transactions unavailable)
+  const rollbackStack = [];
+
+  try {
+    // 0. AUTO-CREATE PRESCRIPTIONS from plan.medications if not already linked
+    // This ensures medications added during consultation become proper Prescription records
+    if (this.plan?.medications && this.plan.medications.length > 0) {
+      console.log(`[VISIT COMPLETION] Found ${this.plan.medications.length} medications in plan - creating Prescription records`);
+
+      // Group all medications into a single prescription
+      const medicationsForPrescription = this.plan.medications.map(med => ({
+        name: med.medication || med.name,
+        genericName: med.medication || med.name,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        duration: med.duration,
+        route: med.route,
+        instructions: med.instructions,
+        quantity: med.quantity || 1,
+        unit: med.unit || 'unit'
+      }));
+
+      try {
+        // Create prescription without transaction (standalone MongoDB compatible)
+        const prescriptionData = {
+          patient: this.patient,
+          prescriber: this.primaryProvider || userId,
+          visit: this._id,
+          appointment: this.appointment,
+          type: 'medication',
+          medications: medicationsForPrescription,
+          status: 'pending',
+          pharmacyStatus: 'pending',
+          dateIssued: new Date(),
+          validUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+          notes: {
+            prescriber: `Auto-created from visit ${this.visitId} plan medications`
+          },
+          createdBy: userId
+        };
+
+        let createdPrescription;
+        if (useTransaction && session) {
+          const result = await Prescription.create([prescriptionData], { session });
+          createdPrescription = result[0];
+        } else {
+          // Standalone MongoDB - create without session
+          createdPrescription = await Prescription.create(prescriptionData);
+        }
+
+        // Link prescription to visit
+        this.prescriptions.push(createdPrescription._id);
+
+        // Track for rollback
+        rollbackStack.push({
+          type: 'prescription_create',
+          prescriptionId: createdPrescription._id
+        });
+
+        console.log(`[VISIT COMPLETION] Created Prescription ${createdPrescription.prescriptionId || createdPrescription._id} with ${medicationsForPrescription.length} medications`);
+
+        // Clear plan.medications since they're now in a proper Prescription
+        this.plan.medications = [];
+      } catch (prescriptionError) {
+        console.error(`[VISIT COMPLETION] Error creating prescription from plan.medications:`, prescriptionError.message);
+        // Continue - don't fail visit completion for this
+      }
+    }
+
     // 1. Reserve inventory for all prescriptions
     const reservationResults = [];
     for (const prescriptionId of this.prescriptions) {
       try {
-        const prescription = await Prescription.findById(prescriptionId).session(session);
+        const prescription = useTransaction
+          ? await Prescription.findById(prescriptionId).session(session)
+          : await Prescription.findById(prescriptionId);
         if (prescription && prescription.type === 'medication') {
-          const result = await prescription.reserveInventory(userId, session);
+          const result = await prescription.reserveInventory(userId, useTransaction ? session : null);
           reservationResults.push({
             prescriptionId: prescription.prescriptionId,
             success: result.success,
             results: result.results
           });
 
-          // Update prescription status to ready for dispensing
+          // Update prescription status - inventory reserved, ready for pharmacy review
           if (result.success) {
-            prescription.status = 'ready';
-            prescription.pharmacyStatus = 'ready';
-            await prescription.save({ session });
+            // Set status to 'pending' for pharmacy workflow
+            // Pharmacy staff will review → prepare → mark as ready
+            prescription.status = 'pending';
+            prescription.pharmacyStatus = 'pending'; // Start of pharmacy workflow
+            prescription.inventoryReserved = true;
+            prescription.inventoryReservedAt = new Date();
+            prescription.inventoryReservedBy = userId;
+            await prescription.save(useTransaction ? { session } : {});
+
+            // Track for rollback
+            rollbackStack.push({
+              type: 'inventory_reservation',
+              prescriptionId: prescription._id
+            });
           }
         }
       } catch (error) {
@@ -690,28 +1191,58 @@ visitSchema.methods.completeVisit = async function(userId) {
       }
     }
 
+    // Log inventory reservation results
+    const successfulReservations = reservationResults.filter(r => r.success).length;
+    const failedReservations = reservationResults.filter(r => !r.success).length;
+    console.log(`[VISIT COMPLETION] Inventory reservation complete: ${successfulReservations} successful, ${failedReservations} failed`);
+    if (failedReservations > 0) {
+      const failures = reservationResults.filter(r => !r.success);
+      console.warn(`[VISIT COMPLETION] Failed reservations:`, failures);
+    }
+
     // 2. Generate invoice if not already created
     let invoiceData = null;
     if (!this.billing.invoice) {
+      console.log(`[VISIT COMPLETION] Generating invoice for Visit ${this.visitId}`);
       try {
-        invoiceData = await this.generateInvoice(userId, session);
+        invoiceData = await this.generateInvoice(userId, useTransaction ? { session } : {});
         if (invoiceData.invoice) {
           this.billing.invoice = invoiceData.invoice._id;
+
+          // Track for rollback
+          rollbackStack.push({
+            type: 'invoice_create',
+            invoiceId: invoiceData.invoice._id
+          });
+
+          console.log(`[VISIT COMPLETION] Invoice ${invoiceData.invoice.invoiceId || invoiceData.invoice._id} generated successfully`);
         }
       } catch (error) {
-        console.error('Error generating invoice:', error);
+        console.error(`[VISIT COMPLETION] Error generating invoice for Visit ${this.visitId}:`, error);
         // Continue without invoice if it fails
       }
+    } else {
+      console.log(`[VISIT COMPLETION] Visit ${this.visitId} already has invoice ${this.billing.invoice}`);
     }
 
     // 3. Update appointment status if linked
     if (this.appointment) {
       try {
-        const appointment = await Appointment.findById(this.appointment).session(session);
+        const appointment = useTransaction
+          ? await Appointment.findById(this.appointment).session(session)
+          : await Appointment.findById(this.appointment);
         if (appointment && appointment.status !== 'completed') {
+          const previousStatus = appointment.status;
           appointment.status = 'completed';
           appointment.completedAt = new Date();
-          await appointment.save({ session });
+          await appointment.save(useTransaction ? { session } : {});
+
+          // Track for rollback
+          rollbackStack.push({
+            type: 'appointment_update',
+            appointmentId: this.appointment,
+            previousStatus
+          });
         }
       } catch (error) {
         console.error('Error updating appointment:', error);
@@ -725,10 +1256,35 @@ visitSchema.methods.completeVisit = async function(userId) {
     this.completedBy = userId;
     this.endTime = this.endTime || new Date();
 
-    await this.save({ session });
+    await this.save(useTransaction ? { session } : {});
 
-    // Commit transaction - all or nothing
-    await session.commitTransaction();
+    // 5. CRITICAL: Update Patient.lastVisit for accurate patient history tracking
+    if (this.patient) {
+      try {
+        const Patient = require('./Patient');
+        const updateOptions = useTransaction ? { session } : {};
+        await Patient.findByIdAndUpdate(
+          this.patient,
+          {
+            lastVisit: this._id,
+            lastVisitDate: this.visitDate,
+            lastConsultationDate: new Date()
+          },
+          updateOptions
+        );
+      } catch (patientErr) {
+        console.error('Error updating patient lastVisit:', patientErr);
+        // Continue - don't fail visit completion if patient update fails
+      }
+    }
+
+    // Commit transaction if using transactions
+    if (useTransaction && session) {
+      await session.commitTransaction();
+    }
+
+    console.log(`[VISIT COMPLETION] ✅ Visit ${this.visitId} completed successfully`);
+    console.log(`[VISIT COMPLETION] Summary: ${reservationResults.length} prescriptions processed, Invoice: ${this.billing.invoice ? 'Generated' : 'None'}`);
 
     return {
       success: true,
@@ -738,13 +1294,125 @@ visitSchema.methods.completeVisit = async function(userId) {
     };
 
   } catch (error) {
-    // Rollback all changes on error
-    await session.abortTransaction();
-    console.error('Visit completion failed, rolling back:', error);
+    console.error(`[VISIT COMPLETION] Error during visit completion:`, error);
+
+    // Rollback if using transactions
+    if (useTransaction && session) {
+      await session.abortTransaction();
+      console.log(`[VISIT COMPLETION] Transaction aborted for visit ${this.visitId}`);
+    } else if (rollbackStack.length > 0) {
+      // Execute compensating rollback for non-transaction mode
+      console.log(`[VISIT COMPLETION] Executing compensating rollback for visit ${this.visitId} (${rollbackStack.length} operations)`);
+      await this._executeCompensatingRollback(rollbackStack);
+    }
+
     throw error;
   } finally {
-    // Clean up session
-    session.endSession();
+    // Clean up session if created
+    if (session) {
+      session.endSession();
+    }
+  }
+};
+
+// Helper method for compensating transactions (when MongoDB transactions unavailable)
+visitSchema.methods._executeCompensatingRollback = async function(rollbackStack) {
+  const Prescription = require('./Prescription');
+  const Invoice = require('./Invoice');
+  const Appointment = require('./Appointment');
+
+  console.log(`[COMPENSATING ROLLBACK] Rolling back ${rollbackStack.length} operations for visit ${this.visitId}`);
+
+  // Reverse order (LIFO - Last In First Out)
+  while (rollbackStack.length > 0) {
+    const operation = rollbackStack.pop();
+
+    try {
+      switch (operation.type) {
+        case 'prescription_create':
+          // Cancel the prescription that was created
+          await Prescription.findByIdAndUpdate(operation.prescriptionId, {
+            $set: {
+              status: 'cancelled',
+              cancelledAt: new Date(),
+              cancellationReason: 'Visit completion failed - compensating rollback'
+            }
+          });
+          console.log(`[COMPENSATING ROLLBACK] Cancelled prescription: ${operation.prescriptionId}`);
+          break;
+
+        case 'inventory_reservation':
+          // Release inventory reservation
+          const prescription = await Prescription.findById(operation.prescriptionId);
+          if (prescription) {
+            await prescription.releaseInventoryReservations();
+            console.log(`[COMPENSATING ROLLBACK] Released inventory for prescription: ${operation.prescriptionId}`);
+          }
+          break;
+
+        case 'invoice_create':
+          // Cancel the invoice that was created
+          await Invoice.findByIdAndUpdate(operation.invoiceId, {
+            $set: {
+              status: 'cancelled',
+              cancelledAt: new Date(),
+              cancellationReason: 'Visit completion failed - compensating rollback'
+            }
+          });
+          console.log(`[COMPENSATING ROLLBACK] Cancelled invoice: ${operation.invoiceId}`);
+          break;
+
+        case 'appointment_update':
+          // Revert appointment status
+          await Appointment.findByIdAndUpdate(operation.appointmentId, {
+            $set: {
+              status: operation.previousStatus,
+              completedAt: null
+            }
+          });
+          console.log(`[COMPENSATING ROLLBACK] Reverted appointment: ${operation.appointmentId} to ${operation.previousStatus}`);
+          break;
+
+        default:
+          console.warn(`[COMPENSATING ROLLBACK] Unknown operation type: ${operation.type}`);
+      }
+    } catch (rollbackError) {
+      console.error(`[COMPENSATING ROLLBACK] Failed to rollback ${operation.type}:`, rollbackError);
+
+      // Create critical alert for failed rollback
+      await this._createCriticalAlert(
+        `Rollback failed for visit ${this.visitId}`,
+        {
+          operationType: operation.type,
+          operation,
+          error: rollbackError.message,
+          visitId: this.visitId,
+          visitObjectId: this._id,
+          patientId: this.patient
+        }
+      );
+    }
+  }
+
+  console.log(`[COMPENSATING ROLLBACK] Rollback complete for visit ${this.visitId}`);
+};
+
+// Helper method to create critical alerts for system issues
+visitSchema.methods._createCriticalAlert = async function(message, details) {
+  const Alert = require('./Alert');
+  try {
+    await Alert.create({
+      category: 'system',
+      priority: 'critical',
+      title: 'Transaction Rollback Failure',
+      message,
+      metadata: details,
+      requiresAcknowledgment: true,
+      createdAt: new Date()
+    });
+    console.error(`[CRITICAL ALERT] ${message}`, details);
+  } catch (alertError) {
+    console.error(`[CRITICAL ALERT] Failed to create alert:`, alertError);
   }
 };
 
@@ -763,9 +1431,9 @@ visitSchema.methods.lockVisit = function() {
 };
 
 // Method to generate invoice from visit
-visitSchema.methods.generateInvoice = async function(userId) {
+// NOTE: Medications are NOT included - they are billed separately at pharmacy dispensing
+visitSchema.methods.generateInvoice = async function(userId, options = {}) {
   const Invoice = require('./Invoice');
-  const Prescription = require('./Prescription');
 
   // Check if invoice already exists
   if (this.billing.invoice) {
@@ -778,72 +1446,422 @@ visitSchema.methods.generateInvoice = async function(userId) {
   const items = [];
   let subtotal = 0;
 
-  // 1. Add consultation/visit fee
-  const consultationFee = this.visitType === 'initial' ? 15000 : 10000; // CFA
+  // Helper function to get fee AND category from FeeSchedule with fallback
+  const getFeeFromSchedule = async (code, defaultFee, defaultCategory = 'procedure') => {
+    try {
+      const FeeSchedule = require('./FeeSchedule');
+      const feeSchedule = await FeeSchedule.findOne({
+        code: code,
+        active: true,
+        $or: [
+          { effectiveFrom: { $lte: new Date() }, effectiveTo: { $gte: new Date() } },
+          { effectiveFrom: { $lte: new Date() }, effectiveTo: null }
+        ]
+      });
+      if (feeSchedule) {
+        return { price: feeSchedule.price, category: feeSchedule.category || defaultCategory };
+      }
+      return { price: defaultFee, category: defaultCategory };
+    } catch (err) {
+      // FeeSchedule model may not exist yet, use defaults
+      return { price: defaultFee, category: defaultCategory };
+    }
+  };
+
+  // 1. Add consultation/visit fee (from FeeSchedule or defaults)
+  const consultationCode = this.visitType === 'initial' ? 'CONS-INIT' : 'CONS-FOLLOWUP';
+  const defaultConsultationFee = this.visitType === 'initial' ? 15000 : 10000; // CFA
+  const consultationFeeData = await getFeeFromSchedule(consultationCode, defaultConsultationFee, 'consultation');
+
   items.push({
-    category: 'consultation',
+    category: consultationFeeData.category,
     description: `Consultation - ${this.visitType}`,
-    code: 'CONS-001',
+    code: consultationCode,
     quantity: 1,
-    unitPrice: consultationFee,
-    subtotal: consultationFee,
+    unitPrice: consultationFeeData.price,
+    subtotal: consultationFeeData.price,
+    total: consultationFeeData.price,
     provider: this.primaryProvider
   });
-  subtotal += consultationFee;
+  subtotal += consultationFeeData.price;
 
-  // 2. Add clinical acts
+  // 2. Add clinical acts (with FeeSchedule lookup)
+  // FIXED: Only bill COMPLETED acts, not planned ones
+  // Planned acts should not be invoiced until they are actually performed
+  let visitModified = false; // Track if we need to save the visit
+
   for (const act of this.clinicalActs || []) {
     if (act.status === 'completed') {
-      const actPrice = 5000; // Default price, should be from settings/pricing
+      // HIGH PRIORITY FIX: Validate that price is captured at service time
+      // If act.price is missing, look it up from FeeSchedule and save it with audit trail
+      if (act.price === undefined || act.price === null || act.price === 0) {
+        console.warn(`[Visit.generateInvoice] Clinical act ${act.actCode || act.actType} missing price, looking up from FeeSchedule`);
+
+        if (act.actCode) {
+          const feeInfo = await getFeeFromSchedule(act.actCode, 5000, act.category || 'procedure');
+          act.price = feeInfo.price;
+          act.priceSource = 'fee-schedule-fallback';
+          act.priceCapturedAt = new Date();
+
+          // Look up the FeeSchedule reference for audit trail
+          try {
+            const FeeSchedule = require('./FeeSchedule');
+            const fee = await FeeSchedule.findOne({
+              code: act.actCode,
+              active: true,
+              $or: [
+                { effectiveFrom: { $lte: new Date() }, effectiveTo: { $gte: new Date() } },
+                { effectiveFrom: { $lte: new Date() }, effectiveTo: null }
+              ]
+            });
+            if (fee) {
+              act.feeScheduleRef = fee._id;
+            }
+          } catch (err) {
+            console.error(`[Visit.generateInvoice] Error looking up FeeSchedule reference:`, err.message);
+          }
+
+          visitModified = true;
+          console.log(`[Visit.generateInvoice] Set fallback price for act ${act.actCode}: ${act.price} CFA`);
+        } else {
+          // No actCode, use default
+          act.price = 5000;
+          act.priceSource = 'fee-schedule-fallback';
+          act.priceCapturedAt = new Date();
+          visitModified = true;
+          console.warn(`[Visit.generateInvoice] No actCode for act ${act.actType}, using default price: 5000 CFA`);
+        }
+      }
+
+      // Now use the captured price (either pre-existing or just populated)
+      const actData = {
+        price: act.price,
+        category: act.category || 'procedure'
+      };
+
       items.push({
-        category: 'procedure',
+        category: actData.category,
         description: act.actName || act.actType,
-        code: act.actCode,
-        quantity: 1,
-        unitPrice: actPrice,
-        subtotal: actPrice,
+        code: act.actCode || 'PROC-GEN',
+        quantity: act.quantity || 1,
+        unitPrice: actData.price,
+        subtotal: actData.price * (act.quantity || 1),
+        total: actData.price * (act.quantity || 1),
         provider: act.provider
       });
-      subtotal += actPrice;
+      subtotal += actData.price * (act.quantity || 1);
     }
   }
 
-  // 3. Add prescriptions (medication costs)
-  for (const prescriptionId of this.prescriptions || []) {
-    try {
-      const prescription = await Prescription.findById(prescriptionId)
-        .populate('medications.inventoryItem');
+  // Save the visit if we added any fallback prices
+  if (visitModified) {
+    await this.save();
+    console.log(`[Visit.generateInvoice] Saved visit with updated clinical act prices`);
+  }
 
-      if (prescription && prescription.type === 'medication') {
-        for (const med of prescription.medications || []) {
-          const medPrice = med.pricing?.totalCost || 0;
-          if (medPrice > 0) {
+  // 2.5 Add device/diagnostic charges (OCT, tonometry, autorefractor, etc.)
+  const OphthalmologyExam = require('./OphthalmologyExam');
+  try {
+    const exam = await OphthalmologyExam.findOne({ visit: this._id });
+    if (exam) {
+      // Device pricing mapping to FeeSchedule codes
+      const devicePriceMapping = {
+        'autorefractor': { code: 'EXAM-AUTOREFRACTION', name: 'Autoréfractomètre', fallback: 3000 },
+        'keratometer': { code: 'EXAM-KERATOMETRY', name: 'Kératométrie', fallback: 2500 },
+        'tonometer': { code: 'EXAM-TONOMETRY', name: 'Tonométrie', fallback: 5000 },
+        'oct': { code: 'EXAM-OCT-MACULA', name: 'OCT (Tomographie)', fallback: 25000 },
+        'visual-field': { code: 'EXAM-VISUAL-FIELD-HUMPHREY', name: 'Champ Visuel', fallback: 15000 },
+        'fundus-photo': { code: 'EXAM-RETINOGRAPHY', name: 'Photo du Fond d\'Oeil', fallback: 12000 },
+        'topography': { code: 'EXAM-CORNEAL-TOPOGRAPHY', name: 'Topographie Cornéenne', fallback: 20000 },
+        'pachymetry': { code: 'EXAM-PACHYMETRY', name: 'Pachymétrie', fallback: 8000 },
+        'gonioscopy': { code: 'EXAM-GONIOSCOPY', name: 'Gonioscopie', fallback: 10000 },
+        'biometry': { code: 'EXAM-IOL-BIOMETRY', name: 'Biométrie IOL', fallback: 15000 }
+      };
+
+      // Check for device measurements linked to exam
+      if (exam.deviceMeasurements && exam.deviceMeasurements.length > 0) {
+        for (const measurement of exam.deviceMeasurements) {
+          const deviceType = measurement.measurementType?.toLowerCase();
+          const deviceInfo = devicePriceMapping[deviceType];
+          if (deviceInfo && !items.some(i => i.code === deviceInfo.code)) {
+            const deviceData = await getFeeFromSchedule(deviceInfo.code, deviceInfo.fallback, 'examination');
             items.push({
-              category: 'medication',
-              description: med.name || med.genericName,
-              code: med.drug?.toString() || 'MED-001',
-              quantity: med.quantity,
-              unitPrice: med.pricing?.unitPrice || 0,
-              subtotal: medPrice,
-              prescription: prescriptionId
+              category: deviceData.category,
+              description: deviceInfo.name,
+              code: deviceInfo.code,
+              quantity: 1,
+              unitPrice: deviceData.price,
+              subtotal: deviceData.price,
+              total: deviceData.price
             });
-            subtotal += medPrice;
+            subtotal += deviceData.price;
           }
         }
       }
-    } catch (error) {
-      console.error('Error adding prescription to invoice:', error);
+
+      // Check for specific diagnostic tests performed
+      if (exam.additionalTests) {
+        // OCT
+        if (exam.additionalTests.oct?.performed && !items.some(i => i.code === 'EXAM-OCT-MACULA')) {
+          const octData = await getFeeFromSchedule('EXAM-OCT-MACULA', 25000, 'imaging');
+          items.push({ category: octData.category, description: 'OCT Macula/Nerf Optique', code: 'EXAM-OCT-MACULA', quantity: 1, unitPrice: octData.price, subtotal: octData.price, total: octData.price });
+          subtotal += octData.price;
+        }
+        // Visual Field
+        if (exam.additionalTests.visualField?.performed && !items.some(i => i.code === 'EXAM-VISUAL-FIELD-HUMPHREY')) {
+          const vfData = await getFeeFromSchedule('EXAM-VISUAL-FIELD-HUMPHREY', 15000, 'examination');
+          items.push({ category: vfData.category, description: 'Champ Visuel (Humphrey)', code: 'EXAM-VISUAL-FIELD-HUMPHREY', quantity: 1, unitPrice: vfData.price, subtotal: vfData.price, total: vfData.price });
+          subtotal += vfData.price;
+        }
+        // Gonioscopy
+        if (exam.additionalTests.gonioscopy?.performed && !items.some(i => i.code === 'EXAM-GONIOSCOPY')) {
+          const gonioData = await getFeeFromSchedule('EXAM-GONIOSCOPY', 10000, 'examination');
+          items.push({ category: gonioData.category, description: 'Gonioscopie', code: 'EXAM-GONIOSCOPY', quantity: 1, unitPrice: gonioData.price, subtotal: gonioData.price, total: gonioData.price });
+          subtotal += gonioData.price;
+        }
+        // Fundus Photography
+        if (exam.additionalTests.fundusPhotography?.performed && !items.some(i => i.code === 'EXAM-RETINOGRAPHY')) {
+          const fundusData = await getFeeFromSchedule('EXAM-RETINOGRAPHY', 12000, 'imaging');
+          items.push({ category: fundusData.category, description: 'Rétinographie', code: 'EXAM-RETINOGRAPHY', quantity: 1, unitPrice: fundusData.price, subtotal: fundusData.price, total: fundusData.price });
+          subtotal += fundusData.price;
+        }
+        // Corneal Topography
+        if (exam.additionalTests.cornealTopography?.performed && !items.some(i => i.code === 'EXAM-CORNEAL-TOPOGRAPHY')) {
+          const topoData = await getFeeFromSchedule('EXAM-CORNEAL-TOPOGRAPHY', 20000, 'imaging');
+          items.push({ category: topoData.category, description: 'Topographie cornéenne', code: 'EXAM-CORNEAL-TOPOGRAPHY', quantity: 1, unitPrice: topoData.price, subtotal: topoData.price, total: topoData.price });
+          subtotal += topoData.price;
+        }
+      }
+
+      // Pachymetry (from IOP section)
+      if (exam.iop?.OD?.pachymetry || exam.iop?.OS?.pachymetry) {
+        if (!items.some(i => i.code === 'EXAM-PACHYMETRY')) {
+          const pachyData = await getFeeFromSchedule('EXAM-PACHYMETRY', 8000, 'examination');
+          items.push({ category: pachyData.category, description: 'Pachymétrie', code: 'EXAM-PACHYMETRY', quantity: 1, unitPrice: pachyData.price, subtotal: pachyData.price, total: pachyData.price });
+          subtotal += pachyData.price;
+        }
+      }
+    }
+  } catch (examError) {
+    console.error('Error adding device charges to invoice:', examError);
+    // Continue without device charges if exam lookup fails
+  }
+
+  // 2.6 Add IVT (Intravitreal Injection) treatments
+  if (this.ivtTreatments && this.ivtTreatments.length > 0) {
+    try {
+      const IVTInjection = require('./IVTInjection');
+      const ivtTreatments = await IVTInjection.find({ _id: { $in: this.ivtTreatments } });
+
+      for (const ivt of ivtTreatments) {
+        // Default IVT code based on drug type
+        let ivtCode = 'PROC-IVT';
+        let ivtDescription = 'Injection intravitréenne';
+
+        if (ivt.drug && ivt.drug.name) {
+          const drugName = ivt.drug.name.toLowerCase();
+          if (drugName.includes('lucentis') || drugName.includes('ranibizumab')) {
+            ivtCode = 'PROC-IVT-LUCENTIS';
+            ivtDescription = 'IVT Lucentis (Ranibizumab)';
+          } else if (drugName.includes('eylea') || drugName.includes('aflibercept')) {
+            ivtCode = 'PROC-IVT-EYLEA';
+            ivtDescription = 'IVT Eylea (Aflibercept)';
+          } else if (drugName.includes('avastin') || drugName.includes('bevacizumab')) {
+            ivtCode = 'PROC-IVT-AVASTIN';
+            ivtDescription = 'IVT Avastin (Bevacizumab)';
+          }
+        }
+
+        // Get price and category from FeeSchedule
+        const ivtData = await getFeeFromSchedule(ivtCode, 50000, 'procedure'); // Default 50,000 CDF
+
+        if (!items.some(i => i.reference === ivt._id.toString())) {
+          items.push({
+            category: ivtData.category,
+            description: ivtDescription + (ivt.eye ? ` - ${ivt.eye}` : ''),
+            code: ivtCode,
+            quantity: 1,
+            unitPrice: ivtData.price,
+            subtotal: ivtData.price,
+            total: ivtData.price,
+            reference: ivt._id.toString()
+          });
+          subtotal += ivtData.price;
+        }
+      }
+    } catch (ivtError) {
+      console.error('Error adding IVT charges to invoice:', ivtError);
+      // Continue without IVT charges if lookup fails
     }
   }
 
-  // 4. Calculate totals
-  const taxRate = 0; // No tax for medical services
+  // 2.7 Add Laboratory orders/tests
+  if (this.laboratoryOrders && this.laboratoryOrders.length > 0) {
+    try {
+      const LabOrder = require('./LabOrder');
+
+      for (const labOrderRef of this.laboratoryOrders) {
+        // Fetch the full lab order to get all tests
+        const labOrder = await LabOrder.findById(labOrderRef.labOrderId);
+
+        if (labOrder && labOrder.tests) {
+          for (const test of labOrder.tests) {
+            // Skip if already invoiced
+            if (test.invoiced) continue;
+
+            // Look up price from FeeSchedule using test code
+            const testCode = test.testCode || 'LAB-GEN';
+            const defaultLabPrice = 5000; // Default price for lab tests
+            const labData = await getFeeFromSchedule(testCode, defaultLabPrice, 'laboratory');
+
+            // Add to invoice items
+            items.push({
+              category: labData.category,
+              description: test.testName || 'Test de laboratoire',
+              code: testCode,
+              quantity: 1,
+              unitPrice: labData.price,
+              subtotal: labData.price,
+              total: labData.price,
+              reference: `LabOrder:${labOrder._id}:${test._id}`
+            });
+            subtotal += labData.price;
+          }
+        }
+      }
+    } catch (labError) {
+      console.error('Error adding laboratory charges to invoice:', labError);
+      // Continue without lab charges if lookup fails
+    }
+  }
+
+  // 2.8 Add Examination Orders (template-based examinations)
+  if (this.examinationOrders && this.examinationOrders.length > 0) {
+    try {
+      for (const examOrder of this.examinationOrders) {
+        // Only bill completed examinations
+        if (examOrder.status !== 'completed') continue;
+
+        // Look up price from FeeSchedule
+        const examCode = examOrder.examinationCode || 'EXAM-GEN';
+        const defaultExamPrice = 10000;
+        const examData = await getFeeFromSchedule(examCode, defaultExamPrice, 'examination');
+
+        items.push({
+          category: examData.category,
+          description: examOrder.examinationName || 'Examen',
+          code: examCode,
+          quantity: 1,
+          unitPrice: examData.price,
+          subtotal: examData.price,
+          total: examData.price,
+          reference: `ExamOrder:${examOrder._id}`
+        });
+        subtotal += examData.price;
+      }
+    } catch (examOrderError) {
+      console.error('Error adding examination order charges to invoice:', examOrderError);
+    }
+  }
+
+  // 2.9 Add Surgery Case charges
+  if (this.surgeryCase) {
+    try {
+      const SurgeryCase = require('./SurgeryCase');
+      const surgery = await SurgeryCase.findById(this.surgeryCase);
+
+      if (surgery && surgery.status === 'completed') {
+        // Get surgery fee from FeeSchedule
+        const surgeryCode = surgery.procedureCode || 'SURG-GEN';
+        const defaultSurgeryPrice = surgery.estimatedCost || 100000;
+        const surgeryData = await getFeeFromSchedule(surgeryCode, defaultSurgeryPrice, 'surgery');
+
+        items.push({
+          category: surgeryData.category,
+          description: surgery.procedureName || 'Chirurgie',
+          code: surgeryCode,
+          quantity: 1,
+          unitPrice: surgeryData.price,
+          subtotal: surgeryData.price,
+          total: surgeryData.price,
+          reference: `Surgery:${surgery._id}`
+        });
+        subtotal += surgeryData.price;
+
+        // Add anesthesia if applicable
+        if (surgery.anesthesiaType && surgery.anesthesiaType !== 'none' && surgery.anesthesiaType !== 'topical') {
+          const anesthCode = `ANES-${surgery.anesthesiaType.toUpperCase()}`;
+          const anesthData = await getFeeFromSchedule(anesthCode, 25000, 'anesthesia');
+
+          items.push({
+            category: anesthData.category,
+            description: `Anesthésie (${surgery.anesthesiaType})`,
+            code: anesthCode,
+            quantity: 1,
+            unitPrice: anesthData.price,
+            subtotal: anesthData.price,
+            total: anesthData.price,
+            reference: `Surgery:${surgery._id}:anesthesia`
+          });
+          subtotal += anesthData.price;
+        }
+      }
+    } catch (surgeryError) {
+      console.error('Error adding surgery charges to invoice:', surgeryError);
+    }
+  }
+
+  // ============================================
+  // 2.10 UNIFIED BILLING: Include Medications from Prescriptions
+  // Medications are now included in visit invoice (status: pending)
+  // They get marked as 'completed' when dispensed at pharmacy
+  // ============================================
+  if (this.prescriptions && this.prescriptions.length > 0) {
+    try {
+      const Prescription = require('./Prescription');
+
+      for (const prescriptionId of this.prescriptions) {
+        const prescription = await Prescription.findById(prescriptionId);
+
+        if (prescription && prescription.type === 'medication' && prescription.medications) {
+          for (const med of prescription.medications) {
+            // Calculate price from medication pricing or inventory
+            const unitPrice = med.pricing?.unitPrice || med.unitCost || 0;
+            const quantity = med.quantity || 1;
+            const total = med.pricing?.totalCost || (unitPrice * quantity);
+
+            if (total > 0) {
+              items.push({
+                category: 'medication',
+                description: med.name || med.genericName || 'Médicament',
+                code: med.drug?.toString() || 'MED',
+                quantity: quantity,
+                unitPrice: unitPrice,
+                discount: 0,
+                subtotal: total,
+                tax: 0,
+                total: total,
+                status: 'pending', // Will be marked 'completed' when dispensed
+                reference: `Prescription:${prescriptionId}`
+              });
+              subtotal += total;
+              console.log(`[INVOICE] Added medication: ${med.name} x${quantity} @ ${unitPrice} = ${total} CDF`);
+            }
+          }
+        }
+      }
+    } catch (medError) {
+      console.error('Error adding medications to invoice:', medError);
+    }
+  }
+
+  // 3. Calculate totals (no tax for medical services in CFA zone)
+  const taxRate = 0;
   const tax = subtotal * taxRate;
   const total = subtotal + tax;
 
-  // 5. Create invoice (invoiceId auto-generated by Invoice pre-save hook using atomic Counter)
+  // 4. Create invoice (invoiceId auto-generated by Invoice pre-save hook using atomic Counter)
   const invoice = await Invoice.create({
-    // invoiceId omitted - let Invoice model's pre-save hook generate it atomically
     patient: this.patient,
     visit: this._id,
     items,
@@ -851,16 +1869,20 @@ visitSchema.methods.generateInvoice = async function(userId) {
       subtotal,
       tax,
       total,
-      amountDue: total
+      amountDue: total,
+      amountPaid: 0
     },
-    currency: 'CFA',
+    currency: process.env.BASE_CURRENCY || 'CDF', // Franc Congolais
     status: 'draft',
-    issueDate: new Date(),
+    dateIssued: new Date(),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-    createdBy: userId
+    createdBy: userId,
+    notes: {
+      internal: options.notes || `Facture générée automatiquement pour la visite ${this.visitId}.`
+    }
   });
 
-  // 6. Update visit billing
+  // 5. Update visit billing
   this.billing.invoice = invoice._id;
   this.billing.totalCharges = total;
   this.billing.status = 'pending';
@@ -870,7 +1892,10 @@ visitSchema.methods.generateInvoice = async function(userId) {
     success: true,
     invoice,
     itemsCount: items.length,
-    total
+    total,
+    // UNIFIED BILLING: Medications are now included in this invoice
+    prescriptionCount: this.prescriptions?.length || 0,
+    medicationsIncluded: items.filter(i => i.category === 'medication').length
   };
 };
 
@@ -883,5 +1908,77 @@ visitSchema.statics.getTimeline = async function(patientId, limit = 10) {
     .populate('appointment', 'type reason')
     .select('visitId visitDate visitType status diagnoses chiefComplaint');
 };
+
+// ============================================
+// POST-SAVE HOOK: Auto-update Patient.lastVisit
+// ============================================
+// CRITICAL FIX: This ensures Patient.lastVisit is always updated when a visit
+// is completed, regardless of whether completeVisit() method was used or
+// the status was changed directly via save/updateOne.
+// This prevents stale lastVisit data that breaks patient timeline displays.
+//
+// RACE CONDITION FIX: Uses atomic findOneAndUpdate with conditional update
+// to prevent race conditions when multiple visits are saved concurrently.
+visitSchema.post('save', async function(doc) {
+  try {
+    const Patient = require('./Patient');
+
+    // Handle completed visits - atomic update to prevent race conditions
+    if (doc.status === 'completed' && doc.patient) {
+      // Atomic update - only update if this visit is more recent than current lastVisit
+      await Patient.findOneAndUpdate(
+        {
+          _id: doc.patient,
+          $or: [
+            { lastVisit: null },
+            { lastVisitDate: null },
+            { lastVisitDate: { $lt: doc.visitDate } }
+          ]
+        },
+        {
+          $set: {
+            lastVisit: doc._id,
+            lastVisitDate: doc.visitDate,
+            lastConsultationDate: doc.completedAt || new Date()
+          }
+        }
+      );
+      console.log(`[VISIT] Auto-updated lastVisit for patient ${doc.patient} to visit ${doc.visitId || doc._id} (atomic)`);
+    }
+
+    // Handle cancelled visits - recalculate lastVisit if needed
+    if (doc.status === 'cancelled' && doc.patient) {
+      const currentPatient = await Patient.findById(doc.patient).select('lastVisit');
+
+      // Only recalculate if this cancelled visit was the current lastVisit
+      if (currentPatient && currentPatient.lastVisit && currentPatient.lastVisit.toString() === doc._id.toString()) {
+        // Find next most recent non-cancelled visit
+        const mostRecentVisit = await mongoose.model('Visit').findOne({
+          patient: doc.patient,
+          status: { $in: ['completed', 'checked-out'] },
+          _id: { $ne: doc._id }
+        }).sort({ visitDate: -1 });
+
+        if (mostRecentVisit) {
+          await Patient.findByIdAndUpdate(doc.patient, {
+            lastVisit: mostRecentVisit._id,
+            lastVisitDate: mostRecentVisit.visitDate,
+            lastConsultationDate: mostRecentVisit.completedAt || mostRecentVisit.visitDate
+          });
+          console.log(`[VISIT] Recalculated lastVisit for patient ${doc.patient} after cancellation - new lastVisit: ${mostRecentVisit.visitId || mostRecentVisit._id}`);
+        } else {
+          // No other completed visits - clear lastVisit fields
+          await Patient.findByIdAndUpdate(doc.patient, {
+            $unset: { lastVisit: 1, lastVisitDate: 1, lastConsultationDate: 1 }
+          });
+          console.log(`[VISIT] Cleared lastVisit for patient ${doc.patient} - no other completed visits found`);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('[VISIT] Error auto-updating patient lastVisit:', error);
+    // Don't throw - this is a non-critical operation
+  }
+});
 
 module.exports = mongoose.model('Visit', visitSchema);

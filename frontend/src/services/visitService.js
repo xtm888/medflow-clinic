@@ -1,339 +1,628 @@
 import api from './apiConfig';
+import offlineWrapper from './offlineWrapper';
+import { db } from './database';
 
-// Visit service for managing clinical visits and acts
+/**
+ * Visit Service - Offline-First
+ * Handles all visit API calls with offline support
+ * Visits are critical for clinical workflow continuity
+ */
 const visitService = {
-  // Get all visits with filters
+  /**
+   * Get all visits with filters - WORKS OFFLINE
+   * @param {Object} params - Query parameters (page, limit, etc.)
+   * @returns {Promise} Visits list with pagination
+   */
   async getVisits(params = {}) {
-    try {
-      const response = await api.get('/visits', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visits:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/visits', { params }),
+      'visits',
+      params,
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 1800 // 30 minutes
+      }
+    );
   },
 
-  // Get single visit
+  /**
+   * Get single visit - WORKS OFFLINE
+   * @param {string} id - Visit ID
+   * @returns {Promise} Visit data
+   */
   async getVisit(id) {
-    try {
-      const response = await api.get(`/visits/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${id}`),
+      'visits',
+      id,
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 1800
+      }
+    );
   },
 
-  // Create new visit
+  /**
+   * Create new visit - WORKS OFFLINE
+   * @param {Object} visitData - Visit data
+   * @returns {Promise} Created visit
+   */
   async createVisit(visitData) {
-    try {
-      const response = await api.post('/visits', visitData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating visit:', error);
-      throw error;
-    }
+    const localData = {
+      ...visitData,
+      _tempId: `temp_${Date.now()}`,
+      createdAt: new Date().toISOString(),
+      status: visitData.status || 'scheduled'
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post('/visits', visitData),
+      'CREATE',
+      'visits',
+      localData
+    );
   },
 
-  // Update visit
+  /**
+   * Update visit - WORKS OFFLINE
+   * @param {string} id - Visit ID
+   * @param {Object} visitData - Updated visit data
+   * @returns {Promise} Updated visit
+   */
   async updateVisit(id, visitData) {
-    try {
-      const response = await api.put(`/visits/${id}`, visitData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating visit:', error);
-      throw error;
-    }
+    const updateData = {
+      ...visitData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${id}`, visitData),
+      'UPDATE',
+      'visits',
+      updateData,
+      id
+    );
   },
 
-  // Start visit
+  /**
+   * Start visit - WORKS OFFLINE
+   * @param {string} id - Visit ID
+   * @returns {Promise} Updated visit
+   */
   async startVisit(id) {
-    try {
-      const response = await api.put(`/visits/${id}/start`);
-      return response.data;
-    } catch (error) {
-      console.error('Error starting visit:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${id}/start`),
+      'UPDATE',
+      'visits',
+      { status: 'in_progress', startedAt: new Date().toISOString() },
+      id
+    );
   },
 
-  // Complete visit
+  /**
+   * Complete visit - WORKS OFFLINE
+   * @param {string} id - Visit ID
+   * @returns {Promise} Updated visit
+   */
   async completeVisit(id) {
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${id}/complete`),
+      'UPDATE',
+      'visits',
+      { status: 'completed', completedAt: new Date().toISOString() },
+      id
+    );
+  },
+
+  /**
+   * Sign visit (doctor signature) - ONLINE PREFERRED
+   * Digital signatures should sync immediately when possible
+   * @param {string} id - Visit ID
+   * @returns {Promise} Updated visit
+   */
+  async signVisit(id) {
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${id}/sign`),
+      'UPDATE',
+      'visits',
+      { signatureStatus: 'signed', signedAt: new Date().toISOString() },
+      id
+    );
+  },
+
+  /**
+   * Lock visit (no further edits) - ONLINE ONLY
+   * Locking is a critical operation that must be server-validated
+   * @param {string} id - Visit ID
+   * @returns {Promise} Updated visit
+   */
+  async lockVisit(id) {
+    if (!navigator.onLine) {
+      throw new Error('Locking a visit requires internet connection for security reasons.');
+    }
     try {
-      const response = await api.put(`/visits/${id}/complete`);
+      const response = await api.put(`/visits/${id}/lock`);
       return response.data;
     } catch (error) {
-      console.error('Error completing visit:', error);
+      console.error('Error locking visit:', error);
       throw error;
     }
   },
 
-  // Cancel visit
+  /**
+   * Get unsigned visits for current user - WORKS OFFLINE
+   * @returns {Promise} Unsigned visits list
+   */
+  async getUnsignedVisits() {
+    return offlineWrapper.get(
+      () => api.get('/visits', { params: { signatureStatus: 'unsigned' } }),
+      'visits',
+      { signatureStatus: 'unsigned' },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600 // 10 minutes
+      }
+    );
+  },
+
+  /**
+   * Cancel visit - WORKS OFFLINE
+   * @param {string} id - Visit ID
+   * @param {string} reason - Cancellation reason
+   * @returns {Promise} Updated visit
+   */
   async cancelVisit(id, reason) {
-    try {
-      const response = await api.put(`/visits/${id}/cancel`, { reason });
-      return response.data;
-    } catch (error) {
-      console.error('Error cancelling visit:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${id}/cancel`, { reason }),
+      'UPDATE',
+      'visits',
+      { status: 'cancelled', cancelReason: reason, cancelledAt: new Date().toISOString() },
+      id
+    );
   },
 
-  // Add act to visit
+  /**
+   * Add act to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} actData - Act data
+   * @returns {Promise} Updated visit
+   */
   async addAct(visitId, actData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/acts`, actData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding act to visit:', error);
-      throw error;
-    }
+    const localData = {
+      ...actData,
+      visitId,
+      _tempId: `temp_act_${Date.now()}`,
+      createdAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/acts`, actData),
+      'UPDATE',
+      'visits',
+      localData,
+      visitId
+    );
   },
 
-  // Update act
+  /**
+   * Add clinical act with automatic fee schedule lookup - WORKS OFFLINE
+   * Price lookup happens online; falls back to provided price offline
+   * @param {string} visitId - Visit ID
+   * @param {Object} actParams - Act parameters
+   * @returns {Promise} Updated visit
+   */
+  async addClinicalAct(visitId, { actCode, actType, actName, providerId, notes, price }) {
+    // If online and no price provided, try to get from fee schedule
+    let finalPrice = price;
+    if (!finalPrice && actCode && navigator.onLine) {
+      try {
+        const feeResponse = await api.get(`/billing/fee-schedule/effective-price/${actCode}`);
+        if (feeResponse.data?.data?.price) {
+          finalPrice = feeResponse.data.data.price;
+        }
+      } catch (feeError) {
+        console.warn('Could not fetch fee schedule, using provided price or 0:', feeError);
+        finalPrice = 0;
+      }
+    }
+
+    const actData = {
+      actType: actType || 'examination',
+      actCode: actCode,
+      actName: actName,
+      provider: providerId,
+      price: finalPrice || 0,
+      status: 'completed',
+      startTime: new Date(),
+      endTime: new Date(),
+      notes: notes || '',
+      _tempId: `temp_act_${Date.now()}`
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/acts`, actData),
+      'UPDATE',
+      'visits',
+      actData,
+      visitId
+    );
+  },
+
+  /**
+   * Update act - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {string} actId - Act ID
+   * @param {Object} actData - Updated act data
+   * @returns {Promise} Updated act
+   */
   async updateAct(visitId, actId, actData) {
-    try {
-      const response = await api.put(`/visits/${visitId}/acts/${actId}`, actData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating act:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/acts/${actId}`, actData),
+      'UPDATE',
+      'visits',
+      { ...actData, updatedAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Remove act
+  /**
+   * Remove act - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {string} actId - Act ID
+   * @returns {Promise} Updated visit
+   */
   async removeAct(visitId, actId) {
-    try {
-      const response = await api.delete(`/visits/${visitId}/acts/${actId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error removing act:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.delete(`/visits/${visitId}/acts/${actId}`),
+      'UPDATE',
+      'visits',
+      { actId, _removed: true },
+      visitId
+    );
   },
 
-  // Complete act
+  /**
+   * Complete act - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {string} actId - Act ID
+   * @returns {Promise} Updated act
+   */
   async completeAct(visitId, actId) {
-    try {
-      const response = await api.put(`/visits/${visitId}/acts/${actId}/complete`);
-      return response.data;
-    } catch (error) {
-      console.error('Error completing act:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/acts/${actId}/complete`),
+      'UPDATE',
+      'visits',
+      { actId, status: 'completed', completedAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit acts
+  /**
+   * Get visit acts - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit acts
+   */
   async getVisitActs(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/acts`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit acts:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/acts`),
+      'visits',
+      { type: 'acts', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Get visits by patient
+  /**
+   * Get visits by patient - WORKS OFFLINE
+   * @param {string} patientId - Patient ID
+   * @param {Object} params - Query parameters
+   * @returns {Promise} Patient visits
+   */
   async getPatientVisits(patientId, params = {}) {
-    try {
-      const response = await api.get(`/patients/${patientId}/visits`, { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching patient visits:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/patients/${patientId}/visits`, { params }),
+      'visits',
+      { patientId, ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Get visits by provider
+  /**
+   * Get visits by provider - WORKS OFFLINE
+   * @param {string} providerId - Provider ID
+   * @param {Object} params - Query parameters
+   * @returns {Promise} Provider visits
+   */
   async getProviderVisits(providerId, params = {}) {
-    try {
-      const response = await api.get(`/providers/${providerId}/visits`, { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching provider visits:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/providers/${providerId}/visits`, { params }),
+      'visits',
+      { providerId, ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Get today's visits
+  /**
+   * Get today's visits - WORKS OFFLINE (critical for queue)
+   * @returns {Promise} Today's visits
+   */
   async getTodaysVisits() {
-    try {
-      const response = await api.get('/visits/today');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching today\'s visits:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/visits/today'),
+      'visits',
+      { type: 'today', date: new Date().toISOString().split('T')[0] },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300 // 5 minutes - refresh more frequently
+      }
+    );
   },
 
-  // Get active visits
+  /**
+   * Get active visits - WORKS OFFLINE
+   * @returns {Promise} Active visits
+   */
   async getActiveVisits() {
-    try {
-      const response = await api.get('/visits/active');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching active visits:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/visits/active'),
+      'visits',
+      { status: 'in_progress' },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300
+      }
+    );
   },
 
-  // Add vital signs to visit
+  /**
+   * Add vital signs to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} vitalSignsData - Vital signs data
+   * @returns {Promise} Updated visit
+   */
   async addVitalSigns(visitId, vitalSignsData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/vital-signs`, vitalSignsData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding vital signs:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/vital-signs`, vitalSignsData),
+      'UPDATE',
+      'visits',
+      { vitalSigns: vitalSignsData, updatedAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit vital signs
+  /**
+   * Get visit vital signs - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Vital signs
+   */
   async getVitalSigns(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/vital-signs`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching vital signs:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/vital-signs`),
+      'visits',
+      { type: 'vitalSigns', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add clinical note
+  /**
+   * Add clinical note - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} noteData - Note data
+   * @returns {Promise} Updated visit
+   */
   async addClinicalNote(visitId, noteData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/notes`, noteData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding clinical note:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/notes`, noteData),
+      'UPDATE',
+      'visits',
+      { ...noteData, _tempId: `temp_note_${Date.now()}`, createdAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit notes
+  /**
+   * Get visit notes - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit notes
+   */
   async getVisitNotes(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/notes`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit notes:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/notes`),
+      'visits',
+      { type: 'notes', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add diagnosis to visit
+  /**
+   * Add diagnosis to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} diagnosisData - Diagnosis data
+   * @returns {Promise} Updated visit
+   */
   async addDiagnosis(visitId, diagnosisData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/diagnoses`, diagnosisData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding diagnosis:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/diagnoses`, diagnosisData),
+      'UPDATE',
+      'visits',
+      { ...diagnosisData, _tempId: `temp_dx_${Date.now()}`, createdAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit diagnoses
+  /**
+   * Get visit diagnoses - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit diagnoses
+   */
   async getVisitDiagnoses(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/diagnoses`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit diagnoses:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/diagnoses`),
+      'visits',
+      { type: 'diagnoses', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add prescription to visit
+  /**
+   * Add prescription to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} prescriptionData - Prescription data
+   * @returns {Promise} Updated visit
+   */
   async addPrescription(visitId, prescriptionData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/prescriptions`, prescriptionData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding prescription:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/prescriptions`, prescriptionData),
+      'UPDATE',
+      'visits',
+      { ...prescriptionData, _tempId: `temp_rx_${Date.now()}`, createdAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit prescriptions
+  /**
+   * Get visit prescriptions - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit prescriptions
+   */
   async getVisitPrescriptions(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/prescriptions`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit prescriptions:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/prescriptions`),
+      'visits',
+      { type: 'prescriptions', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add lab order to visit
+  /**
+   * Add lab order to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} labOrderData - Lab order data
+   * @returns {Promise} Updated visit
+   */
   async addLabOrder(visitId, labOrderData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/lab-orders`, labOrderData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding lab order:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/lab-orders`, labOrderData),
+      'UPDATE',
+      'visits',
+      { ...labOrderData, _tempId: `temp_lab_${Date.now()}`, createdAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit lab orders
+  /**
+   * Get visit lab orders - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit lab orders
+   */
   async getVisitLabOrders(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/lab-orders`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit lab orders:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/lab-orders`),
+      'visits',
+      { type: 'labOrders', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add imaging order to visit
+  /**
+   * Add imaging order to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} imagingOrderData - Imaging order data
+   * @returns {Promise} Updated visit
+   */
   async addImagingOrder(visitId, imagingOrderData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/imaging-orders`, imagingOrderData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding imaging order:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/imaging-orders`, imagingOrderData),
+      'UPDATE',
+      'visits',
+      { ...imagingOrderData, _tempId: `temp_img_${Date.now()}`, createdAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit imaging orders
+  /**
+   * Get visit imaging orders - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit imaging orders
+   */
   async getVisitImagingOrders(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/imaging-orders`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit imaging orders:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/imaging-orders`),
+      'visits',
+      { type: 'imagingOrders', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add procedure to visit
+  /**
+   * Add procedure to visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} procedureData - Procedure data
+   * @returns {Promise} Updated visit
+   */
   async addProcedure(visitId, procedureData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/procedures`, procedureData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding procedure:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/procedures`, procedureData),
+      'UPDATE',
+      'visits',
+      { ...procedureData, _tempId: `temp_proc_${Date.now()}`, createdAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit procedures
+  /**
+   * Get visit procedures - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit procedures
+   */
   async getVisitProcedures(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/procedures`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit procedures:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/procedures`),
+      'visits',
+      { type: 'procedures', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Generate visit summary
+  /**
+   * Generate visit summary - ONLINE ONLY (requires server-side PDF generation)
+   * @param {string} visitId - Visit ID
+   * @param {string} format - Export format (pdf, json)
+   * @returns {Promise} Visit summary
+   */
   async generateVisitSummary(visitId, format = 'pdf') {
+    if (!navigator.onLine) {
+      throw new Error('Generating visit summary requires internet connection.');
+    }
     try {
       const response = await api.get(`/visits/${visitId}/summary`, {
         params: { format },
@@ -346,52 +635,80 @@ const visitService = {
     }
   },
 
-  // Clone visit
+  /**
+   * Clone visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Cloned visit
+   */
   async cloneVisit(visitId) {
-    try {
-      const response = await api.post(`/visits/${visitId}/clone`);
-      return response.data;
-    } catch (error) {
-      console.error('Error cloning visit:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/clone`),
+      'CREATE',
+      'visits',
+      { sourceVisitId: visitId, _tempId: `temp_clone_${Date.now()}`, createdAt: new Date().toISOString() }
+    );
   },
 
-  // Get visit billing
+  /**
+   * Get visit billing - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit billing
+   */
   async getVisitBilling(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/billing`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit billing:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/billing`),
+      'invoices',
+      { visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Update visit billing
+  /**
+   * Update visit billing - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} billingData - Billing data
+   * @returns {Promise} Updated billing
+   */
   async updateVisitBilling(visitId, billingData) {
-    try {
-      const response = await api.put(`/visits/${visitId}/billing`, billingData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating visit billing:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/billing`, billingData),
+      'UPDATE',
+      'invoices',
+      { ...billingData, visitId, updatedAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get visit documents
+  /**
+   * Get visit documents - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit documents
+   */
   async getVisitDocuments(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/documents`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit documents:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/documents`),
+      'files',
+      { visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Add document to visit
+  /**
+   * Add document to visit - ONLINE ONLY (file uploads require connectivity)
+   * @param {string} visitId - Visit ID
+   * @param {Object} documentData - Document data
+   * @returns {Promise} Added document
+   */
   async addDocument(visitId, documentData) {
+    if (!navigator.onLine) {
+      throw new Error('Document upload requires internet connection.');
+    }
     try {
       const response = await api.post(`/visits/${visitId}/documents`, documentData);
       return response.data;
@@ -401,83 +718,192 @@ const visitService = {
     }
   },
 
-  // Get visit timeline
+  /**
+   * Get visit timeline - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Visit timeline
+   */
   async getVisitTimeline(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/timeline`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit timeline:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/timeline`),
+      'visits',
+      { type: 'timeline', visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Link visit to appointment
+  /**
+   * Link visit to appointment - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {string} appointmentId - Appointment ID
+   * @returns {Promise} Updated visit
+   */
   async linkToAppointment(visitId, appointmentId) {
-    try {
-      const response = await api.put(`/visits/${visitId}/link-appointment`, { appointmentId });
-      return response.data;
-    } catch (error) {
-      console.error('Error linking visit to appointment:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/link-appointment`, { appointmentId }),
+      'UPDATE',
+      'visits',
+      { appointmentId, updatedAt: new Date().toISOString() },
+      visitId
+    );
   },
 
-  // Get follow-up visits
+  /**
+   * Get follow-up visits - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @returns {Promise} Follow-up visits
+   */
   async getFollowUpVisits(visitId) {
-    try {
-      const response = await api.get(`/visits/${visitId}/follow-ups`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching follow-up visits:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/visits/${visitId}/follow-ups`),
+      'visits',
+      { type: 'followUps', parentVisitId: visitId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 1800
+      }
+    );
   },
 
-  // Schedule follow-up visit
+  /**
+   * Schedule follow-up visit - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {Object} followUpData - Follow-up data
+   * @returns {Promise} Created follow-up visit
+   */
   async scheduleFollowUp(visitId, followUpData) {
-    try {
-      const response = await api.post(`/visits/${visitId}/follow-up`, followUpData);
-      return response.data;
-    } catch (error) {
-      console.error('Error scheduling follow-up visit:', error);
-      throw error;
-    }
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/follow-up`, followUpData),
+      'CREATE',
+      'visits',
+      { ...followUpData, parentVisitId: visitId, _tempId: `temp_fu_${Date.now()}`, createdAt: new Date().toISOString() }
+    );
   },
 
-  // Get visit statistics
+  /**
+   * Get visit statistics - ONLINE PREFERRED (aggregations are expensive to cache)
+   * @param {Object} params - Query parameters
+   * @returns {Promise} Visit statistics
+   */
   async getVisitStatistics(params = {}) {
-    try {
-      const response = await api.get('/visits/statistics', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit statistics:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/visits/statistics', { params }),
+      'visits',
+      { type: 'statistics', ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 3600 // Cache for 1 hour since stats don't change often
+      }
+    );
   },
 
-  // Apply visit template
+  /**
+   * Apply visit template - WORKS OFFLINE
+   * @param {string} visitId - Visit ID
+   * @param {string} templateId - Template ID
+   * @returns {Promise} Updated visit
+   */
   async applyTemplate(visitId, templateId) {
+    return offlineWrapper.mutate(
+      () => api.post(`/visits/${visitId}/apply-template`, { templateId }),
+      'UPDATE',
+      'visits',
+      { templateId, _templateApplied: true, updatedAt: new Date().toISOString() },
+      visitId
+    );
+  },
+
+  /**
+   * Get available visit templates - WORKS OFFLINE
+   * @param {string} visitType - Visit type
+   * @returns {Promise} Available templates
+   */
+  async getVisitTemplates(visitType) {
+    return offlineWrapper.get(
+      () => api.get('/visits/templates', { params: { visitType } }),
+      'visits',
+      { type: 'templates', visitType },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 3600 // Templates don't change often
+      }
+    );
+  },
+
+  // ==========================================
+  // OFFLINE HELPER METHODS
+  // ==========================================
+
+  /**
+   * Pre-cache today's visits for offline use
+   * @returns {Promise} Cache result
+   */
+  async preCacheTodaysVisits() {
+    if (!navigator.onLine) {
+      console.warn('[VisitService] Cannot pre-cache while offline');
+      return { success: false };
+    }
+
     try {
-      const response = await api.post(`/visits/${visitId}/apply-template`, { templateId });
-      return response.data;
+      console.log('[VisitService] Pre-caching today\'s visits...');
+      const response = await api.get('/visits/today');
+      const visits = response.data?.data || response.data || [];
+
+      if (visits.length > 0) {
+        const timestamp = new Date().toISOString();
+        const visitsWithSync = visits.map(visit => ({
+          ...visit,
+          id: visit._id || visit.id,
+          lastSync: timestamp
+        }));
+
+        await db.visits.bulkPut(visitsWithSync);
+        console.log(`[VisitService] Pre-cached ${visits.length} visits`);
+      }
+
+      return { success: true, cached: visits.length };
     } catch (error) {
-      console.error('Error applying visit template:', error);
-      throw error;
+      console.error('[VisitService] Pre-cache failed:', error);
+      return { success: false, error: error.message };
     }
   },
 
-  // Get available visit templates
-  async getVisitTemplates(visitType) {
-    try {
-      const response = await api.get('/visits/templates', {
-        params: { visitType }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching visit templates:', error);
-      throw error;
-    }
+  /**
+   * Get locally cached visits
+   * @returns {Promise<Array>} Cached visits
+   */
+  async getCachedVisits() {
+    return db.visits.toArray();
+  },
+
+  /**
+   * Get cached visit count
+   * @returns {Promise<number>} Count of cached visits
+   */
+  async getCachedVisitCount() {
+    return db.visits.count();
+  },
+
+  /**
+   * Search visits offline
+   * @param {string} query - Search query
+   * @returns {Promise<Array>} Matching visits
+   */
+  async searchVisitsOffline(query) {
+    if (!query) return [];
+
+    const lowerQuery = query.toLowerCase();
+    const visits = await db.visits.toArray();
+
+    return visits.filter(visit =>
+      visit.chiefComplaint?.toLowerCase().includes(lowerQuery) ||
+      visit.diagnosis?.toLowerCase().includes(lowerQuery) ||
+      visit.notes?.toLowerCase().includes(lowerQuery) ||
+      visit.visitId?.toLowerCase().includes(lowerQuery)
+    );
   }
 };
 

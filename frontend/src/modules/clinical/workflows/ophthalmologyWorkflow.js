@@ -370,4 +370,73 @@ export const refractionOnlyWorkflowConfig = {
   ]
 };
 
+// Consolidated dashboard workflow - all in one page
+export const consolidatedDashboardWorkflowConfig = {
+  id: 'consolidated_dashboard',
+  name: 'Consultation Consolidée',
+  description: 'Toutes les données sur une seule page',
+  mode: 'dashboard', // Flag to use dashboard view instead of steps
+
+  // Data structure for the dashboard
+  defaultData: {
+    complaint: { motif: '', duration: '', laterality: '' },
+    vitals: {},
+    refraction: {
+      visualAcuity: {
+        OD: { uncorrected: '', corrected: '', pinhole: '', near: '' },
+        OS: { uncorrected: '', corrected: '', pinhole: '', near: '' }
+      },
+      objective: {
+        OD: { sphere: '', cylinder: '', axis: '', confidence: 5 },
+        OS: { sphere: '', cylinder: '', axis: '', confidence: 5 },
+        device: 'autorefractor'
+      },
+      subjective: {
+        OD: { sphere: '', cylinder: '', axis: '', add: '', va: '' },
+        OS: { sphere: '', cylinder: '', axis: '', add: '', va: '' },
+        pd: { distance: '', near: '' }
+      },
+      keratometry: {
+        OD: { k1: '', k1Axis: '', k2: '', k2Axis: '' },
+        OS: { k1: '', k1Axis: '', k2: '', k2Axis: '' }
+      }
+    },
+    examination: {
+      iop: {
+        OD: { value: '', time: '', method: 'nct' },
+        OS: { value: '', time: '', method: 'nct' },
+        pachymetry: { OD: '', OS: '' }
+      },
+      slitLamp: {
+        OD: { lids: 'normal', conjunctiva: 'normal', cornea: 'normal', ac: 'normal', iris: 'normal', lens: 'normal', notes: '' },
+        OS: { lids: 'normal', conjunctiva: 'normal', cornea: 'normal', ac: 'normal', iris: 'normal', lens: 'normal', notes: '' }
+      },
+      fundus: {
+        OD: { vitreous: 'normal', disc: 'normal', cdRatio: '', macula: 'normal', retina: 'normal', vessels: 'normal', notes: '' },
+        OS: { vitreous: 'normal', disc: 'normal', cdRatio: '', macula: 'normal', retina: 'normal', vessels: 'normal', notes: '' }
+      },
+      pupils: {
+        OD: { size: '', reaction: 'normal', shape: 'round' },
+        OS: { size: '', reaction: 'normal', shape: 'round' },
+        rapd: 'none'
+      }
+    },
+    diagnostic: {
+      diagnoses: [],
+      procedures: [],
+      laboratory: []
+    },
+    prescription: {
+      type: 'glasses',
+      glasses: {
+        OD: { sphere: '', cylinder: '', axis: '', add: '' },
+        OS: { sphere: '', cylinder: '', axis: '', add: '' },
+        pd: { distance: '', near: '' }
+      },
+      medications: [],
+      recommendations: ''
+    }
+  }
+};
+
 export default ophthalmologyWorkflowConfig;

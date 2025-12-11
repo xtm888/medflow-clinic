@@ -107,7 +107,7 @@ const DeviceDetail = () => {
         }
       });
     } catch (err) {
-      toast.error('Failed to load device');
+      toast.error('Échec du chargement de l\'appareil');
       console.error(err);
     } finally {
       setLoading(false);
@@ -128,7 +128,7 @@ const DeviceDetail = () => {
 
     try {
       await deviceService.updateDevice(id, formData);
-      toast.success('Device updated successfully');
+      toast.success('Appareil mis à jour avec succès');
       await loadDevice();
     } catch (err) {
       toast.error(`Failed to update device: ${err.response?.data?.message || err.message}`);
@@ -169,9 +169,9 @@ const DeviceDetail = () => {
           }
         }
       }));
-      toast.success('Webhook credentials generated');
+      toast.success('Identifiants Webhook générés');
     } catch (err) {
-      toast.error('Failed to generate webhook credentials');
+      toast.error('Échec de génération des identifiants Webhook');
     }
   };
 
@@ -828,15 +828,7 @@ const DeviceDetail = () => {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button
-          onClick={() => navigate(`/devices/${id}/logs`)}
-          className="flex items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
-        >
-          <FileText className="w-5 h-5 text-gray-600" />
-          <span className="font-medium">View Integration Logs</span>
-        </button>
-
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <button
           onClick={() => navigate(`/devices/${id}/import`)}
           className="flex items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -846,11 +838,11 @@ const DeviceDetail = () => {
         </button>
 
         <button
-          onClick={() => navigate(`/devices/${id}/stats`)}
+          onClick={() => navigate('/devices')}
           className="flex items-center justify-center gap-2 p-4 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
         >
-          <Activity className="w-5 h-5 text-gray-600" />
-          <span className="font-medium">Statistics & Analytics</span>
+          <ArrowLeft className="w-5 h-5 text-gray-600" />
+          <span className="font-medium">Back to Device List</span>
         </button>
       </div>
     </div>

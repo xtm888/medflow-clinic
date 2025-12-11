@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Bell, Filter, Check, CheckCheck, X, Trash2, Calendar, Clock, AlertCircle, Package, Users } from 'lucide-react';
 import alertService from '../services/alertService';
+import ConfirmationModal from '../components/ConfirmationModal';
 
 const ICON_MAP = {
   calendar: Calendar,
@@ -52,6 +53,15 @@ function AlertDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [selectedAlerts, setSelectedAlerts] = useState([]);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
 
   // Filters
   const [filters, setFilters] = useState({
@@ -139,21 +149,25 @@ function AlertDashboard() {
     }
   };
 
-  const handleDeleteSelected = async () => {
+  const handleDeleteSelected = () => {
     if (selectedAlerts.length === 0) return;
 
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer ${selectedAlerts.length} alerte(s)?`)) {
-      return;
-    }
-
-    try {
-      await Promise.all(selectedAlerts.map(id => alertService.deleteAlert(id)));
-      setSelectedAlerts([]);
-      fetchAlerts();
-    } catch (err) {
-      console.error('Error deleting alerts:', err);
-      setError('Erreur lors de la suppression des alertes');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer les alertes sélectionnées?',
+      message: `Êtes-vous sûr de vouloir supprimer ${selectedAlerts.length} alerte(s)? Cette action est irréversible.`,
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await Promise.all(selectedAlerts.map(id => alertService.deleteAlert(id)));
+          setSelectedAlerts([]);
+          fetchAlerts();
+        } catch (err) {
+          console.error('Error deleting alerts:', err);
+          setError('Erreur lors de la suppression des alertes');
+        }
+      }
+    });
   };
 
   const handleMarkAsRead = async (alertId) => {
@@ -174,17 +188,21 @@ function AlertDashboard() {
     }
   };
 
-  const handleDelete = async (alertId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir supprimer cette alerte?')) {
-      return;
-    }
-
-    try {
-      await alertService.deleteAlert(alertId);
-      fetchAlerts();
-    } catch (err) {
-      console.error('Error deleting alert:', err);
-    }
+  const handleDelete = (alertId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Supprimer cette alerte?',
+      message: 'Êtes-vous sûr de vouloir supprimer cette alerte? Cette action est irréversible.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await alertService.deleteAlert(alertId);
+          fetchAlerts();
+        } catch (err) {
+          console.error('Error deleting alert:', err);
+        }
+      }
+    });
   };
 
   const formatTime = (dateString) => {
@@ -469,6 +487,16 @@ function AlertDashboard() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
+      />
     </div>
   );
 }

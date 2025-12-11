@@ -302,6 +302,132 @@ export const formatStatus = (status) => {
 };
 
 // ============================================================================
+// PATIENT NAME HELPERS (for Lab sections and other uses)
+// ============================================================================
+
+/**
+ * Get patient name from various patient object structures
+ * Used across Lab, Queue, Invoice, and other components
+ */
+export const getPatientName = (patient) => {
+  if (!patient) return 'Patient inconnu';
+
+  // Handle string (already formatted or just an ID)
+  if (typeof patient === 'string') return patient;
+
+  // Handle populated patient object with various field names
+  const firstName = patient.firstName || patient.prenom || patient.first_name || '';
+  const lastName = patient.lastName || patient.nom || patient.last_name || '';
+
+  if (firstName || lastName) {
+    return `${firstName} ${lastName}`.trim();
+  }
+
+  // Handle combined name fields
+  if (patient.name) return patient.name;
+  if (patient.fullName) return patient.fullName;
+
+  return 'Patient inconnu';
+};
+
+/**
+ * Get patient initials for avatars
+ */
+export const getPatientInitials = (patient) => {
+  const name = getPatientName(patient);
+  if (name === 'Patient inconnu') return '??';
+
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  }
+  return name.slice(0, 2).toUpperCase();
+};
+
+/**
+ * Get patient display info with ID
+ */
+export const getPatientDisplayInfo = (patient) => {
+  const name = getPatientName(patient);
+  const id = patient?.patientId || patient?.fileNumber || patient?.id || patient?._id;
+
+  return {
+    name,
+    id: id ? `#${id}` : '',
+    display: id ? `${name} (#${id})` : name
+  };
+};
+
+// ============================================================================
+// COMPACT/SHORT FORMATTERS
+// ============================================================================
+
+/**
+ * Format amount as compact currency (e.g., 1.2M)
+ */
+export const formatCompactCurrency = (amount, currency = 'CDF') => {
+  if (amount == null || isNaN(amount)) return 'N/A';
+
+  const config = {
+    USD: '$',
+    EUR: '€',
+    CDF: 'FC'
+  };
+  const symbol = config[currency] || currency;
+
+  if (Math.abs(amount) >= 1000000) {
+    return `${(amount / 1000000).toFixed(1)}M ${symbol}`;
+  }
+  if (Math.abs(amount) >= 1000) {
+    return `${(amount / 1000).toFixed(0)}K ${symbol}`;
+  }
+  return formatCurrency(amount, currency);
+};
+
+/**
+ * Truncate text with ellipsis
+ */
+export const truncate = (text, maxLength = 50) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
+};
+
+/**
+ * Capitalize first letter
+ */
+export const capitalize = (text) => {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
+};
+
+/**
+ * Convert to title case
+ */
+export const toTitleCase = (text) => {
+  if (!text) return '';
+  return text
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+/**
+ * Format file size
+ */
+export const formatFileSize = (bytes) => {
+  if (!bytes) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  while (bytes >= 1024 && i < units.length - 1) {
+    bytes /= 1024;
+    i++;
+  }
+  return `${bytes.toFixed(i === 0 ? 0 : 1)} ${units[i]}`;
+};
+
+// ============================================================================
 // EXPORT ALL FORMATTERS
 // ============================================================================
 
@@ -310,15 +436,23 @@ const formatters = {
   dateForInput: formatDateForInput,
   time: formatTime,
   currency: formatCurrency,
+  compactCurrency: formatCompactCurrency,
   percent: formatPercent,
   name: formatName,
   doctorName: formatDoctorName,
+  patientName: getPatientName,
+  patientInitials: getPatientInitials,
+  patientDisplayInfo: getPatientDisplayInfo,
   empty: formatEmpty,
   emptyFr: formatEmptyFr,
   number: formatNumber,
   phone: formatPhone,
   age: formatAge,
-  status: formatStatus
+  status: formatStatus,
+  truncate,
+  capitalize,
+  toTitleCase,
+  fileSize: formatFileSize
 };
 
 export default formatters;

@@ -418,23 +418,24 @@ const protocolDefinitions = [
 ];
 
 async function findDrugBySearchTerm(searchTerm) {
-  // Try multiple search strategies
+  // Try multiple search strategies - use 'name' field which is the actual field in the Drug model
   let drug = await Drug.findOne({
     $or: [
-      { 'brandNames.name': new RegExp(searchTerm, 'i') },
-      { genericName: new RegExp(searchTerm, 'i') }
+      { name: new RegExp(searchTerm, 'i') },
+      { genericName: new RegExp(searchTerm, 'i') },
+      { 'brandNames.name': new RegExp(searchTerm, 'i') }
     ],
-    active: true
+    isActive: { $ne: false }
   });
 
   if (!drug) {
-    // Try partial match
+    // Try partial match (first 4 characters)
     drug = await Drug.findOne({
       $or: [
-        { 'brandNames.name': { $regex: searchTerm.substring(0, 4), $options: 'i' } },
+        { name: { $regex: searchTerm.substring(0, 4), $options: 'i' } },
         { genericName: { $regex: searchTerm.substring(0, 4), $options: 'i' } }
       ],
-      active: true
+      isActive: { $ne: false }
     });
   }
 

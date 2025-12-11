@@ -23,17 +23,33 @@ import {
   FlaskConical,
   BarChart3,
   Syringe,
-  Bell
+  Scissors,
+  Bell,
+  Shield,
+  Building2,
+  ShieldCheck,
+  Home,
+  LayoutGrid,
+  Package,
+  Glasses,
+  Circle,
+  Download
 } from 'lucide-react';
 import { useState, useMemo, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { usePatient } from '../contexts/PatientContext';
+import { useClinic } from '../contexts/ClinicContext';
 import { getAccessibleMenuItems, menuConfigurations } from '../config/rolePermissions';
 import NotificationBell from '../components/NotificationBell';
 import OfflineIndicator from '../components/OfflineIndicator';
+import SyncStatusIndicator from '../components/SyncStatusIndicator';
+import SyncProgressModal from '../components/SyncProgressModal';
+import PrepareOfflineModal from '../components/PrepareOfflineModal';
+import ClinicSelector from '../components/ClinicSelector';
 import KeyboardShortcutsHelp from '../components/KeyboardShortcutsHelp';
 import GlobalSearch from '../components/GlobalSearch';
-import QuickActionsFAB from '../components/QuickActionsFAB';
+import SessionTimeoutWarning from '../components/SessionTimeoutWarning';
+// QuickActionsFAB removed - was overlapping with bottom nav
 import { PatientSelector } from '../modules/patient';
 import PatientContextPanel from '../components/PatientContextPanel';
 // GlobalActionBar removed - using context-aware actions in PatientDetail instead
@@ -57,7 +73,14 @@ const iconMap = {
   FlaskConical,
   BarChart3,
   Syringe,
-  Bell
+  Scissors,
+  Bell,
+  Shield,
+  Building2,
+  ShieldCheck,
+  Package,
+  Glasses,
+  Circle
 };
 
 export default function MainLayout() {
@@ -67,8 +90,10 @@ export default function MainLayout() {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [showGlobalSearch, setShowGlobalSearch] = useState(false);
   const [expandedMenus, setExpandedMenus] = useState({});
+  const [showPrepareOffline, setShowPrepareOffline] = useState(false);
   const { user, logout } = useAuth();
   const { hasPatient } = usePatient();
+  const { showSyncProgress, closeSyncProgress, openSyncProgress } = useClinic();
 
   // Toggle submenu expansion
   const toggleSubmenu = (menuName) => {
@@ -82,7 +107,8 @@ export default function MainLayout() {
   useEffect(() => {
     if (!user) return;
 
-    const accessibleItems = getAccessibleMenuItems(user.role);
+    // Use menuItems from database instead of hardcoded config
+    const accessibleItems = user.menuItems || getAccessibleMenuItems(user.role);
     const menusToExpand = {};
 
     accessibleItems.forEach(itemKey => {
@@ -106,7 +132,8 @@ export default function MainLayout() {
   // Keyboard shortcuts
   useKeyboardShortcuts({
     // Navigation shortcuts
-    'ctrl+h': () => navigate('/dashboard'),
+    'ctrl+h': () => navigate('/home'),
+    'h': () => navigate('/home'), // Quick home access
     'ctrl+p': () => navigate('/patients'),
     'ctrl+q': () => navigate('/queue'),
     'ctrl+a': () => navigate('/appointments'),
@@ -125,7 +152,8 @@ export default function MainLayout() {
   const navigation = useMemo(() => {
     if (!user) return [];
 
-    const accessibleItems = getAccessibleMenuItems(user.role);
+    // Use menuItems from database (loaded during login) instead of hardcoded config
+    const accessibleItems = user.menuItems || getAccessibleMenuItems(user.role);
 
     const navItems = accessibleItems.map(itemKey => {
       const config = menuConfigurations[itemKey];
@@ -138,17 +166,27 @@ export default function MainLayout() {
 
       // Handle items with submenus
       if (config.subItems && config.subItems.length > 0) {
+        // Filter subItems based on user role
+        const filteredSubItems = config.subItems
+          .filter(sub => !sub.roles || sub.roles.includes(user.role))
+          .map(sub => ({
+            name: sub.label,
+            href: sub.path,
+            icon: iconMap[sub.icon] || Activity
+          }));
+
+        // Only show parent menu if there are visible subItems
+        if (filteredSubItems.length === 0) {
+          return null;
+        }
+
         return {
           name: config.label,
           href: config.path,
           icon: IconComponent,
           description: config.description,
           key: itemKey,
-          subItems: config.subItems.map(sub => ({
-            name: sub.label,
-            href: sub.path,
-            icon: iconMap[sub.icon] || Activity
-          }))
+          subItems: filteredSubItems
         };
       }
 
@@ -185,14 +223,20 @@ export default function MainLayout() {
   const getRoleDisplay = () => {
     if (!user) return '';
     const roleMap = {
-      admin: 'Administrator',
-      doctor: 'Doctor',
-      ophthalmologist: 'Ophthalmologist',
-      nurse: 'Nurse',
-      receptionist: 'Receptionist',
-      pharmacist: 'Pharmacist',
-      lab_technician: 'Lab Technician',
-      accountant: 'Accountant'
+      admin: 'Administrateur',
+      doctor: 'Médecin',
+      ophthalmologist: 'Ophtalmologiste',
+      nurse: 'Infirmier(ère)',
+      receptionist: 'Réceptionniste',
+      pharmacist: 'Pharmacien(ne)',
+      lab_technician: 'Technicien Labo',
+      accountant: 'Comptable',
+      manager: 'Responsable',
+      technician: 'Technicien',
+      orthoptist: 'Orthoptiste',
+      optometrist: 'Optométriste',
+      radiologist: 'Radiologue',
+      imaging_tech: 'Technicien Imagerie'
     };
     return roleMap[user.role] || user.role;
   };
@@ -206,8 +250,8 @@ export default function MainLayout() {
             <Activity className="h-10 w-10 text-white" />
             <div className="ml-3">
               <h1 className="text-2xl font-bold text-white">MedFlow</h1>
-              <p className="text-xs text-primary-200">Medical Management System</p>
-              <p className="text-[10px] text-primary-300 mt-0.5">by Aymane Moumni</p>
+              <p className="text-xs text-primary-200">Système de Gestion Médicale</p>
+              <p className="text-[10px] text-primary-300 mt-0.5">par Aymane Moumni</p>
             </div>
           </div>
           <nav className="flex-1 px-3 space-y-1">
@@ -304,7 +348,7 @@ export default function MainLayout() {
               className="mt-3 flex items-center justify-center px-3 py-2 text-sm font-medium text-primary-100 hover:bg-primary-700 hover:text-white rounded-lg transition-all duration-200"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              Déconnexion
             </button>
           </div>
         </div>
@@ -410,7 +454,7 @@ export default function MainLayout() {
               className="flex items-center justify-center px-3 py-2 text-sm font-medium text-primary-100 hover:bg-primary-700 hover:text-white rounded-lg transition-all duration-200"
             >
               <LogOut className="h-4 w-4 mr-2" />
-              Logout
+              Déconnexion
             </button>
           </div>
         </div>
@@ -435,10 +479,34 @@ export default function MainLayout() {
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex-1 px-4 flex justify-between items-center">
-            <div className="flex-1 flex max-w-xl">
-              <PatientSelector mode="search" className="w-full" />
+            <div className="flex items-center gap-3">
+              {/* Home Dashboard Button */}
+              <button
+                onClick={() => navigate('/home')}
+                className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all shadow-sm hover:shadow-md"
+                title="Accueil - Menu principal (H)"
+              >
+                <LayoutGrid className="h-5 w-5" />
+                <span className="hidden sm:inline font-medium">Accueil</span>
+              </button>
+              <div className="flex-1 max-w-xl">
+                <PatientSelector mode="search" className="w-full" />
+              </div>
             </div>
             <div className="ml-4 flex items-center md:ml-6 space-x-3">
+              <ClinicSelector />
+              <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+              {/* Prepare Offline Button */}
+              <button
+                onClick={() => setShowPrepareOffline(true)}
+                className="p-2 text-gray-500 hover:text-primary-600 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Préparer pour le mode hors ligne"
+              >
+                <Download className="h-5 w-5" />
+              </button>
+              <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
+              <SyncStatusIndicator onOpenDetails={openSyncProgress} />
+              <div className="h-6 w-px bg-gray-200 hidden sm:block"></div>
               <OfflineIndicator />
               <div className="h-6 w-px bg-gray-200"></div>
               <NotificationBell />
@@ -454,7 +522,7 @@ export default function MainLayout() {
                 <button
                   onClick={handleLogout}
                   className="p-2 text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                  title="Logout"
+                  title="Déconnexion"
                 >
                   <LogOut className="h-5 w-5" />
                 </button>
@@ -482,8 +550,20 @@ export default function MainLayout() {
         onClose={() => setShowGlobalSearch(false)}
       />
 
-      {/* Quick Actions FAB */}
-      <QuickActionsFAB />
+      {/* Session Timeout Warning */}
+      <SessionTimeoutWarning />
+
+      {/* Sync Progress Modal */}
+      <SyncProgressModal
+        isOpen={showSyncProgress}
+        onClose={closeSyncProgress}
+      />
+
+      {/* Prepare Offline Modal */}
+      <PrepareOfflineModal
+        isOpen={showPrepareOffline}
+        onClose={() => setShowPrepareOffline(false)}
+      />
     </div>
   );
 }

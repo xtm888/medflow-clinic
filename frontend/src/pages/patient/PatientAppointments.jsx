@@ -7,6 +7,7 @@ import appointmentService from '../../services/appointmentService';
 import authService from '../../services/authService';
 import { toast } from 'react-toastify';
 import AppointmentBookingForm from '../../components/AppointmentBookingForm';
+import ConfirmationModal from '../../components/ConfirmationModal';
 
 export default function PatientAppointments() {
   
@@ -14,6 +15,15 @@ export default function PatientAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showBookingModal, setShowBookingModal] = useState(false);
+
+  // Confirmation modal state
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'warning',
+    onConfirm: null
+  });
 
   // Fetch current user and appointments
   useEffect(() => {
@@ -34,7 +44,7 @@ export default function PatientAppointments() {
           setAppointments(aptResponse.data || []);
         }
       } catch (err) {
-        toast.error('Failed to load patient data');
+        toast.error('Échec du chargement des données patient');
       } finally {
         setLoading(false);
       }
@@ -63,7 +73,7 @@ export default function PatientAppointments() {
   // Handle appointment booking
   const handleBookingSubmit = async (formData) => {
     if (!currentPatient) {
-      toast.error('Patient information not loaded');
+      toast.error('Informations patient non chargées');
       throw new Error('Patient information not loaded');
     }
 
@@ -83,7 +93,7 @@ export default function PatientAppointments() {
 
       await appointmentService.createAppointment(appointmentData);
 
-      toast.success('Appointment request submitted successfully!');
+      toast.success('Demande de rendez-vous soumise avec succès !');
 
       // Refresh appointments list
       const aptResponse = await appointmentService.getAppointments({
@@ -92,34 +102,38 @@ export default function PatientAppointments() {
       setAppointments(aptResponse.data || []);
 
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to book appointment');
+      toast.error(err.response?.data?.error || 'Échec de la réservation du rendez-vous');
       throw err; // Re-throw so the component can handle it
     }
   };
 
   // Handle cancel appointment
-  const handleCancelAppointment = async (appointmentId) => {
-    if (!window.confirm('Êtes-vous sûr de vouloir annuler ce rendez-vous?')) {
-      return;
-    }
+  const handleCancelAppointment = (appointmentId) => {
+    setConfirmModal({
+      isOpen: true,
+      title: 'Annuler ce rendez-vous?',
+      message: 'Êtes-vous sûr de vouloir annuler ce rendez-vous? Vous recevrez un email de confirmation.',
+      type: 'danger',
+      onConfirm: async () => {
+        try {
+          await appointmentService.cancelAppointment(appointmentId, {
+            reason: 'Annulé par le patient',
+            cancelledBy: currentPatient._id
+          });
 
-    try {
-      await appointmentService.cancelAppointment(appointmentId, {
-        reason: 'Cancelled by patient',
-        cancelledBy: currentPatient._id
-      });
+          toast.success('Rendez-vous annulé avec succès');
 
-      toast.success('Appointment cancelled successfully');
+          // Refresh appointments
+          const aptResponse = await appointmentService.getAppointments({
+            patient: currentPatient._id
+          });
+          setAppointments(aptResponse.data || []);
 
-      // Refresh appointments
-      const aptResponse = await appointmentService.getAppointments({
-        patient: currentPatient._id
-      });
-      setAppointments(aptResponse.data || []);
-
-    } catch (err) {
-      toast.error(err.response?.data?.error || 'Failed to cancel appointment');
-    }
+        } catch (err) {
+          toast.error(err.response?.data?.error || 'Échec de l\'annulation du rendez-vous');
+        }
+      }
+    });
   };
 
   if (loading) {
@@ -127,7 +141,7 @@ export default function PatientAppointments() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading appointments...</p>
+          <p className="mt-4 text-gray-600">Chargement des rendez-vous...</p>
         </div>
       </div>
     );
@@ -231,6 +245,16 @@ export default function PatientAppointments() {
         onSubmit={handleBookingSubmit}
         mode="patient"
         patientId={currentPatient?._id}
+      />
+
+      {/* Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        onConfirm={confirmModal.onConfirm}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        type={confirmModal.type}
       />
     </div>
   );

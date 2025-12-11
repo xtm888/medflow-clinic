@@ -270,6 +270,25 @@ const patientSlice = createSlice({
         state.selectedPatientId = null;
       }
     },
+    // CRITICAL: Reset patient state on clinic switch to prevent data leakage
+    resetPatientState: (state) => {
+      state.patients = [];
+      state.currentPatient = null;
+      state.searchResults = [];
+      state.recentPatients = [];
+      state.totalCount = 0;
+      state.currentPage = 1;
+      state.isLoading = false;
+      state.isSearching = false;
+      state.error = null;
+      state.selectedPatientId = null;
+      state.patientHistory = [];
+      state.patientDocuments = [];
+      state.patientAppointments = [];
+      state.patientPrescriptions = [];
+      state.patientVisits = [];
+      state.patientBilling = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -498,6 +517,7 @@ export const {
   clearSearchResults,
   updatePatientInList,
   removePatientFromList,
+  resetPatientState,
 } = patientSlice.actions;
 
 // Selectors

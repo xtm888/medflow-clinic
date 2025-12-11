@@ -26,7 +26,7 @@ export default function Login() {
 
     // Basic validation
     if (!formData.email || !formData.password) {
-      setLocalError('Please enter both email and password');
+      setLocalError('Veuillez entrer votre email et mot de passe');
       return;
     }
 
@@ -36,26 +36,29 @@ export default function Login() {
     const result = await login(formData);
 
     if (result.success) {
-      navigate('/dashboard');
+      navigate('/home');
     } else {
-      setLocalError(result.error || 'Login failed. Please try again.');
+      setLocalError(result.error || 'Échec de connexion. Veuillez réessayer.');
     }
 
     setIsLoading(false);
   };
 
-  // Demo credentials for different roles
+  // Identifiants de démonstration pour différents rôles
+  // Note: Passwords removed for security - this is for demo display only
   const demoCredentials = [
-    { role: 'Admin', email: 'admin@medflow.com', password: 'Admin123!' },
-    { role: 'Doctor', email: 'doctor@medflow.com', password: 'Admin123!' },
-    { role: 'Nurse', email: 'nurse@medflow.com', password: 'Admin123!' },
-    { role: 'Receptionist', email: 'reception@medflow.com', password: 'Admin123!' }
+    { role: 'Administrateur', email: 'admin@medflow.com', name: 'Admin Système' },
+    { role: 'Médecin', email: 'doctor@medflow.com', name: 'Dr. Mukendi Kabongo' },
+    { role: 'Ophtalmologue', email: 'ophthalmologist@medflow.com', name: 'Dr. Ngalula Tshimanga' },
+    { role: 'Infirmier(ère)', email: 'nurse@medflow.com', name: 'Mwanza Kalombo' },
+    { role: 'Pharmacien(ne)', email: 'pharmacist@medflow.com', name: 'Tshala Mbuyi' },
+    { role: 'Réceptionniste', email: 'reception@medflow.com', name: 'Kasongo Ilunga' }
   ];
 
   const fillDemoCredentials = (creds) => {
     setFormData({
       email: creds.email,
-      password: creds.password
+      password: '' // Password must be entered manually for security
     });
   };
 
@@ -70,10 +73,10 @@ export default function Login() {
             </div>
           </div>
           <h2 className="mt-6 text-3xl font-bold text-gray-900">
-            Welcome to MedFlow
+            Bienvenue sur MedFlow
           </h2>
           <p className="mt-2 text-sm text-gray-600">
-            Medical Management System
+            Système de Gestion Médicale
           </p>
         </div>
 
@@ -91,7 +94,7 @@ export default function Login() {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+                Adresse Email
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -106,7 +109,7 @@ export default function Login() {
                   value={formData.email}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your email"
+                  placeholder="Entrez votre email"
                 />
               </div>
             </div>
@@ -114,7 +117,7 @@ export default function Login() {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Mot de passe
               </label>
               <div className="mt-1 relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -129,7 +132,7 @@ export default function Login() {
                   value={formData.password}
                   onChange={handleChange}
                   className="appearance-none block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Enter your password"
+                  placeholder="Entrez votre mot de passe"
                 />
                 <button
                   type="button"
@@ -155,13 +158,13 @@ export default function Login() {
                   className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                 />
                 <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
+                  Se souvenir de moi
                 </label>
               </div>
 
               <div className="text-sm">
                 <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
-                  Forgot your password?
+                  Mot de passe oublié ?
                 </Link>
               </div>
             </div>
@@ -173,7 +176,7 @@ export default function Login() {
                 disabled={isLoading}
                 className="w-full flex justify-center py-2 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isLoading ? 'Signing in...' : 'Sign in'}
+                {isLoading ? 'Connexion...' : 'Se connecter'}
               </button>
             </div>
           </form>
@@ -185,7 +188,7 @@ export default function Login() {
                 <div className="w-full border-t border-gray-300" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-white text-gray-500">Demo Credentials</span>
+                <span className="px-2 bg-white text-gray-500">Identifiants de démonstration</span>
               </div>
             </div>
 
@@ -195,14 +198,16 @@ export default function Login() {
                   key={cred.role}
                   type="button"
                   onClick={() => fillDemoCredentials(cred)}
-                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  title={`${cred.name} - ${cred.email}`}
+                  className="px-3 py-2 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-colors text-left"
                 >
-                  {cred.role}
+                  <div className="font-semibold">{cred.role}</div>
+                  <div className="text-[10px] text-gray-500 mt-0.5 truncate">{cred.name}</div>
                 </button>
               ))}
             </div>
-            <p className="mt-2 text-xs text-center text-gray-500">
-              Click any role to auto-fill credentials
+            <p className="mt-3 text-xs text-center text-gray-500">
+              Cliquez sur un rôle pour remplir l'email
             </p>
           </div>
         </div>

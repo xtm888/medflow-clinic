@@ -1,19 +1,270 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Glasses, ShoppingCart, ArrowLeft, Save, Plus, Trash2,
-  Eye, CheckCircle, AlertCircle, Loader2
+  Eye, CheckCircle, AlertCircle, Loader2, Search, Package,
+  AlertTriangle, X, Building2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import ophthalmologyService from '../../services/ophthalmologyService';
 import glassesOrderService from '../../services/glassesOrderService';
 import { toast } from 'react-toastify';
+import ApprovalWarningBanner, { useApprovalWarnings } from '../../components/ApprovalWarningBanner';
+
+// Frame Selector Component
+const FrameSelector = ({ selectedFrame, onSelect, onClear }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const searchFrames = useCallback(async (query) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearching(true);
+      const response = await glassesOrderService.searchFrames(query);
+      setSearchResults(response.data || []);
+      setShowDropdown(true);
+    } catch (err) {
+      console.error('Error searching frames:', err);
+    } finally {
+      setSearching(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (searchQuery) {
+        searchFrames(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, searchFrames]);
+
+  const handleSelect = (frame) => {
+    onSelect(frame);
+    setSearchQuery('');
+    setShowDropdown(false);
+  };
+
+  if (selectedFrame) {
+    return (
+      <div className="border border-green-300 bg-green-50 rounded-lg p-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-green-800">
+              {selectedFrame.brand} {selectedFrame.model}
+            </p>
+            <p className="text-sm text-green-600">
+              {selectedFrame.color} • {selectedFrame.size || 'Taille standard'}
+            </p>
+            <p className="text-sm text-gray-600 mt-1">
+              SKU: {selectedFrame.sku} •
+              <span className={selectedFrame.available > 0 ? 'text-green-600' : 'text-red-600'}>
+                {selectedFrame.available} en stock
+              </span>
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="text-lg font-bold text-green-800">
+              {new Intl.NumberFormat('fr-CD').format(selectedFrame.price)} CDF
+            </p>
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-sm text-red-600 hover:text-red-800 mt-1"
+            >
+              Changer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Rechercher une monture (marque, modèle, SKU)..."
+          className="input pl-10"
+          onFocus={() => searchQuery && setShowDropdown(true)}
+        />
+        {searching && (
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+        )}
+      </div>
+
+      {showDropdown && searchResults.length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-auto">
+          {searchResults.map((frame) => (
+            <button
+              key={frame.id}
+              type="button"
+              onClick={() => handleSelect(frame)}
+              className="w-full px-4 py-3 text-left hover:bg-gray-50 border-b last:border-b-0"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-medium">{frame.brand} {frame.model}</p>
+                  <p className="text-sm text-gray-500">{frame.color} • {frame.category}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">{new Intl.NumberFormat('fr-CD').format(frame.price)} CDF</p>
+                  <p className={`text-xs ${frame.available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {frame.available > 0 ? `${frame.available} en stock` : 'Rupture'}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {showDropdown && searchResults.length === 0 && searchQuery.length >= 2 && !searching && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4 text-center text-gray-500">
+          Aucune monture trouvée
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Contact Lens Selector Component
+const ContactLensSelector = ({ eye, selectedLens, onSelect, onClear, prescription }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [searching, setSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const searchLenses = useCallback(async (query) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      return;
+    }
+
+    try {
+      setSearching(true);
+      const response = await glassesOrderService.searchContactLenses({
+        query,
+        power: prescription?.sphere
+      });
+      setSearchResults(response.data || []);
+      setShowDropdown(true);
+    } catch (err) {
+      console.error('Error searching lenses:', err);
+    } finally {
+      setSearching(false);
+    }
+  }, [prescription]);
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      if (searchQuery) {
+        searchLenses(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(debounce);
+  }, [searchQuery, searchLenses]);
+
+  const handleSelect = (lens) => {
+    onSelect(lens);
+    setSearchQuery('');
+    setShowDropdown(false);
+  };
+
+  if (selectedLens) {
+    return (
+      <div className="border border-blue-300 bg-blue-50 rounded-lg p-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-semibold text-blue-800">
+              {selectedLens.brand} {selectedLens.productLine}
+            </p>
+            <p className="text-xs text-blue-600">
+              BC: {selectedLens.parameters?.baseCurve} • DIA: {selectedLens.parameters?.diameter}
+            </p>
+            <p className="text-xs text-gray-600">
+              {selectedLens.available} boîtes en stock
+            </p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-blue-800">
+              {new Intl.NumberFormat('fr-CD').format(selectedLens.price)} CDF
+            </p>
+            <button
+              type="button"
+              onClick={onClear}
+              className="text-xs text-red-600 hover:text-red-800"
+            >
+              Changer
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={`Rechercher lentille ${eye}...`}
+          className="input pl-10 text-sm"
+          onFocus={() => searchQuery && setShowDropdown(true)}
+        />
+        {searching && (
+          <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-gray-400" />
+        )}
+      </div>
+
+      {showDropdown && searchResults.length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-auto">
+          {searchResults.map((lens) => (
+            <button
+              key={lens.id}
+              type="button"
+              onClick={() => handleSelect(lens)}
+              className="w-full px-3 py-2 text-left hover:bg-gray-50 border-b last:border-b-0 text-sm"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <p className="font-medium">{lens.brand} {lens.productLine}</p>
+                  <p className="text-xs text-gray-500">
+                    {lens.wearSchedule} • BC {lens.parameters?.baseCurve}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold">{new Intl.NumberFormat('fr-CD').format(lens.price)} CDF</p>
+                  <p className={`text-xs ${lens.available > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {lens.available > 0 ? `${lens.available} boîtes` : 'Rupture'}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function GlassesOrder() {
   const { examId } = useParams();
   const navigate = useNavigate();
-  
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -25,17 +276,87 @@ export default function GlassesOrder() {
   const [lensType, setLensType] = useState('single-vision-distance');
   const [lensMaterial, setLensMaterial] = useState('cr39');
   const [coatings, setCoatings] = useState([]);
-  const [frame, setFrame] = useState({ brand: '', model: '', color: '' });
-  const [contactLenses, setContactLenses] = useState({
-    od: { brand: '', baseCurve: '', diameter: '' },
-    os: { brand: '', baseCurve: '', diameter: '' },
-    wearSchedule: 'monthly',
-    boxQuantity: { od: 1, os: 1 }
-  });
+
+  // Inventory selection state
+  const [selectedFrame, setSelectedFrame] = useState(null);
+  const [selectedLensOd, setSelectedLensOd] = useState(null);
+  const [selectedLensOs, setSelectedLensOs] = useState(null);
+  const [contactLensQuantity, setContactLensQuantity] = useState({ od: 1, os: 1 });
+
   const [items, setItems] = useState([]);
   const [notes, setNotes] = useState({ clinical: '', production: '' });
   const [priority, setPriority] = useState('normal');
   const [deliveryMethod, setDeliveryMethod] = useState('pickup');
+
+  // Approval warnings hook
+  const { warnings, company, loading: warningsLoading, checkWarnings, hasBlockingWarnings } = useApprovalWarnings();
+
+  // Calculate convention coverage for optical
+  const conventionCoverage = useMemo(() => {
+    if (!company) return null;
+
+    // Find optical category settings
+    const opticalConfig = company.coveredCategories?.find(c => c.category === 'optical');
+
+    let coveragePercentage = 0;
+    let opticalNotCovered = false;
+
+    if (opticalConfig) {
+      if (opticalConfig.notCovered) {
+        opticalNotCovered = true;
+        coveragePercentage = 0;
+      } else {
+        coveragePercentage = opticalConfig.coveragePercentage ?? company.defaultCoverage?.percentage ?? 100;
+      }
+    } else {
+      // No specific optical config - use company default
+      coveragePercentage = company.defaultCoverage?.percentage ?? 100;
+    }
+
+    const total = calculateTotal();
+    const companyPays = Math.round(total * coveragePercentage / 100);
+    const patientPays = total - companyPays;
+
+    return {
+      hasConvention: true,
+      companyName: company.name,
+      coveragePercentage,
+      opticalNotCovered,
+      companyPays,
+      patientPays
+    };
+  }, [company, selectedFrame, selectedLensOd, selectedLensOs, contactLensQuantity, coatings, items]);
+
+  // Build act codes for approval check based on order type and selections
+  const opticalActCodes = useMemo(() => {
+    const codes = [];
+
+    // Add appropriate codes based on order type
+    if (orderType === 'glasses' || orderType === 'both') {
+      codes.push('OPT-LUNETTES'); // Generic glasses code
+      if (lensType === 'progressive') codes.push('OPT-PROGRESSIFS');
+      if (lensType === 'bifocal') codes.push('OPT-BIFOCAUX');
+      if (coatings.includes('photochromic')) codes.push('OPT-PHOTOCHROMIQUE');
+    }
+
+    if (orderType === 'contact-lenses' || orderType === 'both') {
+      codes.push('OPT-LENTILLES'); // Generic contact lens code
+    }
+
+    // Add frame code if selected
+    if (selectedFrame?.sku) {
+      codes.push(selectedFrame.sku);
+    }
+
+    return codes;
+  }, [orderType, lensType, coatings, selectedFrame]);
+
+  // Check approval warnings when patient or order changes
+  useEffect(() => {
+    if (patient?._id && opticalActCodes.length > 0) {
+      checkWarnings(patient._id, opticalActCodes);
+    }
+  }, [patient?._id, opticalActCodes.length]);
 
   // Product options
   const lensTypes = [
@@ -57,13 +378,13 @@ export default function GlassesOrder() {
   ];
 
   const coatingOptions = [
-    { value: 'anti-reflective', label: 'Anti-reflet', price: 25 },
-    { value: 'blue-light', label: 'Filtre lumière bleue', price: 30 },
-    { value: 'photochromic', label: 'Photochromique', price: 50 },
-    { value: 'polarized', label: 'Polarisé', price: 45 },
-    { value: 'scratch-resistant', label: 'Anti-rayures', price: 15 },
-    { value: 'uv-protection', label: 'Protection UV', price: 10 },
-    { value: 'hydrophobic', label: 'Hydrophobe', price: 20 }
+    { value: 'anti-reflective', label: 'Anti-reflet', price: 25000 },
+    { value: 'blue-light', label: 'Filtre lumière bleue', price: 30000 },
+    { value: 'photochromic', label: 'Photochromique', price: 50000 },
+    { value: 'polarized', label: 'Polarisé', price: 45000 },
+    { value: 'scratch-resistant', label: 'Anti-rayures', price: 15000 },
+    { value: 'uv-protection', label: 'Protection UV', price: 10000 },
+    { value: 'hydrophobic', label: 'Hydrophobe', price: 20000 }
   ];
 
   useEffect(() => {
@@ -84,9 +405,9 @@ export default function GlassesOrder() {
           description: 'Verres correcteurs',
           category: 'lens',
           quantity: 2,
-          unitPrice: 50,
+          unitPrice: 50000,
           discount: 0,
-          total: 100
+          total: 100000
         }
       ]);
     } catch (err) {
@@ -140,12 +461,28 @@ export default function GlassesOrder() {
   };
 
   const calculateTotal = () => {
-    const itemsTotal = items.reduce((sum, item) => sum + (item.total || 0), 0);
-    const coatingsTotal = coatings.reduce((sum, c) => {
+    let total = items.reduce((sum, item) => sum + (item.total || 0), 0);
+
+    // Add coatings
+    total += coatings.reduce((sum, c) => {
       const coating = coatingOptions.find(opt => opt.value === c);
       return sum + (coating?.price || 0);
     }, 0);
-    return itemsTotal + coatingsTotal;
+
+    // Add frame from inventory
+    if (selectedFrame) {
+      total += selectedFrame.price || 0;
+    }
+
+    // Add contact lenses from inventory
+    if (selectedLensOd) {
+      total += (selectedLensOd.price || 0) * (contactLensQuantity.od || 1);
+    }
+    if (selectedLensOs) {
+      total += (selectedLensOs.price || 0) * (contactLensQuantity.os || 1);
+    }
+
+    return total;
   };
 
   const handleSubmit = async (e) => {
@@ -153,6 +490,12 @@ export default function GlassesOrder() {
 
     if (!exam) {
       toast.error('Données d\'examen manquantes');
+      return;
+    }
+
+    // Validate inventory selection
+    if (orderType !== 'contact-lenses' && selectedFrame && selectedFrame.available < 1) {
+      toast.error('La monture sélectionnée n\'est plus en stock');
       return;
     }
 
@@ -175,6 +518,43 @@ export default function GlassesOrder() {
         }
       });
 
+      // Add frame item if selected from inventory
+      if (selectedFrame) {
+        allItems.push({
+          description: `Monture ${selectedFrame.brand} ${selectedFrame.model} - ${selectedFrame.color}`,
+          category: 'frame',
+          quantity: 1,
+          unitPrice: selectedFrame.price,
+          discount: 0,
+          total: selectedFrame.price,
+          inventoryRef: selectedFrame.id
+        });
+      }
+
+      // Add contact lens items if selected from inventory
+      if (selectedLensOd) {
+        allItems.push({
+          description: `Lentilles OD - ${selectedLensOd.brand} ${selectedLensOd.productLine}`,
+          category: 'contact-lens',
+          quantity: contactLensQuantity.od,
+          unitPrice: selectedLensOd.price,
+          discount: 0,
+          total: selectedLensOd.price * contactLensQuantity.od,
+          inventoryRef: selectedLensOd.id
+        });
+      }
+      if (selectedLensOs) {
+        allItems.push({
+          description: `Lentilles OS - ${selectedLensOs.brand} ${selectedLensOs.productLine}`,
+          category: 'contact-lens',
+          quantity: contactLensQuantity.os,
+          unitPrice: selectedLensOs.price,
+          discount: 0,
+          total: selectedLensOs.price * contactLensQuantity.os,
+          inventoryRef: selectedLensOs.id
+        });
+      }
+
       const orderData = {
         examId,
         orderType,
@@ -182,9 +562,41 @@ export default function GlassesOrder() {
           lensType,
           lensMaterial,
           coatings,
-          frame
+          frame: selectedFrame ? {
+            brand: selectedFrame.brand,
+            model: selectedFrame.model,
+            color: selectedFrame.color,
+            size: selectedFrame.size,
+            inventoryItem: selectedFrame.id,
+            sku: selectedFrame.sku,
+            sellingPrice: selectedFrame.price,
+            costPrice: selectedFrame.costPrice
+          } : undefined
         } : undefined,
-        contactLenses: orderType !== 'glasses' ? contactLenses : undefined,
+        contactLenses: orderType !== 'glasses' ? {
+          od: selectedLensOd ? {
+            brand: selectedLensOd.brand,
+            productLine: selectedLensOd.productLine,
+            baseCurve: selectedLensOd.parameters?.baseCurve,
+            diameter: selectedLensOd.parameters?.diameter,
+            power: exam.finalPrescription?.od?.sphere,
+            inventoryItem: selectedLensOd.id,
+            quantity: contactLensQuantity.od,
+            sellingPrice: selectedLensOd.price,
+            costPrice: selectedLensOd.costPrice
+          } : undefined,
+          os: selectedLensOs ? {
+            brand: selectedLensOs.brand,
+            productLine: selectedLensOs.productLine,
+            baseCurve: selectedLensOs.parameters?.baseCurve,
+            diameter: selectedLensOs.parameters?.diameter,
+            power: exam.finalPrescription?.os?.sphere,
+            inventoryItem: selectedLensOs.id,
+            quantity: contactLensQuantity.os,
+            sellingPrice: selectedLensOs.price,
+            costPrice: selectedLensOs.costPrice
+          } : undefined
+        } : undefined,
         items: allItems,
         notes,
         priority,
@@ -259,6 +671,17 @@ export default function GlassesOrder() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Approval Warnings Banner */}
+        {(warnings.blocking.length > 0 || warnings.warning.length > 0 || warnings.info.length > 0) && (
+          <ApprovalWarningBanner
+            warnings={warnings}
+            company={company}
+            patient={patient}
+            showRequestButton={true}
+            compact={false}
+          />
+        )}
+
         {/* Prescription Summary */}
         <div className="card">
           <h2 className="text-lg font-semibold mb-4 flex items-center">
@@ -386,41 +809,26 @@ export default function GlassesOrder() {
                       />
                       <div>
                         <span className="text-sm">{coating.label}</span>
-                        <span className="text-xs text-gray-500 block">${coating.price}</span>
+                        <span className="text-xs text-gray-500 block">
+                          {new Intl.NumberFormat('fr-CD').format(coating.price)} CDF
+                        </span>
                       </div>
                     </label>
                   ))}
                 </div>
               </div>
 
-              {/* Frame */}
+              {/* Frame Selection from Inventory */}
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Monture (optionnel)
+                  <Package className="h-4 w-4 inline mr-1" />
+                  Monture (sélection du stock)
                 </label>
-                <div className="grid grid-cols-3 gap-3">
-                  <input
-                    type="text"
-                    placeholder="Marque"
-                    value={frame.brand}
-                    onChange={(e) => setFrame({ ...frame, brand: e.target.value })}
-                    className="input"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Modèle"
-                    value={frame.model}
-                    onChange={(e) => setFrame({ ...frame, model: e.target.value })}
-                    className="input"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Couleur"
-                    value={frame.color}
-                    onChange={(e) => setFrame({ ...frame, color: e.target.value })}
-                    className="input"
-                  />
-                </div>
+                <FrameSelector
+                  selectedFrame={selectedFrame}
+                  onSelect={setSelectedFrame}
+                  onClear={() => setSelectedFrame(null)}
+                />
               </div>
             </div>
           </div>
@@ -435,96 +843,57 @@ export default function GlassesOrder() {
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">OD (Droit)</h3>
                 <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Marque"
-                    value={contactLenses.od.brand}
-                    onChange={(e) => setContactLenses({
-                      ...contactLenses,
-                      od: { ...contactLenses.od, brand: e.target.value }
-                    })}
-                    className="input"
+                  <ContactLensSelector
+                    eye="OD"
+                    selectedLens={selectedLensOd}
+                    onSelect={setSelectedLensOd}
+                    onClear={() => setSelectedLensOd(null)}
+                    prescription={exam.finalPrescription?.od}
                   />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="BC"
-                      value={contactLenses.od.baseCurve}
-                      onChange={(e) => setContactLenses({
-                        ...contactLenses,
-                        od: { ...contactLenses.od, baseCurve: e.target.value }
-                      })}
-                      className="input"
-                    />
-                    <input
-                      type="text"
-                      placeholder="DIA"
-                      value={contactLenses.od.diameter}
-                      onChange={(e) => setContactLenses({
-                        ...contactLenses,
-                        od: { ...contactLenses.od, diameter: e.target.value }
-                      })}
-                      className="input"
-                    />
-                  </div>
+                  {selectedLensOd && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600">Quantité (boîtes):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={contactLensQuantity.od}
+                        onChange={(e) => setContactLensQuantity({
+                          ...contactLensQuantity,
+                          od: parseInt(e.target.value) || 1
+                        })}
+                        className="input w-20"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 
               <div>
                 <h3 className="text-sm font-medium text-gray-700 mb-3">OS (Gauche)</h3>
                 <div className="space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Marque"
-                    value={contactLenses.os.brand}
-                    onChange={(e) => setContactLenses({
-                      ...contactLenses,
-                      os: { ...contactLenses.os, brand: e.target.value }
-                    })}
-                    className="input"
+                  <ContactLensSelector
+                    eye="OS"
+                    selectedLens={selectedLensOs}
+                    onSelect={setSelectedLensOs}
+                    onClear={() => setSelectedLensOs(null)}
+                    prescription={exam.finalPrescription?.os}
                   />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="text"
-                      placeholder="BC"
-                      value={contactLenses.os.baseCurve}
-                      onChange={(e) => setContactLenses({
-                        ...contactLenses,
-                        os: { ...contactLenses.os, baseCurve: e.target.value }
-                      })}
-                      className="input"
-                    />
-                    <input
-                      type="text"
-                      placeholder="DIA"
-                      value={contactLenses.os.diameter}
-                      onChange={(e) => setContactLenses({
-                        ...contactLenses,
-                        os: { ...contactLenses.os, diameter: e.target.value }
-                      })}
-                      className="input"
-                    />
-                  </div>
+                  {selectedLensOs && (
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm text-gray-600">Quantité (boîtes):</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={contactLensQuantity.os}
+                        onChange={(e) => setContactLensQuantity({
+                          ...contactLensQuantity,
+                          os: parseInt(e.target.value) || 1
+                        })}
+                        className="input w-20"
+                      />
+                    </div>
+                  )}
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Programme de port
-                </label>
-                <select
-                  value={contactLenses.wearSchedule}
-                  onChange={(e) => setContactLenses({
-                    ...contactLenses,
-                    wearSchedule: e.target.value
-                  })}
-                  className="input"
-                >
-                  <option value="daily">Journalier</option>
-                  <option value="bi-weekly">Bi-mensuel</option>
-                  <option value="monthly">Mensuel</option>
-                  <option value="extended">Port prolongé</option>
-                </select>
               </div>
             </div>
           </div>
@@ -567,11 +936,10 @@ export default function GlassesOrder() {
                   placeholder="Prix"
                   value={item.unitPrice}
                   onChange={(e) => updateItem(index, 'unitPrice', parseFloat(e.target.value) || 0)}
-                  className="input w-24"
-                  step="0.01"
+                  className="input w-28"
                 />
-                <span className="font-semibold w-24 text-right">
-                  ${(item.total || 0).toFixed(2)}
+                <span className="font-semibold w-32 text-right">
+                  {new Intl.NumberFormat('fr-CD').format(item.total || 0)} CDF
                 </span>
                 <button
                   type="button"
@@ -585,24 +953,87 @@ export default function GlassesOrder() {
             ))}
           </div>
 
-          {/* Coatings total */}
-          {coatings.length > 0 && (
-            <div className="mt-4 pt-4 border-t">
-              <p className="text-sm text-gray-600">
-                Traitements sélectionnés: +${coatings.reduce((sum, c) => {
+          {/* Summary */}
+          <div className="mt-4 pt-4 border-t space-y-2">
+            {/* Coatings */}
+            {coatings.length > 0 && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Traitements ({coatings.length}):</span>
+                <span>+{new Intl.NumberFormat('fr-CD').format(coatings.reduce((sum, c) => {
                   const coating = coatingOptions.find(opt => opt.value === c);
                   return sum + (coating?.price || 0);
-                }, 0).toFixed(2)}
-              </p>
-            </div>
-          )}
+                }, 0))} CDF</span>
+              </div>
+            )}
 
-          {/* Total */}
-          <div className="mt-4 pt-4 border-t flex justify-between items-center">
-            <span className="text-lg font-semibold">Total:</span>
-            <span className="text-2xl font-bold text-primary-600">
-              ${calculateTotal().toFixed(2)}
-            </span>
+            {/* Frame from inventory */}
+            {selectedFrame && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Monture ({selectedFrame.brand} {selectedFrame.model}):</span>
+                <span>+{new Intl.NumberFormat('fr-CD').format(selectedFrame.price)} CDF</span>
+              </div>
+            )}
+
+            {/* Contact lenses from inventory */}
+            {selectedLensOd && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Lentilles OD ({contactLensQuantity.od} boîte(s)):</span>
+                <span>+{new Intl.NumberFormat('fr-CD').format(selectedLensOd.price * contactLensQuantity.od)} CDF</span>
+              </div>
+            )}
+            {selectedLensOs && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Lentilles OS ({contactLensQuantity.os} boîte(s)):</span>
+                <span>+{new Intl.NumberFormat('fr-CD').format(selectedLensOs.price * contactLensQuantity.os)} CDF</span>
+              </div>
+            )}
+
+            {/* Total */}
+            <div className="flex justify-between items-center pt-2 border-t">
+              <span className="text-lg font-semibold">Total:</span>
+              <span className="text-2xl font-bold text-primary-600">
+                {new Intl.NumberFormat('fr-CD').format(calculateTotal())} CDF
+              </span>
+            </div>
+
+            {/* Convention Coverage Display */}
+            {conventionCoverage && (
+              <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center mb-2">
+                  <Building2 className="h-4 w-4 text-blue-600 mr-2" />
+                  <span className="font-medium text-blue-800">
+                    Convention: {conventionCoverage.companyName}
+                  </span>
+                </div>
+
+                {conventionCoverage.opticalNotCovered ? (
+                  <div className="text-amber-700 text-sm flex items-center">
+                    <AlertTriangle className="h-4 w-4 mr-1" />
+                    Optique non couvert par cette convention
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-sm text-blue-600 mb-2">
+                      Couverture optique: {conventionCoverage.coveragePercentage}%
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <div className="bg-blue-100 rounded p-2">
+                        <span className="text-blue-600">Part entreprise:</span>
+                        <p className="font-bold text-blue-800">
+                          {new Intl.NumberFormat('fr-CD').format(conventionCoverage.companyPays)} CDF
+                        </p>
+                      </div>
+                      <div className="bg-orange-100 rounded p-2">
+                        <span className="text-orange-600">Vous payez:</span>
+                        <p className="font-bold text-orange-800">
+                          {new Intl.NumberFormat('fr-CD').format(conventionCoverage.patientPays)} CDF
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -696,8 +1127,6 @@ export default function GlassesOrder() {
           </button>
         </div>
       </form>
-
-      <ToastContainer toasts={toasts} removeToast={removeToast} />
     </div>
   );
 }

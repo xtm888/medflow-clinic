@@ -96,7 +96,7 @@ db.once('open', async () => {
         pricing: {
           cost: Math.floor(Math.random() * 3000) + 1000,
           sellingPrice: Math.floor(Math.random() * 5000) + 2000,
-          currency: 'CFA'
+          currency: process.env.BASE_CURRENCY || 'CDF'
         },
         prescription: {
           required: false

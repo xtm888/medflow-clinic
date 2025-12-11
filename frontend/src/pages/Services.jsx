@@ -37,12 +37,26 @@ export default function Services() {
 
       const data = response.data?.data || response.data || [];
 
+      // Category mapping for display
+      const categoryMap = {
+        'consultation': 'Consultation',
+        'examination': 'Examen',
+        'procedure': 'Procédure',
+        'imaging': 'Imagerie',
+        'laboratory': 'Laboratoire',
+        'therapy': 'Thérapie',
+        'surgery': 'Chirurgie',
+        'medication': 'Médicament',
+        'other': 'Autre'
+      };
+
       // Transform to service format
       const serviceList = data.map(item => ({
         id: item._id || item.id,
         name: item.name || item.description || 'Service',
-        category: item.category || item.type || 'Consultation',
+        category: item.displayCategory || categoryMap[item.category] || item.category || 'Consultation',
         price: item.price || item.fee || item.basePrice || 0,
+        currency: item.currency || 'CDF',
         duration: item.duration || item.estimatedDuration || 30,
         department: item.department || item.specialty || 'Général',
         description: item.description || item.notes || '',
@@ -122,10 +136,14 @@ export default function Services() {
   const getCategoryColor = (category) => {
     const colors = {
       'Consultation': 'bg-blue-100 text-blue-800',
+      'Examen': 'bg-indigo-100 text-indigo-800',
       'Imagerie': 'bg-purple-100 text-purple-800',
       'Laboratoire': 'bg-green-100 text-green-800',
       'Procédure': 'bg-orange-100 text-orange-800',
-      'Urgence': 'bg-red-100 text-red-800'
+      'Chirurgie': 'bg-red-100 text-red-800',
+      'Thérapie': 'bg-teal-100 text-teal-800',
+      'Urgence': 'bg-red-100 text-red-800',
+      'Médicament': 'bg-yellow-100 text-yellow-800'
     };
     return colors[category] || 'bg-gray-100 text-gray-800';
   };
@@ -189,7 +207,7 @@ export default function Services() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-green-100">Prix moyen</p>
-              <p className="text-3xl font-bold">${avgPrice}</p>
+              <p className="text-3xl font-bold">{avgPrice} CDF</p>
             </div>
             <DollarSign className="h-10 w-10 text-green-200" />
           </div>
@@ -209,7 +227,7 @@ export default function Services() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-orange-100">Revenu potentiel</p>
-              <p className="text-2xl font-bold">${totalRevenuePotential}</p>
+              <p className="text-2xl font-bold">{totalRevenuePotential} CDF</p>
             </div>
             <DollarSign className="h-10 w-10 text-orange-200" />
           </div>
@@ -236,9 +254,12 @@ export default function Services() {
           >
             <option value="all">Toutes les catégories</option>
             <option value="Consultation">Consultation</option>
+            <option value="Examen">Examen</option>
             <option value="Imagerie">Imagerie</option>
             <option value="Laboratoire">Laboratoire</option>
             <option value="Procédure">Procédure</option>
+            <option value="Chirurgie">Chirurgie</option>
+            <option value="Thérapie">Thérapie</option>
             <option value="Urgence">Urgence</option>
           </select>
         </div>
@@ -289,7 +310,9 @@ export default function Services() {
                     <DollarSign className="h-4 w-4" />
                     <p className="text-xs">Prix</p>
                   </div>
-                  <p className="text-2xl font-bold text-green-600">${service.price.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-green-600">
+                    {service.price.toLocaleString()} {service.currency || 'CDF'}
+                  </p>
                 </div>
 
                 <div>
@@ -358,9 +381,12 @@ export default function Services() {
                     required
                   >
                     <option value="Consultation">Consultation</option>
+                    <option value="Examen">Examen</option>
                     <option value="Imagerie">Imagerie</option>
                     <option value="Laboratoire">Laboratoire</option>
                     <option value="Procédure">Procédure</option>
+                    <option value="Chirurgie">Chirurgie</option>
+                    <option value="Thérapie">Thérapie</option>
                     <option value="Urgence">Urgence</option>
                   </select>
                 </div>

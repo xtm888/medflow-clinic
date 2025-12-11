@@ -29,10 +29,10 @@ export default function PatientLogin() {
         // For now, we'll allow any authenticated user to access patient portal
         navigate('/patient/dashboard');
       } else {
-        setError(result.error || 'Invalid email or password');
+        setError(result.error || 'Email ou mot de passe invalide');
       }
     } catch (err) {
-      setError('An error occurred during login. Please try again.');
+      setError('Une erreur s\'est produite lors de la connexion. Veuillez réessayer.');
     } finally {
       setLoading(false);
     }

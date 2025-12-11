@@ -1,96 +1,205 @@
 import api from './apiConfig';
+import offlineWrapper from './offlineWrapper';
+import { db } from './database';
+
+/**
+ * Appointment Service - Offline-First
+ * Handles all appointment API calls with offline support
+ * Critical operations like check-in work offline
+ */
 
 const appointmentService = {
-  // Get all appointments with filters
+  /**
+   * Get all appointments with filters - WORKS OFFLINE
+   * @param {Object} params - Query parameters
+   * @returns {Promise} Appointments list
+   */
   async getAppointments(params = {}) {
-    try {
-      const response = await api.get('/appointments', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching appointments:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/appointments', { params }),
+      'appointments',
+      params,
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300 // 5 minutes for appointment list
+      }
+    );
   },
 
-  // Get single appointment
+  /**
+   * Get single appointment - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @returns {Promise} Appointment data
+   */
   async getAppointment(id) {
-    try {
-      const response = await api.get(`/appointments/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching appointment:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/appointments/${id}`),
+      'appointments',
+      id,
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Create new appointment
+  /**
+   * Create new appointment - WORKS OFFLINE
+   * @param {Object} appointmentData - Appointment data
+   * @returns {Promise} Created appointment
+   */
   async createAppointment(appointmentData) {
-    try {
-      const response = await api.post('/appointments', appointmentData);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating appointment:', error);
-      throw error;
-    }
+    const localData = {
+      ...appointmentData,
+      _tempId: `temp_${Date.now()}`,
+      status: 'scheduled',
+      createdAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post('/appointments', appointmentData),
+      'CREATE',
+      'appointments',
+      localData
+    );
   },
 
-  // Update appointment
+  /**
+   * Update appointment - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @param {Object} appointmentData - Updated data
+   * @returns {Promise} Updated appointment
+   */
   async updateAppointment(id, appointmentData) {
-    try {
-      const response = await api.put(`/appointments/${id}`, appointmentData);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating appointment:', error);
-      throw error;
-    }
+    const updateData = {
+      ...appointmentData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}`, appointmentData),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Cancel appointment
+  /**
+   * Cancel appointment - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @param {string} reason - Cancellation reason
+   * @returns {Promise} Updated appointment
+   */
   async cancelAppointment(id, reason) {
-    try {
-      const response = await api.put(`/appointments/${id}/cancel`, { reason });
-      return response.data;
-    } catch (error) {
-      console.error('Error cancelling appointment:', error);
-      throw error;
-    }
+    const updateData = {
+      status: 'cancelled',
+      cancellationReason: reason,
+      cancelledAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}/cancel`, { reason }),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Check in appointment
+  /**
+   * Check in appointment - WORKS OFFLINE (CRITICAL)
+   * This must work offline for clinic operations
+   * @param {string} id - Appointment ID
+   * @returns {Promise} Updated appointment
+   */
   async checkInAppointment(id) {
-    try {
-      const response = await api.put(`/appointments/${id}/checkin`);
-      return response.data;
-    } catch (error) {
-      console.error('Error checking in appointment:', error);
-      throw error;
-    }
+    const updateData = {
+      status: 'checked-in',
+      checkInTime: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}/checkin`),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Complete appointment
+  /**
+   * Complete appointment - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @param {Object} outcome - Completion outcome
+   * @returns {Promise} Updated appointment
+   */
   async completeAppointment(id, outcome) {
-    try {
-      const response = await api.put(`/appointments/${id}/complete`, { outcome });
-      return response.data;
-    } catch (error) {
-      console.error('Error completing appointment:', error);
-      throw error;
-    }
+    const updateData = {
+      status: 'completed',
+      outcome,
+      completedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}/complete`, { outcome }),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Get today's appointments
+  /**
+   * Get today's appointments - WORKS OFFLINE
+   * @returns {Promise} Today's appointments
+   */
   async getTodaysAppointments() {
-    try {
-      const response = await api.get('/appointments/today');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching today\'s appointments:', error);
-      throw error;
+    const today = new Date().toISOString().split('T')[0];
+
+    // If offline, filter from local cache
+    if (!navigator.onLine) {
+      try {
+        const appointments = await db.appointments
+          .where('date')
+          .startsWith(today)
+          .toArray();
+
+        return {
+          success: true,
+          data: appointments.sort((a, b) => new Date(a.time) - new Date(b.time)),
+          _fromCache: true
+        };
+      } catch (error) {
+        console.error('[AppointmentService] Offline today fetch failed:', error);
+        return { success: false, data: [], _fromCache: true };
+      }
     }
+
+    return offlineWrapper.get(
+      () => api.get('/appointments/today'),
+      'appointments',
+      { type: 'today', date: today },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 60 // 1 minute for today's appointments
+      }
+    );
   },
 
-  // Get available time slots
+  /**
+   * Get available time slots - ONLINE ONLY
+   * Requires real-time availability check
+   * @param {string} date - Date for slots
+   * @param {string} provider - Provider ID
+   * @param {number} duration - Duration in minutes
+   * @returns {Promise} Available slots
+   */
   async getAvailableSlots(date, provider, duration = 30) {
+    if (!navigator.onLine) {
+      throw new Error('Checking availability requires internet connection. Please try again when online.');
+    }
+
     try {
       const response = await api.get('/appointments/available-slots', {
         params: { date, provider, duration }
@@ -102,67 +211,189 @@ const appointmentService = {
     }
   },
 
-  // Reschedule appointment
+  /**
+   * Reschedule appointment - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @param {Object} data - New schedule data
+   * @returns {Promise} Updated appointment
+   */
   async rescheduleAppointment(id, data) {
-    try {
-      const response = await api.put(`/appointments/${id}/reschedule`, data);
-      return response.data;
-    } catch (error) {
-      console.error('Error rescheduling appointment:', error);
-      throw error;
-    }
+    const updateData = {
+      ...data,
+      status: 'rescheduled',
+      rescheduledAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}/reschedule`, data),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Additional comprehensive appointment methods
-
-  // Get appointments by provider
+  /**
+   * Get appointments by provider - WORKS OFFLINE
+   * @param {string} providerId - Provider ID
+   * @param {Object} params - Query params
+   * @returns {Promise} Provider's appointments
+   */
   async getAppointmentsByProvider(providerId, params = {}) {
-    try {
-      const response = await api.get(`/appointments/provider/${providerId}`, { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching provider appointments:', error);
-      throw error;
+    // If offline, filter from local cache
+    if (!navigator.onLine) {
+      try {
+        const appointments = await db.appointments
+          .where('providerId')
+          .equals(providerId)
+          .toArray();
+
+        return {
+          success: true,
+          data: appointments,
+          _fromCache: true
+        };
+      } catch (error) {
+        console.error('[AppointmentService] Offline provider fetch failed:', error);
+        return { success: false, data: [], _fromCache: true };
+      }
     }
+
+    return offlineWrapper.get(
+      () => api.get(`/appointments/provider/${providerId}`, { params }),
+      'appointments',
+      { type: 'provider', providerId, ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300
+      }
+    );
   },
 
-  // Get appointments by patient
+  /**
+   * Get appointments by patient - WORKS OFFLINE
+   * @param {string} patientId - Patient ID
+   * @param {Object} params - Query params
+   * @returns {Promise} Patient's appointments
+   */
   async getAppointmentsByPatient(patientId, params = {}) {
-    try {
-      const response = await api.get(`/appointments/patient/${patientId}`, { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching patient appointments:', error);
-      throw error;
+    // If offline, filter from local cache
+    if (!navigator.onLine) {
+      try {
+        const appointments = await db.appointments
+          .where('patientId')
+          .equals(patientId)
+          .toArray();
+
+        return {
+          success: true,
+          data: appointments,
+          _fromCache: true
+        };
+      } catch (error) {
+        console.error('[AppointmentService] Offline patient fetch failed:', error);
+        return { success: false, data: [], _fromCache: true };
+      }
     }
+
+    return offlineWrapper.get(
+      () => api.get(`/appointments/patient/${patientId}`, { params }),
+      'appointments',
+      { type: 'patient', patientId, ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300
+      }
+    );
   },
 
-  // Get upcoming appointments
+  /**
+   * Get upcoming appointments - WORKS OFFLINE
+   * @param {number} days - Number of days ahead
+   * @returns {Promise} Upcoming appointments
+   */
   async getUpcomingAppointments(days = 7) {
-    try {
-      const response = await api.get('/appointments/upcoming', {
-        params: { days }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching upcoming appointments:', error);
-      throw error;
+    // If offline, calculate from local cache
+    if (!navigator.onLine) {
+      try {
+        const now = new Date();
+        const endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000);
+        const appointments = await db.appointments.toArray();
+
+        const upcoming = appointments.filter(apt => {
+          const aptDate = new Date(apt.date);
+          return aptDate >= now && aptDate <= endDate && apt.status !== 'cancelled';
+        });
+
+        return {
+          success: true,
+          data: upcoming.sort((a, b) => new Date(a.date) - new Date(b.date)),
+          _fromCache: true
+        };
+      } catch (error) {
+        console.error('[AppointmentService] Offline upcoming fetch failed:', error);
+        return { success: false, data: [], _fromCache: true };
+      }
     }
+
+    return offlineWrapper.get(
+      () => api.get('/appointments/upcoming', { params: { days } }),
+      'appointments',
+      { type: 'upcoming', days },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300
+      }
+    );
   },
 
-  // Get appointment statistics
+  /**
+   * Get appointment statistics - WORKS OFFLINE (computed from cache)
+   * @param {Object} params - Query params
+   * @returns {Promise} Statistics
+   */
   async getAppointmentStatistics(params = {}) {
-    try {
-      const response = await api.get('/appointments/statistics', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching appointment statistics:', error);
-      throw error;
+    if (!navigator.onLine) {
+      try {
+        const appointments = await db.appointments.toArray();
+        const stats = {
+          total: appointments.length,
+          scheduled: appointments.filter(a => a.status === 'scheduled').length,
+          completed: appointments.filter(a => a.status === 'completed').length,
+          cancelled: appointments.filter(a => a.status === 'cancelled').length,
+          noShow: appointments.filter(a => a.status === 'no-show').length,
+          _computed: true
+        };
+
+        return { success: true, data: stats, _fromCache: true };
+      } catch (error) {
+        console.error('[AppointmentService] Offline stats failed:', error);
+        return { success: false, data: {}, _fromCache: true };
+      }
     }
+
+    return offlineWrapper.get(
+      () => api.get('/appointments/statistics', { params }),
+      'appointments',
+      { type: 'statistics', ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Send appointment reminder
+  /**
+   * Send appointment reminder - ONLINE ONLY
+   * @param {string} id - Appointment ID
+   * @param {string} method - Reminder method (email/sms)
+   * @returns {Promise} Send result
+   */
   async sendReminder(id, method = 'email') {
+    if (!navigator.onLine) {
+      throw new Error('Sending reminders requires internet connection.');
+    }
+
     try {
       const response = await api.post(`/appointments/${id}/reminder`, { method });
       return response.data;
@@ -172,74 +403,147 @@ const appointmentService = {
     }
   },
 
-  // Add note to appointment
+  /**
+   * Add note to appointment - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @param {Object} noteData - Note data
+   * @returns {Promise} Added note
+   */
   async addNote(id, noteData) {
-    try {
-      const response = await api.post(`/appointments/${id}/notes`, noteData);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding note to appointment:', error);
-      throw error;
-    }
+    const localData = {
+      ...noteData,
+      appointmentId: id,
+      createdAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post(`/appointments/${id}/notes`, noteData),
+      'CREATE',
+      'appointments',
+      localData,
+      id
+    );
   },
 
-  // Get appointment notes
+  /**
+   * Get appointment notes - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @returns {Promise} Notes
+   */
   async getNotes(id) {
-    try {
-      const response = await api.get(`/appointments/${id}/notes`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching appointment notes:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/appointments/${id}/notes`),
+      'appointments',
+      { type: 'notes', appointmentId: id },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Mark appointment as no-show
+  /**
+   * Mark appointment as no-show - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @returns {Promise} Updated appointment
+   */
   async markNoShow(id) {
-    try {
-      const response = await api.put(`/appointments/${id}/no-show`);
-      return response.data;
-    } catch (error) {
-      console.error('Error marking appointment as no-show:', error);
-      throw error;
-    }
+    const updateData = {
+      status: 'no-show',
+      noShowAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}/no-show`),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Get waiting list
+  /**
+   * Get waiting list - WORKS OFFLINE
+   * @param {Object} params - Query params
+   * @returns {Promise} Waiting list
+   */
   async getWaitingList(params = {}) {
-    try {
-      const response = await api.get('/appointments/waiting-list', { params });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching waiting list:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/appointments/waiting-list', { params }),
+      'appointments',
+      { type: 'waitingList', ...params },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300
+      }
+    );
   },
 
-  // Add to waiting list
+  /**
+   * Add to waiting list - WORKS OFFLINE
+   * @param {Object} data - Waiting list entry data
+   * @returns {Promise} Added entry
+   */
   async addToWaitingList(data) {
-    try {
-      const response = await api.post('/appointments/waiting-list', data);
-      return response.data;
-    } catch (error) {
-      console.error('Error adding to waiting list:', error);
-      throw error;
-    }
+    const localData = {
+      ...data,
+      _tempId: `temp_${Date.now()}`,
+      addedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post('/appointments/waiting-list', data),
+      'CREATE',
+      'appointments',
+      localData
+    );
   },
 
-  // Get appointment types
+  /**
+   * Get appointment types - WORKS OFFLINE
+   * @returns {Promise} Appointment types
+   */
   async getAppointmentTypes() {
-    try {
-      const response = await api.get('/appointments/types');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching appointment types:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/appointments/types'),
+      'appointments',
+      'types',
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 86400 // 24 hours for reference data
+      }
+    );
   },
 
-  // Check for conflicts
+  /**
+   * Check for conflicts - ONLINE ONLY
+   * @param {Object} data - Appointment data to check
+   * @returns {Promise} Conflict check result
+   */
   async checkConflicts(data) {
+    if (!navigator.onLine) {
+      // Basic offline conflict check
+      try {
+        const appointments = await db.appointments.toArray();
+        const conflicts = appointments.filter(apt =>
+          apt.providerId === data.providerId &&
+          apt.date === data.date &&
+          apt.status !== 'cancelled' &&
+          apt._id !== data._id
+        );
+
+        return {
+          success: true,
+          data: { hasConflicts: conflicts.length > 0, conflicts },
+          _fromCache: true,
+          _limitedCheck: true
+        };
+      } catch (error) {
+        console.error('[AppointmentService] Offline conflict check failed:', error);
+        return { success: false, data: { hasConflicts: false, conflicts: [] }, _fromCache: true };
+      }
+    }
+
     try {
       const response = await api.post('/appointments/check-conflicts', data);
       return response.data;
@@ -249,8 +553,17 @@ const appointmentService = {
     }
   },
 
-  // Bulk update appointments
+  /**
+   * Bulk update appointments - ONLINE ONLY
+   * @param {Array} ids - Appointment IDs
+   * @param {Object} updateData - Update data
+   * @returns {Promise} Update result
+   */
   async bulkUpdate(ids, updateData) {
+    if (!navigator.onLine) {
+      throw new Error('Bulk update requires internet connection.');
+    }
+
     try {
       const response = await api.put('/appointments/bulk-update', {
         ids,
@@ -263,54 +576,116 @@ const appointmentService = {
     }
   },
 
-  // Get calendar view
+  /**
+   * Get calendar view - WORKS OFFLINE
+   * @param {string} start - Start date
+   * @param {string} end - End date
+   * @param {string} providerId - Optional provider filter
+   * @returns {Promise} Calendar data
+   */
   async getCalendarView(start, end, providerId = null) {
-    try {
-      const response = await api.get('/appointments/calendar', {
-        params: { start, end, providerId }
-      });
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching calendar view:', error);
-      throw error;
+    // If offline, filter from local cache
+    if (!navigator.onLine) {
+      try {
+        let appointments = await db.appointments.toArray();
+
+        appointments = appointments.filter(apt => {
+          const aptDate = new Date(apt.date);
+          return aptDate >= new Date(start) && aptDate <= new Date(end);
+        });
+
+        if (providerId) {
+          appointments = appointments.filter(apt => apt.providerId === providerId);
+        }
+
+        return {
+          success: true,
+          data: appointments,
+          _fromCache: true
+        };
+      } catch (error) {
+        console.error('[AppointmentService] Offline calendar fetch failed:', error);
+        return { success: false, data: [], _fromCache: true };
+      }
     }
+
+    return offlineWrapper.get(
+      () => api.get('/appointments/calendar', { params: { start, end, providerId } }),
+      'appointments',
+      { type: 'calendar', start, end, providerId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 300
+      }
+    );
   },
 
-  // Get queue status
+  /**
+   * Get queue status - WORKS OFFLINE
+   * @returns {Promise} Queue status
+   */
   async getQueueStatus() {
-    try {
-      const response = await api.get('/appointments/queue');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching queue status:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get('/appointments/queue'),
+      'queue',
+      'status',
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 60
+      }
+    );
   },
 
-  // Update queue position
+  /**
+   * Update queue position - WORKS OFFLINE
+   * @param {string} id - Appointment ID
+   * @param {number} position - New position
+   * @returns {Promise} Updated appointment
+   */
   async updateQueuePosition(id, position) {
-    try {
-      const response = await api.put(`/appointments/${id}/queue-position`, { position });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating queue position:', error);
-      throw error;
-    }
+    const updateData = {
+      queuePosition: position,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/appointments/${id}/queue-position`, { position }),
+      'UPDATE',
+      'appointments',
+      updateData,
+      id
+    );
   },
 
-  // Get recurring appointment series
+  /**
+   * Get recurring appointment series - WORKS OFFLINE
+   * @param {string} seriesId - Series ID
+   * @returns {Promise} Series data
+   */
   async getRecurringSeries(seriesId) {
-    try {
-      const response = await api.get(`/appointments/series/${seriesId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching recurring series:', error);
-      throw error;
-    }
+    return offlineWrapper.get(
+      () => api.get(`/appointments/series/${seriesId}`),
+      'appointments',
+      { type: 'series', seriesId },
+      {
+        transform: (response) => response.data,
+        cacheExpiry: 600
+      }
+    );
   },
 
-  // Create recurring appointments
+  /**
+   * Create recurring appointments - ONLINE ONLY
+   * Complex operation requiring server-side generation
+   * @param {Object} appointmentData - Appointment data
+   * @param {Object} recurrencePattern - Recurrence pattern
+   * @returns {Promise} Created appointments
+   */
   async createRecurring(appointmentData, recurrencePattern) {
+    if (!navigator.onLine) {
+      throw new Error('Creating recurring appointments requires internet connection.');
+    }
+
     try {
       const response = await api.post('/appointments/recurring', {
         ...appointmentData,
@@ -319,6 +694,78 @@ const appointmentService = {
       return response.data;
     } catch (error) {
       console.error('Error creating recurring appointments:', error);
+      throw error;
+    }
+  },
+
+  // ==========================================
+  // OFFLINE HELPER METHODS
+  // ==========================================
+
+  /**
+   * Pre-cache appointments for offline use
+   * @param {Object} params - Cache params (days ahead, etc.)
+   * @returns {Promise} Cache result
+   */
+  async preCacheAppointments(params = { days: 7 }) {
+    if (!navigator.onLine) {
+      console.warn('[AppointmentService] Cannot pre-cache while offline');
+      return { success: false };
+    }
+
+    try {
+      console.log('[AppointmentService] Pre-caching appointments...');
+
+      // Get upcoming appointments
+      const response = await api.get('/appointments/upcoming', { params });
+      const appointments = response.data?.data || [];
+
+      if (appointments.length > 0) {
+        const timestamp = new Date().toISOString();
+        const appointmentsWithSync = appointments.map(apt => ({
+          ...apt,
+          id: apt._id || apt.id,
+          lastSync: timestamp
+        }));
+
+        await db.appointments.bulkPut(appointmentsWithSync);
+        console.log(`[AppointmentService] Pre-cached ${appointments.length} appointments`);
+      }
+
+      return { success: true, cached: appointments.length };
+    } catch (error) {
+      console.error('[AppointmentService] Pre-cache failed:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  /**
+   * Get cached appointment count
+   * @returns {Promise<number>} Count
+   */
+  async getCachedAppointmentCount() {
+    return db.appointments.count();
+  },
+
+  /**
+   * Clear appointment cache
+   * @returns {Promise} Result
+   */
+  async clearAppointmentCache() {
+    return db.appointments.clear();
+  },
+
+  /**
+   * Get list of providers (doctors/ophthalmologists)
+   * Accessible to all staff roles
+   * @returns {Promise} List of providers
+   */
+  async getProviders() {
+    try {
+      const response = await api.get('/appointments/providers');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching providers:', error);
       throw error;
     }
   }

@@ -15,5 +15,6 @@ export { default as useClinicalSession } from './useClinicalSession';
 export {
   default as ophthalmologyWorkflowConfig,
   quickFollowUpWorkflowConfig,
-  refractionOnlyWorkflowConfig
+  refractionOnlyWorkflowConfig,
+  consolidatedDashboardWorkflowConfig
 } from './workflows/ophthalmologyWorkflow';

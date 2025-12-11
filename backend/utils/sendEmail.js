@@ -1,6 +1,34 @@
 const nodemailer = require('nodemailer');
 
+// Email validation regex (RFC 5322 compliant, simplified)
+const EMAIL_REGEX = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+/**
+ * Validate email address format
+ * @param {string} email - Email address to validate
+ * @returns {boolean} - True if valid, false otherwise
+ */
+const isValidEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  if (email.length > 254) return false; // RFC 5321 max length
+  return EMAIL_REGEX.test(email.trim());
+};
+
 const sendEmail = async (options) => {
+  // CRITICAL FIX: Validate email address before attempting to send
+  if (!options.to) {
+    throw new Error('Email recipient (to) is required');
+  }
+
+  // Handle both single email and array of emails
+  const recipients = Array.isArray(options.to) ? options.to : [options.to];
+  const invalidEmails = recipients.filter(email => !isValidEmail(email));
+
+  if (invalidEmails.length > 0) {
+    console.error(`[EMAIL] Invalid email addresses detected: ${invalidEmails.join(', ')}`);
+    throw new Error(`Invalid email address(es): ${invalidEmails.join(', ')}`);
+  }
+
   // Create transporter
   let transporter;
 

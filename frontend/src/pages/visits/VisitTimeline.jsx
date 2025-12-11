@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Calendar, Clock, User, FileText, Activity, ChevronDown, ChevronRight,
   Stethoscope, Pill, Eye, Heart, Brain, Thermometer, AlertCircle
@@ -6,6 +7,7 @@ import {
 import api from '../../services/apiConfig';
 
 export default function VisitTimeline({ patientId }) {
+  const navigate = useNavigate();
   const [timeline, setTimeline] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expandedVisits, setExpandedVisits] = useState({});
@@ -21,8 +23,8 @@ export default function VisitTimeline({ patientId }) {
     try {
       setLoading(true);
       const endpoint = filter === 'all'
-        ? `/api/visits/timeline/${patientId}`
-        : `/api/visits/timeline/${patientId}?type=${filter}`;
+        ? `/visits/timeline/${patientId}`
+        : `/visits/timeline/${patientId}?type=${filter}`;
 
       const response = await api.get(endpoint);
       setTimeline(response.data.data);
@@ -53,10 +55,10 @@ export default function VisitTimeline({ patientId }) {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
+    return new Date(date).toLocaleDateString('fr-FR', {
+      day: 'numeric',
       month: 'short',
-      day: 'numeric'
+      year: 'numeric'
     });
   };
 
@@ -232,11 +234,17 @@ export default function VisitTimeline({ patientId }) {
 
                         {/* Actions */}
                         <div className="mt-4 flex space-x-2">
-                          <button className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition">
-                            View Full Report
+                          <button
+                            onClick={() => navigate(`/visits/${visit._id}`)}
+                            className="px-3 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition"
+                          >
+                            Voir le rapport complet
                           </button>
-                          <button className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition">
-                            View Documents
+                          <button
+                            onClick={() => navigate(`/documents?visitId=${visit._id}`)}
+                            className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-lg hover:bg-gray-200 transition"
+                          >
+                            Voir les documents
                           </button>
                         </div>
                       </div>

@@ -261,12 +261,31 @@ router.post('/prescription',
 // @route   GET /api/uploads/file/:filename
 // @access  Private
 router.get('/file/:filename', asyncHandler(async (req, res) => {
-  const filename = req.params.filename;
+  // SECURITY: Sanitize filename to prevent path traversal attacks
+  const filename = path.basename(req.params.filename);
+
+  // Reject filenames with suspicious patterns
+  if (!filename || filename.includes('..') || filename.includes('\0')) {
+    return res.status(400).json({
+      success: false,
+      error: 'Invalid filename'
+    });
+  }
 
   // Search for file in all upload directories
   let filePath = null;
-  for (const [category, dir] of Object.entries(require('../middleware/fileUpload').uploadDirs)) {
+  const uploadDirs = require('../middleware/fileUpload').uploadDirs;
+
+  for (const [category, dir] of Object.entries(uploadDirs)) {
     const possiblePath = path.join(dir, filename);
+    const resolvedPath = path.resolve(possiblePath);
+    const resolvedDir = path.resolve(dir);
+
+    // SECURITY: Ensure the resolved path is within the upload directory
+    if (!resolvedPath.startsWith(resolvedDir + path.sep)) {
+      continue;
+    }
+
     if (fileUtils.fileExists(possiblePath)) {
       filePath = possiblePath;
       break;
@@ -290,12 +309,31 @@ router.get('/file/:filename', asyncHandler(async (req, res) => {
 router.delete('/file/:filename',
   authorize('admin'),
   asyncHandler(async (req, res) => {
-    const filename = req.params.filename;
+    // SECURITY: Sanitize filename to prevent path traversal attacks
+    const filename = path.basename(req.params.filename);
+
+    // Reject filenames with suspicious patterns
+    if (!filename || filename.includes('..') || filename.includes('\0')) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid filename'
+      });
+    }
 
     // Search for file in all upload directories
     let filePath = null;
-    for (const [category, dir] of Object.entries(require('../middleware/fileUpload').uploadDirs)) {
+    const uploadDirs = require('../middleware/fileUpload').uploadDirs;
+
+    for (const [category, dir] of Object.entries(uploadDirs)) {
       const possiblePath = path.join(dir, filename);
+      const resolvedPath = path.resolve(possiblePath);
+      const resolvedDir = path.resolve(dir);
+
+      // SECURITY: Ensure the resolved path is within the upload directory
+      if (!resolvedPath.startsWith(resolvedDir + path.sep)) {
+        continue;
+      }
+
       if (fileUtils.fileExists(possiblePath)) {
         filePath = possiblePath;
         break;

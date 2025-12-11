@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedFlow - Analyse Complete du Workflow Chirurgie</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      color: #fff;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; }
+
+    h1 {
+      text-align: center;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #94a3b8;
+      margin-bottom: 40px;
+      font-size: 1.1rem;
+    }
+
+    .section {
+      background: rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .section h2 {
+      color: #a855f7;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.5rem;
+    }
+
+    .section h2::before {
+      content: '';
+      width: 4px;
+      height: 24px;
+      background: linear-gradient(180deg, #a855f7, #6366f1);
+      border-radius: 2px;
+    }
+
+    /* Flowchart Styles */
+    .flowchart-container {
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+
+    svg text {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 12px;
+    }
+
+    .node-start { fill: #22c55e; }
+    .node-end { fill: #ef4444; }
+    .node-process { fill: #3b82f6; }
+    .node-decision { fill: #f59e0b; }
+    .node-subprocess { fill: #8b5cf6; }
+    .node-document { fill: #06b6d4; }
+    .node-data { fill: #ec4899; }
+
+    .arrow { stroke: #64748b; stroke-width: 2; fill: none; }
+    .arrow-head { fill: #64748b; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.08);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .stat-card .number {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #a855f7, #6366f1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .stat-card .label {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      margin-top: 8px;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      text-align: left;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    th {
+      background: rgba(168, 85, 247, 0.2);
+      color: #a855f7;
+      font-weight: 600;
+    }
+
+    tr:hover { background: rgba(255,255,255,0.05); }
+
+    /* Status Badges */
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .badge-green { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+    .badge-yellow { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+    .badge-red { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+    .badge-blue { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+    .badge-purple { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+
+    /* Issues List */
+    .issue-card {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-left: 4px solid;
+    }
+
+    .issue-critical { border-left-color: #ef4444; }
+    .issue-warning { border-left-color: #f59e0b; }
+    .issue-info { border-left-color: #3b82f6; }
+    .issue-success { border-left-color: #22c55e; }
+
+    .issue-card h4 {
+      color: #fff;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .issue-card p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
+
+    /* Two Column Layout */
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+
+    /* Legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 20px;
+      padding: 16px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 8px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+
+    /* Timeline */
+    .timeline {
+      position: relative;
+      padding-left: 30px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 10px;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(180deg, #a855f7, #6366f1);
+    }
+
+    .timeline-item {
+      position: relative;
+      margin-bottom: 24px;
+      padding-left: 20px;
+    }
+
+    .timeline-item::before {
+      content: '';
+      position: absolute;
+      left: -24px;
+      top: 4px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #a855f7;
+      border: 2px solid #1a1a2e;
+    }
+
+    .timeline-item h4 {
+      color: #a855f7;
+      margin-bottom: 4px;
+    }
+
+    .timeline-item p {
+      color: #94a3b8;
+      font-size: 0.9rem;
+    }
+
+    code {
+      background: rgba(139, 92, 246, 0.2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Fira Code', monospace;
+      font-size: 0.85rem;
+      color: #c4b5fd;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Module Chirurgie - Analyse Complete</h1>
+    <p class="subtitle">Workflow complet: Consultation &rarr; Facturation &rarr; Paiement &rarr; Programmation &rarr; Chirurgie &rarr; Suivi</p>
+
+    <!-- Stats Overview -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="number">4</div>
+        <div class="label">Modeles Backend</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">35+</div>
+        <div class="label">Endpoints API</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">7</div>
+        <div class="label">Statuts de Cas</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">5</div>
+        <div class="label">Pages Frontend</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">3</div>
+        <div class="label">Phases WHO Checklist</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">3</div>
+        <div class="label">Signatures Consentement</div>
+      </div>
+    </div>
+
+    <!-- Main Workflow Flowchart -->
+    <div class="section">
+      <h2>Workflow Principal - De la Consultation au Suivi</h2>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 1200 1400" width="100%" height="1400">
+          <defs>
+            <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" class="arrow-head"/>
+            </marker>
+            <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.3"/>
+            </filter>
+          </defs>
+
+          <!-- Phase 1: Consultation -->
+          <rect x="20" y="20" width="180" height="30" fill="rgba(168,85,247,0.3)" rx="4"/>
+          <text x="110" y="40" text-anchor="middle" fill="#a855f7" font-weight="bold">PHASE 1: CONSULTATION</text>
+
+          <rect x="60" y="70" width="100" height="40" rx="20" class="node-start" filter="url(#shadow)"/>
+          <text x="110" y="95" text-anchor="middle" fill="white" font-weight="bold">Debut</text>
+
+          <path d="M110,110 L110,140" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="35" y="150" width="150" height="50" rx="8" class="node-process" filter="url(#shadow)"/>
+          <text x="110" y="175" text-anchor="middle" fill="white">Consultation</text>
+          <text x="110" y="190" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Ophtalmologie</text>
+
+          <path d="M110,200 L110,230" class="arrow" marker-end="url(#arrow)"/>
+
+          <polygon points="110,240 170,280 110,320 50,280" class="node-decision" filter="url(#shadow)"/>
+          <text x="110" y="278" text-anchor="middle" fill="white" font-size="11">Chirurgie</text>
+          <text x="110" y="292" text-anchor="middle" fill="white" font-size="11">requise?</text>
+
+          <path d="M170,280 L250,280" class="arrow" marker-end="url(#arrow)"/>
+          <text x="195" y="270" fill="#94a3b8" font-size="10">Non</text>
+
+          <rect x="260" y="260" width="100" height="40" rx="20" class="node-end" filter="url(#shadow)"/>
+          <text x="310" y="285" text-anchor="middle" fill="white">Fin visite</text>
+
+          <path d="M110,320 L110,360" class="arrow" marker-end="url(#arrow)"/>
+          <text x="120" y="340" fill="#22c55e" font-size="10">Oui</text>
+
+          <!-- Phase 2: Facturation -->
+          <rect x="20" y="360" width="180" height="30" fill="rgba(59,130,246,0.3)" rx="4"/>
+          <text x="110" y="380" text-anchor="middle" fill="#3b82f6" font-weight="bold">PHASE 2: FACTURATION</text>
+
+          <rect x="35" y="410" width="150" height="50" rx="8" class="node-document" filter="url(#shadow)"/>
+          <text x="110" y="435" text-anchor="middle" fill="white">Creation Facture</text>
+          <text x="110" y="450" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Items chirurgie</text>
+
+          <path d="M110,460 L110,490" class="arrow" marker-end="url(#arrow)"/>
+
+          <polygon points="110,500 170,540 110,580 50,540" class="node-decision" filter="url(#shadow)"/>
+          <text x="110" y="538" text-anchor="middle" fill="white" font-size="11">Convention?</text>
+
+          <path d="M170,540 L250,540" class="arrow" marker-end="url(#arrow)"/>
+          <text x="195" y="530" fill="#22c55e" font-size="10">Oui</text>
+
+          <rect x="260" y="515" width="150" height="50" rx="8" class="node-subprocess" filter="url(#shadow)"/>
+          <text x="335" y="540" text-anchor="middle" fill="white">Verification</text>
+          <text x="335" y="555" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Deliberation/Approval</text>
+
+          <path d="M335,565 L335,600 L110,600" class="arrow" marker-end="url(#arrow)"/>
+
+          <path d="M110,580 L110,620" class="arrow" marker-end="url(#arrow)"/>
+          <text x="75" y="600" fill="#f59e0b" font-size="10">Non</text>
+
+          <rect x="35" y="630" width="150" height="50" rx="8" class="node-data" filter="url(#shadow)"/>
+          <text x="110" y="655" text-anchor="middle" fill="white">Paiement</text>
+          <text x="110" y="670" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Complet ou Partiel</text>
+
+          <path d="M110,680 L110,710" class="arrow" marker-end="url(#arrow)"/>
+
+          <polygon points="110,720 170,760 110,800 50,760" class="node-decision" filter="url(#shadow)"/>
+          <text x="110" y="755" text-anchor="middle" fill="white" font-size="11">Item</text>
+          <text x="110" y="770" text-anchor="middle" fill="white" font-size="11">paye?</text>
+
+          <path d="M50,760 L-30,760 L-30,630 L35,630" class="arrow" marker-end="url(#arrow)"/>
+          <text x="-20" y="750" fill="#f59e0b" font-size="10">Non</text>
+
+          <path d="M110,800 L110,840" class="arrow" marker-end="url(#arrow)"/>
+          <text x="120" y="820" fill="#22c55e" font-size="10">Oui</text>
+
+          <!-- Auto Surgery Case Creation -->
+          <rect x="35" y="850" width="150" height="60" rx="8" fill="#22c55e" filter="url(#shadow)"/>
+          <text x="110" y="875" text-anchor="middle" fill="white" font-weight="bold">AUTO-CREATION</text>
+          <text x="110" y="895" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">SurgeryCase</text>
+
+          <!-- Phase 3: Programmation -->
+          <rect x="420" y="20" width="180" height="30" fill="rgba(245,158,11,0.3)" rx="4"/>
+          <text x="510" y="40" text-anchor="middle" fill="#f59e0b" font-weight="bold">PHASE 3: PROGRAMMATION</text>
+
+          <path d="M185,880 L510,880 L510,70" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="435" y="80" width="150" height="50" rx="8" class="node-process" filter="url(#shadow)"/>
+          <text x="510" y="100" text-anchor="middle" fill="white">File d'attente</text>
+          <text x="510" y="115" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">awaiting_scheduling</text>
+
+          <path d="M510,130 L510,160" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="435" y="170" width="150" height="50" rx="8" class="node-subprocess" filter="url(#shadow)"/>
+          <text x="510" y="195" text-anchor="middle" fill="white">Programmer Date</text>
+          <text x="510" y="210" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">+ Salle operation</text>
+
+          <path d="M510,220 L510,250" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="435" y="260" width="150" height="50" rx="8" fill="#3b82f6" filter="url(#shadow)"/>
+          <text x="510" y="285" text-anchor="middle" fill="white">Status: scheduled</text>
+          <text x="510" y="300" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Apparait dans agenda</text>
+
+          <!-- Phase 4: Jour J -->
+          <rect x="420" y="340" width="180" height="30" fill="rgba(139,92,246,0.3)" rx="4"/>
+          <text x="510" y="360" text-anchor="middle" fill="#8b5cf6" font-weight="bold">PHASE 4: JOUR J</text>
+
+          <path d="M510,310 L510,380" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="435" y="390" width="150" height="50" rx="8" class="node-process" filter="url(#shadow)"/>
+          <text x="510" y="415" text-anchor="middle" fill="white">Check-in Patient</text>
+          <text x="510" y="430" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Assign surgeon</text>
+
+          <path d="M510,440 L510,470" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="435" y="480" width="150" height="60" rx="8" class="node-subprocess" filter="url(#shadow)"/>
+          <text x="510" y="500" text-anchor="middle" fill="white">Checklist Pre-op</text>
+          <text x="510" y="515" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">Identite, Site, Allergies</text>
+          <text x="510" y="528" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">Jeune, Collyres, Pupille</text>
+
+          <path d="M510,540 L510,570" class="arrow" marker-end="url(#arrow)"/>
+
+          <polygon points="510,580 570,620 510,660 450,620" class="node-decision" filter="url(#shadow)"/>
+          <text x="510" y="618" text-anchor="middle" fill="white" font-size="11">Checklist</text>
+          <text x="510" y="632" text-anchor="middle" fill="white" font-size="11">complete?</text>
+
+          <path d="M450,620 L380,620 L380,510 L435,510" class="arrow" marker-end="url(#arrow)"/>
+          <text x="390" y="610" fill="#ef4444" font-size="10">Non</text>
+
+          <path d="M510,660 L510,700" class="arrow" marker-end="url(#arrow)"/>
+          <text x="520" y="680" fill="#22c55e" font-size="10">Oui</text>
+
+          <rect x="435" y="710" width="150" height="50" rx="8" fill="#8b5cf6" filter="url(#shadow)"/>
+          <text x="510" y="735" text-anchor="middle" fill="white" font-weight="bold">DEMARRER</text>
+          <text x="510" y="750" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">Status: in_surgery</text>
+
+          <!-- Phase 5: WHO Checklist -->
+          <rect x="820" y="20" width="180" height="30" fill="rgba(6,182,212,0.3)" rx="4"/>
+          <text x="910" y="40" text-anchor="middle" fill="#06b6d4" font-weight="bold">PHASE 5: CHECKLIST WHO</text>
+
+          <path d="M585,735 L910,735 L910,70" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="80" width="150" height="50" rx="8" fill="#06b6d4" filter="url(#shadow)"/>
+          <text x="910" y="100" text-anchor="middle" fill="white">SIGN IN</text>
+          <text x="910" y="115" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Avant anesthesie</text>
+
+          <path d="M910,130 L910,160" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="170" width="150" height="50" rx="8" fill="#06b6d4" filter="url(#shadow)"/>
+          <text x="910" y="190" text-anchor="middle" fill="white">TIME OUT</text>
+          <text x="910" y="205" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Avant incision</text>
+
+          <path d="M910,220 L910,250" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="260" width="150" height="50" rx="8" class="node-process" filter="url(#shadow)"/>
+          <text x="910" y="285" text-anchor="middle" fill="white">CHIRURGIE</text>
+          <text x="910" y="300" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Execution procedure</text>
+
+          <path d="M910,310 L910,340" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="350" width="150" height="50" rx="8" fill="#06b6d4" filter="url(#shadow)"/>
+          <text x="910" y="370" text-anchor="middle" fill="white">SIGN OUT</text>
+          <text x="910" y="385" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Avant sortie bloc</text>
+
+          <!-- Phase 6: Post-Op -->
+          <rect x="820" y="430" width="180" height="30" fill="rgba(236,72,153,0.3)" rx="4"/>
+          <text x="910" y="450" text-anchor="middle" fill="#ec4899" font-weight="bold">PHASE 6: POST-OP</text>
+
+          <path d="M910,400 L910,470" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="480" width="150" height="60" rx="8" class="node-document" filter="url(#shadow)"/>
+          <text x="910" y="500" text-anchor="middle" fill="white">Rapport Operatoire</text>
+          <text x="910" y="515" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">5 etapes wizard</text>
+          <text x="910" y="528" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="9">IOL, Complications</text>
+
+          <path d="M910,540 L910,570" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="580" width="150" height="50" rx="8" class="node-subprocess" filter="url(#shadow)"/>
+          <text x="910" y="600" text-anchor="middle" fill="white">Finaliser & Signer</text>
+          <text x="910" y="615" text-anchor="middle" fill="rgba(255,255,255,0.7)" font-size="10">Signature electronique</text>
+
+          <path d="M910,630 L910,660" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="835" y="670" width="150" height="60" rx="8" fill="#22c55e" filter="url(#shadow)"/>
+          <text x="910" y="690" text-anchor="middle" fill="white" font-weight="bold">AUTO-CREATION</text>
+          <text x="910" y="705" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">RDV Follow-up</text>
+          <text x="910" y="718" text-anchor="middle" fill="rgba(255,255,255,0.9)" font-size="10">+ LabOrder (specimen)</text>
+
+          <path d="M910,730 L910,760" class="arrow" marker-end="url(#arrow)"/>
+
+          <rect x="860" y="770" width="100" height="40" rx="20" class="node-end" filter="url(#shadow)"/>
+          <text x="910" y="795" text-anchor="middle" fill="white" font-weight="bold">COMPLETE</text>
+
+          <!-- Legend -->
+          <rect x="20" y="950" width="1160" height="80" rx="8" fill="rgba(0,0,0,0.3)"/>
+          <text x="600" y="975" text-anchor="middle" fill="#94a3b8" font-weight="bold">LEGENDE</text>
+
+          <rect x="40" y="995" width="20" height="20" rx="10" class="node-start"/>
+          <text x="70" y="1010" fill="#94a3b8" font-size="11">Debut/Fin</text>
+
+          <rect x="160" y="995" width="20" height="20" rx="4" class="node-process"/>
+          <text x="190" y="1010" fill="#94a3b8" font-size="11">Processus</text>
+
+          <polygon points="300,1005 315,995 330,1005 315,1015" class="node-decision"/>
+          <text x="345" y="1010" fill="#94a3b8" font-size="11">Decision</text>
+
+          <rect x="440" y="995" width="20" height="20" rx="4" class="node-subprocess"/>
+          <text x="470" y="1010" fill="#94a3b8" font-size="11">Sous-processus</text>
+
+          <rect x="590" y="995" width="20" height="20" rx="4" class="node-document"/>
+          <text x="620" y="1010" fill="#94a3b8" font-size="11">Document</text>
+
+          <rect x="720" y="995" width="20" height="20" rx="4" class="node-data"/>
+          <text x="750" y="1010" fill="#94a3b8" font-size="11">Donnees</text>
+
+          <rect x="840" y="995" width="20" height="20" rx="4" fill="#22c55e"/>
+          <text x="870" y="1010" fill="#94a3b8" font-size="11">Auto-creation</text>
+
+          <rect x="990" y="995" width="20" height="20" rx="4" fill="#06b6d4"/>
+          <text x="1020" y="1010" fill="#94a3b8" font-size="11">WHO Checklist</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Status Transitions -->
+    <div class="section">
+      <h2>Transitions de Statuts - SurgeryCase</h2>
+      <div class="flowchart-container">
+        <svg viewBox="0 0 900 200" width="100%" height="200">
+          <defs>
+            <marker id="arrow2" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#64748b"/>
+            </marker>
+          </defs>
+
+          <!-- Status boxes -->
+          <rect x="30" y="70" width="120" height="60" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+          <text x="90" y="95" text-anchor="middle" fill="white" font-size="11">awaiting</text>
+          <text x="90" y="110" text-anchor="middle" fill="white" font-size="11">_scheduling</text>
+
+          <path d="M150,100 L190,100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <rect x="200" y="70" width="120" height="60" rx="8" fill="#3b82f6" filter="url(#shadow)"/>
+          <text x="260" y="100" text-anchor="middle" fill="white" font-size="12">scheduled</text>
+
+          <path d="M320,100 L360,100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <rect x="370" y="70" width="120" height="60" rx="8" fill="#eab308" filter="url(#shadow)"/>
+          <text x="430" y="100" text-anchor="middle" fill="white" font-size="12">checked_in</text>
+
+          <path d="M490,100 L530,100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <rect x="540" y="70" width="120" height="60" rx="8" fill="#8b5cf6" filter="url(#shadow)"/>
+          <text x="600" y="100" text-anchor="middle" fill="white" font-size="12">in_surgery</text>
+
+          <path d="M660,100 L700,100" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)"/>
+
+          <rect x="710" y="70" width="120" height="60" rx="8" fill="#22c55e" filter="url(#shadow)"/>
+          <text x="770" y="100" text-anchor="middle" fill="white" font-size="12">completed</text>
+
+          <!-- Cancelled branch -->
+          <path d="M260,130 L260,170 L430,170" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrow2)"/>
+          <rect x="440" y="150" width="100" height="40" rx="8" fill="#ef4444" filter="url(#shadow)"/>
+          <text x="490" y="175" text-anchor="middle" fill="white" font-size="12">cancelled</text>
+
+          <text x="350" y="165" fill="#ef4444" font-size="10">Annulation possible</text>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Data Models -->
+    <div class="section">
+      <h2>Modeles de Donnees</h2>
+      <div class="two-col">
+        <div>
+          <h3 style="color: #a855f7; margin-bottom: 16px;">SurgeryCase</h3>
+          <table>
+            <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+            <tr><td><code>patient</code></td><td>ObjectId</td><td>Reference patient</td></tr>
+            <tr><td><code>invoice</code></td><td>ObjectId</td><td>Facture payee (trigger)</td></tr>
+            <tr><td><code>surgeryType</code></td><td>ObjectId</td><td>ClinicalAct reference</td></tr>
+            <tr><td><code>eye</code></td><td>Enum</td><td>OD/OS/OU/N/A</td></tr>
+            <tr><td><code>status</code></td><td>Enum</td><td>7 statuts possibles</td></tr>
+            <tr><td><code>scheduledDate</code></td><td>Date</td><td>Date programmee</td></tr>
+            <tr><td><code>surgeon</code></td><td>ObjectId</td><td>Chirurgien assigne</td></tr>
+            <tr><td><code>preOpChecklist</code></td><td>Object</td><td>7 items verification</td></tr>
+            <tr><td><code>iolDetails</code></td><td>Object</td><td>Implant IOL details</td></tr>
+            <tr><td><code>consumablesUsed</code></td><td>Array</td><td>Consommables utilises</td></tr>
+          </table>
+        </div>
+        <div>
+          <h3 style="color: #a855f7; margin-bottom: 16px;">SurgeryReport</h3>
+          <table>
+            <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+            <tr><td><code>preOpDiagnosis</code></td><td>String</td><td>Diagnostic pre-op *</td></tr>
+            <tr><td><code>postOpDiagnosis</code></td><td>String</td><td>Diagnostic post-op *</td></tr>
+            <tr><td><code>procedurePerformed</code></td><td>String</td><td>Procedure realisee *</td></tr>
+            <tr><td><code>operativeFindings</code></td><td>String</td><td>Constatations *</td></tr>
+            <tr><td><code>iolImplanted</code></td><td>Boolean</td><td>IOL pose</td></tr>
+            <tr><td><code>complications</code></td><td>Object</td><td>Complications survenues</td></tr>
+            <tr><td><code>specimensCollected</code></td><td>Array</td><td>Specimens -> LabOrder</td></tr>
+            <tr><td><code>prognosis</code></td><td>Enum</td><td>excellent/good/guarded/poor</td></tr>
+            <tr><td><code>signedBy</code></td><td>ObjectId</td><td>Signature electronique</td></tr>
+            <tr><td><code>status</code></td><td>Enum</td><td>draft/finalized</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Endpoints -->
+    <div class="section">
+      <h2>Endpoints API Principaux</h2>
+      <table>
+        <tr>
+          <th>Methode</th>
+          <th>Endpoint</th>
+          <th>Description</th>
+          <th>Phase</th>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/api/surgery/dashboard/stats</code></td>
+          <td>Statistiques dashboard (attente, programmes, en cours, termines)</td>
+          <td>Dashboard</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/api/surgery/queue/awaiting</code></td>
+          <td>File d'attente - cas a programmer</td>
+          <td>Programmation</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/api/surgery/agenda</code></td>
+          <td>Agenda operatoire par date</td>
+          <td>Programmation</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/:id/schedule</code></td>
+          <td>Programmer une chirurgie + salle</td>
+          <td>Programmation</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/:id/checkin</code></td>
+          <td>Check-in patient + assign surgeon</td>
+          <td>Jour J</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-blue">GET</span></td>
+          <td><code>/api/surgery/:id/clinical-background</code></td>
+          <td>Donnees cliniques completes pour chirurgien</td>
+          <td>Jour J</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-purple">PUT</span></td>
+          <td><code>/api/surgery/:id/preop-checklist</code></td>
+          <td>Mettre a jour checklist pre-operatoire</td>
+          <td>Jour J</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/:id/start</code></td>
+          <td>Demarrer chirurgie</td>
+          <td>Execution</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/:id/consumables</code></td>
+          <td>Enregistrer consommables (decremente inventaire)</td>
+          <td>Execution</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/:id/report</code></td>
+          <td>Creer rapport operatoire</td>
+          <td>Post-op</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/report/:reportId/finalize</code></td>
+          <td>Finaliser et signer rapport (auto RDV follow-up)</td>
+          <td>Post-op</td>
+        </tr>
+        <tr>
+          <td><span class="badge badge-green">POST</span></td>
+          <td><code>/api/surgery/report/:reportId/specimen</code></td>
+          <td>Ajouter specimen (auto LabOrder)</td>
+          <td>Post-op</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- Gaps and Issues -->
+    <div class="section">
+      <h2>Problemes Identifies & Lacunes</h2>
+
+      <div class="issue-card issue-critical">
+        <h4><span class="badge badge-red">CRITIQUE</span> Consentement Chirurgical UI Manquant</h4>
+        <p>Le modele <code>SurgicalConsent</code> est complet avec signatures 3 parties, mais <strong>aucune page frontend</strong> n'existe pour la gestion du consentement. Les routes backend existent mais ne sont pas utilisees dans l'interface utilisateur. Le workflow actuel permet de programmer et executer une chirurgie SANS consentement documente.</p>
+      </div>
+
+      <div class="issue-card issue-critical">
+        <h4><span class="badge badge-red">CRITIQUE</span> WHO Surgical Safety Checklist UI Absent</h4>
+        <p>Le modele <code>SurgicalSafetyChecklist</code> implemente les 3 phases WHO (Sign In, Time Out, Sign Out) avec compliance tracking, mais <strong>aucun composant frontend</strong> ne permet de l'utiliser. Le checklist pre-op dans SurgeryCheckIn est simpliste et ne remplace pas le checklist WHO complet.</p>
+      </div>
+
+      <div class="issue-card issue-warning">
+        <h4><span class="badge badge-yellow">MOYEN</span> Pas de Selection de Salle d'Operation dans UI</h4>
+        <p>Le backend supporte l'assignation de salle (<code>operatingRoom</code>, verification disponibilite, detection conflits), mais le modal de programmation frontend n'inclut pas de selecteur de salle. La programmation se fait uniquement avec date/heure.</p>
+      </div>
+
+      <div class="issue-card issue-warning">
+        <h4><span class="badge badge-yellow">MOYEN</span> Gestion des Specimens Non Implementee</h4>
+        <p>L'API <code>/api/surgery/report/:reportId/specimen</code> permet d'ajouter des specimens avec auto-creation LabOrder, mais le formulaire de rapport (SurgeryReportForm) n'a pas de section pour la collecte de specimens.</p>
+      </div>
+
+      <div class="issue-card issue-warning">
+        <h4><span class="badge badge-yellow">MOYEN</span> Suivi Inventaire Consommables Non Affiche</h4>
+        <p>Le backend decremente l'inventaire lors de l'enregistrement des consommables, mais l'UI de check-in/rapport n'a pas de section pour saisir les consommables utilises (IOL, viscoelastique, sutures, etc.).</p>
+      </div>
+
+      <div class="issue-card issue-info">
+        <h4><span class="badge badge-blue">MINEUR</span> Consultation ne Reference pas Chirurgie Directement</h4>
+        <p>Le lien <code>ConsultationSession</code> -> <code>SurgeryCase</code> existe dans le modele, mais le workflow de consultation ne permet pas de "recommander une chirurgie" de maniere explicite. La connexion se fait uniquement via la facture.</p>
+      </div>
+
+      <div class="issue-card issue-info">
+        <h4><span class="badge badge-blue">MINEUR</span> Pas de Vue Calendrier Chirurgien</h4>
+        <p>L'API <code>/api/surgery/surgeon/:surgeonId/schedule</code> existe, mais pas de page frontend dediee pour que le chirurgien voie son planning personnel avec ses cas assignes.</p>
+      </div>
+
+      <div class="issue-card issue-success">
+        <h4><span class="badge badge-green">BIEN IMPLEMENTE</span> Auto-creation SurgeryCase sur Paiement</h4>
+        <p>Le trigger automatique lors du paiement de facture chirurgie fonctionne correctement. Detection multi-criteres (categorie, code, mots-cles) avec extraction oeil et type chirurgie.</p>
+      </div>
+
+      <div class="issue-card issue-success">
+        <h4><span class="badge badge-green">BIEN IMPLEMENTE</span> Checklist Pre-op Interactive</h4>
+        <p>La checklist 7 items avec sauvegarde temps-reel et blocage du bouton "Demarrer" jusqu'a completion est bien implementee et fonctionnelle.</p>
+      </div>
+
+      <div class="issue-card issue-success">
+        <h4><span class="badge badge-green">BIEN IMPLEMENTE</span> Rapport Operatoire Multi-etapes</h4>
+        <p>Le wizard 5 etapes pour le rapport operatoire avec IOL tracking, complications, et finalisation/signature est complet et bien structure.</p>
+      </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="section">
+      <h2>Recommandations d'Amelioration</h2>
+      <div class="timeline">
+        <div class="timeline-item">
+          <h4>1. Creer Page Consentement Chirurgical</h4>
+          <p>Implementer <code>/surgery/:id/consent</code> avec formulaire interactif pour les 3 signatures (patient, chirurgien, temoin), gestion capacite/tuteur, et generation PDF.</p>
+        </div>
+        <div class="timeline-item">
+          <h4>2. Ajouter WHO Safety Checklist UI</h4>
+          <p>Creer composant pour les 3 phases (Sign In avant anesthesie, Time Out avant incision, Sign Out avant sortie) avec tracking compliance et deviations.</p>
+        </div>
+        <div class="timeline-item">
+          <h4>3. Integrer Selection Salle dans Programmation</h4>
+          <p>Ajouter selecteur de salle d'operation dans le modal de programmation avec verification disponibilite temps-reel.</p>
+        </div>
+        <div class="timeline-item">
+          <h4>4. Section Consommables dans Check-in/Report</h4>
+          <p>Ajouter interface pour saisir consommables utilises (IOL, viscoelastique, sutures) avec liaison inventaire et tracking lot/serie.</p>
+        </div>
+        <div class="timeline-item">
+          <h4>5. Section Specimens dans Rapport</h4>
+          <p>Ajouter formulaire collection specimens avec auto-creation commande labo pathologie.</p>
+        </div>
+        <div class="timeline-item">
+          <h4>6. Dashboard Chirurgien Personnel</h4>
+          <p>Creer page <code>/surgery/surgeon-dashboard</code> avec planning personnel, patients check-in, rapports en brouillon, resultats pathologie en attente.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Integration Summary -->
+    <div class="section">
+      <h2>Resume des Integrations</h2>
+      <table>
+        <tr>
+          <th>Module</th>
+          <th>Integration</th>
+          <th>Statut</th>
+        </tr>
+        <tr>
+          <td>Invoice</td>
+          <td>Auto-creation SurgeryCase sur paiement</td>
+          <td><span class="badge badge-green">Fonctionnel</span></td>
+        </tr>
+        <tr>
+          <td>FeeSchedule</td>
+          <td>Tarification procedures chirurgicales</td>
+          <td><span class="badge badge-green">Fonctionnel</span></td>
+        </tr>
+        <tr>
+          <td>Convention/Approval</td>
+          <td>Deliberation requise pour chirurgie</td>
+          <td><span class="badge badge-green">Fonctionnel</span></td>
+        </tr>
+        <tr>
+          <td>PharmacyInventory</td>
+          <td>Decrementation consommables</td>
+          <td><span class="badge badge-yellow">Backend OK, UI Manquant</span></td>
+        </tr>
+        <tr>
+          <td>LabOrder</td>
+          <td>Auto-creation pour specimens</td>
+          <td><span class="badge badge-yellow">Backend OK, UI Manquant</span></td>
+        </tr>
+        <tr>
+          <td>Appointment</td>
+          <td>Auto-creation follow-up</td>
+          <td><span class="badge badge-green">Fonctionnel</span></td>
+        </tr>
+        <tr>
+          <td>Room</td>
+          <td>Gestion salles operation</td>
+          <td><span class="badge badge-yellow">Backend OK, UI Manquant</span></td>
+        </tr>
+        <tr>
+          <td>SurgicalConsent</td>
+          <td>Consentement 3-signatures</td>
+          <td><span class="badge badge-red">UI Non Implemente</span></td>
+        </tr>
+        <tr>
+          <td>SurgicalSafetyChecklist</td>
+          <td>WHO 3-phases checklist</td>
+          <td><span class="badge badge-red">UI Non Implemente</span></td>
+        </tr>
+        <tr>
+          <td>Document</td>
+          <td>Images intra-op, referrals</td>
+          <td><span class="badge badge-green">Fonctionnel</span></td>
+        </tr>
+      </table>
+    </div>
+
+    <div style="text-align: center; margin-top: 40px; padding: 20px; color: #64748b;">
+      <p>Analyse generee le <script>document.write(new Date().toLocaleDateString('fr-FR'))</script></p>
+      <p>MedFlow - Module Chirurgie v1.0</p>
+    </div>
+  </div>
+</body>
+</html>

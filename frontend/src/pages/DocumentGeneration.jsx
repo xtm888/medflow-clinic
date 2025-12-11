@@ -21,17 +21,20 @@ export default function DocumentGenerationPage() {
     try {
       setLoading(true);
       const response = await patientService.getPatients();
-      setPatients(response.data || []);
+      const patientData = response.data?.data || response.data || [];
+      setPatients(Array.isArray(patientData) ? patientData : []);
     } catch (error) {
       console.error('Error loading patients:', error);
       toast.error('Erreur lors du chargement des patients');
+      setPatients([]);
     } finally {
       setLoading(false);
     }
   };
 
   // Filter patients based on search
-  const filteredPatients = patients.filter(patient => {
+  const patientsList = Array.isArray(patients) ? patients : [];
+  const filteredPatients = patientsList.filter(patient => {
     const query = searchQuery.toLowerCase();
     return (
       patient.firstName?.toLowerCase().includes(query) ||
