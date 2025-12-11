@@ -84,7 +84,7 @@ export default function QueueDisplayBoard() {
   // Fetch initial display data
   const fetchDisplayData = async () => {
     try {
-      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const API_BASE = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5001/api`;
 
       // Fetch room display data (public endpoint)
       const roomResponse = await fetch(`${API_BASE}/rooms/display-board`);
@@ -109,7 +109,7 @@ export default function QueueDisplayBoard() {
     fetchDisplayData();
 
     // Connect to WebSocket on backend server
-    const WS_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5001';
+    const WS_URL = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5001`;
     const socket = io(WS_URL, {
       transports: ['websocket', 'polling']
     });

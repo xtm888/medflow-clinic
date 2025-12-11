@@ -42,12 +42,8 @@ api.interceptors.request.use(
     // Add clinic context header for multi-clinic support
     // Backend middleware reads X-Clinic-ID to filter data by clinic
     const selectedClinicId = localStorage.getItem('medflow_selected_clinic');
-    console.log('🏥 API Interceptor - Selected Clinic ID:', selectedClinicId);
     if (selectedClinicId && selectedClinicId !== 'all') {
       config.headers['X-Clinic-ID'] = selectedClinicId;
-      console.log('✅ Setting X-Clinic-ID header:', selectedClinicId);
-    } else {
-      console.log('ℹ️ No clinic filter (All Clinics mode)');
     }
 
     // Add loading indicator for long requests

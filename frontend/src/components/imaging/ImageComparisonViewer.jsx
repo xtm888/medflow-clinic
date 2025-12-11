@@ -151,11 +151,12 @@ export default function ImageComparisonViewer({
     selectImageForPanel(filtered[newIndex], panelIndex);
   };
 
-  // Get image URL
+  // Get image URL - uses environment variable or dynamic hostname for production
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:5001${url}`;
+    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5001`;
+    return `${baseUrl}${url}`;
   };
 
   // Format date

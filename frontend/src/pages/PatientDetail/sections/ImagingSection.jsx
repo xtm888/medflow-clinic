@@ -75,10 +75,13 @@ const generateDemoImages = () => {
     }
   ];
 
+  // Use environment variable or dynamic hostname for production
+  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5001`;
+
   return clinicalImages.map((img, i) => ({
     _id: `demo-${i}`,
-    url: `http://localhost:5001/datasets/retina/${encodeURIComponent(img.filename)}`,
-    thumbnailUrl: `http://localhost:5001/datasets/retina/${encodeURIComponent(img.filename)}`,
+    url: `${baseUrl}/datasets/retina/${encodeURIComponent(img.filename)}`,
+    thumbnailUrl: `${baseUrl}/datasets/retina/${encodeURIComponent(img.filename)}`,
     title: img.title,
     type: img.type,
     eye: img.eye,
@@ -118,10 +121,12 @@ export default function ImagingSection({
   const [showComparisonViewer, setShowComparisonViewer] = useState(false);
   const [comparisonInitialImage, setComparisonInitialImage] = useState(null);
 
+  // Get image URL - uses environment variable or dynamic hostname for production
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    return `http://localhost:5001${url}`;
+    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5001`;
+    return `${baseUrl}${url}`;
   };
 
   const loadData = async () => {
