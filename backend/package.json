@@ -12,7 +12,13 @@
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
     "test:e2e": "jest tests/e2e",
-    "seed": "node scripts/seedCongo.js"
+    "seed": "node scripts/seedCongo.js",
+    "setup": "node scripts/setup.js --fresh",
+    "setup:dev": "node scripts/setup.js --dev",
+    "setup:test": "node scripts/setup.js --test",
+    "setup:prod": "node scripts/setup.js --production",
+    "setup:full": "node scripts/setup.js --full --with-legacy",
+    "setup:help": "node scripts/setup.js --help"
   },
   "keywords": [
     "medical",
