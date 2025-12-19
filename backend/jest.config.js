@@ -1,5 +1,6 @@
 module.exports = {
   testEnvironment: 'node',
+  maxWorkers: 1, // Run tests serially to avoid port conflicts
   coverageDirectory: 'coverage',
   collectCoverageFrom: [
     'controllers/**/*.js',
@@ -19,7 +20,7 @@ module.exports = {
     }
   },
   setupFilesAfterEnv: ['<rootDir>/tests/setup.js'],
-  testTimeout: 30000,
+  testTimeout: 60000, // 60s for slow DB operations (user registration with bcrypt)
   verbose: true,
   forceExit: true,
   clearMocks: true,

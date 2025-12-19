@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const compression = require('compression');
+const cookieParser = require('cookie-parser');
 const http = require('http');
 require('dotenv').config();
 
@@ -135,19 +136,19 @@ app.set('trust proxy', 1);
 
 // Security middleware with relaxed CSP and CORP for images
 // Only include localhost in CSP during development
-const cspImgSrc = ["'self'", "data:"];
+const cspImgSrc = ["'self'", 'data:'];
 if (process.env.NODE_ENV !== 'production') {
-  cspImgSrc.push("http://localhost:5001", "http://localhost:5173");
+  cspImgSrc.push('http://localhost:5001', 'http://localhost:5173');
 }
 
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      "img-src": cspImgSrc
+      'img-src': cspImgSrc
     }
   },
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
 // CORS configuration - secured for production
@@ -200,8 +201,11 @@ app.use(cors({
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-Requested-With', 'X-API-Key', 'X-Clinic-Id']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-CSRF-Token', 'X-XSRF-TOKEN', 'X-Requested-With', 'X-API-Key', 'X-Clinic-Id']
 }));
+
+// Cookie parser - required for HttpOnly auth cookies and CSRF
+app.use(cookieParser());
 
 // Rate limiting - Redis-backed for production scalability
 // Uses Redis store for distributed rate limiting across multiple instances
@@ -243,6 +247,10 @@ const xlPayloadLimit = express.json({ limit: '50mb' });
 // Audit logging for all requests
 app.use(auditLogger);
 
+// CSRF protection - validates tokens on state-changing requests
+const { csrfProtection } = require('./middleware/csrf');
+app.use(csrfProtection);
+
 // Standardized API response helper - adds res.api.* methods
 app.use(attachToResponse);
 
@@ -283,6 +291,7 @@ app.use('/api/glasses-orders', require('./routes/glassesOrders'));
 app.use('/api/optical-shop', require('./routes/opticalShop'));
 app.use('/api/frame-inventory', require('./routes/frameInventory'));
 app.use('/api/contact-lens-inventory', require('./routes/contactLensInventory'));
+app.use('/api/contact-lens-fitting', require('./routes/contactLensFitting'));
 app.use('/api/optical-lens-inventory', require('./routes/opticalLensInventory'));
 app.use('/api/reagent-inventory', require('./routes/reagentInventory'));
 app.use('/api/lab-consumable-inventory', require('./routes/labConsumableInventory'));
@@ -337,6 +346,7 @@ app.use('/api/migration', sensitiveLimiter, migrationRoutes); // SECURITY: Rate 
 // Multi-clinic inventory management
 app.use('/api/inventory-transfers', require('./routes/inventoryTransfers'));
 app.use('/api/cross-clinic-inventory', require('./routes/crossClinicInventory'));
+app.use('/api/unified-inventory', require('./routes/unifiedInventory'));
 
 // Central server proxy routes (cross-clinic data access)
 app.use('/api/central', require('./routes/central'));
@@ -402,125 +412,116 @@ mongoose.connect(mongoUri, {
   retryWrites: true,
   retryReads: true
 })
-.then(async () => {
-  console.log('✅ Connected to MongoDB');
+  .then(async () => {
+    console.log('✅ Connected to MongoDB');
 
-  // Initialize Redis for rate limiting and sessions
-  try {
-    await initializeRedis();
-  } catch (err) {
-    console.warn('⚠️  Redis initialization failed, using in-memory fallback:', err.message);
-  }
-
-  // Warm cache with frequently accessed data
-  try {
-    const cacheService = require('./services/cacheService');
-    await cacheService.warmCache();
-  } catch (err) {
-    console.warn('⚠️  Cache warming failed:', err.message);
-  }
-
-  // Check MongoDB transaction support
-  const hasTransactions = await checkTransactionSupport();
-  if (hasTransactions) {
-    console.log('✅ MongoDB transactions supported');
-  }
-
-  // Start alert scheduler
-  alertScheduler.start();
-
-  // Start device sync scheduler
-  deviceSyncScheduler.start();
-
-  // Start reservation cleanup scheduler (CRITICAL: prevents stock lockup)
-  reservationCleanupScheduler.start();
-
-  // Start appointment reminder scheduler
-  reminderScheduler.startScheduler();
-
-  // Start invoice payment reminder scheduler
-  invoiceReminderScheduler.startScheduler();
-
-  // Start payment plan auto-charge scheduler
-  paymentPlanAutoChargeService.startScheduler();
-
-  // Start calendar sync scheduler (Google/Outlook integration)
-  calendarSyncScheduler.start();
-
-  // Start visit cleanup scheduler (CRITICAL: detects stuck visits and syncs appointment-visit status)
-  visitCleanupScheduler.start();
-
-  // Start backup scheduler (CRITICAL: automated database backups)
-  if (process.env.BACKUP_ENABLED !== 'false') {
-    backupScheduler.start();
-  } else {
-    console.warn('⚠️  Backup scheduler disabled by BACKUP_ENABLED=false');
-  }
-
-  // Initialize and start email queue service
-  await emailQueueService.init();
-  emailQueueService.start(30000); // Process queue every 30 seconds
-
-  // Initialize folder sync service for medical device file watching
-  try {
-    await folderSyncService.initialize();
-    console.log('✅ Folder sync service initialized');
-  } catch (err) {
-    console.warn('⚠️  Folder sync initialization failed:', err.message);
-  }
-
-  // Initialize data sync service for multi-clinic sync (if enabled)
-  if (process.env.SYNC_ENABLED === 'true') {
+    // Initialize Redis for rate limiting and sessions
     try {
-      const dataSyncService = require('./services/dataSyncService');
-      await dataSyncService.initialize();
-      console.log(`✅ Data sync service initialized for clinic: ${process.env.CLINIC_ID || 'LOCAL'}`);
-      console.log(`   Central server: ${process.env.CENTRAL_SYNC_URL || 'Not configured'}`);
-
-      // Store reference for graceful shutdown
-      global.dataSyncService = dataSyncService;
+      await initializeRedis();
     } catch (err) {
-      console.warn('⚠️  Data sync initialization failed:', err.message);
-      console.warn('   Multi-clinic sync will not be available');
+      console.warn('⚠️  Redis initialization failed, using in-memory fallback:', err.message);
     }
-  } else {
-    console.log('ℹ️  Data sync disabled (SYNC_ENABLED not set to true)');
-  }
 
-  // Schedule counter cleanup job (runs weekly to remove old counters)
-  const counterCleanupInterval = setInterval(async () => {
-    try {
-      const deletedCount = await Counter.cleanupOldCounters(90);
-      console.log(`✅ Counter cleanup: Removed ${deletedCount} old counter records`);
-    } catch (error) {
-      console.error('❌ Counter cleanup error:', error);
+    // Warm cache with frequently accessed data (skip in test mode)
+    if (process.env.DISABLE_CACHE_WARMING !== 'true') {
+      try {
+        const cacheService = require('./services/cacheService');
+        await cacheService.warmCache();
+      } catch (err) {
+        console.warn('⚠️  Cache warming failed:', err.message);
+      }
     }
-  }, 7 * 24 * 60 * 60 * 1000); // Weekly (7 days)
 
-  // Store cleanup interval for graceful shutdown
-  global.counterCleanupInterval = counterCleanupInterval;
+    // Check MongoDB transaction support
+    const hasTransactions = await checkTransactionSupport();
+    if (hasTransactions) {
+      console.log('✅ MongoDB transactions supported');
+    }
 
-  // Create HTTP server
-  const server = http.createServer(app);
+    // Start schedulers (skip in test mode)
+    if (process.env.DISABLE_SCHEDULERS !== 'true') {
+      alertScheduler.start();
+      deviceSyncScheduler.start();
+      reservationCleanupScheduler.start();
+      reminderScheduler.startScheduler();
+      invoiceReminderScheduler.startScheduler();
+      paymentPlanAutoChargeService.startScheduler();
+      calendarSyncScheduler.start();
+    } else {
+      console.log('⚠️ Schedulers disabled (test mode)');
+    }
 
-  // Initialize WebSocket
-  websocketService.initialize(server, {
-    origin: allowedOrigins,
-    credentials: true
+    // Start additional schedulers (skip in test mode)
+    if (process.env.DISABLE_SCHEDULERS !== 'true') {
+      visitCleanupScheduler.start();
+
+      if (process.env.BACKUP_ENABLED !== 'false') {
+        backupScheduler.start();
+      }
+
+      await emailQueueService.init();
+      emailQueueService.start(30000);
+
+      try {
+        await folderSyncService.initialize();
+        console.log('✅ Folder sync service initialized');
+      } catch (err) {
+        console.warn('⚠️  Folder sync initialization failed:', err.message);
+      }
+    }
+
+    // Initialize data sync service for multi-clinic sync (if enabled)
+    if (process.env.SYNC_ENABLED === 'true') {
+      try {
+        const dataSyncService = require('./services/dataSyncService');
+        await dataSyncService.initialize();
+        console.log(`✅ Data sync service initialized for clinic: ${process.env.CLINIC_ID || 'LOCAL'}`);
+        console.log(`   Central server: ${process.env.CENTRAL_SYNC_URL || 'Not configured'}`);
+
+        // Store reference for graceful shutdown
+        global.dataSyncService = dataSyncService;
+      } catch (err) {
+        console.warn('⚠️  Data sync initialization failed:', err.message);
+        console.warn('   Multi-clinic sync will not be available');
+      }
+    } else {
+      console.log('ℹ️  Data sync disabled (SYNC_ENABLED not set to true)');
+    }
+
+    // Schedule counter cleanup job (runs weekly to remove old counters)
+    const counterCleanupInterval = setInterval(async () => {
+      try {
+        const deletedCount = await Counter.cleanupOldCounters(90);
+        console.log(`✅ Counter cleanup: Removed ${deletedCount} old counter records`);
+      } catch (error) {
+        console.error('❌ Counter cleanup error:', error);
+      }
+    }, 7 * 24 * 60 * 60 * 1000); // Weekly (7 days)
+
+    // Store cleanup interval for graceful shutdown
+    global.counterCleanupInterval = counterCleanupInterval;
+
+    // Create HTTP server
+    const server = http.createServer(app);
+
+    // Initialize WebSocket
+    websocketService.initialize(server, {
+      origin: allowedOrigins,
+      credentials: true
+    });
+
+    // Start server
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`📡 API available at http://localhost:${PORT}/api`);
+      console.log(`🔌 WebSocket available at ws://localhost:${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
   });
-
-  // Start server
-  server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`📡 API available at http://localhost:${PORT}/api`);
-    console.log(`🔌 WebSocket available at ws://localhost:${PORT}`);
-  });
-})
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err);
-  process.exit(1);
-});
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
@@ -560,7 +561,7 @@ process.on('SIGINT', async () => {
 // =====================================================
 
 // Handle unhandled promise rejections
-process.on('unhandledRejection', (reason, promise) => {
+process.on('unhandledRejection', (reason, _promise) => {
   logger.error('Unhandled Promise Rejection:', {
     reason: reason instanceof Error ? reason.message : reason,
     stack: reason instanceof Error ? reason.stack : undefined
