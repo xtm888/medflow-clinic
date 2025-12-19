@@ -82,6 +82,15 @@ export const ophthalmologyWorkflowConfig = {
       requireValidation: false
     },
     {
+      id: 'contact_lens_fitting',
+      label: 'Adaptation Lentilles',
+      shortLabel: 'Lentilles',
+      component: 'ContactLensFittingStep',
+      icon: 'CircleDot',
+      required: false,
+      requireValidation: false
+    },
+    {
       id: 'examination',
       label: 'Examen Ophtalmologique',
       shortLabel: 'Examen',
@@ -226,6 +235,26 @@ export const ophthalmologyWorkflowConfig = {
         k2: { power: '', axis: '' }
       },
       notes: ''
+    },
+    contact_lens_fitting: {
+      contactLensFitting: {
+        wearingHistory: {
+          isWearer: false,
+          currentIssues: []
+        },
+        lensType: 'soft_spherical',
+        trialLens: { OD: {}, OS: {} },
+        assessment: { OD: {}, OS: {} },
+        finalPrescription: { OD: {}, OS: {} },
+        careInstructions: {
+          annualSupply: { wearingDaysPerWeek: 7 }
+        },
+        followUp: {
+          fittingStatus: 'initial',
+          educationChecklist: {}
+        },
+        status: 'not_started'
+      }
     },
     examination: {
       iop: {

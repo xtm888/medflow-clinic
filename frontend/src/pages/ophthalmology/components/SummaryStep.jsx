@@ -159,35 +159,114 @@ export default function SummaryStep({
     }
   };
 
-  // Export summary as JSON/CSV
-  const handleExport = async () => {
-    setExporting(true);
-    try {
-      const exportData = {
-        patient: patient ? {
-          name: `${patient.lastName} ${patient.firstName}`,
-          dob: patient.dateOfBirth,
-          mrn: patient.mrn
-        } : null,
-        date: new Date().toISOString(),
-        complaint: allStepData.complaint,
-        refraction: allStepData.refraction,
-        examination: allStepData.examination,
-        diagnosis: allStepData.diagnosis,
-        prescription: allStepData.prescription,
-        procedures: allStepData.procedures,
-        laboratory: allStepData.laboratory
-      };
+  // Export format state
+  const [showExportMenu, setShowExportMenu] = useState(false);
 
-      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `consultation-${patient?.mrn || 'export'}-${new Date().toISOString().split('T')[0]}.json`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast.success('Données exportées');
+  // Export summary as PDF (preferred) or JSON
+  const handleExport = async (format = 'pdf') => {
+    setExporting(true);
+    setShowExportMenu(false);
+    try {
+      if (format === 'pdf') {
+        // Try to get PDF from server first
+        if (examId) {
+          const response = await fetch(`/api/ophthalmology/exams/${examId}/report?format=pdf`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+          });
+          if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `rapport-consultation-${patient?.mrn || examId}-${new Date().toISOString().split('T')[0]}.pdf`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            toast.success('Rapport PDF téléchargé');
+            return;
+          }
+        }
+        // Fallback: Generate PDF client-side using print dialog
+        toast.info('Utilisation de l\'impression PDF');
+        handlePrint();
+      } else if (format === 'json') {
+        const exportData = {
+          patient: patient ? {
+            name: `${patient.lastName} ${patient.firstName}`,
+            dob: patient.dateOfBirth,
+            mrn: patient.mrn
+          } : null,
+          date: new Date().toISOString(),
+          complaint: allStepData.complaint,
+          refraction: allStepData.refraction,
+          examination: allStepData.examination,
+          diagnosis: allStepData.diagnosis,
+          prescription: allStepData.prescription,
+          procedures: allStepData.procedures,
+          laboratory: allStepData.laboratory
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `consultation-${patient?.mrn || 'export'}-${new Date().toISOString().split('T')[0]}.json`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Données JSON exportées');
+      } else if (format === 'csv') {
+        // Generate CSV for spreadsheet import
+        const csvRows = [
+          ['Section', 'Field', 'OD', 'OS', 'Notes'],
+          ['Patient', 'Nom', patient?.lastName || '', patient?.firstName || '', patient?.mrn || ''],
+          ['Patient', 'Date Consultation', new Date().toLocaleDateString('fr-FR'), '', '']
+        ];
+
+        // Add refraction data
+        if (allStepData.subjective_refraction) {
+          const od = allStepData.subjective_refraction.OD || {};
+          const os = allStepData.subjective_refraction.OS || {};
+          csvRows.push(['Réfraction', 'Sphère', od.sphere || '', os.sphere || '', '']);
+          csvRows.push(['Réfraction', 'Cylindre', od.cylinder || '', os.cylinder || '', '']);
+          csvRows.push(['Réfraction', 'Axe', od.axis || '', os.axis || '', '']);
+        }
+
+        // Add IOP
+        if (iop) {
+          csvRows.push(['Tonométrie', 'PIO (mmHg)', iop.OD || '', iop.OS || '', iop.method || '']);
+        }
+
+        // Add diagnoses
+        if (allStepData.diagnosis?.length) {
+          allStepData.diagnosis.forEach((diag, i) => {
+            csvRows.push(['Diagnostic', diag.code || `#${i+1}`, diag.description || diag.name || '', diag.laterality || '', diag.notes || '']);
+          });
+        }
+
+        // Add medications
+        if (allStepData.prescription?.medications?.length) {
+          allStepData.prescription.medications.forEach((med, i) => {
+            csvRows.push(['Prescription', med.name || `Med #${i+1}`, med.dosage || '', '', med.duration || '']);
+          });
+        }
+
+        const csvContent = csvRows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `consultation-${patient?.mrn || 'export'}-${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+        toast.success('Données CSV exportées');
+      }
     } catch (err) {
       console.error('Export error:', err);
       toast.error('Erreur lors de l\'exportation');
@@ -239,18 +318,46 @@ export default function SummaryStep({
             )}
             Imprimer
           </button>
-          <button
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
-          >
-            {exporting ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            ) : (
-              <Download className="w-4 h-4 mr-2" />
+          <div className="relative">
+            <button
+              onClick={() => setShowExportMenu(!showExportMenu)}
+              disabled={exporting}
+              className="flex items-center px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
+            >
+              {exporting ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Exporter
+              <ChevronDown className="w-3 h-3 ml-1" />
+            </button>
+            {showExportMenu && (
+              <div className="absolute right-0 mt-1 w-40 bg-white border rounded-lg shadow-lg z-10">
+                <button
+                  onClick={() => handleExport('pdf')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-t-lg flex items-center"
+                >
+                  <FileText className="w-4 h-4 mr-2 text-red-500" />
+                  PDF (Rapport)
+                </button>
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 flex items-center"
+                >
+                  <FileText className="w-4 h-4 mr-2 text-green-500" />
+                  CSV (Excel)
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-gray-100 rounded-b-lg flex items-center"
+                >
+                  <FileText className="w-4 h-4 mr-2 text-blue-500" />
+                  JSON (Données)
+                </button>
+              </div>
             )}
-            Exporter
-          </button>
+          </div>
         </div>
       </div>
 

@@ -358,12 +358,26 @@ export default function FaceVerification({
       {/* Actions */}
       <div className="p-4 bg-gray-50 border-t">
         <div className="flex items-center justify-between">
-          <button
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-600 hover:text-gray-900"
-          >
-            Annuler
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onCancel}
+              className="px-4 py-2 text-gray-600 hover:text-gray-900"
+            >
+              Annuler
+            </button>
+
+            {/* Admin Skip Button - Always visible for admins */}
+            {allowSkip && onSkip && (
+              <button
+                onClick={onSkip}
+                className="px-4 py-2 bg-amber-100 text-amber-700 rounded-lg hover:bg-amber-200 flex items-center gap-2 border border-amber-300"
+                title="Ignorer la vérification (Admin uniquement)"
+              >
+                <Shield className="h-4 w-4" />
+                Ignorer (Admin)
+              </button>
+            )}
+          </div>
 
           <div className="flex gap-3">
             {verificationResult ? (
@@ -376,23 +390,13 @@ export default function FaceVerification({
                   Continuer la consultation
                 </button>
               ) : (
-                <>
-                  <button
-                    onClick={handleRetry}
-                    className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                  >
-                    <RefreshCw className="h-4 w-4" />
-                    Réessayer
-                  </button>
-                  {allowSkip && (
-                    <button
-                      onClick={onSkip}
-                      className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"
-                    >
-                      Passer (Admin)
-                    </button>
-                  )}
-                </>
+                <button
+                  onClick={handleRetry}
+                  className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  Réessayer
+                </button>
               )
             ) : (
               <button
@@ -406,6 +410,14 @@ export default function FaceVerification({
             )}
           </div>
         </div>
+
+        {/* Admin Override Notice */}
+        {allowSkip && (
+          <p className="text-xs text-gray-500 mt-3 text-center">
+            En tant qu'administrateur, vous pouvez ignorer la vérification en cas de besoin.
+            Cette action sera enregistrée dans le journal d'audit.
+          </p>
+        )}
       </div>
     </div>
   );

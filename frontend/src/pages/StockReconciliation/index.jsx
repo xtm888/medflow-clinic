@@ -66,15 +66,18 @@ export default function StockReconciliation() {
       if (params.inventoryType === 'all') delete params.inventoryType;
 
       const response = await stockReconciliationService.getAll(params);
-      setReconciliations(response.data || []);
+      // Handle various response structures defensively
+      const data = response?.data || response || [];
+      setReconciliations(Array.isArray(data) ? data : []);
       setPagination({
-        page: response.page || 1,
-        pages: response.pages || 1,
-        total: response.total || 0
+        page: response?.page || 1,
+        pages: response?.pages || 1,
+        total: response?.total || 0
       });
     } catch (error) {
       toast.error('Erreur lors du chargement des inventaires');
       console.error(error);
+      setReconciliations([]);
     } finally {
       setLoading(false);
     }

@@ -55,7 +55,9 @@ const DeviceManager = () => {
   const loadDevices = async () => {
     try {
       const response = await deviceService.getDevices();
-      setDevices(response.data || []);
+      // Handle nested response structure: response.data.data contains the array
+      const deviceArray = response?.data?.data || response?.data || [];
+      setDevices(Array.isArray(deviceArray) ? deviceArray : []);
     } catch (err) {
       toast.error('Échec du chargement des appareils');
       console.error(err);
@@ -184,7 +186,9 @@ const DeviceManager = () => {
   };
 
   // Get unique device types for filter (exclude undefined)
-  const deviceTypes = [...new Set(devices.map(d => d.type).filter(Boolean))];
+  const deviceTypes = Array.isArray(devices)
+    ? [...new Set(devices.map(d => d.type).filter(Boolean))]
+    : [];
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

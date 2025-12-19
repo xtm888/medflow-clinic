@@ -5,10 +5,12 @@ import ApprovalWarningBanner, { ApprovalWarningInline, useApprovalWarnings } fro
 
 /**
  * DiagnosticPanel - Consolidated diagnostic workup module
- * Tabs: Diagnosis | Procedures | Laboratory
+ * Tabs: Diagnosis | Procedures | Surgery | Laboratory
+ *
+ * @param hideDiagnosis - When true, hides the diagnosis tab (used when PathologyPicker handles diagnoses in StudioVision mode)
  */
-export default function DiagnosticPanel({ data, onChange, patient }) {
-  const [activeTab, setActiveTab] = useState('diagnosis');
+export default function DiagnosticPanel({ data, onChange, patient, hideDiagnosis = false }) {
+  const [activeTab, setActiveTab] = useState(hideDiagnosis ? 'procedures' : 'diagnosis');
   const [searchQuery, setSearchQuery] = useState('');
   const [commonProcedures, setCommonProcedures] = useState([]);
   const [commonLabTests, setCommonLabTests] = useState([]);
@@ -260,12 +262,14 @@ export default function DiagnosticPanel({ data, onChange, patient }) {
     onChange?.(newData);
   };
 
-  const tabs = [
+  // Build tabs array - optionally hide diagnosis tab when using PathologyPicker in StudioVision mode
+  const allTabs = [
     { id: 'diagnosis', label: 'Diagnostic', icon: Stethoscope, count: diagnosticData.diagnoses.length },
     { id: 'procedures', label: 'Examens', icon: Scan, count: diagnosticData.procedures.length },
     { id: 'surgery', label: 'Chirurgie', icon: Scissors, count: (diagnosticData.surgery || []).length },
     { id: 'laboratory', label: 'Laboratoire', icon: FlaskConical, count: diagnosticData.laboratory.length }
   ];
+  const tabs = hideDiagnosis ? allTabs.filter(t => t.id !== 'diagnosis') : allTabs;
 
   // Quick diagnosis chips - Most common diagnoses for one-click access
   const quickDiagnoses = [
@@ -349,7 +353,7 @@ export default function DiagnosticPanel({ data, onChange, patient }) {
       </div>
 
       {/* Quick Diagnosis Chips - One-click access to common diagnoses */}
-      {activeTab === 'diagnosis' && (
+      {!hideDiagnosis && activeTab === 'diagnosis' && (
         <div className="px-4 py-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
           <div className="flex items-center gap-2 mb-2">
             <AlertCircle className="h-4 w-4 text-blue-600" />
@@ -394,7 +398,7 @@ export default function DiagnosticPanel({ data, onChange, patient }) {
       <div className="p-4">
 
         {/* Diagnosis Tab */}
-        {activeTab === 'diagnosis' && (
+        {!hideDiagnosis && activeTab === 'diagnosis' && (
           <div className="space-y-4">
             {/* Selected Diagnoses */}
             {diagnosticData.diagnoses.length > 0 && (

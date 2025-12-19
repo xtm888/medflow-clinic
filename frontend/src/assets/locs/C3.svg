@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- LOCS III Cortical Grade 3 - Moderate spokes (~25-50%) -->
+  <defs>
+    <radialGradient id="c3-cortex" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="55%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="#c8c8c8" stop-opacity="0.35"/>
+    </radialGradient>
+  </defs>
+  <!-- Lens outline -->
+  <ellipse cx="50" cy="50" rx="45" ry="45" fill="none" stroke="#666" stroke-width="1.5"/>
+  <!-- Cortex background -->
+  <ellipse cx="50" cy="50" rx="44" ry="44" fill="url(#c3-cortex)"/>
+  <!-- Nucleus -->
+  <circle cx="50" cy="50" r="22" fill="none" stroke="#bbb" stroke-width="0.6"/>
+  <!-- Cortical spokes (~40% coverage) -->
+  <path d="M 50 5 L 56 28 L 44 28 Z" fill="#b8b8b8" fill-opacity="0.7"/>
+  <path d="M 82 18 L 68 36 L 60 28 Z" fill="#b8b8b8" fill-opacity="0.65"/>
+  <path d="M 95 50 L 72 56 L 72 44 Z" fill="#b8b8b8" fill-opacity="0.7"/>
+  <path d="M 82 82 L 64 68 L 72 60 Z" fill="#b8b8b8" fill-opacity="0.65"/>
+  <path d="M 50 95 L 44 72 L 56 72 Z" fill="#b8b8b8" fill-opacity="0.7"/>
+  <path d="M 18 82 L 36 66 L 40 72 Z" fill="#b8b8b8" fill-opacity="0.65"/>
+  <path d="M 5 50 L 28 44 L 28 56 Z" fill="#b8b8b8" fill-opacity="0.7"/>
+  <path d="M 18 18 L 36 32 L 28 40 Z" fill="#b8b8b8" fill-opacity="0.65"/>
+</svg>

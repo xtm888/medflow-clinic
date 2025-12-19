@@ -7,11 +7,25 @@
  * - Intraocular pressure
  * - Gonioscopy (simple or enhanced)
  * - Pathology findings
+ *
+ * Enhanced with:
+ * - Real-time patient alerts via usePatientAlerts hook
+ * - Expanded LOCS III cataract detection (ICD codes + keyword)
  */
 
-import { useState } from 'react';
-import { Eye, AlertTriangle, ChevronDown, ChevronUp, Settings } from 'lucide-react';
+import { useState, useMemo } from 'react';
+import { Eye, AlertTriangle, ChevronDown, ChevronUp, Settings, Bell } from 'lucide-react';
 import { GonioscopyPanel } from './gonioscopy';
+import LOCSIIIGrading from '../../../components/ophthalmology/LOCSIIIGrading';
+import usePatientAlerts from '../../../hooks/usePatientAlerts';
+
+// ICD-10 codes for cataract conditions
+const CATARACT_ICD_CODES = [
+  'H25', 'H25.0', 'H25.1', 'H25.2', 'H25.8', 'H25.9', // Age-related cataract
+  'H26', 'H26.0', 'H26.1', 'H26.2', 'H26.3', 'H26.4', 'H26.8', 'H26.9', // Other cataract
+  'H28', 'H28.0', 'H28.1', 'H28.2', // Cataract in diseases classified elsewhere
+  'Q12.0' // Congenital cataract
+];
 
 // Common pathology findings for quick selection
 const PATHOLOGY_OPTIONS = {
@@ -33,15 +47,71 @@ const PATHOLOGY_OPTIONS = {
 
 const GONIOSCOPY_GRADES = ['0', 'I', 'II', 'III', 'IV'];
 
-export default function OphthalmologyExamStep({ data = {}, onChange, readOnly = false }) {
+export default function OphthalmologyExamStep({
+  data = {},
+  onChange,
+  readOnly = false,
+  patientId = null,
+  diagnoses = [],
+  chiefComplaint = ''
+}) {
   const [expandedSections, setExpandedSections] = useState({
+    alerts: true,
     anteriorOD: true,
     anteriorOS: true,
     posteriorOD: false,
     posteriorOS: false,
     iop: true,
-    gonioscopy: false
+    gonioscopy: false,
+    locsGrading: true
   });
+
+  // Patient alerts hook - shows real-time alerts during exam
+  const {
+    alerts,
+    allergies,
+    hasCriticalAlerts,
+    loading: alertsLoading,
+    dismissAlert,
+    acknowledgeAlert
+  } = usePatientAlerts(patientId);
+
+  // Enhanced cataract detection:
+  // 1. Check cristallin field for "cataracte" keyword
+  // 2. Check diagnoses array for cataract ICD codes (H25.*, H26.*, etc.)
+  // 3. Check chief complaint for cataract-related keywords
+  const hasCataract = useMemo(() => {
+    // Check anterior segment findings
+    const cristallinHasCataract =
+      data?.anteriorSegment?.OD?.cristallin?.toLowerCase().includes('cataracte') ||
+      data?.anteriorSegment?.OS?.cristallin?.toLowerCase().includes('cataracte');
+
+    // Check diagnoses for cataract ICD codes
+    const diagnosesHaveCataract = diagnoses.some(dx => {
+      const code = dx?.icdCode || dx?.code || '';
+      return CATARACT_ICD_CODES.some(catCode =>
+        code.toUpperCase().startsWith(catCode.toUpperCase())
+      );
+    });
+
+    // Check diagnoses for cataract keywords
+    const diagnosesHaveCataractKeyword = diagnoses.some(dx => {
+      const name = (dx?.name || dx?.description || '').toLowerCase();
+      return name.includes('cataract') || name.includes('cataracte');
+    });
+
+    // Check chief complaint
+    const chiefComplaintHasCataract =
+      chiefComplaint?.toLowerCase().includes('cataract') ||
+      chiefComplaint?.toLowerCase().includes('cataracte');
+
+    return cristallinHasCataract || diagnosesHaveCataract || diagnosesHaveCataractKeyword || chiefComplaintHasCataract;
+  }, [
+    data?.anteriorSegment?.OD?.cristallin,
+    data?.anteriorSegment?.OS?.cristallin,
+    diagnoses,
+    chiefComplaint
+  ]);
   const [useEnhancedGonioscopy, setUseEnhancedGonioscopy] = useState(
     data?.gonioscopy?.enhanced || false
   );
@@ -133,6 +203,82 @@ export default function OphthalmologyExamStep({ data = {}, onChange, readOnly = 
   return (
     <div className="p-6 space-y-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Examen Ophtalmologique</h3>
+
+      {/* Patient Alerts Section - Real-time safety alerts during exam */}
+      {patientId && (alerts.length > 0 || allergies.length > 0) && (
+        <div className="border rounded-lg border-red-200 bg-red-50/50">
+          <button
+            onClick={() => toggleSection('alerts')}
+            className="w-full flex items-center justify-between p-3 bg-red-50 hover:bg-red-100 rounded-t-lg border-b border-red-200"
+          >
+            <div className="flex items-center">
+              <Bell className="h-4 w-4 mr-2 text-red-600" />
+              <span className="font-medium text-red-900">Alertes Patient</span>
+              <span className="ml-2 px-2 py-0.5 text-xs bg-red-200 text-red-800 rounded-full">
+                {alerts.length + allergies.length}
+              </span>
+              {hasCriticalAlerts && (
+                <span className="ml-2 px-2 py-0.5 text-xs bg-red-600 text-white rounded-full animate-pulse">
+                  CRITIQUE
+                </span>
+              )}
+            </div>
+            {expandedSections.alerts ? (
+              <ChevronUp className="h-4 w-4 text-red-500" />
+            ) : (
+              <ChevronDown className="h-4 w-4 text-red-500" />
+            )}
+          </button>
+          {expandedSections.alerts && (
+            <div className="p-4 space-y-2">
+              {/* Allergies */}
+              {allergies.length > 0 && (
+                <div className="space-y-1">
+                  <h5 className="text-xs font-semibold text-red-700 uppercase">Allergies</h5>
+                  {allergies.map((allergy, idx) => (
+                    <div key={idx} className="flex items-center gap-2 px-3 py-2 bg-red-100 rounded text-sm text-red-800">
+                      <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                      <span className="font-medium">{allergy.allergen || allergy}</span>
+                      {allergy.reaction && <span className="text-red-600">→ {allergy.reaction}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Other Alerts */}
+              {alerts.length > 0 && (
+                <div className="space-y-1">
+                  <h5 className="text-xs font-semibold text-orange-700 uppercase">Alertes</h5>
+                  {alerts.map((alert, idx) => (
+                    <div
+                      key={alert._id || idx}
+                      className={`flex items-center justify-between px-3 py-2 rounded text-sm ${
+                        alert.priority === 'critical'
+                          ? 'bg-red-100 text-red-800'
+                          : alert.priority === 'high'
+                          ? 'bg-orange-100 text-orange-800'
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+                        <span>{alert.message}</span>
+                      </div>
+                      {alert._id && !alert.acknowledgedAt && (
+                        <button
+                          onClick={() => acknowledgeAlert(alert._id)}
+                          className="text-xs px-2 py-1 bg-white/50 rounded hover:bg-white/80"
+                        >
+                          OK
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* IOP Section */}
       <div className="border rounded-lg">
@@ -305,6 +451,27 @@ export default function OphthalmologyExamStep({ data = {}, onChange, readOnly = 
           </div>
         )}
       </div>
+
+      {/* LOCS III Cataract Grading - Shows when cataract is detected */}
+      {hasCataract && (
+        <div className="border rounded-lg border-amber-300 bg-amber-50/50">
+          <SectionHeader
+            title="Classification LOCS III"
+            section="locsGrading"
+            hasAlert={true}
+          />
+          {expandedSections.locsGrading && (
+            <div className="p-4">
+              <LOCSIIIGrading
+                data={data?.locsGrading || {}}
+                onUpdate={(locsData) => updateField('locsGrading', locsData)}
+                readOnly={readOnly}
+                showComparison={false}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Posterior Segment - OD */}
       <div className="border rounded-lg">

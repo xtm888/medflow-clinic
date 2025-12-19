@@ -159,7 +159,7 @@ export default function PrescriptionsSection({
         canCreatePrescription && (
           <SectionActionButton
             icon={Plus}
-            onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+            onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
             variant="primary"
           >
             Ordonnance
@@ -251,7 +251,7 @@ export default function PrescriptionsSection({
             canCreatePrescription && (
               <SectionActionButton
                 icon={Plus}
-                onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+                onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
               >
                 Nouvelle ordonnance
               </SectionActionButton>

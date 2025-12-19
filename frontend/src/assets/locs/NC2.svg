@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- LOCS III Nuclear Color Grade 2 - Very Light Yellow -->
+  <defs>
+    <radialGradient id="nc2-nucleus" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fffde7" stop-opacity="0.5"/>
+      <stop offset="70%" stop-color="#fff9c4" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#fff59d" stop-opacity="0.3"/>
+    </radialGradient>
+    <radialGradient id="nc2-cortex" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="70%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="#e5e5e5" stop-opacity="0.25"/>
+    </radialGradient>
+  </defs>
+  <!-- Lens outline -->
+  <ellipse cx="50" cy="50" rx="45" ry="45" fill="none" stroke="#666" stroke-width="1.5"/>
+  <!-- Cortex -->
+  <ellipse cx="50" cy="50" rx="44" ry="44" fill="url(#nc2-cortex)"/>
+  <!-- Nucleus - very light yellow -->
+  <circle cx="50" cy="50" r="26" fill="url(#nc2-nucleus)"/>
+  <circle cx="50" cy="50" r="26" fill="none" stroke="#e6d99a" stroke-width="0.5"/>
+</svg>

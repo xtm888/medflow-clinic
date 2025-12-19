@@ -20,7 +20,9 @@ import {
   AlertCircle,
   ClipboardList,
   Printer,
-  Edit
+  Edit,
+  FileDown,
+  Loader2
 } from 'lucide-react';
 import visitService from '../../services/visitService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -32,10 +34,23 @@ export default function VisitDetail() {
   const [visit, setVisit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   useEffect(() => {
     loadVisit();
   }, [id]);
+
+  const handleGenerateFiche = async () => {
+    try {
+      setGeneratingPDF(true);
+      await visitService.generateFicheOphtalmologiePDF(id);
+    } catch (err) {
+      console.error('Error generating fiche PDF:', err);
+      alert('Erreur lors de la génération du PDF. Veuillez réessayer.');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
 
   const loadVisit = async () => {
     try {
@@ -611,13 +626,27 @@ export default function VisitDetail() {
         >
           Retour
         </button>
-        <button
-          onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
-        >
-          <Printer className="w-4 h-4" />
-          Imprimer
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleGenerateFiche}
+            disabled={generatingPDF}
+            className="flex items-center gap-2 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {generatingPDF ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <FileDown className="w-4 h-4" />
+            )}
+            {generatingPDF ? 'Génération...' : 'Fiche Ophta'}
+          </button>
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+          >
+            <Printer className="w-4 h-4" />
+            Imprimer
+          </button>
+        </div>
       </div>
     </div>
   );

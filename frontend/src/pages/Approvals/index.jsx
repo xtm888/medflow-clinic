@@ -112,7 +112,8 @@ export default function Approvals() {
       };
 
       const result = await approvalService.getApprovals(params);
-      setApprovals(result.data || []);
+      const approvalsData = Array.isArray(result?.data) ? result.data : [];
+      setApprovals(approvalsData);
       if (result.pagination) {
         setPagination(prev => ({ ...prev, ...result.pagination }));
       }
@@ -190,12 +191,13 @@ export default function Approvals() {
     );
   };
 
-  // Stats
+  // Stats (with defensive array check)
+  const safeApprovals = Array.isArray(approvals) ? approvals : [];
   const stats = {
-    total: approvals.length,
-    pending: approvals.filter(a => a.status === 'pending').length,
-    approved: approvals.filter(a => a.status === 'approved').length,
-    rejected: approvals.filter(a => a.status === 'rejected').length
+    total: safeApprovals.length,
+    pending: safeApprovals.filter(a => a.status === 'pending').length,
+    approved: safeApprovals.filter(a => a.status === 'approved').length,
+    rejected: safeApprovals.filter(a => a.status === 'rejected').length
   };
 
   return (
@@ -353,7 +355,7 @@ export default function Approvals() {
             <RefreshCw className="h-8 w-8 animate-spin text-yellow-600 mx-auto mb-2" />
             <p className="text-gray-500">Chargement...</p>
           </div>
-        ) : approvals.length === 0 ? (
+        ) : safeApprovals.length === 0 ? (
           <div className="p-8 text-center">
             <ShieldCheck className="h-12 w-12 text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500">Aucune demande d'approbation</p>
@@ -395,7 +397,7 @@ export default function Approvals() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {approvals.map((approval) => (
+                {safeApprovals.map((approval) => (
                   <tr
                     key={approval._id}
                     className="hover:bg-gray-50 cursor-pointer"

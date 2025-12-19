@@ -2,12 +2,14 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 
 // Create axios instance with base configuration
+// SECURITY: withCredentials enables HttpOnly cookies for XSS-safe authentication
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`,
   timeout: 60000, // Increased to 60 seconds for slow/unreliable connections
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true, // SECURITY: Enable HttpOnly cookie authentication
 });
 
 // Token refresh state management - prevents race conditions
@@ -31,12 +33,25 @@ const onRefreshFailed = (error) => {
   refreshSubscribers = [];
 };
 
-// Request interceptor for authentication and clinic context
+// Helper to get CSRF token from cookie
+function getCsrfToken() {
+  const match = document.cookie.match(/XSRF-TOKEN=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+// Request interceptor for clinic context and CSRF (auth handled by HttpOnly cookies)
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // SECURITY: Authentication handled by HttpOnly cookies (withCredentials: true)
+    // No need to manually add Authorization header - cookies are sent automatically
+
+    // SECURITY: Add CSRF token for state-changing requests
+    // Token is read from XSRF-TOKEN cookie (set by server, readable by JS)
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(config.method?.toUpperCase())) {
+      const csrfToken = getCsrfToken();
+      if (csrfToken) {
+        config.headers['X-XSRF-TOKEN'] = csrfToken;
+      }
     }
 
     // Add clinic context header for multi-clinic support
@@ -70,14 +85,14 @@ api.interceptors.response.use(
 
     const originalRequest = error.config;
 
-    // Handle 401 Unauthorized
+    // Handle 401 Unauthorized - try to refresh token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
-      const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        // No refresh token, redirect to login
-        localStorage.clear();
+      // Skip refresh attempt if this IS the refresh endpoint failing
+      if (originalRequest.url?.includes('/auth/refresh')) {
+        // Refresh token expired, redirect to login
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(error);
       }
@@ -85,11 +100,11 @@ api.interceptors.response.use(
       // If already refreshing, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
-          subscribeTokenRefresh((newToken, refreshError) => {
+          subscribeTokenRefresh((success, refreshError) => {
             if (refreshError) {
               reject(refreshError);
-            } else if (newToken) {
-              originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            } else if (success) {
+              // Retry with refreshed cookie (automatically sent)
               resolve(api(originalRequest));
             } else {
               reject(error);
@@ -102,23 +117,20 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const response = await api.post('/auth/refresh', { refreshToken });
+        // SECURITY: Refresh token sent automatically via HttpOnly cookie
+        await api.post('/auth/refresh');
 
-        const { token } = response.data;
-        localStorage.setItem('token', token);
+        // Notify all waiting requests - token refreshed via cookie
+        onTokenRefreshed(true);
 
-        // Notify all waiting requests
-        onTokenRefreshed(token);
-
-        // Retry original request with new token
-        originalRequest.headers.Authorization = `Bearer ${token}`;
+        // Retry original request (new access token cookie sent automatically)
         return api(originalRequest);
       } catch (refreshError) {
         // Notify all waiting requests of failure
         onRefreshFailed(refreshError);
 
         // Refresh failed, redirect to login
-        localStorage.clear();
+        localStorage.removeItem('user');
         window.location.href = '/login';
         return Promise.reject(refreshError);
       } finally {

@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, User, Edit, Phone, Mail, Plus, AlertTriangle,
-  Droplets, Expand, Minimize, Loader2, X, Printer, CreditCard, Eye, Download
+  Droplets, Expand, Minimize, Loader2, X, Printer, CreditCard, Eye, Download,
+  LayoutGrid, List
 } from 'lucide-react';
 import patientService from '../../services/patientService';
 import prescriptionService from '../../services/prescriptionService';
@@ -11,6 +12,9 @@ import { toast } from 'react-toastify';
 import { useAuth } from '../../contexts/AuthContext';
 import { PatientPhotoAvatar, FaceVerification } from '../../components/biometric';
 import DocumentGenerator from '../../components/documents/DocumentGenerator';
+import PatientAlertsBanner from '../../components/alerts/PatientAlertsBanner';
+import PatientCompactDashboard from '../../components/patient/PatientCompactDashboard';
+import useViewPreference from '../../hooks/useViewPreference';
 import { CollapsibleSectionGroup } from '../../components/CollapsibleSection';
 import MultiCurrencyPayment from '../../components/MultiCurrencyPayment';
 // WebSocket hooks for real-time updates
@@ -81,6 +85,10 @@ export default function PatientDetail() {
   const [faceVerified, setFaceVerified] = useState(false);
   const isDoctorRole = ['doctor', 'ophthalmologist', 'optometrist', 'orthoptist'].includes(user?.role);
   const isAdmin = user?.role === 'admin';
+
+  // View preference (standard vs compact/StudioVision)
+  // Default to 'compact' for StudioVision-style workflow
+  const { viewPreference, isCompact, toggleView } = useViewPreference('compact');
 
   // Modals
   const [showDocumentGenerator, setShowDocumentGenerator] = useState(false);
@@ -294,6 +302,28 @@ export default function PatientDetail() {
     toast.warning('Vérification ignorée par administrateur');
   };
 
+  // === PATIENT ALERT HANDLERS ===
+  const handleAlertDismiss = async (alertId) => {
+    try {
+      await patientService.dismissPatientAlert(patientId, alertId);
+      // Refresh patient data to update alerts
+      loadPatientData();
+    } catch (err) {
+      console.error('Error dismissing alert:', err);
+      toast.error('Erreur lors de la suppression de l\'alerte');
+    }
+  };
+
+  const handleAlertAcknowledge = async (alertId) => {
+    try {
+      await patientService.acknowledgePatientAlert(patientId, alertId);
+      loadPatientData();
+    } catch (err) {
+      console.error('Error acknowledging alert:', err);
+      toast.error('Erreur lors de la prise en compte de l\'alerte');
+    }
+  };
+
   // === PRESCRIPTION HANDLERS ===
   const handleViewPrescription = (prescription) => {
     setSelectedPrescription(prescription);
@@ -473,6 +503,29 @@ export default function PatientDetail() {
 
             {/* Quick Actions */}
             <div className="flex items-center gap-2">
+              {/* View Toggle */}
+              <button
+                onClick={toggleView}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors ${
+                  isCompact
+                    ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+                title={isCompact ? 'Vue standard' : 'Vue compacte StudioVision'}
+              >
+                {isCompact ? (
+                  <>
+                    <List className="h-4 w-4" />
+                    <span className="text-sm font-medium">Standard</span>
+                  </>
+                ) : (
+                  <>
+                    <LayoutGrid className="h-4 w-4" />
+                    <span className="text-sm font-medium">Compact</span>
+                  </>
+                )}
+              </button>
+
               {/* Expand/Collapse All */}
               <button
                 onClick={() => setAllExpanded(!allExpanded)}
@@ -513,7 +566,7 @@ export default function PatientDetail() {
               {/* Main CTA */}
               {canCreateExam && (
                 <button
-                  onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+                  onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
                   className="ml-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2"
                 >
                   <Plus className="h-4 w-4" />
@@ -584,7 +637,41 @@ export default function PatientDetail() {
         </div>
       </div>
 
-      {/* Main Content - Collapsible Sections */}
+      {/* Patient Alerts Banner - Clinical alerts, reminders, lab results */}
+      {patient && (patient.patientAlerts?.length > 0 || patient.allergies?.length > 0) && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <PatientAlertsBanner
+            patientId={patient._id}
+            alerts={patient.patientAlerts || []}
+            allergies={patient.allergies || []}
+            onDismiss={handleAlertDismiss}
+            onAcknowledge={handleAlertAcknowledge}
+            maxVisible={5}
+          />
+        </div>
+      )}
+
+      {/* Compact StudioVision Mode */}
+      {isCompact && patient && (
+        <PatientCompactDashboard
+          patient={patient}
+          onToggleView={toggleView}
+          onAction={(action, data) => {
+            if (action === 'print-prescription') handlePrintPrescription(data);
+            if (action === 'print-certificate') setShowDocumentGenerator(true);
+            if (action === 'view-image') handleViewImaging(data);
+          }}
+          onNavigateToSection={(section) => {
+            toggleView(); // Switch to standard view
+            setTimeout(() => {
+              sectionRefs[section]?.current?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+        />
+      )}
+
+      {/* Main Content - Standard Collapsible Sections */}
+      {!isCompact && (
       <div className="max-w-7xl mx-auto px-4 py-6">
         <CollapsibleSectionGroup>
           {/* Patient Information */}
@@ -673,6 +760,7 @@ export default function PatientDetail() {
           </div>
         </CollapsibleSectionGroup>
       </div>
+      )}
 
       {/* Fixed Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end gap-3 z-20">
@@ -686,7 +774,7 @@ export default function PatientDetail() {
         )}
         {canCreateExam && (
           <button
-            onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+            onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
             className="btn btn-primary"
           >
             <Plus className="h-4 w-4 mr-2" />

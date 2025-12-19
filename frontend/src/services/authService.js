@@ -4,12 +4,14 @@ import clinicSyncService from './clinicSyncService';
 
 const authService = {
   // Login user
+  // SECURITY: Tokens are now stored in HttpOnly cookies (XSS-safe)
   async login(credentials) {
     try {
       const response = await api.post('/auth/login', credentials);
       if (response.data.success) {
-        const { token, user } = response.data;
-        localStorage.setItem('token', token);
+        const { user } = response.data;
+        // SECURITY: Token stored in HttpOnly cookie by server, not in localStorage
+        // Only store non-sensitive user info for UI display
         localStorage.setItem('user', JSON.stringify(user));
         return { success: true, user };
       }
@@ -23,12 +25,14 @@ const authService = {
   },
 
   // Register user
+  // SECURITY: Tokens are now stored in HttpOnly cookies (XSS-safe)
   async register(userData) {
     try {
       const response = await api.post('/auth/register', userData);
       if (response.data.success) {
-        const { token, user } = response.data;
-        localStorage.setItem('token', token);
+        const { user } = response.data;
+        // SECURITY: Token stored in HttpOnly cookie by server, not in localStorage
+        // Only store non-sensitive user info for UI display
         localStorage.setItem('user', JSON.stringify(user));
         return { success: true, user };
       }
@@ -45,6 +49,7 @@ const authService = {
   // CRITICAL: Complete data cleanup to prevent data leakage
   async logout() {
     try {
+      // SECURITY: Server clears HttpOnly cookies
       await api.post('/auth/logout');
     } catch (error) {
       console.warn('[Auth] Server logout failed:', error.message);
@@ -52,8 +57,7 @@ const authService = {
 
     // CRITICAL: Clear ALL sensitive local data on logout
     try {
-      // 1. Clear authentication tokens
-      localStorage.removeItem('token');
+      // 1. Clear user info (tokens cleared by server via HttpOnly cookies)
       localStorage.removeItem('user');
 
       // 2. Clear clinic selection data
@@ -185,10 +189,11 @@ const authService = {
   },
 
   // Check if user is logged in
+  // SECURITY: Token is in HttpOnly cookie (can't access via JS), so check user data presence
+  // The actual auth check happens server-side via the cookie
   isAuthenticated() {
-    const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    return !!(token && user);
+    return !!user;
   },
 
   // Get stored user

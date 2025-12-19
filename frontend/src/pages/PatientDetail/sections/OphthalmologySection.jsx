@@ -229,7 +229,7 @@ export default function OphthalmologySection({ patient, patientId, canCreateExam
         canCreateExam && (
           <SectionActionButton
             icon={Plus}
-            onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+            onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
             variant="primary"
           >
             Consultation
@@ -320,7 +320,7 @@ export default function OphthalmologySection({ patient, patientId, canCreateExam
             canCreateExam && (
               <SectionActionButton
                 icon={Plus}
-                onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+                onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
               >
                 Nouvelle consultation
               </SectionActionButton>
@@ -510,7 +510,7 @@ export default function OphthalmologySection({ patient, patientId, canCreateExam
               count={refractionCount}
               color="blue"
               icon={Glasses}
-              onClick={() => navigate(`/ophthalmology/consultation/${patientId}`)}
+              onClick={() => navigate(`/ophthalmology/studio/${patientId}`)}
               actionLabel="+ Nouvelle"
             />
             <ExamTypeCard

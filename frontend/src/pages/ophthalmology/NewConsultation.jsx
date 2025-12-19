@@ -6,11 +6,15 @@
  * - Quick follow-up workflow (5 étapes)
  * - Refraction-only workflow (5 étapes)
  * - Consolidated dashboard (1 page - all data at once)
+ *
+ * Enhanced with:
+ * - View preference toggle (standard/compact) in step-based workflows
  */
 
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { ChevronRight, ChevronLeft, LayoutDashboard, Shield } from 'lucide-react';
+import { useNavigate, useParams, useSearchParams, Link } from 'react-router-dom';
+import { ChevronRight, ChevronLeft, LayoutDashboard, Shield, Columns, List, AlertTriangle, Sparkles } from 'lucide-react';
+import useViewPreference from '../../hooks/useViewPreference';
 import {
   ClinicalWorkflow,
   ophthalmologyWorkflowConfig,
@@ -42,7 +46,67 @@ import DiagnosisStep from './components/DiagnosisStep';
 import LaboratoryStep from './components/LaboratoryStep';
 import ProceduresStep from './components/ProceduresStep';
 import OphthalmologyExamStep from './components/OphthalmologyExamStep';
+import ContactLensFittingStep from './components/ContactLensFittingStep';
 import SummaryStep from './components/SummaryStep';
+
+/**
+ * DeprecationBanner - Guides users to the new StudioVision consultation
+ * This workflow will eventually be replaced by StudioVisionConsultation
+ */
+function DeprecationBanner({ patientId }) {
+  const [dismissed, setDismissed] = useState(false);
+
+  // Check local storage for dismissal
+  useEffect(() => {
+    const dismissedUntil = localStorage.getItem('newConsultation_deprecationDismissed');
+    if (dismissedUntil && new Date(dismissedUntil) > new Date()) {
+      setDismissed(true);
+    }
+  }, []);
+
+  const handleDismiss = () => {
+    // Dismiss for 24 hours
+    const dismissUntil = new Date(Date.now() + 24 * 60 * 60 * 1000);
+    localStorage.setItem('newConsultation_deprecationDismissed', dismissUntil.toISOString());
+    setDismissed(true);
+  };
+
+  if (dismissed) return null;
+
+  return (
+    <div className="mb-4 bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-4">
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 p-2 bg-purple-100 rounded-full">
+          <Sparkles className="h-5 w-5 text-purple-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="font-semibold text-purple-900">
+            Nouvelle interface StudioVision disponible
+          </h3>
+          <p className="text-sm text-purple-700 mt-1">
+            Une nouvelle interface de consultation avec onglets est disponible,
+            offrant un accès plus rapide à toutes les données cliniques.
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <Link
+              to={patientId ? `/studiovision/consultation/${patientId}` : '/studiovision/consultation'}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-lg hover:bg-purple-700 transition"
+            >
+              <Sparkles className="h-4 w-4" />
+              Essayer StudioVision
+            </Link>
+            <button
+              onClick={handleDismiss}
+              className="text-sm text-purple-600 hover:text-purple-800"
+            >
+              Ne plus afficher
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Map step IDs to components
 const stepComponents = {
@@ -54,6 +118,7 @@ const stepComponents = {
   AdditionalTestsStep,
   KeratometryStep,
   OphthalmologyExamStep,
+  ContactLensFittingStep,
   DiagnosisStep,
   LaboratoryStep,
   ProceduresStep,
@@ -88,6 +153,9 @@ export default function NewConsultation() {
 
   // Info panel sidebar state
   const [showInfoPanel, setShowInfoPanel] = useState(false);
+
+  // View preference toggle (standard/compact)
+  const { viewPreference, isCompact, toggleView } = useViewPreference();
 
   // Load visit first if visitId is in URL, then extract patientId
   useEffect(() => {
@@ -248,6 +316,8 @@ export default function NewConsultation() {
   if (!selectedPatient || (!verificationPassed && !showVerification)) {
     return (
       <div className="max-w-2xl mx-auto p-6">
+        <DeprecationBanner patientId={patientId} />
+
         <h1 className="text-2xl font-bold mb-6">Nouvelle Consultation</h1>
 
         <OfflineWarningBanner isCritical={true} />
@@ -431,11 +501,53 @@ export default function NewConsultation() {
   // Step-based Clinical workflow view
   return (
     <div className="h-screen flex flex-col">
+      {/* Workflow Header with View Toggle */}
+      <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <h2 className="text-sm font-medium text-gray-700">
+            {workflowType === 'full' ? 'Consultation Complète' :
+             workflowType === 'followup' ? 'Suivi Rapide' :
+             'Réfraction'}
+          </h2>
+          {selectedPatient && (
+            <span className="text-sm text-gray-500">
+              • {selectedPatient.firstName} {selectedPatient.lastName}
+            </span>
+          )}
+        </div>
+
+        {/* View Toggle Button */}
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Vue:</span>
+          <button
+            onClick={toggleView}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
+              isCompact
+                ? 'bg-purple-100 text-purple-700 border border-purple-200'
+                : 'bg-gray-100 text-gray-700 border border-gray-200 hover:bg-gray-200'
+            }`}
+            title={isCompact ? 'Vue compacte activée' : 'Passer en vue compacte'}
+          >
+            {isCompact ? (
+              <>
+                <Columns className="w-4 h-4" />
+                Compacte
+              </>
+            ) : (
+              <>
+                <List className="w-4 h-4" />
+                Standard
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+
       <OfflineWarningBanner isCritical={true} />
 
       <div className="flex flex-1">
       {/* Main Workflow Area */}
-      <div className={`flex-1 transition-all duration-300 ${showInfoPanel ? 'mr-96' : ''}`}>
+      <div className={`flex-1 transition-all duration-300 ${showInfoPanel ? 'mr-96' : ''} ${isCompact ? 'compact-view' : ''}`}>
         <ClinicalWorkflow
           workflowConfig={getWorkflowConfig()}
           stepComponents={stepComponents}

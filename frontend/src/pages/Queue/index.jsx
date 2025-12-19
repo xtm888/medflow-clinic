@@ -25,9 +25,8 @@ import QueueStats from './QueueStats';
 import QueueList from './QueueList';
 import QueueSidebar from './QueueSidebar';
 
-// Import modals from backup file (will be refactored in next phase)
-import Search from 'lucide-react/dist/esm/icons/search';
-import { PatientSelector } from '../../modules/patient';
+// Import modals
+import { CheckInModal, WalkInModal, RoomModal, ShortcutsModal } from './modals';
 import {
   Clock, User, CheckCircle, Play, XCircle, MapPin,
   Volume2, Crown, Baby, UserCheck, Zap, Shield,
@@ -472,7 +471,7 @@ export default function Queue() {
 
       if (queueEntry.visitId) {
         toast.info('Ouverture de la consultation...');
-        navigate(`/ophthalmology/consultation/${patientId}?visitId=${queueEntry.visitId}&appointmentId=${appointmentId}`);
+        navigate(`/ophthalmology/studio/${patientId}?visitId=${queueEntry.visitId}&appointmentId=${appointmentId}`);
       } else {
         toast.info('Création d\'une nouvelle consultation...');
         navigate(`/visits/new/${patientId}?appointmentId=${appointmentId}`);
@@ -768,9 +767,215 @@ export default function Queue() {
         />
       </div>
 
-      {/* TODO: Extract modals to separate components in next phase */}
-      {/* For now, import them from the backup file */}
-      {/* Check-in Modal, Walk-in Modal, Room Modal, etc. */}
+      {/* Check-in Modal */}
+      <CheckInModal
+        isOpen={showCheckInModal}
+        onClose={() => {
+          setShowCheckInModal(false);
+          setSelectedAppointment(null);
+        }}
+        onSubmit={async (data) => {
+          try {
+            const result = await dispatch(checkInPatient({
+              appointmentId: data.appointmentId,
+              priority: data.priority,
+              room: data.room
+            })).unwrap();
+
+            if (data.room && result?.queueEntry?._id) {
+              try {
+                await api.put(`/queue/${result.queueEntry._id}`, {
+                  roomNumber: data.room
+                });
+              } catch (roomErr) {
+                console.error('Failed to assign room:', roomErr);
+              }
+            }
+
+            toast.success('Patient enregistré avec succès!');
+            setTimeout(() => {
+              dispatch(fetchQueue());
+              dispatch(fetchQueueStats());
+            }, 300);
+          } catch (err) {
+            toast.error(err || 'Échec de l\'enregistrement');
+            throw err;
+          }
+        }}
+        appointments={todaysAppointments}
+        rooms={availableRooms}
+        loadingAppointments={loadingAppointments}
+        loadingRooms={loadingRooms}
+      />
+
+      {/* Walk-in Modal */}
+      <WalkInModal
+        isOpen={showWalkInModal}
+        onClose={() => {
+          setShowWalkInModal(false);
+          setSelectedWalkInPatient(null);
+        }}
+        onSubmit={async (data) => {
+          try {
+            await dispatch(checkInPatient(data)).unwrap();
+            toast.success('Patient sans RDV ajouté à la file!');
+            setTimeout(() => {
+              dispatch(fetchQueue());
+              dispatch(fetchQueueStats());
+            }, 300);
+          } catch (err) {
+            toast.error(err || 'Échec d\'ajout du patient');
+            throw err;
+          }
+        }}
+      />
+
+      {/* Room Selection Modal */}
+      <RoomModal
+        isOpen={showRoomModal}
+        onClose={() => {
+          setShowRoomModal(false);
+          setSelectedPatientForRoom(null);
+          setSelectedRoom('');
+        }}
+        onConfirm={async (roomNumber) => {
+          const queueEntry = selectedPatientForRoom;
+          const roomData = availableRooms.find(r => r._id === roomNumber || r.roomNumber === roomNumber);
+          const finalRoomNumber = roomData?.roomNumber || roomNumber;
+
+          try {
+            const response = await api.post(`/queue/${queueEntry.appointmentId}/call`, {
+              roomId: roomData?._id,
+              roomNumber: finalRoomNumber,
+              enableAudio
+            });
+
+            const result = response.data;
+            toast.success(`${queueEntry.patient?.firstName || 'Patient'} appelé en salle ${finalRoomNumber}`);
+
+            dispatch(fetchQueue());
+            dispatch(fetchQueueStats());
+
+            if (result.data?.announcement?.audioText && enableAudio) {
+              if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(result.data.announcement.audioText);
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.9;
+                window.speechSynthesis.speak(utterance);
+              }
+            }
+
+            const patientId = queueEntry.patient?._id || queueEntry.patient?.id || queueEntry.patientId;
+            const appointmentId = queueEntry.appointmentId || queueEntry._id;
+
+            if (!patientId) {
+              toast.error('ID patient non disponible pour la navigation');
+              return;
+            }
+
+            if (queueEntry.visitId) {
+              toast.info('Ouverture de la consultation...');
+              navigate(`/ophthalmology/studio/${patientId}?visitId=${queueEntry.visitId}&appointmentId=${appointmentId}`);
+            } else {
+              toast.info('Création d\'une nouvelle consultation...');
+              navigate(`/visits/new/${patientId}?appointmentId=${appointmentId}`);
+            }
+          } catch (err) {
+            toast.error(err.message || 'Échec de l\'appel du patient');
+            throw err;
+          }
+        }}
+        patient={selectedPatientForRoom}
+        rooms={availableRooms}
+        loadingRooms={loadingRooms}
+        enableAudio={enableAudio}
+        onToggleAudio={() => setEnableAudio(prev => !prev)}
+      />
+
+      {/* Keyboard Shortcuts Modal */}
+      <ShortcutsModal
+        isOpen={showShortcutsHelp}
+        onClose={() => setShowShortcutsHelp(false)}
+      />
+
+      {/* Reschedule Lab Modal */}
+      {showRescheduleModal && selectedRejectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Reprogrammer l'examen</h3>
+              <button
+                onClick={() => {
+                  setShowRescheduleModal(false);
+                  setSelectedRejectedOrder(null);
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="p-3 bg-red-50 rounded-lg">
+                <p className="text-sm text-red-800">
+                  <strong>Patient:</strong> {selectedRejectedOrder.patient?.firstName} {selectedRejectedOrder.patient?.lastName}
+                </p>
+                <p className="text-sm text-red-600">
+                  <strong>Pénalité:</strong> {(selectedRejectedOrder.rejection?.penaltyAmount || 0).toLocaleString()} FCFA
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nouvelle date
+                </label>
+                <input
+                  type="date"
+                  value={rescheduleDate}
+                  onChange={(e) => setRescheduleDate(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes
+                </label>
+                <textarea
+                  value={rescheduleNotes}
+                  onChange={(e) => setRescheduleNotes(e.target.value)}
+                  rows={2}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Instructions pour le patient..."
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setShowRescheduleModal(false)}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleRescheduleLabOrder}
+                  disabled={rescheduling || !rescheduleDate}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+                >
+                  {rescheduling ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
+                      Reprogrammation...
+                    </>
+                  ) : (
+                    <>
+                      <Calendar className="h-4 w-4" />
+                      Reprogrammer
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Document Generator Modal */}
       {showDocumentGenerator && selectedPatientForDoc && selectedPatientForDoc.patient && (

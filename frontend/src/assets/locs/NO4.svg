@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <!-- LOCS III Nuclear Opalescence Grade 4 - Significant opacity -->
+  <defs>
+    <radialGradient id="no4-nucleus" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c0c0c0" stop-opacity="0.8"/>
+      <stop offset="40%" stop-color="#b5b5b5" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#a8a8a8" stop-opacity="0.6"/>
+    </radialGradient>
+    <radialGradient id="no4-cortex" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="transparent"/>
+      <stop offset="60%" stop-color="transparent"/>
+      <stop offset="100%" stop-color="#bbb" stop-opacity="0.4"/>
+    </radialGradient>
+  </defs>
+  <!-- Lens outline -->
+  <ellipse cx="50" cy="50" rx="45" ry="45" fill="none" stroke="#666" stroke-width="1.5"/>
+  <!-- Cortex region -->
+  <ellipse cx="50" cy="50" rx="44" ry="44" fill="url(#no4-cortex)"/>
+  <!-- Nucleus - significant haze -->
+  <circle cx="50" cy="50" r="28" fill="url(#no4-nucleus)"/>
+  <!-- Inner opacity layers -->
+  <circle cx="50" cy="50" r="18" fill="#b8b8b8" fill-opacity="0.4"/>
+  <circle cx="50" cy="50" r="10" fill="#aaa" fill-opacity="0.3"/>
+  <!-- Nucleus border -->
+  <circle cx="50" cy="50" r="28" fill="none" stroke="#999" stroke-width="0.8"/>
+</svg>

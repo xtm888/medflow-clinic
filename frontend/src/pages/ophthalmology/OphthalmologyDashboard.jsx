@@ -69,7 +69,8 @@ export default function OphthalmologyDashboard() {
   };
 
   const handleSelectPatient = (patient) => {
-    navigate(`/ophthalmology/refraction?patientId=${patient._id || patient.id}`);
+    // Navigate to StudioVision consultation page (tab-based workflow)
+    navigate(`/ophthalmology/studio/${patient._id || patient.id}`);
   };
 
   // Static data that doesn't come from API
@@ -135,12 +136,13 @@ export default function OphthalmologyDashboard() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <button
-          onClick={() => navigate('/ophthalmology/consultation')}
-          className="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-4 rounded-lg hover:shadow-lg transition-shadow flex flex-col items-center"
+          onClick={() => setShowPatientSelector(true)}
+          className="bg-gradient-to-r from-purple-600 to-pink-500 text-white p-4 rounded-lg hover:shadow-lg transition-shadow flex flex-col items-center relative"
         >
           <Eye className="w-8 h-8 mb-2" />
-          <span className="font-medium">Consultation</span>
-          <span className="text-xs opacity-90">Nouvelle visite</span>
+          <span className="font-medium">StudioVision</span>
+          <span className="text-xs opacity-90">Consultation rapide</span>
+          <span className="absolute top-1 right-1 px-1.5 py-0.5 bg-white/20 rounded text-[10px]">Pro</span>
         </button>
         <button
           onClick={() => navigate('/queue')}

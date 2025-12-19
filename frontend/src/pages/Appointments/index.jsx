@@ -178,6 +178,7 @@ export default function Appointments() {
   const confirmedCount = appointments.filter(apt => apt.status === 'confirmed' || apt.status === 'CONFIRMED').length;
   const pendingCount = appointments.filter(apt => apt.status === 'pending' || apt.status === 'PENDING').length;
   const completedToday = todayAppointments.filter(apt => apt.status === 'completed' || apt.status === 'COMPLETED').length;
+  const noShowCount = appointments.filter(apt => apt.status === 'no_show' || apt.status === 'NO_SHOW').length;
 
   // Get patient object - handles both populated objects and ID references
   const getPatientObject = (patientData) => {
@@ -567,7 +568,7 @@ export default function Appointments() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <div className="card bg-gradient-to-br from-blue-500 to-blue-600 text-white">
           <div className="flex items-center justify-between">
             <div>
@@ -605,6 +606,16 @@ export default function Appointments() {
               <p className="text-3xl font-bold">{completedToday}</p>
             </div>
             <Users className="h-10 w-10 text-purple-200" />
+          </div>
+        </div>
+
+        <div className="card bg-gradient-to-br from-red-500 to-red-600 text-white">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-red-100">Absences</p>
+              <p className="text-3xl font-bold">{noShowCount}</p>
+            </div>
+            <UserX className="h-10 w-10 text-red-200" />
           </div>
         </div>
       </div>

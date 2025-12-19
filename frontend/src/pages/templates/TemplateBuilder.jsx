@@ -116,9 +116,9 @@ export default function TemplateBuilder({ template, onClose }) {
       setError(null);
 
       if (template?._id) {
-        await api.put(`/api/templates/${template._id}`, formData);
+        await api.put(`/consultation-templates/${template._id}`, formData);
       } else {
-        await api.post('/api/templates', formData);
+        await api.post('/consultation-templates', formData);
       }
 
       onClose();

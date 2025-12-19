@@ -53,9 +53,10 @@ export default function ClinicSelector() {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} data-testid="clinic-selector">
       <button
         onClick={() => setIsOpen(!isOpen)}
+        data-testid="clinic-selector-button"
         className={`flex items-center gap-2 px-3 py-1.5 text-sm rounded-lg transition-colors
           ${isAllClinicsSelected
             ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
@@ -65,14 +66,14 @@ export default function ClinicSelector() {
         `}
       >
         <Building2 className="w-4 h-4" />
-        <span className="hidden sm:inline max-w-[150px] truncate">
+        <span className="hidden sm:inline max-w-[150px] truncate" data-testid="selected-clinic-name">
           {selectedClinicName}
         </span>
         <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50">
+        <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50" data-testid="clinic-selector-dropdown">
           <div className="p-2">
             <div className="px-3 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">
               Select Clinic
@@ -85,6 +86,7 @@ export default function ClinicSelector() {
                   selectClinic(null);
                   setIsOpen(false);
                 }}
+                data-testid="clinic-option-all"
                 className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors
                   ${isAllClinicsSelected
                     ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'
@@ -113,7 +115,7 @@ export default function ClinicSelector() {
             )}
 
             {/* Individual clinics */}
-            <div className="max-h-64 overflow-y-auto">
+            <div className="max-h-64 overflow-y-auto" data-testid="clinic-options-list">
               {clinics.map((clinic) => {
                 const isSelected = selectedClinic?._id === clinic._id ||
                                    selectedClinic?.clinicId === clinic.clinicId;
@@ -124,6 +126,7 @@ export default function ClinicSelector() {
                       selectClinic(clinic);
                       setIsOpen(false);
                     }}
+                    data-testid={`clinic-option-${clinic.clinicId || clinic._id}`}
                     className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-md transition-colors
                       ${isSelected
                         ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300'

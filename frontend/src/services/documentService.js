@@ -28,7 +28,7 @@ const documentService = {
   async uploadDocument(file, metadata = {}) {
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('document', file); // Backend expects 'document' field name
       Object.keys(metadata).forEach(key => {
         formData.append(key, metadata[key]);
       });

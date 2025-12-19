@@ -904,6 +904,90 @@ const visitService = {
       visit.notes?.toLowerCase().includes(lowerQuery) ||
       visit.visitId?.toLowerCase().includes(lowerQuery)
     );
+  },
+
+  /**
+   * Generate Fiche d'Ophtalmologie PDF - ONLINE ONLY
+   * Downloads the PDF document for a specific visit
+   * @param {string} visitId - Visit ID
+   * @param {Object} options - Optional parameters (warning, nextAppointment)
+   * @returns {Promise} PDF blob
+   */
+  async generateFicheOphtalmologiePDF(visitId, options = {}) {
+    if (!navigator.onLine) {
+      throw new Error('La génération du PDF nécessite une connexion internet.');
+    }
+    try {
+      const params = new URLSearchParams();
+      if (options.warning) params.append('warning', options.warning);
+      if (options.nextAppointment) params.append('nextAppointment', options.nextAppointment);
+
+      const response = await api.get(`/visits/${visitId}/fiche-pdf?${params.toString()}`, {
+        responseType: 'blob'
+      });
+
+      // Create blob URL and trigger download
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+
+      // Extract filename from Content-Disposition header or generate default
+      const contentDisposition = response.headers['content-disposition'];
+      let filename = `fiche-ophta-${visitId}-${new Date().toISOString().split('T')[0]}.pdf`;
+      if (contentDisposition) {
+        const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+        if (filenameMatch && filenameMatch[1]) {
+          filename = filenameMatch[1].replace(/['"]/g, '');
+        }
+      }
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Clean up blob URL
+      window.URL.revokeObjectURL(url);
+
+      return { success: true, filename };
+    } catch (error) {
+      console.error('Error generating Fiche PDF:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Preview Fiche d'Ophtalmologie PDF in new tab - ONLINE ONLY
+   * Opens the PDF document in a new browser tab
+   * @param {string} visitId - Visit ID
+   * @param {Object} options - Optional parameters
+   * @returns {Promise} Result
+   */
+  async previewFicheOphtalmologiePDF(visitId, options = {}) {
+    if (!navigator.onLine) {
+      throw new Error('La prévisualisation du PDF nécessite une connexion internet.');
+    }
+    try {
+      const params = new URLSearchParams();
+      if (options.warning) params.append('warning', options.warning);
+      if (options.nextAppointment) params.append('nextAppointment', options.nextAppointment);
+
+      const response = await api.get(`/visits/${visitId}/fiche-pdf?${params.toString()}`, {
+        responseType: 'blob'
+      });
+
+      // Create blob URL and open in new tab
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      window.open(url, '_blank');
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error previewing Fiche PDF:', error);
+      throw error;
+    }
   }
 };
 

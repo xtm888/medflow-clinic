@@ -104,9 +104,11 @@ export default function ImagingSection({
   const fileInputRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [imaging, setImaging] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [demoMode, setDemoMode] = useState(false); // CRITICAL FIX: Show real patient data by default, not demo
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Load demo images on mount and when demoMode changes
   useEffect(() => {
@@ -195,39 +197,140 @@ export default function ImagingSection({
     }
   };
 
-  const handleUpload = async (event) => {
-    const files = event.target.files;
+  // Validate file before upload
+  const validateFile = (file) => {
+    const maxSize = 50 * 1024 * 1024; // 50MB
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf', 'application/dicom'];
+    const allowedExtensions = ['.dcm', '.jpg', '.jpeg', '.png', '.gif', '.pdf'];
+
+    const ext = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+
+    if (file.size > maxSize) {
+      return { valid: false, error: `${file.name} dépasse 50MB (${(file.size / 1024 / 1024).toFixed(1)}MB)` };
+    }
+
+    if (!allowedExtensions.includes(ext) && !allowedTypes.includes(file.type)) {
+      return { valid: false, error: `${file.name}: Format non supporté. Utilisez DICOM, JPG, PNG ou PDF.` };
+    }
+
+    return { valid: true };
+  };
+
+  // Process files for upload (from input or drag-drop)
+  const processFiles = async (files) => {
     if (!files || files.length === 0) return;
 
     setUploading(true);
+    setUploadProgress(0);
+
+    const totalFiles = files.length;
+    let uploadedCount = 0;
+    let errorCount = 0;
+
     try {
       for (const file of files) {
-        if (file.size > 50 * 1024 * 1024) {
-          toast.error(`${file.name} dépasse 50MB`);
+        // Validate file
+        const validation = validateFile(file);
+        if (!validation.valid) {
+          toast.error(validation.error);
+          errorCount++;
           continue;
         }
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('patientId', patientId);
-        formData.append('category', 'imaging');
-        formData.append('title', file.name);
+        try {
+          // Upload with progress tracking - pass file and metadata separately
+          await documentService.uploadDocument(file, {
+            patientId,
+            category: 'imaging',
+            title: file.name,
+            onProgress: (progress) => {
+              // Calculate overall progress across all files
+              const fileProgress = (uploadedCount / totalFiles) * 100 + (progress / totalFiles);
+              setUploadProgress(Math.round(fileProgress));
+            }
+          });
 
-        await documentService.uploadDocument(formData);
+          uploadedCount++;
+        } catch (err) {
+          errorCount++;
+          // Handle specific error types
+          if (err.response?.status === 409) {
+            toast.warning(`${file.name}: Ce fichier existe déjà (doublon détecté)`);
+          } else if (err.response?.status === 413) {
+            toast.error(`${file.name}: Fichier trop volumineux`);
+          } else if (err.response?.status === 400) {
+            toast.error(`${file.name}: ${err.response?.data?.message || 'Fichier invalide'}`);
+          } else if (err.response?.status === 403) {
+            toast.error('Vous n\'avez pas la permission de télécharger des images');
+            break; // Stop on permission error
+          } else {
+            toast.error(`${file.name}: Erreur de téléchargement`);
+          }
+        }
       }
-      toast.success('Image(s) téléchargée(s)');
 
-      // Force reload by clearing and reloading
-      setImaging([]);
-      await loadData();
+      // Summary toast
+      if (uploadedCount > 0) {
+        if (errorCount > 0) {
+          toast.success(`${uploadedCount}/${totalFiles} image(s) téléchargée(s)`);
+        } else {
+          toast.success(`${uploadedCount} image(s) téléchargée(s) avec succès`);
+        }
+
+        // Force reload by clearing and reloading
+        setImaging([]);
+        await loadData();
+      }
     } catch (err) {
       console.error('Error uploading:', err);
-      toast.error('Erreur lors du téléchargement');
+      toast.error('Erreur inattendue lors du téléchargement');
     } finally {
       setUploading(false);
+      setUploadProgress(0);
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    }
+  };
+
+  // Handle file input change
+  const handleUpload = async (event) => {
+    await processFiles(event.target.files);
+  };
+
+  // Drag and drop handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (canUploadImaging) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+
+    if (!canUploadImaging) {
+      toast.warning('Vous n\'avez pas la permission de télécharger des images');
+      return;
+    }
+
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await processFiles(files);
     }
   };
 
@@ -267,15 +370,33 @@ export default function ImagingSection({
 
   return (
     <>
-      <CollapsibleSection
-        title="Imagerie"
-        icon={Image}
-        iconColor="text-cyan-600"
-        gradient="from-cyan-50 to-teal-50"
-        defaultExpanded={false}
-        onExpand={loadData}
-        loading={loading}
-        badge={
+      <div
+        onDragEnter={handleDragEnter}
+        onDragLeave={handleDragLeave}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+        className={`relative transition-all ${isDragOver ? 'ring-2 ring-cyan-400 ring-offset-2 rounded-xl' : ''}`}
+      >
+        {/* Drag overlay */}
+        {isDragOver && (
+          <div className="absolute inset-0 bg-cyan-100/80 backdrop-blur-sm rounded-xl z-10 flex items-center justify-center">
+            <div className="text-center">
+              <Upload className="h-12 w-12 text-cyan-600 mx-auto mb-2" />
+              <p className="text-cyan-700 font-medium">Déposer les fichiers ici</p>
+              <p className="text-cyan-600 text-sm">DICOM, JPG, PNG, PDF (max 50MB)</p>
+            </div>
+          </div>
+        )}
+
+        <CollapsibleSection
+          title="Imagerie"
+          icon={Image}
+          iconColor="text-cyan-600"
+          gradient="from-cyan-50 to-teal-50"
+          defaultExpanded={false}
+          onExpand={loadData}
+          loading={loading}
+          badge={
           Array.isArray(imaging) && imaging.length > 0 && (
             <span className="px-2 py-0.5 text-xs bg-cyan-100 text-cyan-700 rounded-full">
               {imaging.length} images
@@ -429,15 +550,29 @@ export default function ImagingSection({
               {/* Upload Card */}
               {canUploadImaging && (
                 <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="aspect-square bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-cyan-400 hover:bg-cyan-50 transition"
+                  onClick={() => !uploading && fileInputRef.current?.click()}
+                  className={`aspect-square bg-gray-50 border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition ${
+                    uploading
+                      ? 'border-cyan-400 bg-cyan-50 cursor-wait'
+                      : 'border-gray-300 cursor-pointer hover:border-cyan-400 hover:bg-cyan-50'
+                  }`}
                 >
                   {uploading ? (
-                    <Loader2 className="h-8 w-8 text-cyan-500 animate-spin" />
+                    <div className="flex flex-col items-center px-2">
+                      <Loader2 className="h-6 w-6 text-cyan-500 animate-spin mb-2" />
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mb-1">
+                        <div
+                          className="bg-cyan-500 h-1.5 rounded-full transition-all duration-300"
+                          style={{ width: `${uploadProgress}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-cyan-600 font-medium">{uploadProgress}%</span>
+                    </div>
                   ) : (
                     <>
                       <Upload className="h-8 w-8 text-gray-400" />
                       <span className="text-xs text-gray-500 mt-1">Ajouter</span>
+                      <span className="text-[10px] text-gray-400">ou glisser-déposer</span>
                     </>
                   )}
                 </div>
@@ -467,7 +602,7 @@ export default function ImagingSection({
 
             {/* Drop zone hint */}
             <p className="text-xs text-center text-gray-400">
-              Formats: DICOM, JPG, PNG, PDF (max 50MB)
+              Glissez-déposez ou cliquez pour ajouter • DICOM, JPG, PNG, PDF (max 50MB)
             </p>
           </div>
         )}
@@ -536,6 +671,7 @@ export default function ImagingSection({
           </div>
         )}
       </CollapsibleSection>
+      </div>
 
       {/* Full Comparison Viewer */}
       {showComparisonViewer && (

@@ -6,11 +6,15 @@
  * - Add multiple diagnoses
  * - Mark primary diagnosis
  * - Add notes per diagnosis
+ *
+ * StudioVision Parity:
+ * - Includes PathologyPicker 3-column view mode
  */
 
 import { useState } from 'react';
-import { Search, Plus, X, Star, AlertCircle } from 'lucide-react';
+import { Search, Plus, X, Star, AlertCircle, LayoutGrid, List } from 'lucide-react';
 import api from '../../../services/apiConfig';
+import PathologyPicker, { PathologySummary } from '../../../components/pathology';
 
 // Common ophthalmology ICD-10 codes for quick selection
 const COMMON_DIAGNOSES = [
@@ -31,8 +35,45 @@ export default function DiagnosisStep({ data = [], onChange, readOnly = false })
   const [searchResults, setSearchResults] = useState([]);
   const [searching, setSearching] = useState(false);
   const [showCommon, setShowCommon] = useState(true);
+  const [viewMode, setViewMode] = useState('standard'); // 'standard' | 'studiovision'
 
   const diagnoses = Array.isArray(data) ? data : [];
+
+  // Handle pathology selection from PathologyPicker (StudioVision mode)
+  const handlePathologyChange = (pathologyData) => {
+    // Convert PathologyPicker format to diagnoses format
+    const newDiagnoses = [];
+
+    // Add diagnostic as primary diagnosis
+    if (pathologyData.diagnostic) {
+      newDiagnoses.push({
+        code: pathologyData.diagnostic.code || '',
+        description: pathologyData.diagnostic.name || pathologyData.diagnostic,
+        isPrimary: true,
+        notes: pathologyData.observation || '',
+        addedAt: new Date().toISOString(),
+        // StudioVision-specific fields
+        dominante: pathologyData.dominante,
+        category: pathologyData.category,
+        symptoms: pathologyData.symptoms || [],
+        descriptions: pathologyData.descriptions || [],
+        laterality: pathologyData.laterality,
+        severity: pathologyData.severity,
+        autoText: pathologyData.autoText
+      });
+    }
+
+    // If we have existing diagnoses that aren't from PathologyPicker, merge
+    const existingNonPathology = diagnoses.filter(d => !d.autoText);
+    if (existingNonPathology.length > 0) {
+      // Make them secondary
+      existingNonPathology.forEach(d => {
+        newDiagnoses.push({ ...d, isPrimary: false });
+      });
+    }
+
+    onChange?.(newDiagnoses);
+  };
 
   // Search ICD-10 codes
   const searchDiagnoses = async (query) => {
@@ -122,13 +163,79 @@ export default function DiagnosisStep({ data = [], onChange, readOnly = false })
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-semibold text-gray-900">Diagnostics</h3>
-        <span className="text-sm text-gray-500">
-          {diagnoses.length} diagnostic{diagnoses.length !== 1 ? 's' : ''}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">
+            {diagnoses.length} diagnostic{diagnoses.length !== 1 ? 's' : ''}
+          </span>
+
+          {/* View Mode Toggle */}
+          {!readOnly && (
+            <div className="flex bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('standard')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors ${
+                  viewMode === 'standard'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Vue standard (CIM-10)"
+              >
+                <List className="w-4 h-4" />
+                Standard
+              </button>
+              <button
+                onClick={() => setViewMode('studiovision')}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded text-sm transition-colors ${
+                  viewMode === 'studiovision'
+                    ? 'bg-white text-purple-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Vue StudioVision (3 colonnes)"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                StudioVision
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Search */}
-      {!readOnly && (
+      {/* StudioVision Mode - PathologyPicker */}
+      {viewMode === 'studiovision' && !readOnly && (
+        <div className="border-2 border-purple-200 rounded-lg overflow-hidden">
+          <PathologyPicker
+            value={diagnoses[0] ? {
+              dominante: diagnoses[0].dominante || 'REFRACTION',
+              category: diagnoses[0].category,
+              symptoms: diagnoses[0].symptoms || [],
+              descriptions: diagnoses[0].descriptions || [],
+              diagnostic: diagnoses[0].description ? { name: diagnoses[0].description, code: diagnoses[0].code } : null,
+              observation: diagnoses[0].notes || '',
+              laterality: diagnoses[0].laterality,
+              severity: diagnoses[0].severity
+            } : undefined}
+            onChange={handlePathologyChange}
+            height={450}
+          />
+        </div>
+      )}
+
+      {/* StudioVision Mode - Summary (read-only) */}
+      {viewMode === 'studiovision' && readOnly && diagnoses[0] && (
+        <PathologySummary
+          data={{
+            dominante: diagnoses[0].dominante || 'REFRACTION',
+            symptoms: diagnoses[0].symptoms || [],
+            descriptions: diagnoses[0].descriptions || [],
+            diagnostic: { name: diagnoses[0].description, code: diagnoses[0].code },
+            observation: diagnoses[0].notes || '',
+            autoText: diagnoses[0].autoText || ''
+          }}
+        />
+      )}
+
+      {/* Standard Mode - Search */}
+      {viewMode === 'standard' && !readOnly && (
         <div className="space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
@@ -211,8 +318,8 @@ export default function DiagnosisStep({ data = [], onChange, readOnly = false })
         </div>
       )}
 
-      {/* Selected Diagnoses */}
-      {diagnoses.length === 0 ? (
+      {/* Standard Mode - Selected Diagnoses */}
+      {viewMode === 'standard' && diagnoses.length === 0 ? (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
           <AlertCircle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500">Aucun diagnostic ajouté</p>
@@ -220,7 +327,7 @@ export default function DiagnosisStep({ data = [], onChange, readOnly = false })
             Recherchez et ajoutez des codes CIM-10
           </p>
         </div>
-      ) : (
+      ) : viewMode === 'standard' && diagnoses.length > 0 ? (
         <div className="space-y-3">
           {diagnoses.map((diagnosis, index) => (
             <div
@@ -280,7 +387,7 @@ export default function DiagnosisStep({ data = [], onChange, readOnly = false })
             </div>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

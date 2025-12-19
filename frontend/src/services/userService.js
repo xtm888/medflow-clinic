@@ -149,6 +149,153 @@ const userService = {
       console.error('Error updating permissions:', error);
       throw error;
     }
+  },
+
+  // ============================================
+  // FAVORITE MEDICATIONS - StudioVision Parity
+  // ============================================
+
+  /**
+   * Get current user's favorite medications
+   */
+  async getFavoriteMedications() {
+    try {
+      const response = await api.get('/users/me/favorites/medications');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching favorite medications:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Add medication to favorites
+   */
+  async addFavoriteMedication(medicationData) {
+    try {
+      const response = await api.post('/users/me/favorites/medications', medicationData);
+      // Update local storage user data
+      this.updateLocalUserPreferences(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding favorite medication:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Remove medication from favorites
+   */
+  async removeFavoriteMedication(medicationId) {
+    try {
+      const response = await api.delete(`/users/me/favorites/medications/${medicationId}`);
+      this.updateLocalUserPreferences(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error removing favorite medication:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reorder favorite medications
+   */
+  async reorderFavoriteMedications(orderedIds) {
+    try {
+      const response = await api.put('/users/me/favorites/medications/reorder', { orderedIds });
+      this.updateLocalUserPreferences(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error reordering favorite medications:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update default dosage for a favorite medication
+   */
+  async updateFavoriteMedicationDosage(medicationId, dosage) {
+    try {
+      const response = await api.put(`/users/me/favorites/medications/${medicationId}/dosage`, dosage);
+      this.updateLocalUserPreferences(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating favorite medication dosage:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Record usage of a favorite (for analytics/sorting)
+   */
+  async recordFavoriteUsage(medicationId) {
+    try {
+      await api.post(`/users/me/favorites/medications/${medicationId}/use`);
+    } catch (error) {
+      // Non-critical, don't throw
+      console.warn('Failed to record favorite usage:', error);
+    }
+  },
+
+  // ============================================
+  // USER PREFERENCES - StudioVision Parity
+  // ============================================
+
+  /**
+   * Get user preferences
+   */
+  async getPreferences() {
+    try {
+      const response = await api.get('/users/me/preferences');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user preferences:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update user preferences
+   */
+  async updatePreferences(preferences) {
+    try {
+      const response = await api.put('/users/me/preferences', preferences);
+      this.updateLocalUserPreferences(response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating user preferences:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Update view preference (compact/expanded/clinical)
+   */
+  async updateViewPreference(viewPreference) {
+    return this.updatePreferences({ viewPreference });
+  },
+
+  /**
+   * Update dashboard layout preference
+   */
+  async updateDashboardLayout(dashboardLayout) {
+    return this.updatePreferences({ dashboardLayout });
+  },
+
+  /**
+   * Helper: Update local storage user data with new preferences
+   */
+  updateLocalUserPreferences(preferencesData) {
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        user.preferences = { ...user.preferences, ...preferencesData?.preferences };
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+    } catch (e) {
+      console.warn('Failed to update local user preferences:', e);
+    }
   }
 };
 

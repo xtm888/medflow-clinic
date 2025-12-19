@@ -6,8 +6,10 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PatientProvider } from './contexts/PatientContext';
 import { PatientCacheProvider } from './contexts/PatientCacheContext';
 import { ClinicProvider } from './contexts/ClinicContext';
+import { StudioVisionModeProvider } from './contexts/StudioVisionModeContext';
 import { useEffect, useState, lazy, Suspense } from 'react';
 import ProtectedRoute from './components/ProtectedRoute';
+import RoleGuard from './components/RoleGuard';
 // OfflineIndicator moved to MainLayout header
 import ErrorBoundary from './components/ErrorBoundary';
 import LoadingSpinner from './components/LoadingSpinner';
@@ -47,6 +49,7 @@ const LabConfiguration = lazy(() => import('./pages/Laboratory/LabConfiguration'
 const OphthalmologyDashboard = lazy(() => import('./pages/ophthalmology/OphthalmologyDashboard'));
 const GlassesOrder = lazy(() => import('./pages/ophthalmology/GlassesOrder'));
 const NewConsultation = lazy(() => import('./pages/ophthalmology/NewConsultation'));
+const StudioVisionConsultation = lazy(() => import('./pages/ophthalmology/StudioVisionConsultation'));
 // Glasses Orders Management Pages
 const GlassesOrderList = lazy(() => import('./pages/GlassesOrders/GlassesOrderList'));
 const GlassesOrderDetail = lazy(() => import('./pages/GlassesOrders/GlassesOrderDetail'));
@@ -59,6 +62,8 @@ const IVTDetail = lazy(() => import('./pages/IVTDetail'));
 const SurgeryDashboard = lazy(() => import('./pages/Surgery'));
 const SurgeryCheckIn = lazy(() => import('./pages/Surgery/SurgeryCheckIn'));
 const SurgeryReportForm = lazy(() => import('./pages/Surgery/SurgeryReportForm'));
+const NewSurgeryCase = lazy(() => import('./pages/Surgery/NewSurgeryCase'));
+const SurgeonView = lazy(() => import('./pages/Surgery/SurgeonView'));
 // Pharmacy Pages
 const PharmacyDashboard = lazy(() => import('./pages/PharmacyDashboard'));
 const PharmacyDetail = lazy(() => import('./pages/PharmacyDetail'));
@@ -147,6 +152,13 @@ const DispatchDashboard = lazy(() => import('./pages/DispatchDashboard'));
 // const ImagingOrders = lazy(() => import('./pages/ImagingOrders'));
 // Lab Orders Page - Disabled (requires MUI)
 // const LabOrders = lazy(() => import('./pages/LabOrders'));
+// Unified Inventory (All inventories in one page with tabs)
+const UnifiedInventory = lazy(() => import('./pages/UnifiedInventory'));
+// Role-Based Dashboard Views
+const ReceptionistView = lazy(() => import('./pages/RoleViews/ReceptionistView'));
+const PharmacistView = lazy(() => import('./pages/RoleViews/PharmacistView'));
+const OpticianView = lazy(() => import('./pages/RoleViews/OpticianView'));
+const LabTechView = lazy(() => import('./pages/RoleViews/LabTechView'));
 
 function App() {
   // Conflict resolution state
@@ -218,6 +230,7 @@ function App() {
           <BrowserRouter>
             <AuthProvider>
               <ClinicProvider>
+              <StudioVisionModeProvider defaultMode="studiovision">
               <PreCacheManager />
               <PatientProvider>
               <PatientCacheProvider>
@@ -257,7 +270,11 @@ function App() {
               <Route path="services" element={<Services />} />
               <Route path="laboratory" element={<Laboratory />} />
               <Route path="laboratory/config" element={<LabConfiguration />} />
-              <Route path="settings" element={<Settings />} />
+              <Route path="settings" element={
+                <RoleGuard allowedRoles={['admin']} fallback="/home">
+                  <Settings />
+                </RoleGuard>
+              } />
               <Route path="documents" element={<DocumentGeneration />} />
               {/* Visit Routes */}
               <Route path="visits/:id" element={<VisitDetail />} />
@@ -271,6 +288,8 @@ function App() {
               <Route path="ophthalmology/exam/new" element={<NewConsultation />} />
               <Route path="ophthalmology/exam/:examId" element={<NewConsultation />} />
               <Route path="ophthalmology/glasses-order/:examId" element={<GlassesOrder />} />
+              {/* StudioVision Native Consultation (Tab-based) */}
+              <Route path="ophthalmology/studio/:patientId" element={<StudioVisionConsultation />} />
               {/* Glasses Orders Management Routes */}
               <Route path="glasses-orders" element={<GlassesOrderList />} />
               <Route path="glasses-orders/:id" element={<GlassesOrderDetail />} />
@@ -282,6 +301,8 @@ function App() {
               <Route path="ivt/:id" element={<IVTDetail />} />
               {/* Surgery Routes */}
               <Route path="surgery" element={<SurgeryDashboard />} />
+              <Route path="surgery/new" element={<NewSurgeryCase />} />
+              <Route path="surgery/surgeon-view" element={<SurgeonView />} />
               <Route path="surgery/:id" element={<SurgeryCheckIn />} />
               <Route path="surgery/:id/checkin" element={<SurgeryCheckIn />} />
               <Route path="surgery/:id/report" element={<SurgeryReportForm />} />
@@ -316,6 +337,15 @@ function App() {
 
               {/* Nurse Vitals Entry */}
               <Route path="nurse-vitals" element={<NurseVitalsEntry />} />
+
+              {/* Unified Inventory (All inventories in tabbed view) */}
+              <Route path="unified-inventory" element={<UnifiedInventory />} />
+
+              {/* Role-Based Dashboard Views */}
+              <Route path="receptionist" element={<ReceptionistView />} />
+              <Route path="pharmacist-view" element={<PharmacistView />} />
+              <Route path="optician-view" element={<OpticianView />} />
+              <Route path="lab-tech-view" element={<LabTechView />} />
 
               {/* Lab Orders Management - Disabled (requires MUI) */}
               {/* <Route path="lab-orders" element={<LabOrders />} /> */}
@@ -437,6 +467,7 @@ function App() {
               )}
               </PatientCacheProvider>
               </PatientProvider>
+              </StudioVisionModeProvider>
               </ClinicProvider>
             </AuthProvider>
           </BrowserRouter>

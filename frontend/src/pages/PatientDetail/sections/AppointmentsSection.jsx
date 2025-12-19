@@ -119,7 +119,7 @@ export default function AppointmentsSection({ patientId, patient, forceExpand = 
 
   // Handler: Start Consultation
   const handleStartConsultation = (appointment) => {
-    navigate(`/ophthalmology/consultation/${patientId}?appointmentId=${appointment._id}`);
+    navigate(`/ophthalmology/studio/${patientId}?appointmentId=${appointment._id}`);
   };
 
   // Handler: Check-in to Queue

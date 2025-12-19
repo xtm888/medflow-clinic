@@ -986,6 +986,73 @@ const patientService = {
    */
   async clearPatientCache() {
     return db.patients.clear();
+  },
+
+  // ========================================
+  // Patient Alerts Management
+  // ========================================
+
+  /**
+   * Get patient alerts
+   * @param {string} patientId - Patient ID
+   * @returns {Promise<Array>} Active alerts
+   */
+  async getPatientAlerts(patientId) {
+    const response = await api.get(`/patients/${patientId}/alerts`);
+    return response.data;
+  },
+
+  /**
+   * Add alert to patient
+   * @param {string} patientId - Patient ID
+   * @param {Object} alertData - Alert data (type, message, messageFr, etc.)
+   * @returns {Promise<Object>} Added alert
+   */
+  async addPatientAlert(patientId, alertData) {
+    const response = await api.post(`/patients/${patientId}/alerts`, alertData);
+    return response.data;
+  },
+
+  /**
+   * Dismiss patient alert
+   * @param {string} patientId - Patient ID
+   * @param {string} alertId - Alert ID
+   * @returns {Promise<Object>} Result
+   */
+  async dismissPatientAlert(patientId, alertId) {
+    const response = await api.put(`/patients/${patientId}/alerts/${alertId}/dismiss`);
+    return response.data;
+  },
+
+  /**
+   * Acknowledge patient alert
+   * @param {string} patientId - Patient ID
+   * @param {string} alertId - Alert ID
+   * @returns {Promise<Object>} Result
+   */
+  async acknowledgePatientAlert(patientId, alertId) {
+    const response = await api.put(`/patients/${patientId}/alerts/${alertId}/acknowledge`);
+    return response.data;
+  },
+
+  /**
+   * Sync allergy alerts for patient
+   * @param {string} patientId - Patient ID
+   * @returns {Promise<Object>} Synced alerts
+   */
+  async syncAllergyAlerts(patientId) {
+    const response = await api.post(`/patients/${patientId}/alerts/sync-allergies`);
+    return response.data;
+  },
+
+  /**
+   * Generate overdue follow-up alerts
+   * @param {string} patientId - Patient ID
+   * @returns {Promise<Object>} Generated alerts
+   */
+  async generateFollowupAlerts(patientId) {
+    const response = await api.post(`/patients/${patientId}/alerts/generate-followup`);
+    return response.data;
   }
 };
 

@@ -80,6 +80,20 @@ const GlassesOrderList = () => {
     pages: 0
   });
 
+  // Helper to safely extract orders array from various response formats
+  const extractOrders = (response) => {
+    if (!response) return [];
+    // Handle array directly
+    if (Array.isArray(response)) return response;
+    // Handle {data: [...]} format
+    if (Array.isArray(response.data)) return response.data;
+    // Handle {orders: [...]} format
+    if (Array.isArray(response.orders)) return response.orders;
+    // Handle nested {data: {data: [...]}} format
+    if (response.data && Array.isArray(response.data.data)) return response.data.data;
+    return [];
+  };
+
   // Fetch orders
   const fetchOrders = useCallback(async () => {
     setLoading(true);
@@ -92,16 +106,16 @@ const GlassesOrderList = () => {
       // Apply tab filters
       if (activeTab === 'pending-qc') {
         const response = await glassesOrderService.getPendingQC();
-        setOrders(response.data || []);
-        setPagination(prev => ({ ...prev, total: response.count || 0, pages: 1 }));
+        setOrders(extractOrders(response));
+        setPagination(prev => ({ ...prev, total: response?.count || response?.total || 0, pages: 1 }));
         setLoading(false);
         return;
       }
 
       if (activeTab === 'ready') {
         const response = await glassesOrderService.getReadyForPickup();
-        setOrders(response.data || []);
-        setPagination(prev => ({ ...prev, total: response.count || 0, pages: 1 }));
+        setOrders(extractOrders(response));
+        setPagination(prev => ({ ...prev, total: response?.count || response?.total || 0, pages: 1 }));
         setLoading(false);
         return;
       }
@@ -112,10 +126,11 @@ const GlassesOrderList = () => {
       if (filters.priority) params.priority = filters.priority;
 
       const response = await glassesOrderService.getOrders(params);
-      setOrders(response.data || []);
-      setPagination(response.pagination || pagination);
+      setOrders(extractOrders(response));
+      setPagination(response?.pagination || pagination);
     } catch (error) {
       console.error('Error fetching orders:', error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }
@@ -195,8 +210,8 @@ const GlassesOrderList = () => {
     }
   };
 
-  // Filter orders by search
-  const filteredOrders = orders.filter(order => {
+  // Filter orders by search (with safety check)
+  const filteredOrders = (orders || []).filter(order => {
     if (!filters.search) return true;
     const search = filters.search.toLowerCase();
     const patientName = `${order.patient?.firstName || ''} ${order.patient?.lastName || ''}`.toLowerCase();
