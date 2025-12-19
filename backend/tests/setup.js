@@ -12,9 +12,8 @@ jest.mock('../services/emailService', () => ({
   sendAppointmentReminder: jest.fn().mockResolvedValue({ success: true })
 }));
 
-jest.mock('../utils/sendEmail', () => ({
-  sendEmail: jest.fn().mockResolvedValue({ success: true })
-}));
+// sendEmail.js exports function directly (not as named export)
+jest.mock('../utils/sendEmail', () => jest.fn().mockResolvedValue({ success: true }));
 
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
