@@ -26,6 +26,7 @@ export { default as useFileUpload } from './useFileUpload';
 
 // Real-time
 export { default as useWebSocket } from './useWebSocket';
+export { useDeviceSync } from './useDeviceSync';
 
 // Inventory Management
 export { default as useInventory } from './useInventory';
