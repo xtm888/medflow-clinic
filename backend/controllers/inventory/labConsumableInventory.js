@@ -5,7 +5,7 @@
  * Extends InventoryControllerFactory with department consumption and tube statistics.
  */
 
-const LabConsumableInventory = require('../../models/LabConsumableInventory');
+const { LabConsumableInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
 // Create factory instance with lab consumable-specific config

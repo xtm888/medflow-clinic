@@ -1,9 +1,12 @@
 const InventoryTransfer = require('../models/InventoryTransfer');
-const PharmacyInventory = require('../models/PharmacyInventory');
-const FrameInventory = require('../models/FrameInventory');
-const ContactLensInventory = require('../models/ContactLensInventory');
-const LabConsumableInventory = require('../models/LabConsumableInventory');
-const ReagentInventory = require('../models/ReagentInventory');
+const {
+  Inventory,
+  PharmacyInventory,
+  FrameInventory,
+  ContactLensInventory,
+  LabConsumableInventory,
+  ReagentInventory
+} = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 const { asyncHandler } = require('../middleware/errorHandler');
 
@@ -548,7 +551,7 @@ exports.receiveTransfer = asyncHandler(async (req, res) => {
       if (!sourceItem) continue;
 
       // Build query to find matching item at destination
-      let matchQuery = { clinic: destinationClinicId };
+      const matchQuery = { clinic: destinationClinicId };
 
       switch (item.inventoryType) {
         case 'pharmacy':

@@ -19,20 +19,20 @@ const documentSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: ['clinical', 'administrative', 'imaging', 'laboratory', 'correspondence',
-           'consent', 'insurance', 'referral', 'report', 'audio', 'photo', 'other'],
+      'consent', 'insurance', 'referral', 'report', 'audio', 'photo', 'other'],
     required: true
   },
 
   subCategory: {
     type: String,
     enum: ['fundus-photo', 'oct', 'visual-field', 'topography', 'ultrasound',
-           'blood-test', 'urinalysis', 'culture', 'pathology',
-           'letter', 'email', 'fax', 'sms',
-           'surgical-consent', 'treatment-consent', 'research-consent',
-           'prior-auth', 'claim', 'eob',
-           'specialist-referral', 'therapy-referral',
-           'surgical-report', 'consultation-report', 'progress-note',
-           'voice-memo', 'dictation', 'patient-photo', 'wound-photo']
+      'blood-test', 'urinalysis', 'culture', 'pathology',
+      'letter', 'email', 'fax', 'sms',
+      'surgical-consent', 'treatment-consent', 'research-consent',
+      'prior-auth', 'claim', 'eob',
+      'specialist-referral', 'therapy-referral',
+      'surgical-report', 'consultation-report', 'progress-note',
+      'voice-memo', 'dictation', 'patient-photo', 'wound-photo']
   },
 
   // Document type and format

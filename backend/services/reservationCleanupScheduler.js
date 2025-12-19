@@ -1,5 +1,8 @@
 const cron = require('node-cron');
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { PharmacyInventory } = require('../models/Inventory');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ReservationCleanupScheduler');
 
 /**
  * Reservation Cleanup Scheduler Service
@@ -22,11 +25,11 @@ class ReservationCleanupScheduler {
    */
   start() {
     if (this.isRunning) {
-      console.log('⚠️  Reservation cleanup scheduler is already running');
+      log.info('⚠️  Reservation cleanup scheduler is already running');
       return;
     }
 
-    console.log('🧹 Starting reservation cleanup scheduler...');
+    log.info('🧹 Starting reservation cleanup scheduler...');
 
     // Job 1: Clean up expired reservations (every hour)
     const cleanupJob = cron.schedule('0 * * * *', async () => {
@@ -41,9 +44,9 @@ class ReservationCleanupScheduler {
     this.jobs = [cleanupJob, counterCleanupJob];
     this.isRunning = true;
 
-    console.log('✅ Reservation cleanup scheduler started successfully');
-    console.log('   - Expired reservations cleanup: Every hour');
-    console.log('   - Old counter cleanup: Daily at 3 AM');
+    log.info('✅ Reservation cleanup scheduler started successfully');
+    log.info('   - Expired reservations cleanup: Every hour');
+    log.info('   - Old counter cleanup: Daily at 3 AM');
   }
 
   /**
@@ -51,7 +54,7 @@ class ReservationCleanupScheduler {
    */
   stop() {
     if (!this.isRunning) {
-      console.log('⚠️  Reservation cleanup scheduler is not running');
+      log.info('⚠️  Reservation cleanup scheduler is not running');
       return;
     }
 
@@ -59,7 +62,7 @@ class ReservationCleanupScheduler {
     this.jobs = [];
     this.isRunning = false;
 
-    console.log('🛑 Reservation cleanup scheduler stopped');
+    log.info('🛑 Reservation cleanup scheduler stopped');
   }
 
   /**
@@ -68,7 +71,7 @@ class ReservationCleanupScheduler {
    */
   async cleanupExpiredReservations() {
     try {
-      console.log('🔍 Checking for expired reservations...');
+      log.info('🔍 Checking for expired reservations...');
 
       const now = new Date();
       let totalReleased = 0;
@@ -106,7 +109,7 @@ class ReservationCleanupScheduler {
               itemUpdated = true;
               totalReleased += reservation.quantity;
 
-              console.log(`   ✓ Released ${reservation.quantity} units of ${item.medication.genericName} (Reservation: ${reservation.reservationId})`);
+              log.info(`   ✓ Released ${reservation.quantity} units of ${item.medication.genericName} (Reservation: ${reservation.reservationId})`);
 
             } catch (error) {
               errors.push({
@@ -114,7 +117,7 @@ class ReservationCleanupScheduler {
                 reservationId: reservation.reservationId,
                 error: error.message
               });
-              console.error(`   ✗ Error releasing reservation ${reservation.reservationId}:`, error.message);
+              log.error(`   ✗ Error releasing reservation ${reservation.reservationId}:`, error.message);
             }
           }
         }
@@ -128,21 +131,21 @@ class ReservationCleanupScheduler {
               medication: item.medication.genericName,
               error: `Failed to save: ${error.message}`
             });
-            console.error(`   ✗ Error saving ${item.medication.genericName}:`, error.message);
+            log.error(`   ✗ Error saving ${item.medication.genericName}:`, error.message);
           }
         }
       }
 
       // Summary
-      console.log('📊 Expired reservation cleanup summary:');
-      console.log(`   - Total expired reservations processed: ${totalReservations}`);
-      console.log(`   - Total units released: ${totalReleased}`);
-      console.log(`   - Errors encountered: ${errors.length}`);
+      log.info('📊 Expired reservation cleanup summary:');
+      log.info(`   - Total expired reservations processed: ${totalReservations}`);
+      log.info(`   - Total units released: ${totalReleased}`);
+      log.info(`   - Errors encountered: ${errors.length}`);
 
       if (errors.length > 0) {
-        console.log('⚠️  Errors during cleanup:');
+        log.info('⚠️  Errors during cleanup:');
         errors.forEach(err => {
-          console.log(`   - ${err.medication || 'Unknown'}: ${err.error}`);
+          log.info(`   - ${err.medication || 'Unknown'}: ${err.error}`);
         });
       }
 
@@ -154,7 +157,7 @@ class ReservationCleanupScheduler {
       };
 
     } catch (error) {
-      console.error('❌ Fatal error in expired reservation cleanup:', error);
+      log.error('❌ Fatal error in expired reservation cleanup:', { error: error });
       return {
         success: false,
         error: error.message
@@ -168,12 +171,12 @@ class ReservationCleanupScheduler {
    */
   async cleanupOldCounters() {
     try {
-      console.log('🔍 Cleaning up old queue number counters...');
+      log.info('🔍 Cleaning up old queue number counters...');
 
       const Counter = require('../models/Counter');
       const deletedCount = await Counter.cleanupOldCounters(90);
 
-      console.log(`✅ Deleted ${deletedCount} old queue number counters`);
+      log.info(`✅ Deleted ${deletedCount} old queue number counters`);
 
       return {
         success: true,
@@ -181,7 +184,7 @@ class ReservationCleanupScheduler {
       };
 
     } catch (error) {
-      console.error('❌ Error cleaning up old counters:', error);
+      log.error('❌ Error cleaning up old counters:', { error: error });
       return {
         success: false,
         error: error.message
@@ -193,7 +196,7 @@ class ReservationCleanupScheduler {
    * Manual trigger for cleanup (for testing or manual intervention)
    */
   async manualCleanup() {
-    console.log('🔧 Manual cleanup triggered');
+    log.info('🔧 Manual cleanup triggered');
     const result = await this.cleanupExpiredReservations();
     return result;
   }

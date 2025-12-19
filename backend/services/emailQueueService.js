@@ -1,5 +1,22 @@
+/**
+ * Email Queue Service
+ *
+ * @internal This is an INTERNAL implementation service used by notificationFacade.
+ * For external use, import from notificationFacade.js instead:
+ *   const notificationFacade = require('./notificationFacade');
+ *
+ * Provides queued email delivery with:
+ * - Persistent queue in MongoDB
+ * - Retry logic with exponential backoff
+ * - Concurrent processing
+ * - Template support
+ */
+
 const nodemailer = require('nodemailer');
 const EmailQueue = require('../models/EmailQueue');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('EmailQueue');
 
 class EmailQueueService {
   constructor() {
@@ -107,7 +124,7 @@ class EmailQueueService {
     try {
       // Create transporter
       if (process.env.NODE_ENV === 'production') {
-        this.transporter = nodemailer.createTransporter({
+        this.transporter = nodemailer.createTransport({
           host: process.env.EMAIL_HOST || 'smtp.gmail.com',
           port: parseInt(process.env.EMAIL_PORT) || 587,
           secure: process.env.EMAIL_PORT === '465',
@@ -123,7 +140,7 @@ class EmailQueueService {
         // Development: Use Ethereal Email for testing
         try {
           const testAccount = await nodemailer.createTestAccount();
-          this.transporter = nodemailer.createTransporter({
+          this.transporter = nodemailer.createTransport({
             host: 'smtp.ethereal.email',
             port: 587,
             secure: false,
@@ -132,9 +149,9 @@ class EmailQueueService {
               pass: testAccount.pass
             }
           });
-          console.log('📧 Email queue using Ethereal test account');
+          log.info('📧 Email queue using Ethereal test account');
         } catch (err) {
-          console.warn('⚠️ Could not create Ethereal account, email queue disabled');
+          log.warn('⚠️ Could not create Ethereal account, email queue disabled');
           return;
         }
       }
@@ -142,9 +159,9 @@ class EmailQueueService {
       // Verify connection
       await this.transporter.verify();
       this.initialized = true;
-      console.log('✅ Email queue service initialized');
+      log.info('✅ Email queue service initialized');
     } catch (error) {
-      console.error('❌ Email queue service init failed:', error.message);
+      log.error('❌ Email queue service init failed:', error.message);
       this.initialized = false;
     }
   }
@@ -152,11 +169,11 @@ class EmailQueueService {
   // Start processing the queue
   start(intervalMs = 30000) {
     if (this.processInterval) {
-      console.warn('Email queue processor already running');
+      log.warn('Email queue processor already running');
       return;
     }
 
-    console.log(`📧 Starting email queue processor (interval: ${intervalMs}ms)`);
+    log.info(`📧 Starting email queue processor (interval: ${intervalMs}ms)`);
 
     // Process immediately, then on interval
     this.processQueue();
@@ -168,7 +185,7 @@ class EmailQueueService {
     if (this.processInterval) {
       clearInterval(this.processInterval);
       this.processInterval = null;
-      console.log('📧 Email queue processor stopped');
+      log.info('📧 Email queue processor stopped');
     }
   }
 
@@ -187,7 +204,7 @@ class EmailQueueService {
         return;
       }
 
-      console.log(`📧 Processing ${emails.length} queued email(s)`);
+      log.info(`📧 Processing ${emails.length} queued email(s)`);
 
       // Process emails concurrently
       const results = await Promise.allSettled(
@@ -199,10 +216,10 @@ class EmailQueueService {
       const failed = results.filter(r => r.status === 'rejected' || !r.value).length;
 
       if (sent > 0 || failed > 0) {
-        console.log(`📧 Queue processed: ${sent} sent, ${failed} failed/retried`);
+        log.info(`📧 Queue processed: ${sent} sent, ${failed} failed/retried`);
       }
     } catch (error) {
-      console.error('❌ Email queue processing error:', error);
+      log.error('❌ Email queue processing error:', { error: error });
     } finally {
       this.isProcessing = false;
     }
@@ -245,11 +262,11 @@ class EmailQueueService {
       emailDoc.markFailed(error);
       await emailDoc.save();
 
-      console.error(`❌ Email failed (attempt ${emailDoc.attempts}/${emailDoc.maxAttempts}):`, error.message);
+      log.error(`❌ Email failed (attempt ${emailDoc.attempts}/${emailDoc.maxAttempts}):`, error.message);
 
       // If permanently failed, could trigger notification
       if (emailDoc.status === 'failed') {
-        console.error(`📧 Email permanently failed after ${emailDoc.attempts} attempts: ${emailDoc.to}`);
+        log.error(`📧 Email permanently failed after ${emailDoc.attempts} attempts: ${emailDoc.to}`);
       }
 
       return false;

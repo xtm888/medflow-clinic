@@ -97,7 +97,7 @@ taxConfigSchema.statics.getActiveTaxes = function(category = 'all') {
 taxConfigSchema.statics.calculateTax = async function(amount, category = 'all') {
   const taxes = await this.getActiveTaxes(category);
   let totalTax = 0;
-  let taxBreakdown = [];
+  const taxBreakdown = [];
 
   for (const tax of taxes) {
     let taxAmount = 0;

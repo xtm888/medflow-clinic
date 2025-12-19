@@ -434,10 +434,10 @@ function applyPackageDeals(items, company) {
       // Check for exact match or partial match (e.g., "CONSULT" matches "CONSULT-OPHTA")
       const matchIndex = unmatchedCodes.findIndex(code =>
         itemCode === code ||
-        itemCode.startsWith(code + '-') ||
-        itemCode.startsWith(code + '_') ||
-        code.startsWith(itemCode + '-') ||
-        code.startsWith(itemCode + '_')
+        itemCode.startsWith(`${code}-`) ||
+        itemCode.startsWith(`${code}_`) ||
+        code.startsWith(`${itemCode}-`) ||
+        code.startsWith(`${itemCode}_`)
       );
 
       if (matchIndex !== -1) {
@@ -1077,7 +1077,7 @@ exports.validateInvoicePrices = asyncHandler(async (req, res, next) => {
 // @route   PUT /api/invoices/:id
 // @access  Private (Admin, Receptionist)
 exports.updateInvoice = asyncHandler(async (req, res, next) => {
-  let invoice = await Invoice.findById(req.params.id);
+  const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
     return notFound(res, 'Invoice');
@@ -1159,7 +1159,7 @@ exports.addPayment = asyncHandler(async (req, res, next) => {
   );
 
   // Create surgery cases for newly paid surgery items
-  let surgeryCases = [];
+  const surgeryCases = [];
 
   // Check newly paid items for surgery items
   if (paymentResult.newlyPaidItems && paymentResult.newlyPaidItems.length > 0) {

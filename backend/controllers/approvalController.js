@@ -306,7 +306,7 @@ exports.approveRequest = async (req, res) => {
     } = req.body;
 
     await approval.approve({
-      respondedBy: respondedBy || req.user.firstName + ' ' + req.user.lastName,
+      respondedBy: respondedBy || `${req.user.firstName} ${req.user.lastName}`,
       notes,
       quantityApproved,
       approvedAmount,
@@ -366,7 +366,7 @@ exports.rejectRequest = async (req, res) => {
     }
 
     await approval.reject({
-      respondedBy: respondedBy || req.user.firstName + ' ' + req.user.lastName,
+      respondedBy: respondedBy || `${req.user.firstName} ${req.user.lastName}`,
       reason,
       notes
     });

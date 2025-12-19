@@ -308,9 +308,9 @@ exports.allocatePaymentToInvoices = asyncHandler(async (req, res) => {
     'summary.amountDue': { $gt: 0 }
   }).sort(
     allocationStrategy === 'oldest_first' ? { dateIssued: 1 } :
-    allocationStrategy === 'smallest_first' ? { 'summary.amountDue': 1 } :
-    allocationStrategy === 'largest_first' ? { 'summary.amountDue': -1 } :
-    { dateIssued: 1 } // Default to oldest first
+      allocationStrategy === 'smallest_first' ? { 'summary.amountDue': 1 } :
+        allocationStrategy === 'largest_first' ? { 'summary.amountDue': -1 } :
+          { dateIssued: 1 } // Default to oldest first
   );
 
   if (outstandingInvoices.length === 0) {
@@ -452,7 +452,7 @@ exports.allocatePaymentToInvoices = asyncHandler(async (req, res) => {
     await AuditLog.create({
       user: req.user._id,
       action: 'BATCH_PAYMENT',
-      resource: `/api/billing/allocate-payment`,
+      resource: '/api/billing/allocate-payment',
       metadata: {
         batchPaymentId,
         patientId,
@@ -509,9 +509,9 @@ exports.getSuggestedPaymentAllocation = asyncHandler(async (req, res) => {
     'summary.amountDue': { $gt: 0 }
   }).sort(
     strategy === 'oldest_first' ? { dateIssued: 1 } :
-    strategy === 'smallest_first' ? { 'summary.amountDue': 1 } :
-    strategy === 'largest_first' ? { 'summary.amountDue': -1 } :
-    { dateIssued: 1 }
+      strategy === 'smallest_first' ? { 'summary.amountDue': 1 } :
+        strategy === 'largest_first' ? { 'summary.amountDue': -1 } :
+          { dateIssued: 1 }
   ).select('invoiceId invoiceNumber dateIssued dueDate summary.amountDue summary.total status');
 
   if (outstandingInvoices.length === 0) {
@@ -807,7 +807,7 @@ exports.processRefund = asyncHandler(async (req, res) => {
       await AuditLog.create({
         user: req.user._id,
         action: 'PROCESS_REFUND',
-        resource: `/api/billing/gateway/refund`,
+        resource: '/api/billing/gateway/refund',
         resourceId: invoiceId,
         metadata: {
           invoiceId: invoice.invoiceId,

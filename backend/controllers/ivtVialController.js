@@ -262,8 +262,8 @@ exports.getTemperatureExcursions = async (req, res) => {
       ...query,
       'temperatureLogs.inRange': false
     })
-    .populate('clinic', 'name')
-    .lean();
+      .populate('clinic', 'name')
+      .lean();
 
     const excursions = [];
     vialsWithExcursions.forEach(vial => {

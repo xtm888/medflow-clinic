@@ -16,6 +16,9 @@ const enhancedService = require('./enhancedNotificationService');
 const emailQueueService = require('./emailQueueService');
 const sendEmailDirect = require('../utils/sendEmail');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('NotificationFacade');
+
 /**
  * Notification Facade - Unified notification API
  */
@@ -165,7 +168,7 @@ const notificationFacade = {
    */
   async sendGlassesOrderConfirmation(order, patient) {
     const message = `Bonjour ${patient.firstName}, votre commande de lunettes #${order.orderNumber} a été confirmée. ` +
-      `Nous vous contacterons dès qu'elles seront prêtes. - Clinique Ophtalmologique`;
+      'Nous vous contacterons dès qu\'elles seront prêtes. - Clinique Ophtalmologique';
 
     const results = { sms: null, email: null };
 
@@ -195,7 +198,7 @@ const notificationFacade = {
   async sendGlassesReadyNotification(order, patient) {
     const message = `Bonjour ${patient.firstName}! Vos lunettes sont PRÊTES! ` +
       `Veuillez passer les récupérer à la clinique. Ref: ${order.orderNumber}. ` +
-      `Horaires: Lun-Ven 8h-17h, Sam 8h-12h. - Clinique Ophtalmologique`;
+      'Horaires: Lun-Ven 8h-17h, Sam 8h-12h. - Clinique Ophtalmologique';
 
     const results = { sms: null, email: null };
 
@@ -224,7 +227,7 @@ const notificationFacade = {
    */
   async sendGlassesDeliveredNotification(order, patient) {
     const message = `Merci ${patient.firstName}! Vos lunettes #${order.orderNumber} ont été remises. ` +
-      `Pour toute question, contactez-nous. Prenez soin de vos yeux! - Clinique Ophtalmologique`;
+      'Pour toute question, contactez-nous. Prenez soin de vos yeux! - Clinique Ophtalmologique';
 
     const results = { sms: null, email: null };
 
@@ -250,7 +253,7 @@ const notificationFacade = {
    */
   async sendGlassesPickupReminder(order, patient, daysSinceReady) {
     const message = `Rappel: Vos lunettes #${order.orderNumber} vous attendent depuis ${daysSinceReady} jours! ` +
-      `Passez les récupérer à la clinique. - Clinique Ophtalmologique`;
+      'Passez les récupérer à la clinique. - Clinique Ophtalmologique';
 
     const results = { sms: null };
 
@@ -282,7 +285,7 @@ const notificationFacade = {
     });
 
     const message = `Bonjour ${patient.firstName}, votre chirurgie est programmée pour le ${dateStr}. ` +
-      `Veuillez respecter les consignes pré-opératoires. Contactez-nous pour toute question. - Clinique Ophtalmologique`;
+      'Veuillez respecter les consignes pré-opératoires. Contactez-nous pour toute question. - Clinique Ophtalmologique';
 
     const results = { sms: null, email: null };
 
@@ -309,8 +312,8 @@ const notificationFacade = {
    * @returns {Promise<{sms: Object|null}>}
    */
   async sendSurgeryReminder(surgeryCase, patient) {
-    const message = `Rappel: Votre chirurgie est demain. ` +
-      `Présentez-vous à jeun. N'oubliez pas vos documents d'identité. - Clinique Ophtalmologique`;
+    const message = 'Rappel: Votre chirurgie est demain. ' +
+      'Présentez-vous à jeun. N\'oubliez pas vos documents d\'identité. - Clinique Ophtalmologique';
 
     const results = { sms: null };
 
@@ -368,7 +371,7 @@ const notificationFacade = {
    */
   async sendLabResultsReadyNotification(labOrder, patient) {
     const message = `Bonjour ${patient.firstName}, vos résultats d'analyses sont disponibles. ` +
-      `Vous pouvez les récupérer à la clinique ou consulter votre médecin. - Clinique Ophtalmologique`;
+      'Vous pouvez les récupérer à la clinique ou consulter votre médecin. - Clinique Ophtalmologique';
 
     const results = { sms: null, email: null };
 
@@ -410,7 +413,7 @@ const notificationFacade = {
     const reminderText = hoursBeforeAppointment >= 24 ? 'demain' : `dans ${hoursBeforeAppointment} heures`;
 
     const message = `Rappel: Votre RDV est ${reminderText} (${dateStr} ${timeStr}). ` +
-      `Merci de vous présenter 15 min à l'avance. - Clinique Ophtalmologique`;
+      'Merci de vous présenter 15 min à l\'avance. - Clinique Ophtalmologique';
 
     const results = { sms: null };
 
@@ -436,7 +439,7 @@ const notificationFacade = {
     const timeStr = appointment.startTime || '';
 
     const message = `Bonjour ${patient.firstName}, votre RDV a été confirmé pour le ${dateStr} ${timeStr}. ` +
-      `Merci de vous présenter 15 min à l'avance. - Clinique Ophtalmologique`;
+      'Merci de vous présenter 15 min à l\'avance. - Clinique Ophtalmologique';
 
     const results = { sms: null, email: null };
 
@@ -477,17 +480,17 @@ const notificationFacade = {
     switch (changeType) {
       case 'rescheduled':
         message = `Bonjour ${patient.firstName}, votre RDV a été reprogrammé au ${dateStr} ${timeStr}. ` +
-          `Contactez-nous si cela ne vous convient pas. - Clinique Ophtalmologique`;
+          'Contactez-nous si cela ne vous convient pas. - Clinique Ophtalmologique';
         subject = `RDV reprogrammé - ${dateStr}`;
         break;
       case 'cancelled':
         message = `Bonjour ${patient.firstName}, votre RDV du ${dateStr} a été annulé. ` +
-          `Contactez-nous pour reprogrammer. - Clinique Ophtalmologique`;
-        subject = `RDV annulé`;
+          'Contactez-nous pour reprogrammer. - Clinique Ophtalmologique';
+        subject = 'RDV annulé';
         break;
       default:
         message = `Bonjour ${patient.firstName}, votre RDV du ${dateStr} ${timeStr} a été modifié. ` +
-          `Contactez-nous pour plus d'informations. - Clinique Ophtalmologique`;
+          'Contactez-nous pour plus d\'informations. - Clinique Ophtalmologique';
         subject = `Modification de RDV - ${dateStr}`;
     }
 
@@ -527,10 +530,10 @@ const notificationFacade = {
     let message;
     if (daysOverdue > 0) {
       message = `Rappel: Facture #${invoice.invoiceNumber} de ${amountDue} ${currency} en attente depuis ${daysOverdue} jours. ` +
-        `Merci de régulariser. - Clinique Ophtalmologique`;
+        'Merci de régulariser. - Clinique Ophtalmologique';
     } else {
       message = `Rappel: Facture #${invoice.invoiceNumber} de ${amountDue} ${currency} à régler. ` +
-        `Merci de votre attention. - Clinique Ophtalmologique`;
+        'Merci de votre attention. - Clinique Ophtalmologique';
     }
 
     const results = { sms: null, email: null };
@@ -598,7 +601,7 @@ const notificationFacade = {
    * @returns {Promise<{scheduled: boolean, scheduledFor: Date}>}
    */
   async scheduleNotification(type, entityId, entityType, scheduledFor, data) {
-    console.log(`[NotificationFacade] Scheduled ${type} notification for ${entityType}:${entityId} at ${scheduledFor}`);
+    log.info(`Scheduled ${type} notification for ${entityType}:${entityId} at ${scheduledFor}`);
     // TODO: Integrate with job queue (Bull/Agenda)
     return { scheduled: true, scheduledFor };
   },
@@ -634,7 +637,7 @@ const notificationFacade = {
         await entity.save();
       }
     } catch (err) {
-      console.error('[NotificationFacade] Error logging notification:', err.message);
+      log.error('[NotificationFacade] Error logging notification:', err.message);
     }
   }
 };

@@ -391,8 +391,8 @@ consultationSessionSchema.methods.complete = async function(userId) {
   const Appointment = require('./Appointment');
 
   console.log(`[COMPLETE] Starting visit creation for session ${this.sessionId}`);
-  console.log(`[COMPLETE] Has diagnostic.procedures:`, !!(this.diagnostic?.procedures));
-  console.log(`[COMPLETE] Has diagnostic.laboratory:`, !!(this.diagnostic?.laboratory));
+  console.log('[COMPLETE] Has diagnostic.procedures:', !!(this.diagnostic?.procedures));
+  console.log('[COMPLETE] Has diagnostic.laboratory:', !!(this.diagnostic?.laboratory));
 
   try {
     let visit = null;
@@ -656,7 +656,7 @@ consultationSessionSchema.methods.complete = async function(userId) {
               appointment: this.appointment,
               orderedBy: this.doctor,
               priority: labTests.some(t => t.urgency === 'stat') ? 'stat' :
-                        labTests.some(t => t.urgency === 'urgent') ? 'urgent' : 'routine',
+                labTests.some(t => t.urgency === 'urgent') ? 'urgent' : 'routine',
               status: 'ordered',
               tests: labOrderTests,
               clinicalNotes: `Ordered during consultation session ${this.sessionId}`
@@ -775,7 +775,7 @@ consultationSessionSchema.methods.complete = async function(userId) {
         await visit.save();
         console.log(`[CLINICAL ACT] Total acts added to visit: ${clinicalActsToAdd.length}`);
       } else {
-        console.log(`[CLINICAL ACT] No exam data found in session to bill`);
+        console.log('[CLINICAL ACT] No exam data found in session to bill');
       }
     }
 

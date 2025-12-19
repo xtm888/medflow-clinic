@@ -977,8 +977,8 @@ exports.getOpticalRevenue = asyncHandler(async (req, res) => {
   const { startDate, endDate, period = 'month' } = req.query;
 
   // Set date range defaults
-  let start = startDate ? new Date(startDate) : new Date();
-  let end = endDate ? new Date(endDate) : new Date();
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date();
 
   if (!startDate) {
     if (period === 'day') {
@@ -993,8 +993,7 @@ exports.getOpticalRevenue = asyncHandler(async (req, res) => {
   }
 
   const GlassesOrder = require('../../models/GlassesOrder');
-  const FrameInventory = require('../../models/FrameInventory');
-  const ContactLensInventory = require('../../models/ContactLensInventory');
+  const { FrameInventory, ContactLensInventory } = require('../../models/Inventory');
 
   // Get completed glasses orders in date range
   const completedOrders = await GlassesOrder.find({
@@ -1109,7 +1108,7 @@ exports.getOpticalShopRevenue = asyncHandler(async (req, res) => {
 
   // Set date range defaults
   let start = startDate ? new Date(startDate) : new Date();
-  let end = endDate ? new Date(endDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date();
 
   if (!startDate) {
     start = new Date(start.getFullYear(), start.getMonth(), 1);
@@ -1334,15 +1333,14 @@ exports.getOpticalShopRevenue = asyncHandler(async (req, res) => {
 exports.getOpticalTopSellers = asyncHandler(async (req, res) => {
   const { startDate, endDate, type = 'all', limit = 10 } = req.query;
 
-  let start = startDate ? new Date(startDate) : new Date();
-  let end = endDate ? new Date(endDate) : new Date();
+  const start = startDate ? new Date(startDate) : new Date();
+  const end = endDate ? new Date(endDate) : new Date();
 
   if (!startDate) {
     start.setMonth(start.getMonth() - 3);
   }
 
-  const FrameInventory = require('../../models/FrameInventory');
-  const ContactLensInventory = require('../../models/ContactLensInventory');
+  const { FrameInventory, ContactLensInventory } = require('../../models/Inventory');
 
   const results = {
     frames: [],
@@ -1462,8 +1460,7 @@ exports.getOpticalTopSellers = asyncHandler(async (req, res) => {
 // @route   GET /api/billing/reports/optical-inventory-value
 // @access  Private (Admin, Accountant, Manager)
 exports.getOpticalInventoryValue = asyncHandler(async (req, res) => {
-  const FrameInventory = require('../../models/FrameInventory');
-  const ContactLensInventory = require('../../models/ContactLensInventory');
+  const { FrameInventory, ContactLensInventory } = require('../../models/Inventory');
 
   // Frame inventory value
   const frameStats = await FrameInventory.aggregate([

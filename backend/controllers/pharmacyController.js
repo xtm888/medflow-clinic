@@ -1,4 +1,4 @@
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { Inventory, PharmacyInventory } = require('../models/Inventory');
 const { escapeRegex } = require('../utils/sanitize');
 const { success, error, notFound, paginated } = require('../utils/apiResponse');
 const { findPatientByIdOrCode } = require('../utils/patientLookup');
@@ -934,7 +934,7 @@ exports.dispensePrescription = async (req, res) => {
     }
 
     // CRITICAL: Check for expired batches before dispensing
-    const PharmacyInventory = require('../models/PharmacyInventory');
+    const { Inventory, PharmacyInventory } = require('../models/Inventory');
     const expiredBatchWarnings = [];
     const medicationsToDispense = medicationIndex !== undefined
       ? [prescription.medications[medicationIndex]]

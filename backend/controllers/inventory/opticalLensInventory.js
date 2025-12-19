@@ -6,7 +6,7 @@
  */
 
 const mongoose = require('mongoose');
-const OpticalLensInventory = require('../../models/OpticalLensInventory');
+const { OpticalLensInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
 // Create factory instance with optical lens-specific config

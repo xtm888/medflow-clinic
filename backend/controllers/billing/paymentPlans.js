@@ -13,7 +13,7 @@ const { asyncHandler } = require('../../middleware/errorHandler');
 exports.getPaymentPlans = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, status, patientId } = req.query;
 
-  let query = {};
+  const query = {};
   if (status) query.status = status;
   if (patientId) query.patient = patientId;
 

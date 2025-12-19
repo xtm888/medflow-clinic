@@ -1,6 +1,9 @@
 const cron = require('node-cron');
 const Alert = require('../models/Alert');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('AlertScheduler');
+
 /**
  * Alert Scheduler Service
  * Handles scheduled delivery of alerts and recurring alert management
@@ -17,11 +20,11 @@ class AlertScheduler {
    */
   start() {
     if (this.isRunning) {
-      console.log('⚠️  Alert scheduler is already running');
+      log.info('⚠️  Alert scheduler is already running');
       return;
     }
 
-    console.log('🔔 Starting alert scheduler...');
+    log.info('🔔 Starting alert scheduler...');
 
     // Job 1: Check for alerts ready to deliver (every 1 minute)
     const deliveryJob = cron.schedule('* * * * *', async () => {
@@ -41,10 +44,10 @@ class AlertScheduler {
     this.jobs = [deliveryJob, recurringJob, cleanupJob];
     this.isRunning = true;
 
-    console.log('✅ Alert scheduler started successfully');
-    console.log('   - Alert delivery check: Every 1 minute');
-    console.log('   - Recurring alerts: Every 5 minutes');
-    console.log('   - Cleanup expired: Every hour');
+    log.info('✅ Alert scheduler started successfully');
+    log.info('   - Alert delivery check: Every 1 minute');
+    log.info('   - Recurring alerts: Every 5 minutes');
+    log.info('   - Cleanup expired: Every hour');
   }
 
   /**
@@ -52,17 +55,17 @@ class AlertScheduler {
    */
   stop() {
     if (!this.isRunning) {
-      console.log('⚠️  Alert scheduler is not running');
+      log.info('⚠️  Alert scheduler is not running');
       return;
     }
 
-    console.log('🛑 Stopping alert scheduler...');
+    log.info('🛑 Stopping alert scheduler...');
 
     this.jobs.forEach(job => job.stop());
     this.jobs = [];
     this.isRunning = false;
 
-    console.log('✅ Alert scheduler stopped');
+    log.info('✅ Alert scheduler stopped');
   }
 
   /**
@@ -76,7 +79,7 @@ class AlertScheduler {
         return;
       }
 
-      console.log(`📨 Delivering ${alertsToDeliver.length} scheduled alert(s)...`);
+      log.info(`📨 Delivering ${alertsToDeliver.length} scheduled alert(s)...`);
 
       let deliveredCount = 0;
       let failedCount = 0;
@@ -91,14 +94,14 @@ class AlertScheduler {
             await this.scheduleNextRecurrence(alert);
           }
         } catch (error) {
-          console.error(`❌ Failed to deliver alert ${alert.alertId}:`, error.message);
+          log.error(`❌ Failed to deliver alert ${alert.alertId}:`, error.message);
           failedCount++;
         }
       }
 
-      console.log(`✅ Delivered ${deliveredCount} alert(s), ${failedCount} failed`);
+      log.info(`✅ Delivered ${deliveredCount} alert(s), ${failedCount} failed`);
     } catch (error) {
-      console.error('❌ Error in deliverScheduledAlerts:', error);
+      log.error('❌ Error in deliverScheduledAlerts:', { error: error });
     }
   }
 
@@ -144,13 +147,13 @@ class AlertScheduler {
           break;
 
         default:
-          console.warn(`Unknown recurrence frequency: ${frequency}`);
+          log.warn(`Unknown recurrence frequency: ${frequency}`);
           return;
       }
 
       // Check if next occurrence is past end date
       if (endDate && nextScheduledFor > new Date(endDate)) {
-        console.log(`🔚 Recurring alert ${alert.alertId} has reached end date`);
+        log.info(`🔚 Recurring alert ${alert.alertId} has reached end date`);
         return;
       }
 
@@ -181,9 +184,9 @@ class AlertScheduler {
       });
 
       await nextAlert.save();
-      console.log(`🔄 Scheduled next recurrence for alert ${alert.alertId}: ${nextScheduledFor.toISOString()}`);
+      log.info(`🔄 Scheduled next recurrence for alert ${alert.alertId}: ${nextScheduledFor.toISOString()}`);
     } catch (error) {
-      console.error(`❌ Error scheduling next recurrence for alert ${alert.alertId}:`, error.message);
+      log.error(`❌ Error scheduling next recurrence for alert ${alert.alertId}:`, error.message);
     }
   }
 
@@ -243,7 +246,7 @@ class AlertScheduler {
         }
       }
     } catch (error) {
-      console.error('❌ Error in processRecurringAlerts:', error);
+      log.error('❌ Error in processRecurringAlerts:', { error: error });
     }
   }
 
@@ -263,10 +266,10 @@ class AlertScheduler {
       );
 
       if (result.modifiedCount > 0) {
-        console.log(`🧹 Marked ${result.modifiedCount} alert(s) as expired`);
+        log.info(`🧹 Marked ${result.modifiedCount} alert(s) as expired`);
       }
     } catch (error) {
-      console.error('❌ Error in cleanupExpiredAlerts:', error);
+      log.error('❌ Error in cleanupExpiredAlerts:', { error: error });
     }
   }
 
@@ -305,10 +308,10 @@ class AlertScheduler {
       });
 
       await alert.save();
-      console.log(`✅ Created appointment reminder for ${appointment._id}`);
+      log.info(`✅ Created appointment reminder for ${appointment._id}`);
       return alert;
     } catch (error) {
-      console.error('❌ Error creating appointment reminder:', error.message);
+      log.error('❌ Error creating appointment reminder:', error.message);
       return null;
     }
   }
@@ -342,10 +345,10 @@ class AlertScheduler {
 
       await alert.save();
       await alert.deliver();
-      console.log(`✅ Created low inventory alert for ${medication.name}`);
+      log.info(`✅ Created low inventory alert for ${medication.name}`);
       return alert;
     } catch (error) {
-      console.error('❌ Error creating low inventory alert:', error.message);
+      log.error('❌ Error creating low inventory alert:', error.message);
       return null;
     }
   }
@@ -365,7 +368,7 @@ class AlertScheduler {
         relatedPatient: patient._id,
         scheduledFor: new Date(),
         actionRequired: true,
-        actionUrl: `/queue`,
+        actionUrl: '/queue',
         actionLabel: 'Voir la file d\'attente',
         icon: 'users',
         color: 'blue',
@@ -374,10 +377,10 @@ class AlertScheduler {
 
       await alert.save();
       await alert.deliver();
-      console.log(`✅ Created patient waiting alert for ${patient.firstName} ${patient.lastName}`);
+      log.info(`✅ Created patient waiting alert for ${patient.firstName} ${patient.lastName}`);
       return alert;
     } catch (error) {
-      console.error('❌ Error creating patient waiting alert:', error.message);
+      log.error('❌ Error creating patient waiting alert:', error.message);
       return null;
     }
   }

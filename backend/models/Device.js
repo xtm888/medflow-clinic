@@ -34,9 +34,9 @@ const deviceSchema = new mongoose.Schema({
   type: {
     type: String,
     enum: ['auto-refractor', 'keratometer', 'tonometer', 'perimeter', 'oct', 'fundus-camera',
-           'slit-lamp', 'phoropter', 'lensmeter', 'topographer', 'biometer', 'pachymeter',
-           'ultrasound', 'retinal-camera', 'specular-microscope', 'aberrometer', 'angiography',
-           'wavefront', 'iol-master', 'visual-acuity', 'contrast-sensitivity', 'other'],
+      'slit-lamp', 'phoropter', 'lensmeter', 'topographer', 'biometer', 'pachymeter',
+      'ultrasound', 'retinal-camera', 'specular-microscope', 'aberrometer', 'angiography',
+      'wavefront', 'iol-master', 'visual-acuity', 'contrast-sensitivity', 'other'],
     required: true
   },
 

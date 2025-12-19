@@ -241,7 +241,7 @@ exports.consumeTubeForSpecimen = asyncHandler(async (req, res) => {
     });
   }
 
-  const LabConsumableInventory = require('../../models/LabConsumableInventory');
+  const { LabConsumableInventory } = require('../../models/Inventory');
 
   // Find matching tube in inventory
   const tube = await LabConsumableInventory.findOne({
@@ -299,7 +299,7 @@ exports.consumeTubeForSpecimen = asyncHandler(async (req, res) => {
  * @access  Private (Lab Tech, Nurse)
  */
 exports.getAvailableTubes = asyncHandler(async (req, res) => {
-  const LabConsumableInventory = require('../../models/LabConsumableInventory');
+  const { LabConsumableInventory } = require('../../models/Inventory');
 
   const tubes = await LabConsumableInventory.find({
     category: 'collection_tube',
@@ -393,7 +393,7 @@ exports.suggestTubesForTest = asyncHandler(async (req, res) => {
   }
 
   // Check stock availability
-  const LabConsumableInventory = require('../../models/LabConsumableInventory');
+  const { LabConsumableInventory } = require('../../models/Inventory');
   const stockInfo = await LabConsumableInventory.findOne({
     tubeType: suggestedTube,
     isActive: true

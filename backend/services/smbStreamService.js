@@ -5,12 +5,21 @@
  * Uses child process to run smbclient for file access.
  */
 
-const { spawn, exec } = require('child_process');
+const { spawn, execFile } = require('child_process');
 const util = require('util');
-const execPromise = util.promisify(exec);
+const execFilePromise = util.promisify(execFile);
 const path = require('path');
 const fs = require('fs').promises;
 const os = require('os');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('SmbStream');
+const {
+  validateHost,
+  validateShareName,
+  validateMountPath,
+  sanitizeForFilesystem
+} = require('../utils/shellSecurity');
 
 class SMBStreamService {
   constructor() {
@@ -32,14 +41,31 @@ class SMBStreamService {
   async listDirectory(device, subpath = '') {
     const { host, shareName, credentials } = this.getConnectionInfo(device);
 
-    // Build smbclient command
-    const sharePath = subpath ? `${subpath.replace(/\//g, '\\\\')}` : '';
-    const authArgs = credentials.username === 'guest' ? '-N' : `-U ${credentials.username}%${credentials.password || ''}`;
+    // Validate inputs to prevent command injection
+    const validHost = validateHost(host);
+    const validShare = validateShareName(shareName);
+    const sharePath = subpath ? subpath.replace(/\//g, '\\\\') : '';
 
     try {
-      // Use smbclient to list directory
-      const cmd = `smbclient "//${host}/${shareName}" ${authArgs} -c "cd ${sharePath}; ls" 2>/dev/null`;
-      const { stdout } = await execPromise(cmd, { timeout: 10000 });
+      // Build argument array for execFile (prevents shell injection)
+      const args = [];
+      args.push(`//${validHost}/${validShare}`);
+
+      if (credentials.username === 'guest') {
+        args.push('-N'); // No password
+      } else {
+        args.push('-U', `${credentials.username}%${credentials.password || ''}`);
+      }
+
+      // Build smbclient command string for -c argument
+      const smbCommand = sharePath ? `cd ${sharePath}; ls` : 'ls';
+      args.push('-c', smbCommand);
+
+      // Use execFile with argument array - no shell interpolation
+      const { stdout } = await execFilePromise('/usr/bin/smbclient', args, {
+        timeout: 10000,
+        env: { ...process.env, SMB_NO_LOG: '1' }
+      });
 
       return this.parseSmbListing(stdout, subpath);
     } catch (error) {
@@ -53,18 +79,24 @@ class SMBStreamService {
    */
   async listViaTemporaryMount(device, subpath = '') {
     const { host, shareName, credentials } = this.getConnectionInfo(device);
-    const mountPoint = path.join(this.tempDir, `mount_${shareName}_${Date.now()}`);
+
+    // Validate inputs
+    const validHost = validateHost(host);
+    const validShare = validateShareName(shareName);
+    const safeMountName = sanitizeForFilesystem(`mount_${validShare}_${Date.now()}`);
+    const mountPoint = path.join(this.tempDir, safeMountName);
 
     try {
       await fs.mkdir(mountPoint, { recursive: true });
 
-      // Mount temporarily
+      // Mount temporarily using execFile with argument array
       const user = credentials.username || 'guest';
+      const encodedShare = encodeURIComponent(validShare);
       const smbUrl = credentials.password
-        ? `//${user}:${credentials.password}@${host}/${shareName}`
-        : `//${user}@${host}/${shareName}`;
+        ? `//${user}:${credentials.password}@${validHost}/${encodedShare}`
+        : `//${user}@${validHost}/${encodedShare}`;
 
-      await execPromise(`mount_smbfs -N "${smbUrl}" "${mountPoint}"`, { timeout: 15000 });
+      await execFilePromise('/sbin/mount_smbfs', ['-N', smbUrl, mountPoint], { timeout: 15000 });
 
       // List directory
       const targetPath = path.join(mountPoint, subpath);
@@ -99,17 +131,17 @@ class SMBStreamService {
             });
           }
         } catch (e) {
-          // Skip files we can't stat
-        }
+      log.debug('Suppressed error', { error: e.message });
+    }
       }
 
-      // Unmount
+      // Unmount using execFile
       try {
-        await execPromise(`umount "${mountPoint}"`, { timeout: 5000 });
+        await execFilePromise('/sbin/umount', [mountPoint], { timeout: 5000 });
         await fs.rmdir(mountPoint);
       } catch (e) {
-        // Best effort cleanup
-      }
+      log.debug('Suppressed error', { error: e.message });
+    }
 
       return {
         currentPath: subpath || '/',
@@ -120,13 +152,13 @@ class SMBStreamService {
       };
 
     } catch (error) {
-      // Cleanup on error - silently ignore cleanup failures
+      // Cleanup on error using execFile
       try {
-        await execPromise(`umount -f "${mountPoint}" 2>/dev/null || true`);
-        await fs.rmdir(mountPoint).catch(() => {});
+        await execFilePromise('/sbin/umount', ['-f', mountPoint], { timeout: 5000 }).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
+        await fs.rmdir(mountPoint).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
       } catch (cleanupError) {
-        // Ignore cleanup errors - best effort
-      }
+      log.debug('Suppressed error', { error: cleanupError.message });
+    }
 
       throw new Error(`Failed to list directory: ${error.message}`);
     }
@@ -141,8 +173,12 @@ class SMBStreamService {
   async streamFile(device, filePath) {
     const { host, shareName, credentials } = this.getConnectionInfo(device);
 
+    // Validate inputs to prevent injection
+    const validHost = validateHost(host);
+    const validShare = validateShareName(shareName);
+
     // Check cache first
-    const cacheKey = `${host}/${shareName}/${filePath}`;
+    const cacheKey = `${validHost}/${validShare}/${filePath}`;
     const cached = this.fileCache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
       const stats = await fs.stat(cached.localPath);
@@ -153,18 +189,21 @@ class SMBStreamService {
       };
     }
 
-    // Download to temp location
-    const tempFile = path.join(this.tempDir, `file_${Date.now()}_${path.basename(filePath)}`);
-    const mountPoint = path.join(this.tempDir, `stream_mount_${Date.now()}`);
+    // Download to temp location - sanitize names for filesystem
+    const safeFileName = sanitizeForFilesystem(`file_${Date.now()}_${path.basename(filePath)}`);
+    const safeMountName = sanitizeForFilesystem(`stream_mount_${Date.now()}`);
+    const tempFile = path.join(this.tempDir, safeFileName);
+    const mountPoint = path.join(this.tempDir, safeMountName);
 
     try {
       await fs.mkdir(mountPoint, { recursive: true });
 
-      // Mount temporarily
+      // Mount temporarily using execFile with argument array
       const user = credentials.username || 'guest';
-      const smbUrl = `//${user}@${host}/${shareName}`;
+      const encodedShare = encodeURIComponent(validShare);
+      const smbUrl = `//${user}@${validHost}/${encodedShare}`;
 
-      await execPromise(`mount_smbfs -N "${smbUrl}" "${mountPoint}"`, { timeout: 15000 });
+      await execFilePromise('/sbin/mount_smbfs', ['-N', smbUrl, mountPoint], { timeout: 15000 });
 
       // Copy file to temp
       const sourcePath = path.join(mountPoint, filePath);
@@ -172,13 +211,13 @@ class SMBStreamService {
 
       const stats = await fs.stat(tempFile);
 
-      // Unmount
+      // Unmount using execFile
       try {
-        await execPromise(`umount "${mountPoint}"`, { timeout: 5000 });
+        await execFilePromise('/sbin/umount', [mountPoint], { timeout: 5000 });
         await fs.rmdir(mountPoint);
       } catch (e) {
         // Cleanup failure is non-critical, but log for debugging
-        console.warn('Failed to unmount or cleanup mount point:', e.message);
+        log.warn('Failed to unmount or cleanup mount point:', e.message);
       }
 
       // Cache the file
@@ -189,7 +228,7 @@ class SMBStreamService {
 
       // Schedule cleanup
       setTimeout(() => {
-        fs.unlink(tempFile).catch(() => {});
+        fs.unlink(tempFile).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
         this.fileCache.delete(cacheKey);
       }, this.cacheTimeout);
 
@@ -200,14 +239,14 @@ class SMBStreamService {
       };
 
     } catch (error) {
-      // Cleanup on error
+      // Cleanup on error using execFile
       try {
-        await execPromise(`umount -f "${mountPoint}" 2>/dev/null || true`);
-        await fs.rmdir(mountPoint).catch(() => {});
-        await fs.unlink(tempFile).catch(() => {});
+        await execFilePromise('/sbin/umount', ['-f', mountPoint], { timeout: 5000 }).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
+        await fs.rmdir(mountPoint).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
+        await fs.unlink(tempFile).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
       } catch (e) {
         // Best effort cleanup - log failure for debugging
-        console.warn('Failed to cleanup after stream error:', e.message);
+        log.warn('Failed to cleanup after stream error:', e.message);
       }
 
       throw new Error(`Failed to stream file: ${error.message}`);
@@ -329,7 +368,7 @@ class SMBStreamService {
         await fs.unlink(value.localPath);
       } catch (e) {
         // File may already be deleted - log for debugging
-        console.warn(`Failed to delete cached file ${value.localPath}:`, e.message);
+        log.warn(`Failed to delete cached file ${value.localPath}:`, e.message);
       }
     }
     this.fileCache.clear();

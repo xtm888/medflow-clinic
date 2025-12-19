@@ -46,7 +46,7 @@ async function findPatientByDmiId(dmiId) {
   }
 
   // Search in Patient model - check legacyId field
-  let patient = await Patient.findOne({
+  const patient = await Patient.findOne({
     $or: [
       { 'legacyIds.dmi': dmiId },
       { 'legacyIds.dmi': dmiId.toUpperCase() },

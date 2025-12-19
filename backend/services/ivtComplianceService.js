@@ -7,6 +7,9 @@ const IVTInjection = require('../models/IVTInjection');
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('IvtCompliance');
+
 /**
  * Treatment protocols by medication and indication
  */
@@ -192,7 +195,7 @@ async function getPatientCompliance(patientId, eye = null) {
       analysisDate: new Date()
     };
   } catch (error) {
-    console.error('Error calculating patient compliance:', error);
+    log.error('Error calculating patient compliance:', { error: error });
     throw new Error(`Compliance calculation failed: ${error.message}`);
   }
 }
@@ -423,7 +426,7 @@ async function getPatientsWithComplianceIssues(clinicId, threshold = 75) {
       generatedAt: new Date()
     };
   } catch (error) {
-    console.error('Error getting patients with compliance issues:', error);
+    log.error('Error getting patients with compliance issues:', { error: error });
     throw new Error(`Failed to get compliance issues: ${error.message}`);
   }
 }

@@ -11,6 +11,9 @@ const fs = require('fs').promises;
 const os = require('os');
 const EventEmitter = require('events');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Smb2Client');
+
 class SMB2ClientService extends EventEmitter {
   constructor() {
     super();
@@ -24,7 +27,7 @@ class SMB2ClientService extends EventEmitter {
 
   async init() {
     await fs.mkdir(this.tempDir, { recursive: true });
-    console.log('SMB2 Client Service initialized');
+    log.info('SMB2 Client Service initialized');
     return this;
   }
 
@@ -87,13 +90,13 @@ class SMB2ClientService extends EventEmitter {
       try {
         await new Promise((resolve) => {
           existing.client.close((err) => {
-            if (err) console.warn(`SMB2 close warning: ${err.message}`);
+            if (err) log.warn(`SMB2 close warning: ${err.message}`);
             resolve();
           });
         });
       } catch (e) {
-        // Ignore close errors
-      }
+      log.debug('Suppressed error', { error: e.message });
+    }
       this.connections.delete(deviceId);
       this.emit('disconnected', { deviceId });
     }
@@ -177,7 +180,7 @@ class SMB2ClientService extends EventEmitter {
               }
             } catch (statErr) {
               // Skip files we can't stat
-              console.warn(`Could not stat ${fullPath}: ${statErr.message}`);
+              log.warn(`Could not stat ${fullPath}: ${statErr.message}`);
             }
           }
 
@@ -272,7 +275,7 @@ class SMB2ClientService extends EventEmitter {
 
             // Schedule cleanup
             setTimeout(() => {
-              fs.unlink(tempFile).catch(() => {});
+              fs.unlink(tempFile).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
               this.fileCache.delete(cacheKey);
             }, this.cacheTimeout);
 
@@ -401,7 +404,7 @@ class SMB2ClientService extends EventEmitter {
           }
         }
       } catch (error) {
-        console.warn(`Error scanning ${currentPath}: ${error.message}`);
+        log.warn(`Error scanning ${currentPath}: ${error.message}`);
       }
     };
 
@@ -478,8 +481,8 @@ class SMB2ClientService extends EventEmitter {
       try {
         await fs.unlink(value.localPath);
       } catch (cleanupError) {
-        // Ignore file deletion errors during cache cleanup
-      }
+      log.debug('Suppressed error', { error: cleanupError.message });
+    }
     }
     this.fileCache.clear();
   }
@@ -496,8 +499,8 @@ class SMB2ClientService extends EventEmitter {
           });
         }
       } catch (closeError) {
-        // Ignore connection close errors during shutdown
-      }
+      log.debug('Suppressed error', { error: closeError.message });
+    }
     }
     this.connections.clear();
     await this.clearCache();

@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { validatePassword } = require('../utils/passwordValidator');
+const CONSTANTS = require('../config/constants');
 
 const userSchema = new mongoose.Schema({
   // Basic Information
@@ -241,6 +242,128 @@ const userSchema = new mongoose.Schema({
       enum: ['12h', '24h'],
       default: '24h'
     }
+  },
+
+  // StudioVision Parity: User Preferences for Enhanced Workflow
+  preferences: {
+    // Dashboard view preference (compact vs expanded)
+    viewPreference: {
+      type: String,
+      enum: ['compact', 'expanded', 'clinical'],
+      default: 'expanded'
+    },
+
+    // Default dashboard layout
+    dashboardLayout: {
+      type: String,
+      enum: ['three_column', 'two_column', 'single'],
+      default: 'three_column'
+    },
+
+    // Favorite medications for quick prescription
+    favoriteMedications: [{
+      drugId: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Drug'
+      },
+      drugName: {
+        type: String,
+        required: true
+      },
+      genericName: String,
+      icon: {
+        type: String,
+        default: '💧'
+      },
+      // Default dosage when adding via favorite
+      defaultDosage: {
+        eye: {
+          type: String,
+          enum: ['OD', 'OS', 'OU'],
+          default: 'OU'
+        },
+        frequency: String,
+        frequencyCode: {
+          type: String,
+          enum: ['QD', 'BID', 'TID', 'QID', 'Q1H', 'Q2H', 'Q4H', 'Q6H', 'QHS', 'PRN', 'QOD']
+        },
+        duration: {
+          value: Number,
+          unit: {
+            type: String,
+            enum: ['days', 'weeks', 'months', 'continuous']
+          }
+        },
+        instructions: String
+      },
+      position: {
+        type: Number,
+        default: 0
+      },
+      color: String,
+      addedAt: {
+        type: Date,
+        default: Date.now
+      },
+      usageCount: {
+        type: Number,
+        default: 0
+      }
+    }],
+
+    // Maximum favorites allowed (for UI)
+    maxFavoriteMedications: {
+      type: Number,
+      default: 15
+    },
+
+    // Favorite treatment protocols
+    favoriteProtocols: [{
+      type: mongoose.Schema.ObjectId,
+      ref: 'TreatmentProtocol'
+    }],
+
+    // Default prescription settings
+    prescriptionDefaults: {
+      defaultEye: {
+        type: String,
+        enum: ['OD', 'OS', 'OU'],
+        default: 'OU'
+      },
+      defaultRefills: {
+        type: Number,
+        default: 0
+      },
+      autoSaveDraft: {
+        type: Boolean,
+        default: true
+      }
+    },
+
+    // Exam workflow preferences
+    examDefaults: {
+      autoImportFromDevices: {
+        type: Boolean,
+        default: true
+      },
+      showRefractionSummary: {
+        type: Boolean,
+        default: true
+      },
+      defaultExamType: {
+        type: String,
+        default: 'comprehensive'
+      }
+    },
+
+    // Recent patients for quick access
+    recentPatients: [{
+      patientId: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Patient'
+      },
+      viewedAt: Date
+    }]
   }
 }, {
   timestamps: true,
@@ -334,7 +457,7 @@ userSchema.methods.getSignedRefreshToken = function() {
     },
     refreshSecret,
     {
-      expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '30d'
+      expiresIn: process.env.REFRESH_TOKEN_EXPIRE || `${CONSTANTS.AUTH.REFRESH_TOKEN_EXPIRY_DAYS}d`
     }
   );
 };
@@ -439,6 +562,183 @@ userSchema.methods.useBackupCode = function(code) {
     return true;
   }
   return false;
+};
+
+// =====================================================
+// FAVORITE MEDICATIONS MANAGEMENT
+// StudioVision Parity: Quick prescription from favorites
+// =====================================================
+
+// Add a medication to favorites
+userSchema.methods.addFavoriteMedication = async function(medicationData) {
+  if (!this.preferences) {
+    this.preferences = {};
+  }
+  if (!this.preferences.favoriteMedications) {
+    this.preferences.favoriteMedications = [];
+  }
+
+  const maxFavorites = this.preferences.maxFavoriteMedications || 15;
+
+  if (this.preferences.favoriteMedications.length >= maxFavorites) {
+    throw new Error(`Maximum of ${maxFavorites} favorite medications allowed`);
+  }
+
+  // Check if already exists
+  const existing = this.preferences.favoriteMedications.find(
+    f => f.drugId?.toString() === medicationData.drugId?.toString() ||
+         f.drugName === medicationData.drugName
+  );
+
+  if (existing) {
+    throw new Error('Medication is already in favorites');
+  }
+
+  // Get next position
+  const maxPosition = Math.max(
+    0,
+    ...this.preferences.favoriteMedications.map(f => f.position || 0)
+  );
+
+  this.preferences.favoriteMedications.push({
+    drugId: medicationData.drugId,
+    drugName: medicationData.drugName,
+    genericName: medicationData.genericName,
+    icon: medicationData.icon || '💧',
+    defaultDosage: medicationData.defaultDosage || {
+      eye: 'OU',
+      frequencyCode: 'BID'
+    },
+    position: maxPosition + 1,
+    color: medicationData.color,
+    addedAt: new Date(),
+    usageCount: 0
+  });
+
+  await this.save({ validateBeforeSave: false });
+  return this.preferences.favoriteMedications;
+};
+
+// Remove a medication from favorites
+userSchema.methods.removeFavoriteMedication = async function(medicationIdOrName) {
+  if (!this.preferences?.favoriteMedications) {
+    return [];
+  }
+
+  const index = this.preferences.favoriteMedications.findIndex(
+    f => f._id?.toString() === medicationIdOrName ||
+         f.drugId?.toString() === medicationIdOrName ||
+         f.drugName === medicationIdOrName
+  );
+
+  if (index === -1) {
+    throw new Error('Medication not found in favorites');
+  }
+
+  this.preferences.favoriteMedications.splice(index, 1);
+  await this.save({ validateBeforeSave: false });
+  return this.preferences.favoriteMedications;
+};
+
+// Reorder favorite medications
+userSchema.methods.reorderFavoriteMedications = async function(orderedIds) {
+  if (!this.preferences?.favoriteMedications) {
+    return [];
+  }
+
+  orderedIds.forEach((id, index) => {
+    const fav = this.preferences.favoriteMedications.find(
+      f => f._id?.toString() === id || f.drugId?.toString() === id
+    );
+    if (fav) {
+      fav.position = index;
+    }
+  });
+
+  await this.save({ validateBeforeSave: false });
+  return this.preferences.favoriteMedications.sort((a, b) => a.position - b.position);
+};
+
+// Record usage of a favorite medication
+userSchema.methods.recordFavoriteUsage = async function(medicationIdOrName) {
+  if (!this.preferences?.favoriteMedications) {
+    return;
+  }
+
+  const fav = this.preferences.favoriteMedications.find(
+    f => f._id?.toString() === medicationIdOrName ||
+         f.drugId?.toString() === medicationIdOrName ||
+         f.drugName === medicationIdOrName
+  );
+
+  if (fav) {
+    fav.usageCount = (fav.usageCount || 0) + 1;
+    await this.save({ validateBeforeSave: false });
+  }
+};
+
+// Update default dosage for a favorite
+userSchema.methods.updateFavoriteDosage = async function(medicationIdOrName, newDosage) {
+  if (!this.preferences?.favoriteMedications) {
+    throw new Error('No favorites found');
+  }
+
+  const fav = this.preferences.favoriteMedications.find(
+    f => f._id?.toString() === medicationIdOrName ||
+         f.drugId?.toString() === medicationIdOrName ||
+         f.drugName === medicationIdOrName
+  );
+
+  if (!fav) {
+    throw new Error('Medication not found in favorites');
+  }
+
+  fav.defaultDosage = { ...fav.defaultDosage, ...newDosage };
+  await this.save({ validateBeforeSave: false });
+  return fav;
+};
+
+// =====================================================
+// RECENT PATIENTS TRACKING
+// StudioVision Parity: Quick patient switching
+// =====================================================
+
+// Add patient to recent list
+userSchema.methods.addRecentPatient = async function(patientId) {
+  if (!this.preferences) {
+    this.preferences = {};
+  }
+  if (!this.preferences.recentPatients) {
+    this.preferences.recentPatients = [];
+  }
+
+  // Remove if already in list
+  this.preferences.recentPatients = this.preferences.recentPatients.filter(
+    rp => rp.patientId?.toString() !== patientId.toString()
+  );
+
+  // Add to front
+  this.preferences.recentPatients.unshift({
+    patientId,
+    viewedAt: new Date()
+  });
+
+  // Keep only last 10
+  if (this.preferences.recentPatients.length > 10) {
+    this.preferences.recentPatients = this.preferences.recentPatients.slice(0, 10);
+  }
+
+  await this.save({ validateBeforeSave: false });
+  return this.preferences.recentPatients;
+};
+
+// Get recent patients populated
+userSchema.methods.getRecentPatients = async function() {
+  await this.populate({
+    path: 'preferences.recentPatients.patientId',
+    select: 'patientId firstName lastName dateOfBirth photoUrl'
+  });
+  return this.preferences?.recentPatients || [];
 };
 
 module.exports = mongoose.model('User', userSchema);

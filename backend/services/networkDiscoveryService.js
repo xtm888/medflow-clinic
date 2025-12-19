@@ -13,6 +13,9 @@ const util = require('util');
 const fs = require('fs');
 const path = require('path');
 const Device = require('../models/Device');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('NetworkDiscovery');
 const {
   validateHost,
   validateShareName,
@@ -121,7 +124,7 @@ class NetworkDiscoveryService {
           const parts = iface.address.split('.');
           if (parts.length === 4) {
             const networkRange = `${parts[0]}.${parts[1]}.${parts[2]}.0/24`;
-            console.log(`[NetworkDiscovery] Auto-detected network: ${networkRange} (from ${iface.address})`);
+            log.info(`Auto-detected network: ${networkRange} (from ${iface.address})`);
             return networkRange;
           }
         }
@@ -129,7 +132,7 @@ class NetworkDiscoveryService {
     }
 
     // Fallback to common private network
-    console.log('[NetworkDiscovery] Could not detect network, using fallback 192.168.1.0/24');
+    log.info('Could not detect network, using fallback 192.168.1.0/24');
     return '192.168.1.0/24';
   }
 
@@ -158,11 +161,11 @@ class NetworkDiscoveryService {
     const startTime = Date.now();
 
     try {
-      console.log(`[NetworkDiscovery] Starting scan of ${networkRange}`);
+      log.info(`Starting scan of ${networkRange}`);
 
       // Step 1: Find hosts with SMB (port 445) open
       const hosts = await this.scanForSMBHosts(networkRange, options.timeout || 5000);
-      console.log(`[NetworkDiscovery] Found ${hosts.length} hosts with SMB`);
+      log.info(`Found ${hosts.length} hosts with SMB`);
 
       // Step 2: Enumerate shares on each host (in parallel, limited concurrency)
       const allShares = [];
@@ -180,7 +183,7 @@ class NetworkDiscoveryService {
               deviceInfo: this.detectDeviceFromShare(share)
             }));
           } catch (error) {
-            console.log(`[NetworkDiscovery] Error enumerating ${host}: ${error.message}`);
+            log.info(`Error enumerating ${host}: ${error.message}`);
             return [];
           }
         });
@@ -191,7 +194,7 @@ class NetworkDiscoveryService {
         }
       }
 
-      console.log(`[NetworkDiscovery] Found ${allShares.length} total shares`);
+      log.info(`Found ${allShares.length} total shares`);
 
       // Step 3: Filter for likely medical device shares
       const medicalShares = allShares.filter(share =>
@@ -199,7 +202,7 @@ class NetworkDiscoveryService {
         this.isMedicalFolder(share.name)
       );
 
-      console.log(`[NetworkDiscovery] Identified ${medicalShares.length} medical device shares`);
+      log.info(`Identified ${medicalShares.length} medical device shares`);
 
       this.discoveredShares = medicalShares;
       this.lastDiscovery = new Date();
@@ -215,7 +218,7 @@ class NetworkDiscoveryService {
       };
 
     } catch (error) {
-      console.error('[NetworkDiscovery] Discovery error:', error);
+      log.error('[NetworkDiscovery] Discovery error:', { error: error });
       return {
         success: false,
         error: error.message
@@ -248,7 +251,7 @@ class NetworkDiscoveryService {
       return results.filter(Boolean);
 
     } catch (error) {
-      console.error('[NetworkDiscovery] Port scan error:', error);
+      log.error('[NetworkDiscovery] Port scan error:', { error: error });
       return hosts;
     }
   }
@@ -449,7 +452,7 @@ class NetworkDiscoveryService {
           await execFileAsync('/bin/rmdir', [mountPoint], { timeout: 2000 });
           return true;
         } catch {
-          await execFileAsync('/bin/rmdir', [mountPoint], { timeout: 2000 }).catch(() => {});
+          await execFileAsync('/bin/rmdir', [mountPoint], { timeout: 2000 }).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
           return false;
         }
       } else {
@@ -588,7 +591,7 @@ class NetworkDiscoveryService {
         }
 
       } catch (error) {
-        console.error(`[NetworkDiscovery] Error creating device for ${share.name}:`, error);
+        log.error(`[NetworkDiscovery] Error creating device for ${share.name}:`, { error: error });
         results.errors.push({
           share: share.name,
           error: error.message

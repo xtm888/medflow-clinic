@@ -8,7 +8,7 @@ const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Prescription = require('../models/Prescription');
 const Document = require('../models/Document');
 const Room = require('../models/Room');
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { Inventory, PharmacyInventory, SurgicalSupplyInventory } = require('../models/Inventory');
 const { withTransaction } = require('../utils/transactions');
 const { success, error, notFound, paginated } = require('../utils/apiResponse');
 const { findPatientByIdOrCode } = require('../utils/patientLookup');
@@ -73,11 +73,13 @@ exports.getDashboardStats = async (req, res) => {
     ]);
 
     return success(res, {
-      awaitingScheduling,
-      scheduledToday,
-      inProgress,
-      completedToday,
-      overdueCases
+      data: {
+        awaitingScheduling,
+        scheduledToday,
+        inProgress,
+        completedToday,
+        overdueCases
+      }
     });
   } catch (err) {
     surgeryLogger.error('Error getting dashboard stats', { error: err.message, stack: err.stack });
@@ -1236,7 +1238,7 @@ exports.updateSpecimenResults = async (req, res) => {
     specimen.resultReceivedAt = new Date();
     specimen.pathologyDiagnosis = pathologyDiagnosis;
     if (resultNotes) {
-      specimen.notes = (specimen.notes || '') + '\n' + resultNotes;
+      specimen.notes = `${specimen.notes || ''}\n${resultNotes}`;
     }
     specimen.labOrderStatus = 'completed';
 
@@ -1373,7 +1375,7 @@ exports.getRoomSchedule = async (req, res) => {
 
     // If roomId is provided, get schedule for specific room
     // Otherwise get schedule for all OR rooms
-    let roomQuery = { type: 'surgery', isActive: true };
+    const roomQuery = { type: 'surgery', isActive: true };
     if (roomId) {
       roomQuery._id = roomId;
     }

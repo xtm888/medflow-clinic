@@ -1,18 +1,18 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { validateSession, updateActivity } = require('../services/sessionService');
-const { isRedisConnected } = require('../config/redis');
+const { isRedisConnected, twoFactorStore } = require('../config/redis');
 const { logPermissionDenial } = require('./auditLogger');
 
 // Protect routes - verify JWT token
 exports.protect = async (req, res, next) => {
   let token;
 
-  // Check for token in headers
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // SECURITY: Check cookies first (HttpOnly, XSS-safe), then header as fallback
+  if (req.cookies && req.cookies.accessToken) {
+    token = req.cookies.accessToken;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
   }
 
   if (!token) {
@@ -80,14 +80,14 @@ exports.protect = async (req, res, next) => {
 
     // Update session activity (non-blocking)
     if (decoded.sessionId) {
-      updateActivity(decoded.sessionId).catch(() => {});
+      updateActivity(decoded.sessionId).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
     }
 
     // Update last activity in DB (less frequent)
     const now = Date.now();
     if (!req.user.lastActivity || now - req.user.lastActivity > 60000) {
       req.user.lastActivity = now;
-      req.user.save({ validateBeforeSave: false }).catch(() => {});
+      req.user.save({ validateBeforeSave: false }).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
     }
 
     next();
@@ -104,11 +104,11 @@ exports.protect = async (req, res, next) => {
 exports.optionalProtect = async (req, res, next) => {
   let token;
 
-  // Check for token in headers
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+  // SECURITY: Check cookies first (HttpOnly, XSS-safe), then header as fallback
+  if (req.cookies && req.cookies.accessToken) {
+    token = req.cookies.accessToken;
+  } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     token = req.headers.authorization.split(' ')[1];
-  } else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
   }
 
   if (!token) {
@@ -414,7 +414,7 @@ exports.validateSession = async (req, res, next) => {
     }
 
     // Update activity (non-blocking)
-    updateActivity(req.sessionId).catch(() => {});
+    updateActivity(req.sessionId).catch(err => log.debug('Promise error suppressed', { error: err?.message }));
   }
 
   next();
@@ -449,21 +449,8 @@ exports.requireTwoFactor = async (req, res, next) => {
   next();
 };
 
-// SECURITY FIX: Track used 2FA codes to prevent replay attacks
-// Map: { 'userId:code': expiryTimestamp }
-const usedTwoFactorCodes = new Map();
-
-// Clean up expired codes every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, expiry] of usedTwoFactorCodes.entries()) {
-    if (expiry < now) {
-      usedTwoFactorCodes.delete(key);
-    }
-  }
-}, 5 * 60 * 1000);
-
 // Helper function to verify 2FA code using TOTP
+// Uses Redis-backed twoFactorStore for replay attack prevention (survives server restarts)
 async function verifyTwoFactorCode(user, code) {
   // If user doesn't have 2FA secret configured, reject
   if (!user.twoFactorSecret) {
@@ -471,15 +458,18 @@ async function verifyTwoFactorCode(user, code) {
     return false;
   }
 
-  // SECURITY FIX: Check if code has already been used (prevent replay attacks)
-  const codeKey = `${user._id}:${code}`;
-  if (usedTwoFactorCodes.has(codeKey)) {
+  // SECURITY: Check if code has already been used (prevent replay attacks)
+  // Uses Redis-backed store that survives server restarts
+  if (await twoFactorStore.isUsed(user._id.toString(), code)) {
     console.warn(`2FA code reuse attempt detected for user ${user._id}`);
     return false;
   }
 
   // Use speakeasy for TOTP verification
   const speakeasy = require('speakeasy');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Auth');
 
   try {
     const isValid = speakeasy.totp.verify({
@@ -494,9 +484,10 @@ async function verifyTwoFactorCode(user, code) {
       return false;
     }
 
-    // SECURITY FIX: Mark code as used for 90 seconds (3 TOTP intervals)
+    // SECURITY: Mark code as used for 90 seconds (3 TOTP intervals)
     // This prevents replay attacks within the valid window
-    usedTwoFactorCodes.set(codeKey, Date.now() + 90000);
+    // TTL is 90 seconds = 90 seconds in Redis
+    await twoFactorStore.markUsed(user._id.toString(), code, 90);
 
     return true;
   } catch (error) {

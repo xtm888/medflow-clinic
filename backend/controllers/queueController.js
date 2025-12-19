@@ -14,7 +14,7 @@ const { queue: queueLogger } = require('../utils/structuredLogger');
 const { QUEUE, PAGINATION } = require('../config/constants');
 
 // In-memory queue for real-time management
-let queue = [];
+const queue = [];
 
 // Patient calling service configuration
 const CALLING_CONFIG = {
@@ -216,8 +216,8 @@ exports.addToQueue = asyncHandler(async (req, res, next) => {
       // Determine department from request, provider's specialty, or default
       const appointmentDepartment = req.body.department ||
         (req.user.specialization === 'ophthalmologist' ? 'ophthalmology' :
-         req.user.specialization === 'optometrist' ? 'ophthalmology' :
-         req.user.department || 'general');
+          req.user.specialization === 'optometrist' ? 'ophthalmology' :
+            req.user.department || 'general');
 
       const appointmentData = {
         appointmentId: newAppointmentId,
@@ -554,7 +554,7 @@ exports.callNext = asyncHandler(async (req, res, next) => {
   const { start: today, end: tomorrow } = getTodayRange();
 
   // Find next patient in queue (priority order: emergency > urgent > vip > pregnant > elderly > high > normal)
-  let query = {
+  const query = {
     date: { $gte: today, $lte: tomorrow },
     status: 'checked-in',
     department
@@ -1147,7 +1147,7 @@ exports.getQueueAnalytics = asyncHandler(async (req, res) => {
       hour: parseInt(hour),
       avgWaitTime: data.avgWaitTime,
       patientCount: data.count,
-      recommendation: `Envisager d'ajouter du personnel entre ${hour}:00 et ${parseInt(hour)+1}:00`,
+      recommendation: `Envisager d'ajouter du personnel entre ${hour}:00 et ${parseInt(hour) + 1}:00`,
       impact: data.count
     }));
 
@@ -1322,9 +1322,9 @@ exports.getDisplayBoardData = asyncHandler(async (req, res) => {
     // Last called
     lastCalled: appointments.find(a => a.status === 'in-progress')
       ? {
-          queueNumber: appointments.find(a => a.status === 'in-progress').queueNumber,
-          room: appointments.find(a => a.status === 'in-progress').location?.room
-        }
+        queueNumber: appointments.find(a => a.status === 'in-progress').queueNumber,
+        room: appointments.find(a => a.status === 'in-progress').location?.room
+      }
       : null,
 
     timestamp: new Date(),

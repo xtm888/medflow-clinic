@@ -83,7 +83,7 @@ const prescriptionSchema = new mongoose.Schema({
     },
     inventoryItem: {
       type: mongoose.Schema.ObjectId,
-      ref: 'PharmacyInventory'
+      ref: 'Inventory' // Unified inventory model (pharmacy type)
     },
     // Flag for medications that will be dispensed externally (not from our inventory)
     isExternalItem: {
@@ -949,7 +949,7 @@ prescriptionSchema.pre('save', function(next) {
       if (!med.isExternalItem && !med.inventoryItem) {
         const error = new Error(
           `Medication "${med.name || 'unnamed'}" must be linked to an inventory item. ` +
-          `Either link it to PharmacyInventory or mark it as isExternalItem=true if it will be dispensed elsewhere.`
+          'Either link it to PharmacyInventory or mark it as isExternalItem=true if it will be dispensed elsewhere.'
         );
         error.name = 'ValidationError';
         error.statusCode = 400;
@@ -1376,7 +1376,7 @@ prescriptionSchema.methods.dispenseMedication = async function(medicationIndex, 
     };
 
   } catch (error) {
-    console.error(`[dispenseMedication] Error:`, error);
+    console.error('[dispenseMedication] Error:', error);
 
     // Rollback if we own the session
     if (ownSession && session) {
@@ -1449,7 +1449,7 @@ prescriptionSchema.methods._executeDispensingRollback = async function(rollbackS
     }
   }
 
-  console.log(`[COMPENSATING ROLLBACK] Dispensing rollback complete`);
+  console.log('[COMPENSATING ROLLBACK] Dispensing rollback complete');
 };
 
 // Generate invoice for prescription (pharmacy billing)
@@ -1631,7 +1631,7 @@ prescriptionSchema.methods.markMedicationsCompletedOnVisitInvoice = async functi
 };
 
 // Post-save hook to update Patient.prescriptions array
-prescriptionSchema.post('save', async function(doc) {
+prescriptionSchema.post('save', async (doc) => {
   // Only add to patient's prescriptions array if this is a new prescription
   if (doc.wasNew && doc.patient) {
     try {
@@ -1676,7 +1676,7 @@ prescriptionSchema.pre('save', async function(next) {
             .join('; ');
           return next(new Error(
             `Cannot cancel prescription: Failed to release inventory reservations - ${failedMeds}. ` +
-            `Use forceCancelWithoutRelease=true to override (admin only).`
+            'Use forceCancelWithoutRelease=true to override (admin only).'
           ));
         }
 
@@ -1694,7 +1694,7 @@ prescriptionSchema.pre('save', async function(next) {
         // CRITICAL: Block cancellation on any error
         return next(new Error(
           `Cannot cancel prescription: Inventory release error - ${error.message}. ` +
-          `Use forceCancelWithoutRelease=true to override (admin only).`
+          'Use forceCancelWithoutRelease=true to override (admin only).'
         ));
       }
     } else {

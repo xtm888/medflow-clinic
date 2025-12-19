@@ -12,6 +12,9 @@
 
 const jwt = require('jsonwebtoken');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('HealthAuth');
+
 /**
  * Authenticate access to detailed health endpoints
  */
@@ -47,7 +50,7 @@ function healthAuth(req, res, next) {
         return next();
       }
     } catch (err) {
-      // Invalid token, fall through to error
+      log.debug('Suppressed error', { error: err.message });
     }
   }
 

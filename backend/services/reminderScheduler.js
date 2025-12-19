@@ -8,6 +8,9 @@
 const Appointment = require('../models/Appointment');
 const notificationFacade = require('./notificationFacade');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ReminderScheduler');
+
 // Configuration for reminder intervals (in hours before appointment)
 const REMINDER_INTERVALS = {
   '24h': 24,    // 24 hours before
@@ -43,9 +46,9 @@ async function processReminders() {
       await processAppointmentReminders(appointment, now);
     }
 
-    console.log(`[Reminder Scheduler] Processed ${appointments.length} appointments`);
+    log.info(`[Reminder Scheduler] Processed ${appointments.length} appointments`);
   } catch (error) {
-    console.error('[Reminder Scheduler] Error processing reminders:', error);
+    log.error('[Reminder Scheduler] Error processing reminders:', { error: error });
   }
 }
 
@@ -94,7 +97,7 @@ async function processAppointmentReminders(appointment, now) {
       }
     }
   } catch (error) {
-    console.error(`[Reminder Scheduler] Error processing appointment ${appointment._id}:`, error);
+    log.error(`[Reminder Scheduler] Error processing appointment ${appointment._id}:`, { error: error });
   }
 }
 
@@ -146,9 +149,9 @@ async function sendAppointmentReminder(appointment, hoursBeforeAppointment) {
     appointment.reminders.push(reminder);
     await appointment.save();
 
-    console.log(`[Reminder Scheduler] Sent ${hoursBeforeAppointment}h reminder for appointment ${appointment.appointmentId}`);
+    log.info(`[Reminder Scheduler] Sent ${hoursBeforeAppointment}h reminder for appointment ${appointment.appointmentId}`);
   } catch (error) {
-    console.error(`[Reminder Scheduler] Failed to send reminder:`, error);
+    log.error('[Reminder Scheduler] Failed to send reminder:', { error: error });
 
     // Record failed attempt
     appointment.reminders.push({
@@ -195,9 +198,9 @@ async function scheduleRemindersForAppointment(appointmentId) {
     }
 
     await appointment.save();
-    console.log(`[Reminder Scheduler] Scheduled reminders for appointment ${appointment.appointmentId}`);
+    log.info(`[Reminder Scheduler] Scheduled reminders for appointment ${appointment.appointmentId}`);
   } catch (error) {
-    console.error('[Reminder Scheduler] Error scheduling reminders:', error);
+    log.error('[Reminder Scheduler] Error scheduling reminders:', { error: error });
   }
 }
 
@@ -224,11 +227,11 @@ function translateDepartment(department) {
  */
 function startScheduler() {
   if (schedulerInterval) {
-    console.log('[Reminder Scheduler] Already running');
+    log.info('[Reminder Scheduler] Already running');
     return;
   }
 
-  console.log('[Reminder Scheduler] Starting scheduler...');
+  log.info('[Reminder Scheduler] Starting scheduler...');
 
   // Run immediately on start
   processReminders();
@@ -236,7 +239,7 @@ function startScheduler() {
   // Then run every 30 minutes
   schedulerInterval = setInterval(processReminders, 30 * 60 * 1000);
 
-  console.log('[Reminder Scheduler] Scheduler started (running every 30 minutes)');
+  log.info('[Reminder Scheduler] Scheduler started (running every 30 minutes)');
 }
 
 /**
@@ -246,7 +249,7 @@ function stopScheduler() {
   if (schedulerInterval) {
     clearInterval(schedulerInterval);
     schedulerInterval = null;
-    console.log('[Reminder Scheduler] Scheduler stopped');
+    log.info('[Reminder Scheduler] Scheduler stopped');
   }
 }
 

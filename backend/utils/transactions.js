@@ -35,7 +35,7 @@ async function withTransaction(operation, options = {}) {
     session.startTransaction({
       readConcern: { level: 'snapshot' },
       writeConcern: { w: 'majority' },
-      ...options,
+      ...options
     });
 
     const result = await operation(session);
@@ -102,11 +102,11 @@ async function withTransactionRetry(operation, options = {}) {
  */
 async function atomicInventoryUpdate(inventoryId, quantityChange, options = {}) {
   const { session, reason, userId } = options;
-  const PharmacyInventory = require('../models/PharmacyInventory');
+  const { PharmacyInventory } = require('../models/Inventory');
 
   // Use findOneAndUpdate with conditions to prevent negative stock
   const updateQuery = {
-    _id: inventoryId,
+    _id: inventoryId
   };
 
   // If reducing stock, ensure we have enough
@@ -124,14 +124,14 @@ async function atomicInventoryUpdate(inventoryId, quantityChange, options = {}) 
           type: quantityChange > 0 ? 'addition' : 'dispensing',
           quantity: Math.abs(quantityChange),
           reason: reason || 'Stock update',
-          performedBy: userId,
-        },
-      },
+          performedBy: userId
+        }
+      }
     },
     {
       new: true,
       session,
-      runValidators: true,
+      runValidators: true
     }
   );
 
@@ -157,7 +157,7 @@ async function atomicInventoryUpdate(inventoryId, quantityChange, options = {}) 
  * @returns {Promise<Object>} - Updated inventory and batch details
  */
 async function dispenseBatchFIFO(inventoryId, quantity, session) {
-  const PharmacyInventory = require('../models/PharmacyInventory');
+  const { PharmacyInventory } = require('../models/Inventory');
 
   const inventory = await PharmacyInventory.findById(inventoryId).session(session);
 
@@ -186,7 +186,7 @@ async function dispenseBatchFIFO(inventoryId, quantity, session) {
       dispensedFrom.push({
         lotNumber: batch.lotNumber,
         quantity: toDispense,
-        expirationDate: batch.expirationDate,
+        expirationDate: batch.expirationDate
       });
 
       // Mark batch as depleted if empty
@@ -214,7 +214,7 @@ async function dispenseBatchFIFO(inventoryId, quantity, session) {
 
   return {
     inventory,
-    dispensedFrom,
+    dispensedFrom
   };
 }
 
@@ -237,26 +237,26 @@ async function bookAppointmentSlot(appointmentData, session) {
     provider,
     date: {
       $gte: new Date(new Date(date).setHours(0, 0, 0, 0)),
-      $lt: new Date(new Date(date).setHours(23, 59, 59, 999)),
+      $lt: new Date(new Date(date).setHours(23, 59, 59, 999))
     },
     status: { $nin: ['cancelled', 'rescheduled'] },
     $or: [
       // New appointment starts during existing
       {
         startTime: { $lte: startTime },
-        endTime: { $gt: startTime },
+        endTime: { $gt: startTime }
       },
       // New appointment ends during existing
       {
         startTime: { $lt: endTime },
-        endTime: { $gte: endTime },
+        endTime: { $gte: endTime }
       },
       // New appointment contains existing
       {
         startTime: { $gte: startTime },
-        endTime: { $lte: endTime },
-      },
-    ],
+        endTime: { $lte: endTime }
+      }
+    ]
   }).session(session);
 
   if (existingAppointment) {
@@ -312,7 +312,7 @@ async function processPayment(paymentData, session) {
     method,
     reference,
     processedBy,
-    status: 'completed',
+    status: 'completed'
   });
 
   // Update amounts
@@ -331,7 +331,7 @@ async function processPayment(paymentData, session) {
   return {
     invoice,
     payment: invoice.payments[invoice.payments.length - 1],
-    remainingBalance: invoice.summary.balance,
+    remainingBalance: invoice.summary.balance
   };
 }
 
@@ -347,7 +347,7 @@ async function processPayment(paymentData, session) {
  */
 async function dispensePrescription(prescriptionId, items, options = {}) {
   const Prescription = require('../models/Prescription');
-  const PharmacyInventory = require('../models/PharmacyInventory');
+  const { PharmacyInventory } = require('../models/Inventory');
 
   return withTransactionRetry(async (session) => {
     const prescription = await Prescription.findById(prescriptionId).session(session);
@@ -372,7 +372,7 @@ async function dispensePrescription(prescriptionId, items, options = {}) {
       dispensedItems.push({
         medication: medicationId,
         quantity,
-        batches: inventoryResult.dispensedFrom,
+        batches: inventoryResult.dispensedFrom
       });
     }
 
@@ -384,14 +384,14 @@ async function dispensePrescription(prescriptionId, items, options = {}) {
     prescription.dispensingHistory.push({
       date: new Date(),
       items: dispensedItems,
-      dispensedBy: options.userId,
+      dispensedBy: options.userId
     });
 
     await prescription.save({ session });
 
     return {
       prescription,
-      dispensedItems,
+      dispensedItems
     };
   }, { maxRetries: 3 });
 }
@@ -585,5 +585,5 @@ module.exports = {
   dispensePrescription,
   checkTransactionSupport,
   atomicMultiInvoicePayment,
-  atomicRefund,
+  atomicRefund
 };

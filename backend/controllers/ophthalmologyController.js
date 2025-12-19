@@ -2,7 +2,7 @@ const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Patient = require('../models/Patient');
 const Prescription = require('../models/Prescription');
 const Appointment = require('../models/Appointment');
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { Inventory, PharmacyInventory, ContactLensInventory } = require('../models/Inventory');
 const Device = require('../models/Device');
 const DeviceMeasurement = require('../models/DeviceMeasurement');
 const { asyncHandler } = require('../middleware/errorHandler');
@@ -41,8 +41,8 @@ async function autoEvaluateAlerts(exam, userId) {
       _id: { $ne: exam._id },
       status: 'completed'
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Evaluate and create alerts
     const alerts = await clinicalAlertService.evaluateAndCreateAlerts(
@@ -1174,7 +1174,7 @@ exports.importDeviceMeasurement = asyncHandler(async (req, res, next) => {
           message: `Notification envoyee: donnees ${deviceType} arrivees apres la fin de la visite`
         };
 
-        ophthalmologyLogger.info(`Late data notification created for visit`, { visitId: visit.visitId, deviceType });
+        ophthalmologyLogger.info('Late data notification created for visit', { visitId: visit.visitId, deviceType });
       }
     } catch (notifyError) {
       ophthalmologyLogger.error('Error creating late data notification', { error: notifyError.message });

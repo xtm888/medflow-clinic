@@ -1,6 +1,9 @@
 const promClient = require('prom-client');
 const logger = require('../config/logger');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Metrics');
+
 /**
  * Prometheus Metrics Middleware
  *
@@ -321,7 +324,7 @@ async function updateBusinessMetrics() {
       const poolSize = mongoose.connection.db.serverConfig.s.poolSize || 0;
       dbConnectionPoolSize.set(poolSize);
     } catch (error) {
-      // Pool size not available in all MongoDB versions
+      log.debug('Suppressed error', { error: error.message });
     }
 
   } catch (error) {
@@ -329,8 +332,10 @@ async function updateBusinessMetrics() {
   }
 }
 
-// Update business metrics every 60 seconds
-setInterval(updateBusinessMetrics, 60000);
+// Update business metrics every 60 seconds (skip in test mode)
+if (process.env.NODE_ENV !== 'test' && process.env.DISABLE_SCHEDULERS !== 'true') {
+  setInterval(updateBusinessMetrics, 60000);
+}
 
 // =========================================
 // Exported Metrics Object

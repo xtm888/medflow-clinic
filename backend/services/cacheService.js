@@ -22,6 +22,9 @@
 const { cache, isRedisConnected } = require('../config/redis');
 const CONSTANTS = require('../config/constants');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Cache');
+
 // In-memory fallback cache when Redis is unavailable
 const memoryCache = new Map();
 
@@ -41,7 +44,7 @@ function getStats() {
   return {
     ...stats,
     hitRate: stats.hits + stats.misses > 0
-      ? (stats.hits / (stats.hits + stats.misses) * 100).toFixed(2) + '%'
+      ? `${(stats.hits / (stats.hits + stats.misses) * 100).toFixed(2)}%`
       : '0%',
     isRedisConnected: isRedisConnected(),
     memoryCache: {
@@ -92,7 +95,7 @@ async function get(key) {
     stats.misses++;
     return null;
   } catch (error) {
-    console.error('Cache get error:', error.message);
+    log.error('Cache get error:', error.message);
     stats.errors++;
     return null;
   }
@@ -115,7 +118,7 @@ async function set(key, value, ttlSeconds) {
     stats.sets++;
     return true;
   } catch (error) {
-    console.error('Cache set error:', error.message);
+    log.error('Cache set error:', error.message);
     stats.errors++;
     return false;
   }
@@ -134,7 +137,7 @@ async function del(key) {
     stats.deletes++;
     return true;
   } catch (error) {
-    console.error('Cache delete error:', error.message);
+    log.error('Cache delete error:', error.message);
     stats.errors++;
     return false;
   }
@@ -161,7 +164,7 @@ async function deletePattern(pattern) {
     }
     return true;
   } catch (error) {
-    console.error('Cache deletePattern error:', error.message);
+    log.error('Cache deletePattern error:', error.message);
     stats.errors++;
     return false;
   }
@@ -178,7 +181,7 @@ async function clear() {
     memoryCache.clear();
     return true;
   } catch (error) {
-    console.error('Cache clear error:', error.message);
+    log.error('Cache clear error:', error.message);
     return false;
   }
 }
@@ -434,7 +437,7 @@ const settingsCache = {
  * Preload frequently accessed data into cache
  */
 async function warmCache() {
-  console.log('🔥 Warming cache...');
+  log.info('🔥 Warming cache...');
 
   try {
     // Warm fee schedules
@@ -442,7 +445,7 @@ async function warmCache() {
     const feeSchedules = await FeeSchedule.find({ status: 'active' }).lean();
     if (feeSchedules && feeSchedules.length > 0) {
       await feeScheduleCache.setAll(feeSchedules);
-      console.log(`  ✓ Cached ${feeSchedules.length} fee schedules`);
+      log.info(`  ✓ Cached ${feeSchedules.length} fee schedules`);
     }
 
     // Warm active users
@@ -455,12 +458,12 @@ async function warmCache() {
           await userCache.setByEmail(user.email, user);
         }
       }
-      console.log(`  ✓ Cached ${users.length} active users`);
+      log.info(`  ✓ Cached ${users.length} active users`);
     }
 
-    console.log('✅ Cache warming complete');
+    log.info('✅ Cache warming complete');
   } catch (error) {
-    console.error('❌ Cache warming failed:', error.message);
+    log.error('❌ Cache warming failed:', error.message);
   }
 }
 
@@ -479,7 +482,7 @@ function createInvalidationMiddleware(cacheHelper, getIdField = '_id') {
         await cacheHelper.invalidate(id.toString());
       }
     } catch (error) {
-      console.error('Cache invalidation middleware error:', error.message);
+      log.error('Cache invalidation middleware error:', error.message);
     }
     next();
   };
@@ -501,7 +504,7 @@ function cleanupMemoryCache() {
   }
 
   if (removed > 0) {
-    console.log(`🧹 Cleaned up ${removed} expired cache entries`);
+    log.info(`🧹 Cleaned up ${removed} expired cache entries`);
   }
 }
 

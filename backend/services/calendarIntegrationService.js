@@ -4,6 +4,9 @@ require('isomorphic-fetch');
 const CalendarIntegration = require('../models/CalendarIntegration');
 const Appointment = require('../models/Appointment');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('CalendarIntegration');
+
 /**
  * Calendar Integration Service
  * Handles OAuth and sync for Google Calendar and Microsoft Outlook
@@ -104,8 +107,8 @@ class CalendarIntegrationService {
       await integration.save();
       return integration;
     } catch (error) {
-      console.error('Google OAuth callback error:', error);
-      throw new Error('Failed to connect Google Calendar: ' + error.message);
+      log.error('Google OAuth callback error:', { error: error });
+      throw new Error(`Failed to connect Google Calendar: ${error.message}`);
     }
   }
 
@@ -128,7 +131,7 @@ class CalendarIntegrationService {
 
       return integration;
     } catch (error) {
-      console.error('Google token refresh error:', error);
+      log.error('Google token refresh error:', { error: error });
       integration.status = 'expired';
       await integration.save();
       throw new Error('Google token refresh failed');
@@ -172,7 +175,7 @@ class CalendarIntegrationService {
 
       return response.data;
     } catch (error) {
-      console.error('Google create event error:', error);
+      log.error('Google create event error:', { error: error });
       throw error;
     }
   }
@@ -208,7 +211,7 @@ class CalendarIntegrationService {
         integration.removeEventMapping(appointment._id);
         return this.createGoogleEvent(integration, appointment);
       }
-      console.error('Google update event error:', error);
+      log.error('Google update event error:', { error: error });
       throw error;
     }
   }
@@ -232,7 +235,7 @@ class CalendarIntegrationService {
       await integration.save();
     } catch (error) {
       if (error.code !== 404) {
-        console.error('Google delete event error:', error);
+        log.error('Google delete event error:', { error: error });
         throw error;
       }
       // Event already deleted, just remove mapping
@@ -252,7 +255,7 @@ class CalendarIntegrationService {
     if (settings.includePatientNames && patient) {
       summary += `${patient.firstName} ${patient.lastName}`;
     } else {
-      summary += `Rendez-vous médical`;
+      summary += 'Rendez-vous médical';
     }
 
     let description = `Type: ${appointment.type || 'Consultation'}\n`;
@@ -263,7 +266,7 @@ class CalendarIntegrationService {
       if (appointment.notes) description += `Notes: ${appointment.notes}\n`;
     }
 
-    description += `\n---\nSynchronisé depuis MedFlow`;
+    description += '\n---\nSynchronisé depuis MedFlow';
 
     const startTime = new Date(appointment.appointmentDate);
     const endTime = new Date(startTime.getTime() + (appointment.duration || 30) * 60000);
@@ -409,8 +412,8 @@ class CalendarIntegrationService {
       await integration.save();
       return integration;
     } catch (error) {
-      console.error('Microsoft OAuth callback error:', error);
-      throw new Error('Failed to connect Outlook Calendar: ' + error.message);
+      log.error('Microsoft OAuth callback error:', { error: error });
+      throw new Error(`Failed to connect Outlook Calendar: ${error.message}`);
     }
   }
 
@@ -449,7 +452,7 @@ class CalendarIntegrationService {
 
       return integration;
     } catch (error) {
-      console.error('Microsoft token refresh error:', error);
+      log.error('Microsoft token refresh error:', { error: error });
       integration.status = 'expired';
       await integration.save();
       throw new Error('Microsoft token refresh failed');
@@ -498,7 +501,7 @@ class CalendarIntegrationService {
 
       return response;
     } catch (error) {
-      console.error('Outlook create event error:', error);
+      log.error('Outlook create event error:', { error: error });
       throw error;
     }
   }
@@ -531,7 +534,7 @@ class CalendarIntegrationService {
         integration.removeEventMapping(appointment._id);
         return this.createOutlookEvent(integration, appointment);
       }
-      console.error('Outlook update event error:', error);
+      log.error('Outlook update event error:', { error: error });
       throw error;
     }
   }
@@ -552,7 +555,7 @@ class CalendarIntegrationService {
       await integration.save();
     } catch (error) {
       if (error.statusCode !== 404) {
-        console.error('Outlook delete event error:', error);
+        log.error('Outlook delete event error:', { error: error });
         throw error;
       }
       integration.removeEventMapping(appointmentId);
@@ -571,7 +574,7 @@ class CalendarIntegrationService {
     if (settings.includePatientNames && patient) {
       subject += `${patient.firstName} ${patient.lastName}`;
     } else {
-      subject += `Rendez-vous médical`;
+      subject += 'Rendez-vous médical';
     }
 
     let body = `<p><strong>Type:</strong> ${appointment.type || 'Consultation'}</p>`;
@@ -582,7 +585,7 @@ class CalendarIntegrationService {
       if (appointment.notes) body += `<p><strong>Notes:</strong> ${appointment.notes}</p>`;
     }
 
-    body += `<hr><p><em>Synchronisé depuis MedFlow</em></p>`;
+    body += '<hr><p><em>Synchronisé depuis MedFlow</em></p>';
 
     const startTime = new Date(appointment.appointmentDate);
     const endTime = new Date(startTime.getTime() + (appointment.duration || 30) * 60000);
@@ -740,7 +743,7 @@ class CalendarIntegrationService {
               }
             }
           } catch (error) {
-            console.error(`Sync error for appointment ${appointment._id}:`, error.message);
+            log.error(`Sync error for appointment ${appointment._id}:`, error.message);
             errors++;
           }
         }
@@ -788,7 +791,7 @@ class CalendarIntegrationService {
       }
       // Microsoft doesn't have a simple revoke endpoint
     } catch (error) {
-      console.error('Token revoke error:', error);
+      log.error('Token revoke error:', { error: error });
     }
 
     await CalendarIntegration.deleteOne({ _id: integration._id });
@@ -861,7 +864,7 @@ class CalendarIntegrationService {
     let remaining = line;
 
     while (remaining.length > maxLength) {
-      folded += remaining.substring(0, maxLength) + '\r\n ';
+      folded += `${remaining.substring(0, maxLength)}\r\n `;
       remaining = remaining.substring(maxLength);
     }
     folded += remaining;
@@ -923,8 +926,8 @@ class CalendarIntegrationService {
       `SUMMARY:${this.escapeICalText(summary)}`,
       `DESCRIPTION:${description}`,
       `STATUS:${this.mapStatusToIcal(appointment.status)}`,
-      `TRANSP:OPAQUE`,
-      `SEQUENCE:0`
+      'TRANSP:OPAQUE',
+      'SEQUENCE:0'
     ];
 
     if (location) {

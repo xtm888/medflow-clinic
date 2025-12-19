@@ -45,7 +45,7 @@ exports.getRepairs = async (req, res) => {
       RepairTracking.find(query)
         .populate('customer.patientId', 'firstName lastName')
         .populate('receivedBy', 'firstName lastName')
-        .populate('assignedTechnician', 'firstName lastName')
+        .populate('assignedTo', 'firstName lastName')
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(parseInt(limit))
@@ -307,8 +307,8 @@ exports.getCustomerRepairs = async (req, res) => {
     const repairs = await RepairTracking.find({
       'customer.patientId': req.params.customerId
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json({ success: true, data: repairs });
   } catch (error) {

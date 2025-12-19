@@ -2,6 +2,10 @@
  * Standardized API Response Utility
  * Ensures consistent response format across all endpoints
  *
+ * @deprecated For new code, prefer importing from '../utils/response.js'
+ * which provides a unified interface combining apiResponse, errorResponse,
+ * and errorHandler utilities.
+ *
  * Standard Response Format:
  * {
  *   success: boolean,
@@ -221,6 +225,20 @@ const attachToResponse = (req, res, next) => {
   next();
 };
 
+/**
+ * Legacy apiResponse helper for backwards compatibility
+ * Signature: apiResponse(success, message, data)
+ * Returns a response object (does NOT send - caller uses res.json)
+ */
+const apiResponse = (isSuccess, message, data = null) => {
+  const response = {
+    success: isSuccess,
+    ...(message && { message }),
+    ...(data !== null && { data })
+  };
+  return response;
+};
+
 module.exports = {
   success,
   paginated,
@@ -232,5 +250,7 @@ module.exports = {
   conflict,
   validationError,
   serverError,
-  attachToResponse
+  attachToResponse,
+  // Legacy helper for backwards compatibility
+  apiResponse
 };

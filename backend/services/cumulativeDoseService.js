@@ -6,6 +6,9 @@
 const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('CumulativeDose');
+
 /**
  * Drugs with cumulative toxicity limits
  */
@@ -250,7 +253,7 @@ async function getPatientCumulativeDose(patientId, drugName) {
       history
     };
   } catch (error) {
-    console.error('Error getting cumulative dose:', error);
+    log.error('Error getting cumulative dose:', { error: error });
     throw new Error(`Failed to get cumulative dose: ${error.message}`);
   }
 }
@@ -337,7 +340,7 @@ async function checkCumulativeLimit(patientId, drugName, proposedDose, patient =
       lastPrescription: currentDose.lastDate
     };
   } catch (error) {
-    console.error('Error checking cumulative limit:', error);
+    log.error('Error checking cumulative limit:', { error: error });
     throw new Error(`Failed to check cumulative limit: ${error.message}`);
   }
 }
@@ -381,7 +384,7 @@ async function getCumulativeDoseHistory(patientId, drugName) {
       lastDate: currentDose.lastDate
     };
   } catch (error) {
-    console.error('Error getting dose history:', error);
+    log.error('Error getting dose history:', { error: error });
     throw new Error(`Failed to get dose history: ${error.message}`);
   }
 }

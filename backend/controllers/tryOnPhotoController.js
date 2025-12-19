@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const GlassesOrder = require('../models/GlassesOrder');
-const FrameInventory = require('../models/FrameInventory');
+const { Inventory, FrameInventory } = require('../models/Inventory');
 const { fileUtils } = require('../middleware/fileUpload');
 const { buildClinicFilter, verifyClinicAccess } = require('../utils/clinicFilter');
 const { isValidObjectId } = require('../utils/sanitize');

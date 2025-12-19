@@ -975,6 +975,424 @@ const ophthalmologyExamSchema = new mongoose.Schema({
     }
   },
 
+  // =====================================================
+  // CONTACT LENS FITTING - StudioVision 4-Tab Parity
+  // =====================================================
+  contactLensFitting: {
+    // Tab 1: PATIENT HISTORY (HISTORIQUE)
+    wearingHistory: {
+      isWearer: Boolean,
+      yearsWearing: Number,
+      schedule: {
+        type: String,
+        enum: ['daily', 'extended', 'occasional', 'ortho_k']
+      },
+      frequency: {
+        type: String,
+        enum: ['daily_disposable', 'biweekly', 'monthly', 'quarterly', 'annual']
+      },
+      // Compliance star rating (1-5)
+      compliance: {
+        rating: {
+          type: Number,
+          min: 1,
+          max: 5
+        },
+        notes: String
+      },
+      currentBrand: String,
+      currentParameters: {
+        OD: {
+          sphere: Number,
+          cylinder: Number,
+          axis: Number,
+          baseCurve: Number,
+          diameter: Number
+        },
+        OS: {
+          sphere: Number,
+          cylinder: Number,
+          axis: Number,
+          baseCurve: Number,
+          diameter: Number
+        }
+      },
+      // Current issues checklist
+      currentIssues: [{
+        type: {
+          type: String,
+          enum: [
+            'dryness', 'redness', 'irritation', 'blurry_vision',
+            'halos_glare', 'difficult_insertion', 'difficult_removal',
+            'discomfort_after_6hrs', 'lens_decentration', 'none'
+          ]
+        },
+        severity: {
+          type: String,
+          enum: ['mild', 'moderate', 'severe']
+        }
+      }]
+    },
+
+    // Tab 2: FITTING PARAMETERS (PARAMÈTRES)
+    lensType: {
+      type: String,
+      enum: ['soft_spherical', 'soft_toric', 'soft_multifocal', 'rgp', 'scleral', 'hybrid', 'ortho_k']
+    },
+    trialLens: {
+      OD: {
+        brand: String,
+        power: Number,
+        cylinder: Number,
+        axis: Number,
+        baseCurve: Number,
+        diameter: Number,
+        fromInventory: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'Inventory' // Unified inventory (contact_lens type)
+        }
+      },
+      OS: {
+        brand: String,
+        power: Number,
+        cylinder: Number,
+        axis: Number,
+        baseCurve: Number,
+        diameter: Number,
+        fromInventory: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'Inventory' // Unified inventory (contact_lens type)
+        }
+      }
+    },
+    assessment: {
+      OD: {
+        centration: {
+          type: String,
+          enum: ['centered', 'decentered_nasal', 'decentered_temporal', 'decentered_superior', 'decentered_inferior']
+        },
+        centrationDirection: String,
+        movement: {
+          type: String,
+          enum: ['optimal', 'tight', 'loose']
+        },
+        coverage: {
+          type: String,
+          enum: ['full', 'partial', 'inadequate']
+        },
+        comfort: {
+          type: Number,
+          min: 1,
+          max: 10
+        },
+        visionQuality: {
+          type: Number,
+          min: 1,
+          max: 10
+        },
+        // Over-refraction
+        overRefraction: {
+          needed: Boolean,
+          sphere: Number,
+          cylinder: Number,
+          axis: Number,
+          finalPower: Number // Auto-calculated
+        },
+        // Fluorescein pattern for RGP
+        fluoresceinPattern: {
+          type: String,
+          enum: ['alignment', 'apical_clearance', 'apical_bearing', 'three_point_touch']
+        },
+        fluoresceinImageId: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'DeviceImage'
+        }
+      },
+      OS: {
+        centration: {
+          type: String,
+          enum: ['centered', 'decentered_nasal', 'decentered_temporal', 'decentered_superior', 'decentered_inferior']
+        },
+        centrationDirection: String,
+        movement: {
+          type: String,
+          enum: ['optimal', 'tight', 'loose']
+        },
+        coverage: {
+          type: String,
+          enum: ['full', 'partial', 'inadequate']
+        },
+        comfort: {
+          type: Number,
+          min: 1,
+          max: 10
+        },
+        visionQuality: {
+          type: Number,
+          min: 1,
+          max: 10
+        },
+        overRefraction: {
+          needed: Boolean,
+          sphere: Number,
+          cylinder: Number,
+          axis: Number,
+          finalPower: Number
+        },
+        fluoresceinPattern: {
+          type: String,
+          enum: ['alignment', 'apical_clearance', 'apical_bearing', 'three_point_touch']
+        },
+        fluoresceinImageId: {
+          type: mongoose.Schema.ObjectId,
+          ref: 'DeviceImage'
+        }
+      }
+    },
+    finalPrescription: {
+      OD: {
+        brand: String,
+        power: Number,
+        cylinder: Number,
+        axis: Number,
+        baseCurve: Number,
+        diameter: Number,
+        addPower: Number, // For multifocal
+        material: String,
+        modality: {
+          type: String,
+          enum: ['daily', 'biweekly', 'monthly', 'quarterly', 'annual', 'extended']
+        }
+      },
+      OS: {
+        brand: String,
+        power: Number,
+        cylinder: Number,
+        axis: Number,
+        baseCurve: Number,
+        diameter: Number,
+        addPower: Number,
+        material: String,
+        modality: {
+          type: String,
+          enum: ['daily', 'biweekly', 'monthly', 'quarterly', 'annual', 'extended']
+        }
+      }
+    },
+
+    // Tab 3: CARE & SUPPLIES (ENTRETIEN)
+    careInstructions: {
+      solutionType: {
+        type: String,
+        enum: ['multipurpose', 'hydrogen_peroxide', 'saline', 'rgp_solution', 'not_applicable']
+      },
+      solutionBrand: String,
+      solutionQuantity: Number,
+      // Annual supply calculator
+      annualSupply: {
+        wearingDaysPerWeek: {
+          type: Number,
+          default: 7
+        },
+        boxesNeeded: {
+          OD: Number,
+          OS: Number
+        },
+        totalBoxes: Number,
+        addToPrescription: Boolean
+      },
+      specialInstructions: String,
+      // Rebate tracking
+      rebateInfo: {
+        available: Boolean,
+        amount: Number,
+        manufacturerProgram: String,
+        expirationDate: Date
+      }
+    },
+
+    // Tab 4: FOLLOW-UP & EDUCATION (SUIVI)
+    followUp: {
+      fittingStatus: {
+        type: String,
+        enum: ['initial', 'refit', 'routine']
+      },
+      recommendedIntervals: {
+        firstFollowUp: {
+          type: String,
+          default: '1-2 weeks'
+        },
+        secondFollowUp: {
+          type: String,
+          default: '1 month'
+        },
+        annualExam: {
+          type: String,
+          default: '12 months'
+        }
+      },
+      // Patient education checklist
+      educationChecklist: {
+        insertionRemovalDemo: { completed: Boolean, date: Date },
+        cleaningStorageInstructions: { completed: Boolean, date: Date },
+        wearingScheduleDiscussed: { completed: Boolean, date: Date },
+        complicationSignsReviewed: { completed: Boolean, date: Date },
+        emergencyContactProvided: { completed: Boolean, date: Date },
+        replacementScheduleEmphasized: { completed: Boolean, date: Date },
+        writtenInstructionsGiven: { completed: Boolean, date: Date },
+        patientDemonstratedSkill: { completed: Boolean, date: Date }
+      },
+      educationNotes: String,
+      nextAppointment: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'Appointment'
+      }
+    },
+
+    // Fitting notes
+    notes: String,
+    status: {
+      type: String,
+      enum: ['in_progress', 'completed', 'failed', 'ordered'],
+      default: 'in_progress'
+    }
+  },
+
+  // =====================================================
+  // LOCS III CATARACT GRADING - StudioVision Parity
+  // =====================================================
+  locsGrading: {
+    performed: {
+      type: Boolean,
+      default: false
+    },
+    OD: {
+      // Nuclear Opalescence (NO) - 0.1 to 6.9
+      nuclearOpalescence: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 6.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 6
+        }
+      },
+      // Nuclear Color (NC) - 0.1 to 6.9
+      nuclearColor: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 6.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 6
+        }
+      },
+      // Cortical (C) - 0.1 to 5.9
+      cortical: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 5.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 5
+        }
+      },
+      // Posterior Subcapsular (P) - 0.1 to 5.9
+      posteriorSubcapsular: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 5.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 5
+        }
+      },
+      notes: String
+    },
+    OS: {
+      nuclearOpalescence: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 6.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 6
+        }
+      },
+      nuclearColor: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 6.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 6
+        }
+      },
+      cortical: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 5.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 5
+        }
+      },
+      posteriorSubcapsular: {
+        grade: {
+          type: Number,
+          min: 0.1,
+          max: 5.9
+        },
+        selectedImage: {
+          type: Number,
+          min: 1,
+          max: 5
+        }
+      },
+      notes: String
+    },
+    // Grading metadata
+    gradedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    gradedAt: Date,
+    // Comparison to previous
+    previousGrading: {
+      examId: {
+        type: mongoose.Schema.ObjectId,
+        ref: 'OphthalmologyExam'
+      },
+      date: Date,
+      progression: {
+        type: String,
+        enum: ['stable', 'progressing', 'improved']
+      }
+    },
+    notes: String
+  },
+
   // Billing
   billing: {
     cptCodes: [String],
@@ -1086,7 +1504,7 @@ ophthalmologyExamSchema.statics.copyFromPrevious = async function(patientId, use
       patient: patientId,
       status: { $in: ['completed', 'reviewed'] }
     })
-    .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 });
 
     if (!previousExam) {
       return null;
@@ -1140,10 +1558,10 @@ ophthalmologyExamSchema.statics.getRefractionHistory = async function(patientId,
     examType: 'refraction',
     status: { $in: ['completed', 'reviewed'] }
   })
-  .select('examId createdAt examiner refraction.finalPrescription iop copiedFrom isPreviousCopy')
-  .populate('examiner', 'firstName lastName')
-  .sort({ createdAt: -1 })
-  .limit(limit);
+    .select('examId createdAt examiner refraction.finalPrescription iop copiedFrom isPreviousCopy')
+    .populate('examiner', 'firstName lastName')
+    .sort({ createdAt: -1 })
+    .limit(limit);
 };
 
 // Instance method: Generate refraction summary
@@ -1195,8 +1613,8 @@ ophthalmologyExamSchema.methods.generateRefractionSummary = function() {
 
   let summary = `RÉFRACTION DU ${new Date(this.createdAt).toLocaleDateString('fr-FR')}\n\n`;
 
-  summary += formatEye('OD', 'OD (Œil Droit)') + '\n';
-  summary += formatEye('OS', 'OG (Œil Gauche)') + '\n\n';
+  summary += `${formatEye('OD', 'OD (Œil Droit)')}\n`;
+  summary += `${formatEye('OS', 'OG (Œil Gauche)')}\n\n`;
 
   // PD if available
   if (fp.pd?.distance) {
@@ -1208,7 +1626,7 @@ ophthalmologyExamSchema.methods.generateRefractionSummary = function() {
 
   // IOP if available
   if (this.iop?.OD?.value || this.iop?.OS?.value) {
-    summary += `\nTension oculaire:\n`;
+    summary += '\nTension oculaire:\n';
     if (this.iop.OD?.value) {
       summary += `TOD: ${this.iop.OD.value} mmHg `;
     }
@@ -1270,8 +1688,8 @@ ophthalmologyExamSchema.methods.generateKeratometrySummary = function() {
     return text;
   };
 
-  summary += formatEyeKerato('OD', 'OD (Œil Droit)') + '\n';
-  summary += formatEyeKerato('OS', 'OG (Œil Gauche)') + '\n';
+  summary += `${formatEyeKerato('OD', 'OD (Œil Droit)')}\n`;
+  summary += `${formatEyeKerato('OS', 'OG (Œil Gauche)')}\n`;
 
   if (kerato.method) {
     summary += `Méthode: ${kerato.method}\n`;
@@ -1484,8 +1902,8 @@ ophthalmologyExamSchema.statics.getAvailableDeviceMeasurements = async function(
       $lte: endDate
     }
   })
-  .populate('device')
-  .sort({ measurementDate: -1 });
+    .populate('device')
+    .sort({ measurementDate: -1 });
 
   return measurements;
 };

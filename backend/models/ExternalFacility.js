@@ -219,9 +219,12 @@ const externalFacilitySchema = new mongoose.Schema({
 externalFacilitySchema.index({ name: 1 });
 externalFacilitySchema.index({ type: 1 });
 externalFacilitySchema.index({ isActive: 1 });
-externalFacilitySchema.index({ 'contact.city': 1 });
+externalFacilitySchema.index({ 'contact.address.city': 1 });
 externalFacilitySchema.index({ clinic: 1 });
 externalFacilitySchema.index({ 'preferredFor.serviceCode': 1 });
+// Compound indexes for common query patterns
+externalFacilitySchema.index({ isActive: 1, type: 1, name: 1 });
+externalFacilitySchema.index({ clinic: 1, isActive: 1 });
 
 // Text search
 externalFacilitySchema.index({

@@ -13,6 +13,9 @@ const fs = require('fs').promises;
 const path = require('path');
 const xml2js = require('xml2js');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('NidekParser');
+
 const parser = new xml2js.Parser({
   explicitArray: false,
   ignoreAttrs: false,
@@ -191,7 +194,7 @@ async function parseDirectory(dirPath) {
         exam.images = group.images;
         exams.push(exam);
       } catch (err) {
-        console.error(`Error parsing exam ${examId}:`, err.message);
+        log.error(`Error parsing exam ${examId}:`, err.message);
       }
     }
   }

@@ -2,6 +2,9 @@ const cron = require('node-cron');
 const backupService = require('./backupService');
 const notificationService = require('./enhancedNotificationService');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('BackupScheduler');
+
 /**
  * Backup Scheduler
  *
@@ -19,7 +22,7 @@ class BackupScheduler {
    */
   start() {
     if (this.isRunning) {
-      console.warn('Backup scheduler is already running');
+      log.warn('Backup scheduler is already running');
       return;
     }
 
@@ -39,10 +42,10 @@ class BackupScheduler {
     });
 
     this.isRunning = true;
-    console.log('✅ Backup scheduler started');
-    console.log('  - Daily backups: 2:00 AM every day');
-    console.log('  - Monthly backups: 3:00 AM on 1st of each month');
-    console.log('  - Yearly backups: 4:00 AM on January 1st');
+    log.info('✅ Backup scheduler started');
+    log.info('  - Daily backups: 2:00 AM every day');
+    log.info('  - Monthly backups: 3:00 AM on 1st of each month');
+    log.info('  - Yearly backups: 4:00 AM on January 1st');
   }
 
   /**
@@ -52,18 +55,18 @@ class BackupScheduler {
     const startTime = Date.now();
 
     try {
-      console.log(`\n${'='.repeat(60)}`);
-      console.log(`Starting ${type.toUpperCase()} backup - ${new Date().toISOString()}`);
+      log.info(`\n${'='.repeat(60)}`);
+      log.info(`Starting ${type.toUpperCase()} backup - ${new Date().toISOString()}`);
       console.log('='.repeat(60));
 
       const result = await backupService.createBackup(type);
 
       const duration = Date.now() - startTime;
-      console.log(`\n✅ ${type.toUpperCase()} backup completed successfully`);
-      console.log(`Duration: ${duration}ms`);
-      console.log(`Size: ${result.sizeMB} MB`);
-      console.log(`Path: ${result.path}`);
-      console.log('='.repeat(60) + '\n');
+      log.info(`\n✅ ${type.toUpperCase()} backup completed successfully`);
+      log.info(`Duration: ${duration}ms`);
+      log.info(`Size: ${result.sizeMB} MB`);
+      log.info(`Path: ${result.path}`);
+      log.info(`${'='.repeat(60)}\n`);
 
       // Send success notification
       await this.sendSuccessNotification(type, result, duration);
@@ -72,10 +75,10 @@ class BackupScheduler {
 
     } catch (error) {
       const duration = Date.now() - startTime;
-      console.error(`\n❌ ${type.toUpperCase()} backup FAILED`);
-      console.error(`Error: ${error.message}`);
-      console.error(`Duration: ${duration}ms`);
-      console.error('='.repeat(60) + '\n');
+      log.error(`\n❌ ${type.toUpperCase()} backup FAILED`);
+      log.error(`Error: ${error.message}`);
+      log.error(`Duration: ${duration}ms`);
+      log.error(`${'='.repeat(60)}\n`);
 
       // Send failure notification
       await this.sendFailureNotification(type, error, duration);
@@ -110,7 +113,7 @@ class BackupScheduler {
         }
       );
     } catch (error) {
-      console.error('Failed to send success notification:', error.message);
+      log.error('Failed to send success notification:', error.message);
     }
   }
 
@@ -142,7 +145,7 @@ class BackupScheduler {
           }
         );
       } catch (emailError) {
-        console.error('Failed to send failure email:', emailError.message);
+        log.error('Failed to send failure email:', emailError.message);
       }
     }
 
@@ -154,7 +157,7 @@ class BackupScheduler {
           `URGENT: MedFlow ${type} backup failed at ${new Date().toLocaleString()}. Error: ${error.message.substring(0, 100)}`
         );
       } catch (smsError) {
-        console.error('Failed to send failure SMS:', smsError.message);
+        log.error('Failed to send failure SMS:', smsError.message);
       }
     }
   }
@@ -171,7 +174,7 @@ class BackupScheduler {
    */
   stop() {
     if (!this.isRunning) {
-      console.warn('Backup scheduler is not running');
+      log.warn('Backup scheduler is not running');
       return;
     }
 
@@ -183,7 +186,7 @@ class BackupScheduler {
 
     this.jobs = {};
     this.isRunning = false;
-    console.log('Backup scheduler stopped');
+    log.info('Backup scheduler stopped');
   }
 
   /**
@@ -209,7 +212,7 @@ class BackupScheduler {
    * Test backup scheduler
    */
   async test() {
-    console.log('Testing backup scheduler...');
+    log.info('Testing backup scheduler...');
 
     try {
       // Run a test backup

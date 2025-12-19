@@ -1,6 +1,9 @@
 const CalendarIntegration = require('../models/CalendarIntegration');
 const calendarService = require('./calendarIntegrationService');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('CalendarSyncScheduler');
+
 /**
  * Calendar Sync Scheduler
  * Automatically syncs appointments to external calendars at configured intervals
@@ -18,11 +21,11 @@ class CalendarSyncScheduler {
    */
   start() {
     if (this.intervalId) {
-      console.log('⚠️ Calendar sync scheduler already running');
+      log.info('⚠️ Calendar sync scheduler already running');
       return;
     }
 
-    console.log('📅 Starting calendar sync scheduler...');
+    log.info('📅 Starting calendar sync scheduler...');
 
     // Run immediately on start
     this.runSync();
@@ -40,7 +43,7 @@ class CalendarSyncScheduler {
     if (this.intervalId) {
       clearInterval(this.intervalId);
       this.intervalId = null;
-      console.log('📅 Calendar sync scheduler stopped');
+      log.info('📅 Calendar sync scheduler stopped');
     }
   }
 
@@ -49,7 +52,7 @@ class CalendarSyncScheduler {
    */
   async runSync() {
     if (this.running) {
-      console.log('⏳ Calendar sync already in progress, skipping...');
+      log.info('⏳ Calendar sync already in progress, skipping...');
       return;
     }
 
@@ -64,19 +67,19 @@ class CalendarSyncScheduler {
         return;
       }
 
-      console.log(`📅 Syncing ${integrations.length} calendar integration(s)...`);
+      log.info(`📅 Syncing ${integrations.length} calendar integration(s)...`);
 
       for (const integration of integrations) {
         try {
           await this.syncIntegration(integration);
         } catch (error) {
-          console.error(`Calendar sync error for ${integration.provider}:`, error.message);
+          log.error(`Calendar sync error for ${integration.provider}:`, error.message);
           integration.updateSyncState('failed', error.message);
           await integration.save();
         }
       }
     } catch (error) {
-      console.error('Calendar sync scheduler error:', error);
+      log.error('Calendar sync scheduler error:', { error: error });
     } finally {
       this.running = false;
     }
@@ -111,7 +114,7 @@ class CalendarSyncScheduler {
     const userId = integration.user._id || integration.user;
     const provider = integration.provider;
 
-    console.log(`📅 Syncing ${provider} calendar for user ${userId}...`);
+    log.info(`📅 Syncing ${provider} calendar for user ${userId}...`);
 
     try {
       const results = await calendarService.fullSync(userId);
@@ -124,12 +127,12 @@ class CalendarSyncScheduler {
           `${providerResult.stats?.updated || 0} updated`
         );
       } else {
-        console.warn(`⚠️ ${provider} sync partial/failed:`, providerResult?.error);
+        log.warn(`⚠️ ${provider} sync partial/failed:`, providerResult?.error);
       }
 
       return providerResult;
     } catch (error) {
-      console.error(`❌ ${provider} sync error:`, error.message);
+      log.error(`❌ ${provider} sync error:`, error.message);
       throw error;
     }
   }

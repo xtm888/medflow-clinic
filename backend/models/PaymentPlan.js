@@ -200,7 +200,7 @@ paymentPlanSchema.methods.generateInstallments = function() {
   const remainder = (this.totalAmount - this.downPayment.amount) % this.numberOfInstallments;
 
   this.installments = [];
-  let currentDate = new Date(this.startDate);
+  const currentDate = new Date(this.startDate);
 
   for (let i = 0; i < this.numberOfInstallments; i++) {
     let amount = installmentAmount;

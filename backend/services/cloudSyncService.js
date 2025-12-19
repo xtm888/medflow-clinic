@@ -20,6 +20,9 @@ const DeviceMeasurement = require('../models/DeviceMeasurement');
 const SyncQueue = require('../models/SyncQueue');
 const Clinic = require('../models/Clinic');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('CloudSync');
+
 class CloudSyncService {
   constructor() {
     this.cloudUrl = process.env.CLOUD_API_URL || null;
@@ -45,11 +48,11 @@ class CloudSyncService {
    * Initialize sync service
    */
   async init() {
-    console.log('[CloudSync] Initializing...');
+    log.info('Initializing...');
 
     // Check if cloud is configured
     if (!this.cloudUrl) {
-      console.log('[CloudSync] No cloud URL configured - running in local-only mode');
+      log.info('No cloud URL configured - running in local-only mode');
       return;
     }
 
@@ -78,7 +81,7 @@ class CloudSyncService {
       const axios = require('axios');
       const response = await axios.get(`${this.cloudUrl}/health`, { timeout: 5000 });
       this.isOnline = response.status === 200;
-      console.log('[CloudSync] Cloud connectivity:', this.isOnline ? 'ONLINE' : 'OFFLINE');
+      log.info('Cloud connectivity:', this.isOnline ? 'ONLINE' : 'OFFLINE');
       return this.isOnline;
     } catch (error) {
       this.isOnline = false;
@@ -102,7 +105,7 @@ class CloudSyncService {
       }
     }, intervalMs);
 
-    console.log('[CloudSync] Periodic sync started (every', intervalMs / 1000, 'seconds)');
+    log.info('Periodic sync started (every', intervalMs / 1000, 'seconds)');
   }
 
   /**
@@ -120,9 +123,9 @@ class CloudSyncService {
           await this.queueChange(collectionName, change);
         });
 
-        console.log('[CloudSync] Watching changes on:', collectionName);
+        log.info('[CloudSync] Watching changes on:', { data: collectionName });
       } catch (error) {
-        console.error('[CloudSync] Failed to watch', collectionName, error.message);
+        log.error('[CloudSync] Failed to watch', collectionName, error.message);
       }
     }
   }
@@ -157,7 +160,7 @@ class CloudSyncService {
         createdAt: new Date()
       });
     } catch (error) {
-      console.error('[CloudSync] Failed to queue change:', error.message);
+      log.error('[CloudSync] Failed to queue change:', error.message);
     }
   }
 
@@ -171,12 +174,12 @@ class CloudSyncService {
       status: 'pending',
       clinic: this.clinicId
     })
-    .sort({ priority: 1, createdAt: 1 })
-    .limit(100);
+      .sort({ priority: 1, createdAt: 1 })
+      .limit(100);
 
     if (pending.length === 0) return { synced: 0, failed: 0 };
 
-    console.log('[CloudSync] Syncing', pending.length, 'pending changes...');
+    log.info('Syncing', pending.length, 'pending changes...');
 
     let synced = 0;
     let failed = 0;
@@ -202,7 +205,7 @@ class CloudSyncService {
       }
     }
 
-    console.log('[CloudSync] Sync complete:', synced, 'synced,', failed, 'failed');
+    log.info('Sync complete:', synced, 'synced,', failed, 'failed');
     return { synced, failed };
   }
 
@@ -253,7 +256,7 @@ class CloudSyncService {
       });
 
       const changes = response.data?.changes || [];
-      console.log('[CloudSync] Pulled', changes.length, 'remote changes');
+      log.info('Pulled', changes.length, 'remote changes');
 
       for (const change of changes) {
         await this.applyRemoteChange(change);
@@ -262,7 +265,7 @@ class CloudSyncService {
       this.lastSyncTime = new Date();
 
     } catch (error) {
-      console.error('[CloudSync] Failed to pull changes:', error.message);
+      log.error('[CloudSync] Failed to pull changes:', error.message);
     }
   }
 
@@ -298,7 +301,7 @@ class CloudSyncService {
           break;
       }
     } catch (error) {
-      console.error('[CloudSync] Failed to apply change:', error.message);
+      log.error('[CloudSync] Failed to apply change:', error.message);
     }
   }
 
@@ -388,7 +391,7 @@ class CloudSyncService {
       return response.data?.patients || [];
 
     } catch (error) {
-      console.error('[CloudSync] Cloud patient search failed:', error.message);
+      log.error('[CloudSync] Cloud patient search failed:', error.message);
       return [];
     }
   }

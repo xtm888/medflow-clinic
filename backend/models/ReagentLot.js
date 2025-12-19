@@ -325,7 +325,7 @@ reagentLotSchema.methods.getReferenceRangeForPatient = function(patientAge, pati
   const range = this.effectiveReferenceRange;
   if (!range) return null;
 
-  let result = {
+  const result = {
     min: range.min,
     max: range.max,
     criticalLow: range.criticalLow,

@@ -256,27 +256,27 @@ function buildRefillResponseBody(prescription, pharmacy, prescriber, approved = 
  */
 function convertToXML(message) {
   // Simplified XML generation - in production, use a proper XML library
-  const header = `<?xml version="1.0" encoding="UTF-8"?>`;
-  const namespace = `xmlns="http://www.ncpdp.org/schema/SCRIPT"`;
+  const header = '<?xml version="1.0" encoding="UTF-8"?>';
+  const namespace = 'xmlns="http://www.ncpdp.org/schema/SCRIPT"';
 
   let xml = `${header}\n<Message ${namespace}>\n`;
-  xml += `  <Header>\n`;
+  xml += '  <Header>\n';
   xml += `    <MessageID>${message.header.messageId}</MessageID>\n`;
   xml += `    <SentTime>${message.header.sentTime}</SentTime>\n`;
   xml += `    <MessageType>${message.header.messageType}</MessageType>\n`;
-  xml += `    <From>\n`;
+  xml += '    <From>\n';
   xml += `      <Identification>${message.header.senderId}</Identification>\n`;
   xml += `      <Qualifier>${message.header.senderQualifier}</Qualifier>\n`;
-  xml += `    </From>\n`;
-  xml += `    <To>\n`;
+  xml += '    </From>\n';
+  xml += '    <To>\n';
   xml += `      <Identification>${message.header.receiverId}</Identification>\n`;
   xml += `      <Qualifier>${message.header.receiverQualifier}</Qualifier>\n`;
-  xml += `    </To>\n`;
-  xml += `  </Header>\n`;
-  xml += `  <Body>\n`;
+  xml += '    </To>\n';
+  xml += '  </Header>\n';
+  xml += '  <Body>\n';
   xml += objectToXML(message.body, 4);
-  xml += `  </Body>\n`;
-  xml += `</Message>`;
+  xml += '  </Body>\n';
+  xml += '</Message>';
 
   return xml;
 }

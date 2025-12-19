@@ -8,6 +8,9 @@ const mongoose = require('mongoose');
 const SyncQueue = require('../models/SyncQueue');
 const axios = require('axios');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('DataSync');
+
 // Models that need syncing
 const SYNCABLE_MODELS = {
   patients: require('../models/Patient'),
@@ -40,16 +43,16 @@ let isSyncing = false;
  */
 async function initialize() {
   if (!SYNC_CONFIG.enabled) {
-    console.log('[SYNC] Central sync is disabled. Set CENTRAL_SYNC_ENABLED=true to enable.');
+    log.info('Central sync is disabled. Set CENTRAL_SYNC_ENABLED=true to enable.');
     return;
   }
 
   if (!SYNC_CONFIG.syncToken) {
-    console.log('[SYNC] Warning: No SYNC_TOKEN configured. Sync will fail authentication.');
+    log.info('Warning: No SYNC_TOKEN configured. Sync will fail authentication.');
   }
 
-  console.log(`[SYNC] Initializing sync service for clinic: ${SYNC_CONFIG.clinicId}`);
-  console.log(`[SYNC] Central server: ${SYNC_CONFIG.centralServerUrl}`);
+  log.info(`Initializing sync service for clinic: ${SYNC_CONFIG.clinicId}`);
+  log.info(`Central server: ${SYNC_CONFIG.centralServerUrl}`);
 
   // Set up change stream listeners for each model
   for (const [name, Model] of Object.entries(SYNCABLE_MODELS)) {
@@ -59,7 +62,7 @@ async function initialize() {
   // Start periodic sync
   startPeriodicSync();
 
-  console.log('[SYNC] Service initialized');
+  log.info('Service initialized');
 }
 
 /**
@@ -79,14 +82,14 @@ function setupChangeStream(collectionName, Model) {
     });
 
     changeStream.on('error', (err) => {
-      console.error(`[SYNC] Change stream error for ${collectionName}:`, err.message);
+      log.error(`[SYNC] Change stream error for ${collectionName}:`, err.message);
       // Reconnect after delay
       setTimeout(() => setupChangeStream(collectionName, Model), 5000);
     });
 
-    console.log(`[SYNC] Change stream active for: ${collectionName}`);
+    log.info(`Change stream active for: ${collectionName}`);
   } catch (err) {
-    console.error(`[SYNC] Failed to setup change stream for ${collectionName}:`, err.message);
+    log.error(`[SYNC] Failed to setup change stream for ${collectionName}:`, err.message);
   }
 }
 
@@ -133,9 +136,9 @@ async function queueChange(collection, change) {
       priority
     });
 
-    console.log(`[SYNC] Queued ${operation} for ${collection}/${documentId}`);
+    log.info(`Queued ${operation} for ${collection}/${documentId}`);
   } catch (err) {
-    console.error('[SYNC] Failed to queue change:', err.message);
+    log.error('[SYNC] Failed to queue change:', err.message);
   }
 }
 
@@ -186,14 +189,14 @@ function stopSync() {
  */
 async function performSync() {
   if (isSyncing) {
-    console.log('[SYNC] Sync already in progress, skipping');
+    log.info('Sync already in progress, skipping');
     return;
   }
 
   isSyncing = true;
 
   try {
-    console.log('[SYNC] Starting sync cycle...');
+    log.info('Starting sync cycle...');
 
     // Step 1: Push local changes to central
     await pushChangesToCentral();
@@ -201,9 +204,9 @@ async function performSync() {
     // Step 2: Pull changes from central
     await pullChangesFromCentral();
 
-    console.log('[SYNC] Sync cycle completed');
+    log.info('Sync cycle completed');
   } catch (err) {
-    console.error('[SYNC] Sync failed:', err.message);
+    log.error('[SYNC] Sync failed:', err.message);
   } finally {
     isSyncing = false;
   }
@@ -222,7 +225,7 @@ async function makeRequestWithRetry(url, data, options = {}) {
       if (attempt > 0) {
         // Exponential backoff: 1s, 2s, 4s
         const delay = 1000 * Math.pow(2, attempt - 1);
-        console.log(`[SYNC] Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        log.info(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
@@ -295,16 +298,16 @@ async function pushChangesToCentral() {
   );
 
   if (pending.length === 0) {
-    console.log('[SYNC] No pending changes to push');
+    log.info('No pending changes to push');
     return;
   }
 
-  console.log(`[SYNC] Pushing ${pending.length} changes to central...`);
+  log.info(`Pushing ${pending.length} changes to central...`);
 
   // Check if central server is reachable first
   const isOnline = await checkCentralConnection();
   if (!isOnline) {
-    console.log('[SYNC] Central server unreachable - items will retry with backoff');
+    log.info('Central server unreachable - items will retry with backoff');
     return;
   }
 
@@ -351,7 +354,7 @@ async function pushChangesToCentral() {
     }
   }
 
-  console.log(`[SYNC] Push complete: ${results.synced} synced, ${results.failed} failed, ${results.conflicts} conflicts`);
+  log.info(`Push complete: ${results.synced} synced, ${results.failed} failed, ${results.conflicts} conflicts`);
 }
 
 /**
@@ -365,7 +368,7 @@ async function makeGetRequestWithRetry(url, params, options = {}) {
     try {
       if (attempt > 0) {
         const delay = 1000 * Math.pow(2, attempt - 1);
-        console.log(`[SYNC] Pull retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        log.info(`Pull retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
 
@@ -413,11 +416,11 @@ async function pullChangesFromCentral() {
     const { changes, timestamp } = response.data;
 
     if (!changes || changes.length === 0) {
-      console.log('[SYNC] No new changes from central');
+      log.info('No new changes from central');
       return;
     }
 
-    console.log(`[SYNC] Pulling ${changes.length} changes from central...`);
+    log.info(`Pulling ${changes.length} changes from central...`);
 
     // Apply changes locally with error tracking
     const results = { applied: 0, failed: 0 };
@@ -427,7 +430,7 @@ async function pullChangesFromCentral() {
         await applyRemoteChange(change);
         results.applied++;
       } catch (err) {
-        console.error(`[SYNC] Failed to apply change for ${change.collection}/${change.documentId}:`, err.message);
+        log.error(`[SYNC] Failed to apply change for ${change.collection}/${change.documentId}:`, err.message);
         results.failed++;
         // Continue with other changes - don't fail entire batch
       }
@@ -438,12 +441,12 @@ async function pullChangesFromCentral() {
       await setLastPullTimestamp(timestamp);
     }
 
-    console.log(`[SYNC] Pull complete: ${results.applied} applied, ${results.failed} failed`);
+    log.info(`Pull complete: ${results.applied} applied, ${results.failed} failed`);
   } catch (err) {
     if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-      console.log('[SYNC] Central server unreachable - will retry later');
+      log.info('Central server unreachable - will retry later');
     } else {
-      console.error('[SYNC] Pull failed:', err.message);
+      log.error('[SYNC] Pull failed:', err.message);
     }
   }
 }
@@ -456,7 +459,7 @@ async function applyRemoteChange(change) {
   const Model = SYNCABLE_MODELS[collection];
 
   if (!Model) {
-    console.error(`[SYNC] Unknown collection: ${collection}`);
+    log.error(`[SYNC] Unknown collection: ${collection}`);
     return;
   }
 
@@ -484,7 +487,7 @@ async function applyRemoteChange(change) {
         break;
     }
   } catch (err) {
-    console.error(`[SYNC] Failed to apply change for ${collection}/${documentId}:`, err.message);
+    log.error(`[SYNC] Failed to apply change for ${collection}/${documentId}:`, err.message);
   }
 }
 
@@ -492,7 +495,7 @@ async function applyRemoteChange(change) {
  * Handle sync conflicts
  */
 async function handleConflicts(conflicts) {
-  console.log(`[SYNC] Handling ${conflicts.length} conflicts...`);
+  log.info(`Handling ${conflicts.length} conflicts...`);
 
   for (const conflict of conflicts) {
     const { syncId, localVersion, centralVersion } = conflict;
@@ -587,7 +590,7 @@ async function setLastPullTimestamp(timestamp) {
  * Force immediate sync
  */
 async function forceSync() {
-  console.log('[SYNC] Force sync requested');
+  log.info('Force sync requested');
   await performSync();
 }
 
@@ -663,7 +666,7 @@ async function retryDeadLetterItem(syncId) {
   if (!item) {
     throw new Error(`Item ${syncId} not found in dead letter queue`);
   }
-  console.log(`[SYNC] Dead letter item ${syncId} moved back to pending queue`);
+  log.info(`Dead letter item ${syncId} moved back to pending queue`);
   return item;
 }
 
@@ -690,7 +693,7 @@ async function retryAllDeadLetter() {
     retried++;
   }
 
-  console.log(`[SYNC] Retried ${retried} items from dead letter queue`);
+  log.info(`Retried ${retried} items from dead letter queue`);
   return { retried };
 }
 
@@ -703,7 +706,7 @@ async function clearDeadLetterItems(syncIds) {
     syncId: { $in: syncIds },
     status: 'dead_letter'
   });
-  console.log(`[SYNC] Cleared ${result.deletedCount} items from dead letter queue`);
+  log.info(`Cleared ${result.deletedCount} items from dead letter queue`);
   return { deleted: result.deletedCount };
 }
 

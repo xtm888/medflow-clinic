@@ -12,7 +12,7 @@ exports.getSettings = asyncHandler(async (req, res) => {
   const safeSettings = settings.toObject();
   if (safeSettings.twilio) {
     if (safeSettings.twilio.accountSid) {
-      safeSettings.twilio.accountSid = safeSettings.twilio.accountSid.substring(0, 8) + '...';
+      safeSettings.twilio.accountSid = `${safeSettings.twilio.accountSid.substring(0, 8)}...`;
     }
     if (safeSettings.twilio.authToken) {
       safeSettings.twilio.authToken = '••••••••';

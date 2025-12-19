@@ -163,7 +163,7 @@ async function checkRoomConflicts(roomId, startTime, endTime, excludeAppointment
     return {
       hasConflict: true,
       conflictType: 'room',
-      message: `Room is already booked during this time`,
+      message: 'Room is already booked during this time',
       conflicts: conflictingAppointments.map(apt => ({
         appointmentId: apt._id,
         providerName: apt.provider ? `${apt.provider.firstName} ${apt.provider.lastName}` : 'Unknown',
@@ -210,7 +210,7 @@ async function checkEquipmentConflicts(equipmentIds, startTime, endTime, exclude
     return {
       hasConflict: true,
       conflictType: 'equipment',
-      message: `Required equipment is in use during this time`,
+      message: 'Required equipment is in use during this time',
       conflicts: conflictingAppointments.map(apt => ({
         appointmentId: apt._id,
         startTime: apt.startTime,
@@ -422,8 +422,8 @@ async function findNextAvailableSlot(providerId, afterTime, duration, appointmen
     status: { $nin: ['cancelled', 'no_show'] },
     startTime: { $gte: searchStart, $lte: searchEnd }
   })
-  .sort({ startTime: 1 })
-  .lean();
+    .sort({ startTime: 1 })
+    .lean();
 
   // Business hours (configurable)
   const businessStart = 8; // 8 AM
@@ -504,8 +504,8 @@ async function getAvailableSlots(providerId, date, duration, appointmentType) {
     status: { $nin: ['cancelled', 'no_show'] },
     startTime: { $gte: dayStart, $lt: dayEnd }
   })
-  .sort({ startTime: 1 })
-  .lean();
+    .sort({ startTime: 1 })
+    .lean();
 
   const availableSlots = [];
   let currentTime = new Date(dayStart);

@@ -94,7 +94,7 @@ const appointmentSchema = new mongoose.Schema({
       'in-progress',
       'completed',
       'cancelled',
-      'no-show',
+      'no_show',
       'rescheduled'
     ],
     default: 'scheduled'
@@ -410,13 +410,13 @@ appointmentSchema.virtual('isFuture').get(function() {
 
 // Valid appointment status transitions (state machine)
 const VALID_APPOINTMENT_TRANSITIONS = {
-  'scheduled': ['confirmed', 'checked-in', 'cancelled', 'no-show', 'rescheduled'],
-  'confirmed': ['checked-in', 'cancelled', 'no-show', 'rescheduled'],
-  'checked-in': ['in-progress', 'cancelled', 'no-show'],
+  'scheduled': ['confirmed', 'checked-in', 'cancelled', 'no_show', 'rescheduled'],
+  'confirmed': ['checked-in', 'cancelled', 'no_show', 'rescheduled'],
+  'checked-in': ['in-progress', 'cancelled', 'no_show'],
   'in-progress': ['completed', 'cancelled'],
   'completed': [], // Terminal state - no transitions allowed
   'cancelled': [], // Terminal state
-  'no-show': ['rescheduled', 'scheduled'], // Can reschedule no-show
+  'no_show': ['rescheduled', 'scheduled'], // Can reschedule no_show
   'rescheduled': ['scheduled', 'confirmed', 'cancelled']
 };
 
@@ -517,7 +517,7 @@ function normalizeTime(timeStr) {
   if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
 
   // Handle "H:MM" format - add leading zero
-  if (/^\d:\d{2}$/.test(timeStr)) return '0' + timeStr;
+  if (/^\d:\d{2}$/.test(timeStr)) return `0${timeStr}`;
 
   // Handle "HH:MM:SS" format - strip seconds
   if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0, 5);
@@ -532,7 +532,7 @@ function normalizeTime(timeStr) {
     if (period === 'PM' && hours !== 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
 
-    return String(hours).padStart(2, '0') + ':' + minutes;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
   }
 
   // Return original if no pattern matched
@@ -559,7 +559,7 @@ appointmentSchema.methods.hasConflict = async function() {
     _id: { $ne: this._id },
     provider: this.provider,
     date: { $gte: startOfDay, $lte: endOfDay },
-    status: { $nin: ['cancelled', 'no-show'] }
+    status: { $nin: ['cancelled', 'no_show'] }
   }).select('startTime endTime').lean();
 
   // Check for time overlaps using normalized times
@@ -611,7 +611,7 @@ appointmentSchema.methods.calculateWaitingTime = function() {
 };
 
 // Post-save hook to update Patient.appointments array
-appointmentSchema.post('save', async function(doc) {
+appointmentSchema.post('save', async (doc) => {
   // Only add to patient's appointments array if this is a new appointment
   if (doc.wasNew && doc.patient) {
     try {
@@ -628,7 +628,7 @@ appointmentSchema.post('save', async function(doc) {
 });
 
 // CRITICAL: Cascade appointment cancellation to associated Visit
-appointmentSchema.post('save', async function(doc) {
+appointmentSchema.post('save', async (doc) => {
   // Check if appointment was just cancelled and has a linked visit
   if (doc.status === 'cancelled' && doc.visit) {
     try {
@@ -686,13 +686,13 @@ appointmentSchema.pre('save', function(next) {
 // =====================================================
 
 const APPOINTMENT_STATUS_TRANSITIONS = {
-  'scheduled': ['confirmed', 'checked-in', 'cancelled', 'rescheduled', 'no-show'],
-  'confirmed': ['checked-in', 'cancelled', 'rescheduled', 'no-show'],
-  'checked-in': ['in-progress', 'cancelled', 'no-show'],
+  'scheduled': ['confirmed', 'checked-in', 'cancelled', 'rescheduled', 'no_show'],
+  'confirmed': ['checked-in', 'cancelled', 'rescheduled', 'no_show'],
+  'checked-in': ['in-progress', 'cancelled', 'no_show'],
   'in-progress': ['completed', 'cancelled'],
   'completed': [], // Terminal state - no transitions allowed
   'cancelled': [], // Terminal state - no transitions allowed
-  'no-show': ['rescheduled'], // Can only reschedule a no-show
+  'no_show': ['rescheduled'], // Can only reschedule a no_show
   'rescheduled': ['scheduled', 'cancelled'] // Rescheduled creates new appointment
 };
 

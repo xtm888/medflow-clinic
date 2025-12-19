@@ -5,7 +5,7 @@
  * Extends InventoryControllerFactory with QC workflow and lab template linking.
  */
 
-const ReagentInventory = require('../../models/ReagentInventory');
+const { ReagentInventory } = require('../../models/Inventory');
 const LaboratoryTemplate = require('../../models/LaboratoryTemplate');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 

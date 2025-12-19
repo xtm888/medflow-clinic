@@ -3,6 +3,9 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const CONSTANTS = require('../config/constants');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Websocket');
+
 class WebSocketService {
   constructor() {
     this.io = null;
@@ -58,7 +61,7 @@ class WebSocketService {
 
     // Global error handler for socket.io
     this.io.engine.on('connection_error', (err) => {
-      console.error('Socket.IO connection error:', {
+      log.error('Socket.IO connection error:', {
         message: err.message,
         code: err.code,
         context: err.context
@@ -71,7 +74,7 @@ class WebSocketService {
     this.setupErrorHandlers();
     this.startCleanupInterval();
     this.startPingInterval();
-    console.log('✅ WebSocket service initialized (with enhanced error handling)');
+    log.info('✅ WebSocket service initialized (with enhanced error handling)');
   }
 
   // Start periodic cleanup of old messages
@@ -101,7 +104,7 @@ class WebSocketService {
             try {
               socket.emit('ping', { timestamp: Date.now() });
             } catch (error) {
-              console.error(`Ping error for socket ${socket.id}:`, error.message);
+              log.error(`Ping error for socket ${socket.id}:`, error.message);
               this.handleSocketError(socket, error);
             }
           }
@@ -124,7 +127,7 @@ class WebSocketService {
 
     // Handle socket.io errors
     this.io.on('error', (error) => {
-      console.error('Socket.IO error:', error);
+      log.error('Socket.IO error:', { error: error });
       this.stats.totalErrors++;
     });
 
@@ -132,7 +135,7 @@ class WebSocketService {
     this.io.on('connection', (socket) => {
       // Socket-specific error handler
       socket.on('error', (error) => {
-        console.error(`Socket error for user ${socket.userId}:`, {
+        log.error(`Socket error for user ${socket.userId}:`, {
           error: error.message,
           socketId: socket.id,
           userId: socket.userId
@@ -142,18 +145,18 @@ class WebSocketService {
 
       // Handle connection errors
       socket.on('connect_error', (error) => {
-        console.error(`Connection error for socket ${socket.id}:`, error.message);
+        log.error(`Connection error for socket ${socket.id}:`, error.message);
         this.handleSocketError(socket, error);
       });
 
       // Handle reconnection attempts
       socket.on('reconnect_attempt', (attemptNumber) => {
-        console.log(`Reconnection attempt ${attemptNumber} for socket ${socket.id}`);
+        log.info(`Reconnection attempt ${attemptNumber} for socket ${socket.id}`);
       });
 
       // Handle reconnection failure
       socket.on('reconnect_failed', () => {
-        console.error(`Reconnection failed for socket ${socket.id}`);
+        log.error(`Reconnection failed for socket ${socket.id}`);
         this.handleSocketDisconnect(socket, 'reconnect_failed');
       });
     });
@@ -169,11 +172,11 @@ class WebSocketService {
 
     // Disconnect socket if too many errors
     if (errorCount >= this.maxConnectionErrors) {
-      console.error(`Socket ${socket.id} exceeded max errors (${errorCount}). Disconnecting.`);
+      log.error(`Socket ${socket.id} exceeded max errors (${errorCount}). Disconnecting.`);
       try {
         socket.disconnect(true);
       } catch (err) {
-        console.error('Error disconnecting socket:', err.message);
+        log.error('Error disconnecting socket:', err.message);
       }
       this.connectionErrors.delete(socket.id);
     }
@@ -183,7 +186,7 @@ class WebSocketService {
   handleSocketDisconnect(socket, reason) {
     if (!socket) return;
 
-    console.log(`Socket ${socket.id} disconnected: ${reason}`);
+    log.info(`Socket ${socket.id} disconnected: ${reason}`);
     this.stats.totalDisconnections++;
 
     // Clean up error tracking
@@ -236,7 +239,7 @@ class WebSocketService {
 
     // Log cleanup stats periodically
     if (Math.random() < 0.1) { // 10% chance to log
-      console.log(`WebSocket cleanup: ${this.messageBuffer.size} room buffers, ${this.userMessageBuffer.size} user buffers, ${this.userLastSeen.size} lastSeen entries, ${this.userSockets.size} connected users`);
+      log.info(`WebSocket cleanup: ${this.messageBuffer.size} room buffers, ${this.userMessageBuffer.size} user buffers, ${this.userLastSeen.size} lastSeen entries, ${this.userSockets.size} connected users`);
     }
   }
 
@@ -323,7 +326,7 @@ class WebSocketService {
 
   setupEventHandlers() {
     this.io.on('connection', (socket) => {
-      console.log(`User ${socket.user.firstName} ${socket.user.lastName} connected`);
+      log.info(`User ${socket.user.firstName} ${socket.user.lastName} connected`);
 
       // Update statistics
       this.stats.totalConnections++;
@@ -358,7 +361,7 @@ class WebSocketService {
             socket.emit(msg.event, { ...msg.data, _replayed: true, _originalTimestamp: msg.timestamp });
           });
           socket.emit('replay:complete', { count: missedMessages.length });
-          console.log(`Replayed ${missedMessages.length} missed messages for user ${socket.userId}`);
+          log.info(`Replayed ${missedMessages.length} missed messages for user ${socket.userId}`);
         }
       }
 
@@ -410,14 +413,14 @@ class WebSocketService {
       socket.on('join_room', (room) => {
         if (room && typeof room === 'string') {
           socket.join(room);
-          console.log(`User ${socket.userId} joined room: ${room}`);
+          log.info(`User ${socket.userId} joined room: ${room}`);
         }
       });
 
       socket.on('leave_room', (room) => {
         if (room && typeof room === 'string') {
           socket.leave(room);
-          console.log(`User ${socket.userId} left room: ${room}`);
+          log.info(`User ${socket.userId} left room: ${room}`);
         }
       });
 
@@ -465,7 +468,7 @@ class WebSocketService {
       });
 
       socket.on('disconnect', (reason) => {
-        console.log(`User ${socket.user.firstName} ${socket.user.lastName} disconnected: ${reason}`);
+        log.info(`User ${socket.user.firstName} ${socket.user.lastName} disconnected: ${reason}`);
         this.handleSocketDisconnect(socket, reason);
       });
     });
@@ -555,7 +558,7 @@ class WebSocketService {
       // Global broadcast for billing dashboards
       this.io.emit('billing_update', data);
 
-      console.log(`[WebSocket] Billing update emitted: ${event || 'update'} for invoice ${invoiceId}`);
+      log.info(`Billing update emitted: ${event || 'update'} for invoice ${invoiceId}`);
     }
   }
 
@@ -774,7 +777,7 @@ class WebSocketService {
    */
   safeEmit(room, event, data) {
     if (!this.io) {
-      console.warn('WebSocket not initialized, cannot emit event:', event);
+      log.warn('WebSocket not initialized, cannot emit event:', { data: event });
       return false;
     }
 
@@ -787,7 +790,7 @@ class WebSocketService {
       this.stats.totalMessagesEmitted++;
       return true;
     } catch (error) {
-      console.error(`Failed to emit event ${event}:`, error.message);
+      log.error(`Failed to emit event ${event}:`, error.message);
       this.stats.totalMessagesFailed++;
       return false;
     }
@@ -823,7 +826,7 @@ class WebSocketService {
    * Clean up all resources and close connections
    */
   async shutdown() {
-    console.log('🔌 Shutting down WebSocket service...');
+    log.info('🔌 Shutting down WebSocket service...');
 
     // Stop intervals
     this.stopCleanupInterval();
@@ -845,7 +848,7 @@ class WebSocketService {
         try {
           socket.disconnect(true);
         } catch (error) {
-          console.error('Error disconnecting socket:', error.message);
+          log.error('Error disconnecting socket:', error.message);
         }
       });
 
@@ -859,7 +862,7 @@ class WebSocketService {
     this.userMessageBuffer.clear();
     this.connectionErrors.clear();
 
-    console.log('✅ WebSocket service shut down gracefully');
+    log.info('✅ WebSocket service shut down gracefully');
   }
 
   /**

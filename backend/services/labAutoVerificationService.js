@@ -6,6 +6,9 @@
 const LabResult = require('../models/LabResult');
 const Patient = require('../models/Patient');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('LabAutoVerification');
+
 /**
  * Auto-verification rules by test category
  */
@@ -380,12 +383,12 @@ async function getPreviousResult(patientId, testCode, daysBack = 7) {
       collectionDate: { $gte: cutoffDate },
       status: { $in: ['verified', 'auto_verified'] }
     })
-    .sort({ collectionDate: -1 })
-    .lean();
+      .sort({ collectionDate: -1 })
+      .lean();
 
     return previousResult;
   } catch (error) {
-    console.error('Error getting previous result:', error);
+    log.error('Error getting previous result:', { error: error });
     return null;
   }
 }
@@ -451,11 +454,11 @@ async function processAutoVerification(labResult, patientContext = {}) {
       requiresManualReview: requiresManual,
       testResults: results,
       verificationStatus: canAutoVerifyAll ? 'AUTO_VERIFIED' :
-                         hasCritical ? 'CRITICAL_PENDING' : 'PENDING_REVIEW',
+        hasCritical ? 'CRITICAL_PENDING' : 'PENDING_REVIEW',
       processedAt: new Date()
     };
   } catch (error) {
-    console.error('Error in auto-verification processing:', error);
+    log.error('Error in auto-verification processing:', { error: error });
     throw new Error(`Auto-verification failed: ${error.message}`);
   }
 }
@@ -490,7 +493,7 @@ async function generateCriticalAlert(patientId, criticalResult) {
       criticalResult
     };
   } catch (error) {
-    console.error('Error generating critical alert:', error);
+    log.error('Error generating critical alert:', { error: error });
     throw new Error(`Failed to generate critical alert: ${error.message}`);
   }
 }
@@ -530,7 +533,7 @@ async function getAutoVerificationStats(startDate, endDate) {
       period: { startDate, endDate }
     };
   } catch (error) {
-    console.error('Error getting auto-verification stats:', error);
+    log.error('Error getting auto-verification stats:', { error: error });
     throw new Error(`Failed to get statistics: ${error.message}`);
   }
 }

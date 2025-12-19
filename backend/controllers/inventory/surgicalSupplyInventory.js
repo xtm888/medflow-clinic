@@ -6,7 +6,7 @@
  */
 
 const mongoose = require('mongoose');
-const SurgicalSupplyInventory = require('../../models/SurgicalSupplyInventory');
+const { SurgicalSupplyInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
 // Create factory instance with surgical supply-specific config

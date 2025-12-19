@@ -3,6 +3,10 @@
  *
  * Provides consistent error response formatting across the API.
  * Use these helpers instead of creating error responses manually.
+ *
+ * @deprecated For new code, prefer importing from '../utils/response.js'
+ * which provides a unified interface combining apiResponse, errorResponse,
+ * and errorHandler utilities.
  */
 
 const ERROR_MESSAGES = require('../config/errorMessages');

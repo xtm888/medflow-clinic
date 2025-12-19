@@ -18,6 +18,9 @@
 
 const BaseAdapter = require('./BaseAdapter');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('SpecularMicroscopeAdapter');
+
 class SpecularMicroscopeAdapter extends BaseAdapter {
   constructor(device) {
     super(device);
@@ -391,7 +394,7 @@ class SpecularMicroscopeAdapter extends BaseAdapter {
       return deviceImage;
 
     } catch (error) {
-      console.error('Specular image processing error:', error);
+      log.error('Specular image processing error:', { error: error });
       throw new Error(`Specular image processing failed: ${error.message}`);
     }
   }

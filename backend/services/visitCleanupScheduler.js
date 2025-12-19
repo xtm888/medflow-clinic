@@ -4,6 +4,9 @@ const Appointment = require('../models/Appointment');
 const Alert = require('../models/Alert');
 const websocketService = require('./websocketService');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('VisitCleanupScheduler');
+
 /**
  * Visit Cleanup Scheduler Service
  * CRITICAL: Automatically detects and handles stuck visits
@@ -32,11 +35,11 @@ class VisitCleanupScheduler {
    */
   start() {
     if (this.isRunning) {
-      console.log('  Visit cleanup scheduler is already running');
+      log.info('  Visit cleanup scheduler is already running');
       return;
     }
 
-    console.log('Starting visit cleanup scheduler...');
+    log.info('Starting visit cleanup scheduler...');
 
     // Job 1: Detect stuck visits (every 30 minutes)
     const detectionJob = cron.schedule('*/30 * * * *', async () => {
@@ -61,11 +64,11 @@ class VisitCleanupScheduler {
     this.jobs = [detectionJob, autoFixJob, endOfDayJob, syncJob];
     this.isRunning = true;
 
-    console.log('Visit cleanup scheduler started successfully');
-    console.log('   - Stuck visit detection: Every 30 minutes');
-    console.log('   - Auto-fix signed visits: Every 15 minutes');
-    console.log('   - End-of-day cleanup: Daily at 11 PM');
-    console.log('   - Appointment-Visit sync: Every hour');
+    log.info('Visit cleanup scheduler started successfully');
+    log.info('   - Stuck visit detection: Every 30 minutes');
+    log.info('   - Auto-fix signed visits: Every 15 minutes');
+    log.info('   - End-of-day cleanup: Daily at 11 PM');
+    log.info('   - Appointment-Visit sync: Every hour');
   }
 
   /**
@@ -73,7 +76,7 @@ class VisitCleanupScheduler {
    */
   stop() {
     if (!this.isRunning) {
-      console.log('Visit cleanup scheduler is not running');
+      log.info('Visit cleanup scheduler is not running');
       return;
     }
 
@@ -81,7 +84,7 @@ class VisitCleanupScheduler {
     this.jobs = [];
     this.isRunning = false;
 
-    console.log('Visit cleanup scheduler stopped');
+    log.info('Visit cleanup scheduler stopped');
   }
 
   /**
@@ -177,7 +180,7 @@ class VisitCleanupScheduler {
       // Create all alerts
       if (alerts.length > 0) {
         await Alert.insertMany(alerts);
-        console.log(`[VISIT CLEANUP] Created ${alerts.length} alert(s) for stuck visits`);
+        log.info(`[VISIT CLEANUP] Created ${alerts.length} alert(s) for stuck visits`);
 
         // Emit WebSocket notification
         websocketService.emitToRole(['admin', 'nurse', 'reception'], 'alert:stuck_visits', {
@@ -194,7 +197,7 @@ class VisitCleanupScheduler {
       };
 
     } catch (error) {
-      console.error('[VISIT CLEANUP] Error detecting stuck visits:', error);
+      log.error('[VISIT CLEANUP] Error detecting stuck visits:', { error: error });
       return { success: false, error: error.message };
     }
   }
@@ -217,7 +220,7 @@ class VisitCleanupScheduler {
         return { success: true, fixed: 0 };
       }
 
-      console.log(`[VISIT CLEANUP] Auto-fixing ${signedButNotCompleted.length} signed but not completed visit(s)`);
+      log.info(`[VISIT CLEANUP] Auto-fixing ${signedButNotCompleted.length} signed but not completed visit(s)`);
 
       let fixed = 0;
       let errors = 0;
@@ -240,11 +243,11 @@ class VisitCleanupScheduler {
             });
           }
 
-          console.log(`   Fixed: ${visit.visitId}`);
+          log.info(`   Fixed: ${visit.visitId}`);
           fixed++;
 
         } catch (err) {
-          console.error(`   Error fixing ${visit.visitId}:`, err.message);
+          log.error(`   Error fixing ${visit.visitId}:`, err.message);
           errors++;
         }
       }
@@ -252,7 +255,7 @@ class VisitCleanupScheduler {
       return { success: true, fixed, errors };
 
     } catch (error) {
-      console.error('[VISIT CLEANUP] Error auto-fixing signed visits:', error);
+      log.error('[VISIT CLEANUP] Error auto-fixing signed visits:', { error: error });
       return { success: false, error: error.message };
     }
   }
@@ -263,7 +266,7 @@ class VisitCleanupScheduler {
    */
   async endOfDayCleanup() {
     try {
-      console.log('[VISIT CLEANUP] Running end-of-day cleanup...');
+      log.info('[VISIT CLEANUP] Running end-of-day cleanup...');
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -277,11 +280,11 @@ class VisitCleanupScheduler {
       }).populate('patient', 'firstName lastName patientId');
 
       if (openVisits.length === 0) {
-        console.log('[VISIT CLEANUP] No open visits at end of day');
+        log.info('[VISIT CLEANUP] No open visits at end of day');
         return { success: true, openVisits: 0 };
       }
 
-      console.log(`[VISIT CLEANUP] Found ${openVisits.length} open visit(s) at end of day`);
+      log.info(`[VISIT CLEANUP] Found ${openVisits.length} open visit(s) at end of day`);
 
       // Create summary alert for admins
       const visitSummary = openVisits.map(v => ({
@@ -307,7 +310,7 @@ class VisitCleanupScheduler {
       return { success: true, openVisits: openVisits.length };
 
     } catch (error) {
-      console.error('[VISIT CLEANUP] Error in end-of-day cleanup:', error);
+      log.error('[VISIT CLEANUP] Error in end-of-day cleanup:', { error: error });
       return { success: false, error: error.message };
     }
   }
@@ -356,13 +359,13 @@ class VisitCleanupScheduler {
       }
 
       if (synced > 0) {
-        console.log(`[VISIT CLEANUP] Synced ${synced} appointment-visit status(es)`);
+        log.info(`[VISIT CLEANUP] Synced ${synced} appointment-visit status(es)`);
       }
 
       return { success: true, synced };
 
     } catch (error) {
-      console.error('[VISIT CLEANUP] Error syncing appointment-visit status:', error);
+      log.error('[VISIT CLEANUP] Error syncing appointment-visit status:', { error: error });
       return { success: false, error: error.message };
     }
   }
@@ -371,7 +374,7 @@ class VisitCleanupScheduler {
    * Manual trigger for stuck visit detection
    */
   async manualCheck() {
-    console.log('[VISIT CLEANUP] Manual check triggered');
+    log.info('[VISIT CLEANUP] Manual check triggered');
     const detection = await this.detectStuckVisits();
     const autoFix = await this.autoFixSignedVisits();
     const sync = await this.syncAppointmentVisitStatus();

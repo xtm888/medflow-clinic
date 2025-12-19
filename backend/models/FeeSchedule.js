@@ -109,7 +109,7 @@ feeItemSchema.virtual('isCurrentlyEffective').get(function() {
 feeItemSchema.statics.getByCategory = function(category, options = {}) {
   const { includeExpired = false, effectiveDate = new Date() } = options;
 
-  let query = { category, active: true };
+  const query = { category, active: true };
 
   if (!includeExpired) {
     query.$and = [
@@ -137,7 +137,7 @@ feeItemSchema.statics.getByCategory = function(category, options = {}) {
 feeItemSchema.statics.search = function(query, options = {}) {
   const { includeExpired = false, effectiveDate = new Date() } = options;
 
-  let searchQuery = {
+  const searchQuery = {
     active: true,
     $or: [
       { code: new RegExp(query, 'i') },
@@ -173,7 +173,7 @@ feeItemSchema.statics.getEffectivePriceForDate = async function(code, serviceDat
   const targetDate = new Date(serviceDate);
 
   // First try to find exact code with matching date range
-  let feeItem = await this.findOne({
+  const feeItem = await this.findOne({
     code: code.toUpperCase(),
     active: true,
     $and: [
@@ -373,7 +373,7 @@ feeItemSchema.statics.createNewVersion = async function(code, newData, userId) {
 feeItemSchema.statics.getAllEffectiveForDate = async function(targetDate, category = null) {
   const date = new Date(targetDate);
 
-  let query = {
+  const query = {
     active: true,
     $and: [
       {
@@ -432,7 +432,7 @@ feeItemSchema.statics.getUpcomingChanges = async function(daysAhead = 30) {
 feeItemSchema.statics.getTemplates = async function(options = {}) {
   const { category, search, includeInactive = false } = options;
 
-  let query = { isTemplate: true };
+  const query = { isTemplate: true };
   if (!includeInactive) query.active = true;
   if (category) query.category = category;
 
@@ -450,7 +450,7 @@ feeItemSchema.statics.getTemplates = async function(options = {}) {
 feeItemSchema.statics.getForClinic = async function(clinicId, options = {}) {
   const { category, search, includeInactive = false } = options;
 
-  let query = { clinic: clinicId, isTemplate: false };
+  const query = { clinic: clinicId, isTemplate: false };
   if (!includeInactive) query.active = true;
   if (category) query.category = category;
 
@@ -617,7 +617,7 @@ feeItemSchema.statics.getPriceForClinic = async function(code, clinicId) {
 const cacheService = require('../services/cacheService');
 
 // Invalidate cache after save
-feeItemSchema.post('save', async function(doc) {
+feeItemSchema.post('save', async (doc) => {
   try {
     await cacheService.feeSchedule.invalidate(doc._id.toString());
   } catch (error) {
@@ -626,7 +626,7 @@ feeItemSchema.post('save', async function(doc) {
 });
 
 // Invalidate cache after update
-feeItemSchema.post('findOneAndUpdate', async function(doc) {
+feeItemSchema.post('findOneAndUpdate', async (doc) => {
   try {
     if (doc) {
       await cacheService.feeSchedule.invalidate(doc._id.toString());
@@ -637,7 +637,7 @@ feeItemSchema.post('findOneAndUpdate', async function(doc) {
 });
 
 // Invalidate cache after delete
-feeItemSchema.post('findOneAndDelete', async function(doc) {
+feeItemSchema.post('findOneAndDelete', async (doc) => {
   try {
     if (doc) {
       await cacheService.feeSchedule.invalidate(doc._id.toString());

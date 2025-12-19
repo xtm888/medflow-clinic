@@ -734,8 +734,8 @@ exports.mountShare = asyncHandler(async (req, res, next) => {
       return success(res, { mountPoint, alreadyMounted: true }, 'Share already mounted');
     }
   } catch (err) {
-    // Continue to mount
-  }
+      log.debug('Suppressed error', { error: err.message });
+    }
 
   try {
     // Create mount point directory
@@ -772,8 +772,8 @@ exports.mountShare = asyncHandler(async (req, res, next) => {
 
         return success(res, { mountPoint, shareName, ip }, `Share mounted successfully at ${mountPoint} (via IP)`);
       } catch (altError) {
-        // Continue to error
-      }
+      log.debug('Suppressed error', { error: altError.message });
+    }
     }
 
     return error(res, 'Failed to mount share', 500);
@@ -897,8 +897,8 @@ exports.getMountStatus = asyncHandler(async (req, res, next) => {
         const files = await fs.readdir(mountPoint);
         fileCount = files.length;
       } catch (e) {
-        // Ignore read errors
-      }
+      log.debug('Suppressed error', { error: e.message });
+    }
     }
 
     return success(res, {
@@ -980,8 +980,8 @@ exports.mountAllShares = asyncHandler(async (req, res, next) => {
             continue;
           }
         } catch (pathErr) {
-          // Invalid path, continue to try our mount point
-        }
+      log.debug('Suppressed error', { error: pathErr.message });
+    }
       }
 
       // SECURITY: Check if already mounted at our mount point
@@ -1103,8 +1103,8 @@ exports.browseDeviceFiles = asyncHandler(async (req, res, next) => {
           });
         }
       } catch (statErr) {
-        // Skip files we can't stat
-      }
+      log.debug('Suppressed error', { error: statErr.message });
+    }
     }
 
     // Sort: directories first, then files by modified date
@@ -1429,7 +1429,7 @@ exports.getPatientArchiveFiles = asyncHandler(async (req, res, next) => {
             modified: stats.mtime,
             extension: ext,
             type: ['.jpg', '.jpeg', '.png', '.bmp'].includes(ext) ? 'image' :
-                  ext === '.pdf' ? 'document' : 'other'
+              ext === '.pdf' ? 'document' : 'other'
           };
         } catch (e) {
           return null;

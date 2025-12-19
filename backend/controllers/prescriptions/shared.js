@@ -8,7 +8,7 @@
 const Prescription = require('../../models/Prescription');
 const Patient = require('../../models/Patient');
 const Visit = require('../../models/Visit');
-const PharmacyInventory = require('../../models/PharmacyInventory');
+const { Inventory, PharmacyInventory } = require('../../models/Inventory');
 const Invoice = require('../../models/Invoice');
 const AuditLog = require('../../models/AuditLog');
 const mongoose = require('mongoose');

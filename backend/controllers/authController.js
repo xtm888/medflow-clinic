@@ -84,6 +84,24 @@ exports.register = async (req, res, next) => {
     sendTokenResponse(user, 201, res, 'User registered successfully. Please check your email for verification.');
   } catch (err) {
     authLogger.error('Registration error', { error: err.message, stack: err.stack });
+
+    // Handle validation errors (400)
+    if (err.name === 'ValidationError') {
+      return res.status(400).json({
+        success: false,
+        error: Object.values(err.errors).map(e => e.message).join(', ')
+      });
+    }
+
+    // Handle duplicate key errors (400)
+    if (err.code === 11000) {
+      const field = Object.keys(err.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        error: `User with that ${field} already exists`
+      });
+    }
+
     res.status(500).json({
       success: false,
       error: err.message || 'Error registering user'
@@ -420,8 +438,8 @@ exports.resetPassword = async (req, res, next) => {
 // @access  Public (with valid refresh token)
 exports.refreshToken = async (req, res, next) => {
   try {
-    // Get refresh token from body or cookie
-    const refreshToken = req.body.refreshToken || req.cookies?.refreshToken;
+    // SECURITY: Get refresh token from HttpOnly cookie only (not from body)
+    const refreshToken = req.cookies?.refreshToken;
 
     if (!refreshToken) {
       return error(res, 'Please provide a refresh token');
@@ -462,7 +480,7 @@ exports.refreshToken = async (req, res, next) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    // Set new cookies
+    // Set new cookies (HttpOnly for XSS protection)
     const accessTokenOptions = {
       expires: new Date(Date.now() + AUTH.ACCESS_TOKEN_EXPIRY_MINUTES * 60 * 1000),
       httpOnly: true,
@@ -470,7 +488,7 @@ exports.refreshToken = async (req, res, next) => {
     };
 
     const refreshTokenOptions = {
-      expires: new Date(Date.now() + (parseInt(process.env.JWT_COOKIE_EXPIRE) || AUTH.REFRESH_TOKEN_EXPIRY_DAYS) * 24 * 60 * 60 * 1000),
+      expires: new Date(Date.now() + AUTH.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
       httpOnly: true,
       sameSite: 'strict',
       path: '/api/auth/refresh'
@@ -481,15 +499,14 @@ exports.refreshToken = async (req, res, next) => {
       refreshTokenOptions.secure = true;
     }
 
+    // SECURITY: Tokens in HttpOnly cookies only, NOT in response body
     res
-      .cookie('token', newAccessToken, accessTokenOptions)
+      .cookie('accessToken', newAccessToken, accessTokenOptions)
       .cookie('refreshToken', newRefreshToken, refreshTokenOptions)
       .status(200)
       .json({
         success: true,
-        token: newAccessToken,
-        refreshToken: newRefreshToken,
-        expiresIn: 900, // 15 minutes in seconds
+        expiresIn: AUTH.ACCESS_TOKEN_EXPIRY_MINUTES * 60, // in seconds
         user: {
           id: user._id,
           username: user.username,
@@ -515,7 +532,7 @@ exports.refreshToken = async (req, res, next) => {
 exports.logout = async (req, res, next) => {
   try {
     // Remove session from user
-    const sessionToken = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
+    const sessionToken = req.cookies?.accessToken || req.headers.authorization?.split(' ')[1];
 
     if (sessionToken) {
       const user = await User.findById(req.user.id);
@@ -523,10 +540,16 @@ exports.logout = async (req, res, next) => {
       await user.save({ validateBeforeSave: false });
     }
 
-    res.cookie('token', 'none', {
+    // Clear both access and refresh cookies
+    const clearCookieOptions = {
       expires: new Date(Date.now() + 10 * 1000),
-      httpOnly: true
-    });
+      httpOnly: true,
+      sameSite: 'strict'
+    };
+
+    res
+      .cookie('accessToken', 'none', clearCookieOptions)
+      .cookie('refreshToken', 'none', { ...clearCookieOptions, path: '/api/auth/refresh' });
 
     return success(res, { data: null, message: 'Logged out successfully' });
   } catch (err) {

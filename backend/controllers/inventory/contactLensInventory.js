@@ -6,7 +6,7 @@
  */
 
 const mongoose = require('mongoose');
-const ContactLensInventory = require('../../models/ContactLensInventory');
+const { ContactLensInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
 // Create factory instance with contact lens-specific config

@@ -37,7 +37,7 @@ exports.getFeeSchedule = asyncHandler(async (req, res) => {
   }
 
   // Legacy behavior: get all (for backward compatibility)
-  let query = { active: active !== 'false' };
+  const query = { active: active !== 'false' };
   if (category) query.category = category;
 
   let feeSchedule;
@@ -241,7 +241,7 @@ exports.searchBillingCodes = asyncHandler(async (req, res) => {
 exports.getTaxRates = asyncHandler(async (req, res) => {
   const { active = true, category } = req.query;
 
-  let query = {};
+  const query = {};
   if (active !== 'all') query.active = active === 'true';
   if (category) query.applicableCategories = { $in: [category, 'all'] };
 

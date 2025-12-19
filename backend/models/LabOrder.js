@@ -661,7 +661,7 @@ labOrderSchema.statics.getRejectionStats = async function(startDate, endDate) {
 // CRITICAL FIX: Lab data is fragmented between Visit.laboratoryOrders (embedded)
 // and the standalone LabOrder model. This hook ensures both are in sync.
 // When a LabOrder is saved, update the corresponding Visit's laboratoryOrders entry.
-labOrderSchema.post('save', async function(doc) {
+labOrderSchema.post('save', async (doc) => {
   try {
     if (!doc.visit) {
       return; // No visit linked, nothing to sync
@@ -686,9 +686,9 @@ labOrderSchema.post('save', async function(doc) {
       orderedAt: doc.orderDate,
       priority: doc.priority,
       status: test.status === 'completed' ? 'completed' :
-              test.status === 'cancelled' ? 'cancelled' :
-              test.status === 'in-progress' ? 'processing' :
-              test.status === 'received' ? 'processing' :
+        test.status === 'cancelled' ? 'cancelled' :
+          test.status === 'in-progress' ? 'processing' :
+            test.status === 'received' ? 'processing' :
               test.status === 'collected' ? 'collected' : 'ordered',
       // Link back to the LabOrder
       labOrderId: doc._id,
@@ -729,7 +729,7 @@ labOrderSchema.post('save', async function(doc) {
 });
 
 // POST-SAVE HOOK: Update LabResult with test results and sync to Visit
-labOrderSchema.post('save', async function(doc) {
+labOrderSchema.post('save', async (doc) => {
   try {
     // If order is completed and has results, emit WebSocket event for notifications
     if (doc.status === 'completed' && doc.patient) {

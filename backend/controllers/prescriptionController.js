@@ -1,7 +1,7 @@
 const Prescription = require('../models/Prescription');
 const Patient = require('../models/Patient');
 const Visit = require('../models/Visit');
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { Inventory, PharmacyInventory } = require('../models/Inventory');
 const Invoice = require('../models/Invoice');
 const AuditLog = require('../models/AuditLog');
 const mongoose = require('mongoose');
@@ -365,7 +365,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
 
   // Check inventory availability for medication prescriptions AND enrich with pricing
   if (req.body.type === 'medication' && req.body.medications) {
-    prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] Checking inventory for ${req.body.medications.length} medications` })
+    prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] Checking inventory for ${req.body.medications.length} medications` });
     const inventoryWarnings = [];
     const outOfStock = [];
 
@@ -397,7 +397,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
           currency: process.env.BASE_CURRENCY || 'CDF'
         };
 
-        prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ✅ Enriched ${med.name} with pricing: ${unitPrice} CDF x ${med.quantity || 1} = ${totalCost} CDF` })
+        prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ✅ Enriched ${med.name} with pricing: ${unitPrice} CDF x ${med.quantity || 1} = ${totalCost} CDF` });
 
         // Check stock availability
         if (inventoryItem.inventory.currentStock < (med.quantity || 1)) {
@@ -419,7 +419,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
 
     // Add inventory warnings to response
     if (inventoryWarnings.length > 0) {
-      prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ⚠️ Inventory warnings for ${inventoryWarnings.length} medications` })
+      prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ⚠️ Inventory warnings for ${inventoryWarnings.length} medications` });
       req.body.warnings = req.body.warnings || [];
       inventoryWarnings.forEach(warning => {
         req.body.warnings.push(
@@ -431,9 +431,9 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
 
     // If any medications are out of stock, allow creation but flag it
     if (outOfStock.length > 0) {
-      prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ❌ Out of stock: ${outOfStock.length} medications` })
+      prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ❌ Out of stock: ${outOfStock.length} medications` });
       outOfStock.forEach(item => {
-        prescriptionLogger.info('Operation', { data: `  - ${item.medication}: ${item.reason}` })
+        prescriptionLogger.info('Operation', { data: `  - ${item.medication}: ${item.reason}` });
       });
       req.body.warnings = req.body.warnings || [];
       outOfStock.forEach(item => {
@@ -444,7 +444,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
       req.body.outOfStockItems = outOfStock;
       req.body.requiresPharmacyOrder = true;
     } else {
-      prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ✅ All medications in stock with pricing` })
+      prescriptionLogger.info('Operation', { data: '[PRESCRIPTION CREATE] ✅ All medications in stock with pricing' });
     }
   }
 
@@ -640,7 +640,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
   } catch (error) {
     // If transaction not supported (standalone MongoDB), retry without transaction
     if (error.code === 20 || error.codeName === 'IllegalOperation') {
-      prescriptionLogger.info('Transactions not supported, saving without transaction')
+      prescriptionLogger.info('Transactions not supported, saving without transaction');
       prescription = await savePrescription(false);
     } else {
       throw error;
@@ -652,10 +652,10 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
   await prescription.populate('prescriber', 'firstName lastName');
   await prescription.populate('visit', 'visitId visitDate status');
 
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ✅ Prescription ${prescription.prescriptionId || prescription._id} created successfully` })
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] Patient: ${prescription.patient.firstName} ${prescription.patient.lastName}, Type: ${prescription.type}` })
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ✅ Prescription ${prescription.prescriptionId || prescription._id} created successfully` });
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] Patient: ${prescription.patient.firstName} ${prescription.patient.lastName}, Type: ${prescription.type}` });
   if (prescription.warnings && prescription.warnings.length > 0) {
-    prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ⚠️ ${prescription.warnings.length} warning(s) attached to prescription` })
+    prescriptionLogger.info('Operation', { data: `[PRESCRIPTION CREATE] ⚠️ ${prescription.warnings.length} warning(s) attached to prescription` });
   }
 
   // WebSocket broadcast: Notify pharmacists of new prescription
@@ -784,11 +784,11 @@ exports.createPrescriptionWithSafetyOverride = asyncHandler(async (req, res, nex
     userAgent: req.get('User-Agent')
   });
 
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Doctor ${req.user.firstName} ${req.user.lastName} overriding safety warnings` })
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Patient: ${patient.firstName} ${patient.lastName}` })
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Reason: ${overrideReason}` })
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Warnings overridden: ${safetyWarnings.length}` })
-  safetyWarnings.forEach((w, i) => prescriptionLogger.info('Operation', { data: `  ${i + 1}. ${w}` }))
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Doctor ${req.user.firstName} ${req.user.lastName} overriding safety warnings` });
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Patient: ${patient.firstName} ${patient.lastName}` });
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Reason: ${overrideReason}` });
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] Warnings overridden: ${safetyWarnings.length}` });
+  safetyWarnings.forEach((w, i) => prescriptionLogger.info('Operation', { data: `  ${i + 1}. ${w}` }));
 
   // Create prescription (skip normal safety checks)
   const prescription = await Prescription.create({
@@ -825,7 +825,7 @@ exports.createPrescriptionWithSafetyOverride = asyncHandler(async (req, res, nex
   await prescription.populate('patient', 'firstName lastName patientId');
   await prescription.populate('prescriber', 'firstName lastName');
 
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] ⚠️ Prescription ${prescription.prescriptionId || prescription._id} created with safety override` })
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SAFETY OVERRIDE] ⚠️ Prescription ${prescription.prescriptionId || prescription._id} created with safety override` });
 
   res.status(201).json({
     success: true,
@@ -970,7 +970,7 @@ exports.cancelPrescription = asyncHandler(async (req, res, next) => {
 
   // Release reserved inventory if prescription was ready/reserved
   if (prescription.status === 'ready' || prescription.status === 'reserved') {
-    const PharmacyInventory = require('../models/PharmacyInventory');
+    const { Inventory, PharmacyInventory } = require('../models/Inventory');
 
     for (const medication of prescription.medications) {
       // CRITICAL FIX: Use correct field name 'inventoryItem' not 'inventoryId'
@@ -1060,9 +1060,9 @@ exports.signPrescription = asyncHandler(async (req, res, next) => {
     },
     { new: true, runValidators: true }
   ).populate('prescriber', 'firstName lastName specialization')
-   .populate('patient', 'firstName lastName dateOfBirth');
+    .populate('patient', 'firstName lastName dateOfBirth');
 
-  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SIGN] Prescription ${updatedPrescription.prescriptionId} signed and status updated to ${updatedPrescription.status}` })
+  prescriptionLogger.info('Operation', { data: `[PRESCRIPTION SIGN] Prescription ${updatedPrescription.prescriptionId} signed and status updated to ${updatedPrescription.status}` });
 
   return success(res, { data: updatedPrescription, message: 'Prescription signed successfully' });
 });
@@ -1086,11 +1086,11 @@ exports.dispensePrescription = asyncHandler(async (req, res, next) => {
       session.startTransaction();
       useTransaction = true;
     } else {
-      prescriptionLogger.info('Standalone MongoDB detected, proceeding without transaction support')
+      prescriptionLogger.info('Standalone MongoDB detected, proceeding without transaction support');
     }
   } catch (err) {
     // Transactions not supported (no replica set) - continue without transaction
-    prescriptionLogger.info('Transactions not available', { error: err.message })
+    prescriptionLogger.info('Transactions not available', { error: err.message });
     if (session) {
       try { session.endSession(); } catch (e) { /* ignore */ }
     }
@@ -1229,7 +1229,7 @@ exports.dispensePrescription = asyncHandler(async (req, res, next) => {
           date: new Date(),
           performedBy: req.user._id || req.user.id,
           reference: `Prescription ${prescription._id}`,
-          notes: `Dispensed for patient prescription`
+          notes: 'Dispensed for patient prescription'
         });
 
         // CRITICAL: Pass session to save for transaction safety
@@ -1332,7 +1332,7 @@ exports.dispensePrescription = asyncHandler(async (req, res, next) => {
         if (prescription.invoice) {
           const existingInvoice = await Invoice.findById(prescription.invoice);
           if (existingInvoice) {
-            prescriptionLogger.info('Operation', { data: `[Prescription ${prescription.prescriptionId}] Invoice already exists (${existingInvoice.invoiceId}), skipping creation` })
+            prescriptionLogger.info('Operation', { data: `[Prescription ${prescription.prescriptionId}] Invoice already exists (${existingInvoice.invoiceId}), skipping creation` });
             invoice = existingInvoice;
           }
         }
@@ -1341,53 +1341,53 @@ exports.dispensePrescription = asyncHandler(async (req, res, next) => {
         if (!invoice) {
           // Build invoice items from dispensed medications
           const invoiceItems = inventoryUpdates.map(u => ({
-          description: u.medication.name,
-          category: 'medication',
-          code: u.medication.code || '',
-          quantity: u.quantity,
-          unitPrice: u.inventoryItem.pricing?.sellingPrice || 0,
-          discount: 0,
-          subtotal: (u.inventoryItem.pricing?.sellingPrice || 0) * u.quantity,
-          tax: 0,
-          total: (u.inventoryItem.pricing?.sellingPrice || 0) * u.quantity,
-          reference: `Prescription:${prescription.prescriptionId}`
-        }));
+            description: u.medication.name,
+            category: 'medication',
+            code: u.medication.code || '',
+            quantity: u.quantity,
+            unitPrice: u.inventoryItem.pricing?.sellingPrice || 0,
+            discount: 0,
+            subtotal: (u.inventoryItem.pricing?.sellingPrice || 0) * u.quantity,
+            tax: 0,
+            total: (u.inventoryItem.pricing?.sellingPrice || 0) * u.quantity,
+            reference: `Prescription:${prescription.prescriptionId}`
+          }));
 
-        const subtotal = invoiceItems.reduce((sum, item) => sum + item.total, 0);
+          const subtotal = invoiceItems.reduce((sum, item) => sum + item.total, 0);
 
-        if (subtotal > 0) {
-          invoice = await Invoice.create({
-            patient: prescription.patient,
-            prescription: prescription._id,
-            dateIssued: new Date(),
-            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-            items: invoiceItems,
-            summary: {
-              subtotal,
-              discountTotal: 0,
-              taxTotal: 0,
-              total: subtotal,
-              amountPaid: 0,
-              amountDue: subtotal
-            },
-            status: 'issued',
-            billing: {
-              currency: process.env.BASE_CURRENCY || 'CDF'
-            },
-            notes: {
-              internal: `Prescription ${prescription.prescriptionId} dispensed`,
-              billing: `${inventoryUpdates.length} medication(s) dispensed`
-            },
-            createdBy: req.user._id || req.user.id
-          });
+          if (subtotal > 0) {
+            invoice = await Invoice.create({
+              patient: prescription.patient,
+              prescription: prescription._id,
+              dateIssued: new Date(),
+              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+              items: invoiceItems,
+              summary: {
+                subtotal,
+                discountTotal: 0,
+                taxTotal: 0,
+                total: subtotal,
+                amountPaid: 0,
+                amountDue: subtotal
+              },
+              status: 'issued',
+              billing: {
+                currency: process.env.BASE_CURRENCY || 'CDF'
+              },
+              notes: {
+                internal: `Prescription ${prescription.prescriptionId} dispensed`,
+                billing: `${inventoryUpdates.length} medication(s) dispensed`
+              },
+              createdBy: req.user._id || req.user.id
+            });
 
-          // Link invoice to prescription
-          prescription.invoice = invoice._id;
-          await prescription.save();
-        }
+            // Link invoice to prescription
+            prescription.invoice = invoice._id;
+            await prescription.save();
+          }
         } // End if (!invoice) - only create if no existing invoice
       } catch (invoiceError) {
-        prescriptionLogger.error('Error generating invoice for prescription:', { error: invoiceError.message })
+        prescriptionLogger.error('Error generating invoice for prescription:', { error: invoiceError.message });
         // Don't fail the dispense if invoice creation fails
       }
     }
@@ -1409,7 +1409,7 @@ exports.dispensePrescription = asyncHandler(async (req, res, next) => {
         }
       });
     } catch (auditError) {
-      prescriptionLogger.error('Error creating audit log:', { error: auditError.message })
+      prescriptionLogger.error('Error creating audit log:', { error: auditError.message });
     }
 
     // WebSocket broadcast: Notify patient and prescriber that prescription was dispensed
@@ -1610,7 +1610,7 @@ exports.createInvoiceForPrescription = asyncHandler(async (req, res, next) => {
   } catch (error) {
     // Handle duplicate key error (race condition - another request created invoice first)
     if (error.code === 11000 && error.keyPattern?.prescription) {
-      prescriptionLogger.info('Operation', { data: `[Prescription ${prescription.prescriptionId}] Race condition detected - invoice already exists` })
+      prescriptionLogger.info('Operation', { data: `[Prescription ${prescription.prescriptionId}] Race condition detected - invoice already exists` });
       const existingInvoice = await Invoice.findOne({ prescription: prescription._id });
       if (existingInvoice) {
         return success(res, { data: existingInvoice, message: 'Invoice already exists for this prescription' });
@@ -1625,7 +1625,7 @@ exports.createInvoiceForPrescription = asyncHandler(async (req, res, next) => {
     { $set: { invoice: invoice._id } }
   );
 
-  prescriptionLogger.info('Operation', { data: `[Prescription ${prescription.prescriptionId || prescription._id}] Invoice ${invoice.invoiceId} created. Payment will auto-dispense.` })
+  prescriptionLogger.info('Operation', { data: `[Prescription ${prescription.prescriptionId || prescription._id}] Invoice ${invoice.invoiceId} created. Payment will auto-dispense.` });
 
   res.status(201).json({
     success: true,
@@ -2153,7 +2153,7 @@ exports.getTemplates = asyncHandler(async (req, res) => {
       .populate('createdBy', 'firstName lastName')
       .sort({ usageCount: -1, name: 1 });
   } catch (err) {
-    prescriptionLogger.info('Templates collection not found, using defaults')
+    prescriptionLogger.info('Templates collection not found, using defaults');
   }
 
   // Add default templates if none found
@@ -2697,7 +2697,7 @@ exports.generatePDF = asyncHandler(async (req, res) => {
         if (med.safetyChecks.overridden) {
           doc.moveDown(0.2);
           doc.fontSize(8).font('Helvetica-Bold').fillColor('#7c3aed')
-            .text(`   ℹ️ Avertissements de sécurité examinés et validés par le prescripteur`);
+            .text('   ℹ️ Avertissements de sécurité examinés et validés par le prescripteur');
           if (med.safetyChecks.overrideReason) {
             doc.font('Helvetica').text(`      Motif: ${med.safetyChecks.overrideReason}`);
           }
@@ -2934,9 +2934,9 @@ exports.generatePDF = asyncHandler(async (req, res) => {
 
   // If digital signature exists
   if (prescription.signature?.prescriber?.signed) {
-    doc.fontSize(8).text('Signé électroniquement le ' +
-      new Date(prescription.signature.prescriber.signedAt).toLocaleDateString('fr-FR'),
-      55, signatureY + 35);
+    doc.fontSize(8).text(`Signé électroniquement le ${
+      new Date(prescription.signature.prescriber.signedAt).toLocaleDateString('fr-FR')}`,
+    55, signatureY + 35);
   }
 
   // Prescription ID and timestamp in footer
@@ -3059,7 +3059,7 @@ exports.refillPrescription = asyncHandler(async (req, res) => {
   } catch (error) {
     // If transaction not supported (standalone MongoDB), retry without transaction
     if (error.code === 20 || error.codeName === 'IllegalOperation') {
-      prescriptionLogger.info('Transactions not supported, saving without transaction')
+      prescriptionLogger.info('Transactions not supported, saving without transaction');
       await processRefill(false);
     } else {
       throw error;
@@ -3269,7 +3269,7 @@ exports.getPrescriptionHistory = asyncHandler(async (req, res) => {
   history.push({
     action: 'CREATED',
     timestamp: prescription.createdAt,
-    details: `Prescription created by prescriber`
+    details: 'Prescription created by prescriber'
   });
 
   // Add view history

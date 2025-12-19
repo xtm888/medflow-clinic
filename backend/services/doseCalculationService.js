@@ -42,8 +42,8 @@ const FREQUENCY_MULTIPLIERS = {
   'q12h': 2,
   'every 24 hours': 1,
   'q24h': 1,
-  'weekly': 1/7,
-  'qw': 1/7,
+  'weekly': 1 / 7,
+  'qw': 1 / 7,
   'every other day': 0.5,
   'qod': 0.5,
   'prn': 4, // Assume max 4x/day for PRN
@@ -392,7 +392,7 @@ async function calculateRenalAdjustment(drugOrId, eGFR) {
   if (eGFR < 30 && isContraindicatedInSevereRenal(drug.genericName)) {
     result.warning = {
       type: 'renal_contraindication',
-      message: `This medication may be contraindicated in severe renal impairment (eGFR <30). Consider alternative therapy.`,
+      message: 'This medication may be contraindicated in severe renal impairment (eGFR <30). Consider alternative therapy.',
       severity: 'critical'
     };
   }
@@ -555,8 +555,8 @@ async function getPatientRenalFunction(patientId) {
     'results.testName': { $regex: /creatinine/i },
     status: 'final'
   })
-  .sort({ resultDate: -1 })
-  .limit(1);
+    .sort({ resultDate: -1 })
+    .limit(1);
 
   if (!latestCreatinine) {
     return {
@@ -734,7 +734,7 @@ function parseGFRRange(rangeString) {
  */
 function isNSAID(drugName) {
   const nsaids = ['ibuprofen', 'naproxen', 'diclofenac', 'celecoxib', 'meloxicam',
-                  'indomethacin', 'ketorolac', 'piroxicam', 'aspirin'];
+    'indomethacin', 'ketorolac', 'piroxicam', 'aspirin'];
   return nsaids.some(nsaid => drugName?.toLowerCase().includes(nsaid));
 }
 
@@ -743,7 +743,7 @@ function isNSAID(drugName) {
  */
 function isOpioid(drugName) {
   const opioids = ['morphine', 'oxycodone', 'hydrocodone', 'fentanyl', 'tramadol',
-                   'codeine', 'hydromorphone', 'methadone', 'buprenorphine'];
+    'codeine', 'hydromorphone', 'methadone', 'buprenorphine'];
   return opioids.some(opioid => drugName?.toLowerCase().includes(opioid));
 }
 
@@ -752,7 +752,7 @@ function isOpioid(drugName) {
  */
 function isContraindicatedInSevereRenal(drugName) {
   const contraindicated = ['metformin', 'lithium', 'spironolactone', 'amiloride',
-                           'nitrofurantoin', 'certain nsaids'];
+    'nitrofurantoin', 'certain nsaids'];
   return contraindicated.some(drug => drugName?.toLowerCase().includes(drug));
 }
 

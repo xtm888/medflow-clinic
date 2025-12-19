@@ -208,18 +208,18 @@ class PDFGeneratorService {
         doc.rect(50, summaryStartY, 495, 80).fill(this.colors.background);
 
         doc.fillColor(this.colors.text).fontSize(10).font('Helvetica');
-        doc.text(`Solde precedent:`, 60, summaryStartY + 10);
+        doc.text('Solde precedent:', 60, summaryStartY + 10);
         doc.text(this.formatCurrency(totals.previousBalance), 400, summaryStartY + 10, { align: 'right', width: 130 });
 
-        doc.text(`Nouveaux frais:`, 60, summaryStartY + 28);
+        doc.text('Nouveaux frais:', 60, summaryStartY + 28);
         doc.text(this.formatCurrency(totals.newCharges), 400, summaryStartY + 28, { align: 'right', width: 130 });
 
-        doc.text(`Paiements recus:`, 60, summaryStartY + 46);
+        doc.text('Paiements recus:', 60, summaryStartY + 46);
         doc.fillColor(this.colors.success)
           .text(`-${this.formatCurrency(totals.payments)}`, 400, summaryStartY + 46, { align: 'right', width: 130 });
 
         doc.fillColor(this.colors.text).font('Helvetica-Bold')
-          .text(`SOLDE DU:`, 60, summaryStartY + 64);
+          .text('SOLDE DU:', 60, summaryStartY + 64);
         doc.fillColor(totals.balance > 0 ? this.colors.danger : this.colors.success)
           .text(this.formatCurrency(totals.balance), 400, summaryStartY + 64, { align: 'right', width: 130 });
 
@@ -723,7 +723,7 @@ class PDFGeneratorService {
               .text(`   Décroissance (${med.tapering.totalDurationDays || '?'} jours):`);
             doc.font('Helvetica').fontSize(9).fillColor(this.colors.text);
             med.tapering.schedule.forEach((step, stepIdx) => {
-              doc.text(`      Étape ${step.stepNumber || stepIdx + 1}: ${step.frequency || step.dose?.amount + ' ' + step.dose?.unit} pendant ${step.durationDays} jours`);
+              doc.text(`      Étape ${step.stepNumber || stepIdx + 1}: ${step.frequency || `${step.dose?.amount} ${step.dose?.unit}`} pendant ${step.durationDays} jours`);
             });
           }
 
@@ -741,7 +741,7 @@ class PDFGeneratorService {
         doc.moveDown(2);
         doc.fontSize(10).font('Helvetica');
         if (prescription.prescriber) {
-          doc.text(`Dr. ${prescription.prescriber.name || prescription.prescriber.firstName + ' ' + prescription.prescriber.lastName}`, { align: 'right' });
+          doc.text(`Dr. ${prescription.prescriber.name || `${prescription.prescriber.firstName} ${prescription.prescriber.lastName}`}`, { align: 'right' });
           if (prescription.prescriber.specialty) {
             doc.text(prescription.prescriber.specialty, { align: 'right' });
           }
@@ -1073,8 +1073,8 @@ class PDFGeneratorService {
 
         doc.y = infoY + 50;
         demographics.forEach(([label, value]) => {
-          doc.fontSize(9).font('Helvetica-Bold').text(label + ':', infoX, doc.y, { continued: true });
-          doc.font('Helvetica').text(' ' + value);
+          doc.fontSize(9).font('Helvetica-Bold').text(`${label}:`, infoX, doc.y, { continued: true });
+          doc.font('Helvetica').text(` ${value}`);
         });
 
         // Emergency Contact Section
@@ -1385,7 +1385,7 @@ class PDFGeneratorService {
 
         // Details by group
         doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
-          .text('DÉTAIL PAR ' + (batchData.groupBy === 'patient' ? 'PATIENT' : 'MOIS'));
+          .text(`DÉTAIL PAR ${batchData.groupBy === 'patient' ? 'PATIENT' : 'MOIS'}`);
         doc.moveDown(0.5);
 
         const tableTop = doc.y;
@@ -1458,7 +1458,7 @@ class PDFGeneratorService {
         // Signature area
         doc.moveDown(3);
         doc.fillColor(this.colors.text).fontSize(9).font('Helvetica');
-        doc.text('Fait à __________________ le ' + this.formatDate(new Date()));
+        doc.text(`Fait à __________________ le ${this.formatDate(new Date())}`);
         doc.moveDown(2);
         doc.text('Signature et cachet de l\'entreprise:', 50);
         doc.text('Signature du prestataire:', 350);
@@ -1610,6 +1610,333 @@ class PDFGeneratorService {
         reject(error);
       }
     });
+  }
+
+  /**
+   * Generate Fiche d'Ophtalmologie PDF
+   * Matches the exact format from the reference image
+   */
+  async generateFicheOphtalmologiePDF(data) {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({
+          ...this.defaultOptions,
+          size: 'A4',
+          margins: { top: 40, bottom: 60, left: 40, right: 40 }
+        });
+        const chunks = [];
+        let pageNumber = 1;
+        const totalPages = data.totalPages || 1;
+
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        const { patient, visit, prescriptions, provider, clinicInfo: customClinicInfo } = data;
+        const clinic = customClinicInfo || this.clinicInfo;
+
+        // Document number format: PatientID + Visit sequence
+        const documentNumber = data.documentNumber ||
+          `${patient?.patientId || ''}${visit?.visitNumber ? '/' + visit.visitNumber : ''}`;
+
+        // ===== HEADER SECTION =====
+        // Logo (left side) - wider for better visibility
+        const logoPath = path.join(__dirname, '../public/images/optical-logo.png');
+        if (fs.existsSync(logoPath)) {
+          doc.image(logoPath, 40, 20, { width: 120 });
+        } else {
+          // Fallback: draw a placeholder
+          doc.rect(40, 20, 120, 70).stroke(this.colors.border);
+          doc.fontSize(20).font('Helvetica-Bold').fillColor(this.colors.primary)
+            .text('LOGO', 70, 45);
+        }
+
+        // Document title (center-right)
+        doc.fontSize(16).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text(`FICHE D'OPHTALMOLOGIE  N° ${documentNumber}`, 170, 45, {
+            width: 380,
+            align: 'center'
+          });
+
+        doc.y = 100;
+
+        // ===== PATIENT INFO TABLE (2 columns, bordered) =====
+        const tableStartY = doc.y;
+        const tableWidth = 515;
+        const leftColWidth = 255;
+        const rightColWidth = 260;
+        const rowHeight = 18;
+        const tablePadding = 5;
+
+        // Patient data with fallbacks
+        const patientData = {
+          fullName: patient?.firstName && patient?.lastName
+            ? `${patient.lastName.toUpperCase()} ${patient.firstName}`
+            : patient?.fullName || '',
+          dateOfBirth: patient?.dateOfBirth ? this.formatDate(patient.dateOfBirth) : '',
+          sex: patient?.gender === 'male' ? 'M' : patient?.gender === 'female' ? 'F' : patient?.gender || '',
+          civilStatus: patient?.civilStatus || patient?.maritalStatus || '',
+          birthPlace: patient?.birthPlace || patient?.placeOfBirth || '',
+          phones: Array.isArray(patient?.phones) ? patient.phones.join(' - ') :
+                  patient?.phoneNumber || patient?.phone || '',
+          email: patient?.email || '',
+          address: patient?.address?.street || patient?.avenue || '',
+          commune: patient?.address?.commune || patient?.commune || '',
+          quartier: patient?.address?.quartier || patient?.quartier || '',
+          profession: patient?.profession || patient?.occupation || '',
+          nationality: patient?.nationality || '',
+          tarif: patient?.tarif || patient?.rateCode || '',
+          convention: patient?.convention?.name || patient?.insuranceType || '[Patient Privé]',
+          bloodType: patient?.bloodType || patient?.gsRhesus || '',
+          hemoglobin: patient?.hemoglobinElectrophoresis || patient?.elHb || ''
+        };
+
+        // Draw table border
+        doc.rect(40, tableStartY, tableWidth, rowHeight * 7).stroke(this.colors.text);
+        // Vertical divider
+        doc.moveTo(40 + leftColWidth, tableStartY)
+           .lineTo(40 + leftColWidth, tableStartY + rowHeight * 7).stroke(this.colors.text);
+
+        // Row 1: Noms | Né(e) le + Sexe
+        let rowY = tableStartY;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'Noms:', patientData.fullName);
+        this.drawFicheTableRowMulti(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, [
+          { label: 'Né (e) le:', value: patientData.dateOfBirth, width: 150 },
+          { label: 'Sexe:', value: patientData.sex, width: 80 }
+        ]);
+        doc.moveTo(40, rowY + rowHeight).lineTo(40 + tableWidth, rowY + rowHeight).stroke(this.colors.border);
+
+        // Row 2: État-civil | Né(e) à
+        rowY += rowHeight;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'Etat-civil:', patientData.civilStatus);
+        this.drawFicheTableRow(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, 'Né (e) à:', patientData.birthPlace);
+        doc.moveTo(40, rowY + rowHeight).lineTo(40 + tableWidth, rowY + rowHeight).stroke(this.colors.border);
+
+        // Row 3: Téléphone | Profession
+        rowY += rowHeight;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'Téléphone:', patientData.phones);
+        this.drawFicheTableRow(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, 'Profession:', patientData.profession);
+        doc.moveTo(40, rowY + rowHeight).lineTo(40 + tableWidth, rowY + rowHeight).stroke(this.colors.border);
+
+        // Row 4: E-mail | Nationalité
+        rowY += rowHeight;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'E-mail:', patientData.email);
+        this.drawFicheTableRow(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, 'Nationalité:', patientData.nationality);
+        doc.moveTo(40, rowY + rowHeight).lineTo(40 + tableWidth, rowY + rowHeight).stroke(this.colors.border);
+
+        // Row 5: Avenue/N° | Quartier
+        rowY += rowHeight;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'Avenue / N°:', patientData.address);
+        this.drawFicheTableRow(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, 'Quartier:', patientData.quartier);
+        doc.moveTo(40, rowY + rowHeight).lineTo(40 + tableWidth, rowY + rowHeight).stroke(this.colors.border);
+
+        // Row 6: Commune | Tarif
+        rowY += rowHeight;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'Commune:', patientData.commune);
+        this.drawFicheTableRow(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, 'Tarif:', patientData.tarif);
+        doc.moveTo(40, rowY + rowHeight).lineTo(40 + tableWidth, rowY + rowHeight).stroke(this.colors.border);
+
+        // Row 7: Convention | GS Rhésus + El. Hb
+        rowY += rowHeight;
+        this.drawFicheTableRow(doc, 40, rowY, leftColWidth, rowHeight, 'Convention:', patientData.convention);
+        this.drawFicheTableRowMulti(doc, 40 + leftColWidth, rowY, rightColWidth, rowHeight, [
+          { label: 'GS Rhésus:', value: patientData.bloodType, width: 130 },
+          { label: 'El. Hb:', value: patientData.hemoglobin, width: 100 }
+        ]);
+
+        doc.y = tableStartY + rowHeight * 7 + 15;
+
+        // ===== ANTECEDENTS & ALLERGIES SECTION =====
+        const antecedents = patient?.medicalHistory?.conditions?.join(', ') ||
+                          patient?.antecedents || '';
+        const allergies = Array.isArray(patient?.allergies)
+          ? patient.allergies.map(a => typeof a === 'string' ? a : a.name || a.allergen).join(', ')
+          : patient?.allergies || '';
+
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text('Antécédents:', 40, doc.y);
+        doc.font('Helvetica').text(antecedents || '', 110, doc.y - 12, { width: 440 });
+
+        doc.moveDown(0.3);
+        doc.font('Helvetica-Bold').text('Allergies:', 40, doc.y);
+        doc.font('Helvetica').text(allergies || '', 100, doc.y - 12, { width: 450 });
+
+        doc.moveDown(1);
+
+        // ===== EXAM INFO BOX (bordered) =====
+        const examBoxY = doc.y;
+        const examBoxHeight = 55;
+        doc.rect(40, examBoxY, tableWidth, examBoxHeight).stroke(this.colors.text);
+
+        // Exam header row
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text('Réalisation Examen Ophta', 50, examBoxY + 8);
+
+        const providerName = provider?.title ? `${provider.title} ${provider.firstName || ''} ${provider.lastName || ''}`.trim() :
+                            provider?.name || visit?.provider?.name || 'Dr';
+        doc.text('Réalisé par:', 320, examBoxY + 8);
+        doc.font('Helvetica').text(providerName, 395, examBoxY + 8);
+
+        // Date and time
+        const examDate = visit?.createdAt || visit?.date || new Date();
+        const examTime = visit?.time || new Date(examDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        doc.font('Helvetica').fontSize(10)
+          .text(`Date:  ${this.formatDate(examDate)}    ${examTime}`, 50, examBoxY + 25);
+
+        // Visit number
+        const visitNumber = visit?.visitId || visit?.visitNumber || documentNumber;
+        doc.text(`N° Visite:  ${visitNumber}`, 50, examBoxY + 40);
+
+        doc.y = examBoxY + examBoxHeight + 20;
+
+        // ===== CLINICAL NOTES =====
+        // Chief complaint
+        const chiefComplaint = visit?.chiefComplaint || visit?.complaint?.complaint || visit?.reason || '';
+        if (chiefComplaint) {
+          doc.fontSize(10).font('Helvetica')
+            .text(`- Plaintes / Symptômes :  ${chiefComplaint}`, 40, doc.y);
+          doc.moveDown(1);
+        }
+
+        // ===== PRESCRIPTIONS SECTION =====
+        if (prescriptions && prescriptions.length > 0) {
+          doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.text)
+            .text('PRESCRIPTIONS:', 40, doc.y);
+
+          // Dashed line separator
+          doc.strokeColor(this.colors.text).lineWidth(0.5);
+          const dashY = doc.y + 3;
+          for (let x = 40; x < 180; x += 6) {
+            doc.moveTo(x, dashY).lineTo(x + 3, dashY).stroke();
+          }
+          doc.moveDown(0.8);
+
+          prescriptions.forEach((rx, index) => {
+            const medName = rx.medication || rx.name || rx.drug?.name || '';
+            const dosageInstructions = this.buildPrescriptionInstructions(rx);
+            const renewInstruction = rx.renew || rx.instruction || '';
+
+            doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+            doc.text(`- ${medName}`, 40, doc.y);
+            if (dosageInstructions) {
+              doc.text(`  ${dosageInstructions}`, 50, doc.y);
+            }
+            if (renewInstruction) {
+              doc.moveDown(0.3);
+              doc.font('Helvetica-Bold').text(renewInstruction.toUpperCase(), 40, doc.y);
+            }
+            doc.moveDown(0.8);
+          });
+        }
+
+        // ===== WARNING TEXT (bold, prominent) =====
+        const warning = data.warning || visit?.warning || '';
+        if (warning) {
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+            .text(warning.toUpperCase(), 40, doc.y);
+          doc.moveDown(0.8);
+        }
+
+        // ===== NEXT APPOINTMENT =====
+        const nextAppointment = data.nextAppointment || visit?.followUp?.instructions || '';
+        if (nextAppointment) {
+          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+            .text('PROCHAIN RENDEZ-VOUS:', 40, doc.y);
+          doc.font('Helvetica').text(nextAppointment, 40, doc.y);
+          doc.moveDown(0.5);
+        }
+
+        // ===== DIAGNOSIS =====
+        const diagnosis = visit?.diagnosis?.primary?.name || visit?.diagnosis?.primary ||
+                         visit?.diagnosis || data.diagnosis || '';
+        if (diagnosis) {
+          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+            .text('Diagnostics:', 40, doc.y, { continued: true });
+          doc.font('Helvetica')
+            .text(`   ${typeof diagnosis === 'object' ? diagnosis.name || JSON.stringify(diagnosis) : diagnosis}`);
+        }
+
+        // ===== FOOTER =====
+        this.addFicheFooter(doc, clinic, pageNumber, totalPages);
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Helper: Draw a row in the Fiche patient info table
+   */
+  drawFicheTableRow(doc, x, y, width, height, label, value) {
+    const padding = 5;
+    doc.fontSize(9).font('Helvetica-Bold').fillColor(this.colors.text)
+      .text(label, x + padding, y + 4, { width: 70 });
+    doc.font('Helvetica').fontSize(9)
+      .text(value || '', x + 75, y + 4, { width: width - 80 });
+  }
+
+  /**
+   * Helper: Draw a row with multiple label-value pairs
+   */
+  drawFicheTableRowMulti(doc, x, y, width, height, items) {
+    const padding = 5;
+    let currentX = x + padding;
+
+    items.forEach((item, index) => {
+      doc.fontSize(9).font('Helvetica-Bold').fillColor(this.colors.text)
+        .text(item.label, currentX, y + 4);
+      const labelWidth = doc.widthOfString(item.label) + 3;
+      doc.font('Helvetica')
+        .text(item.value || '', currentX + labelWidth, y + 4, { width: item.width - labelWidth - 5 });
+      currentX += item.width;
+    });
+  }
+
+  /**
+   * Helper: Build prescription instructions string
+   */
+  buildPrescriptionInstructions(rx) {
+    const parts = [];
+
+    if (rx.dosage) parts.push(rx.dosage);
+    if (rx.frequency) parts.push(rx.frequency);
+    if (rx.applicationLocation?.eye) {
+      const eyeMap = { 'OD': 'œil droit', 'OS': 'œil gauche', 'OU': 'les 2 yeux', 'both': 'les 2 yeux' };
+      parts.push(`dans ${eyeMap[rx.applicationLocation.eye] || rx.applicationLocation.eye}`);
+    }
+    if (rx.duration) parts.push(`pendant ${rx.duration}`);
+
+    return parts.join(', ');
+  }
+
+  /**
+   * Helper: Add footer for Fiche d'Ophtalmologie
+   */
+  addFicheFooter(doc, clinic, pageNumber, totalPages) {
+    const footerY = doc.page.height - 50;
+
+    // Footer line
+    doc.strokeColor(this.colors.border).lineWidth(0.5)
+      .moveTo(40, footerY).lineTo(555, footerY).stroke();
+
+    // Clinic info (centered)
+    doc.fontSize(8).font('Helvetica').fillColor(this.colors.lightText);
+
+    const address = clinic.address || '72A, Avenue Tombalbaye, C. Gombe, Kinshasa R.D. Congo';
+    const phones = Array.isArray(clinic.phones) ? clinic.phones.join('  ') :
+                   clinic.phone || '+243 977 917 476  +243 993 715 460  +243 999 060 457';
+    const taxInfo = clinic.taxId || 'N.I.F: A0707382H / ID Nat: N34964N';
+    const email = clinic.email || 'info@laelvision.com';
+
+    doc.text(`${address}`, 40, footerY + 8, { width: 450, align: 'left' });
+    doc.text(`Tel: ${phones}`, 40, footerY + 18, { width: 450, align: 'left' });
+    doc.text(`${taxInfo}  /  E-mail: ${email}`, 40, footerY + 28, { width: 450, align: 'left' });
+
+    // Page number (right)
+    doc.text(`Page ${pageNumber} sur ${totalPages}`, 480, footerY + 18, { width: 75, align: 'right' });
   }
 
   /**

@@ -3,9 +3,7 @@ const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Patient = require('../models/Patient');
 const Invoice = require('../models/Invoice');
 const AuditLog = require('../models/AuditLog');
-const FrameInventory = require('../models/FrameInventory');
-const ContactLensInventory = require('../models/ContactLensInventory');
-const OpticalLensInventory = require('../models/OpticalLensInventory');
+const { Inventory, FrameInventory, ContactLensInventory, OpticalLensInventory } = require('../models/Inventory');
 const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 const notificationFacade = require('../services/notificationFacade');
@@ -312,7 +310,7 @@ exports.updateOrder = asyncHandler(async (req, res) => {
     req.body,
     { new: true, runValidators: true }
   ).populate('patient', 'firstName lastName phoneNumber')
-   .populate('orderedBy', 'firstName lastName');
+    .populate('orderedBy', 'firstName lastName');
 
   res.status(200).json({
     success: true,
@@ -612,7 +610,7 @@ exports.updateStatus = asyncHandler(async (req, res) => {
 
     if (notes) {
       order.notes = order.notes || {};
-      order.notes.internal = (order.notes.internal || '') + `\n[${new Date().toISOString()}] ${notes}`;
+      order.notes.internal = `${order.notes.internal || ''}\n[${new Date().toISOString()}] ${notes}`;
     }
 
     await order.save({ session });
@@ -984,7 +982,7 @@ exports.generateInvoice = asyncHandler(async (req, res) => {
       amountDue: total - (order.amountPaid || 0)
     },
     status: (order.amountPaid || 0) >= total ? 'paid' :
-            (order.amountPaid || 0) > 0 ? 'partial' : 'issued',
+      (order.amountPaid || 0) > 0 ? 'partial' : 'issued',
     billing: {
       currency: process.env.BASE_CURRENCY || 'CDF'
     },
@@ -2469,13 +2467,13 @@ function generateEDIFormat(data) {
 
   // OD prescription
   if (data.prescription.od) {
-    lines.push(`LIN*1*SK*OD~`);
+    lines.push('LIN*1*SK*OD~');
     lines.push(`PO1*1*1*EA***SPH*${data.prescription.od.sphere || 0}*CYL*${data.prescription.od.cylinder || 0}*AXIS*${data.prescription.od.axis || 0}~`);
   }
 
   // OS prescription
   if (data.prescription.os) {
-    lines.push(`LIN*2*SK*OS~`);
+    lines.push('LIN*2*SK*OS~');
     lines.push(`PO1*2*1*EA***SPH*${data.prescription.os.sphere || 0}*CYL*${data.prescription.os.cylinder || 0}*AXIS*${data.prescription.os.axis || 0}~`);
   }
 
@@ -2492,7 +2490,7 @@ function generateEDIFormat(data) {
     }
   }
 
-  lines.push(`CTT*2~`);
+  lines.push('CTT*2~');
   lines.push(`SE*${lines.length + 1}*${data.orderInfo.orderNumber}~`);
 
   return lines.join('\n');
@@ -2538,7 +2536,7 @@ function generateCSVFormat(data) {
     data.orderInfo.notes || ''
   ];
 
-  return headers.join(',') + '\n' + values.map(v => `"${v}"`).join(',');
+  return `${headers.join(',')}\n${values.map(v => `"${v}"`).join(',')}`;
 }
 
 function generateXMLFormat(data) {

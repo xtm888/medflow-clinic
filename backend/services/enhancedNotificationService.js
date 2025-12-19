@@ -1,6 +1,10 @@
 /**
  * Enhanced Notification Service
  *
+ * @internal This is an INTERNAL implementation service.
+ * For external use, import from notificationFacade.js instead:
+ *   const notificationFacade = require('./notificationFacade');
+ *
  * Provides robust multi-channel notifications with:
  * - SMS (Twilio, Africa's Talking)
  * - Email
@@ -13,6 +17,9 @@
 
 const sendEmail = require('../utils/sendEmail');
 const CONSTANTS = require('../config/constants');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('EnhancedNotification');
 
 class NotificationService {
   constructor() {
@@ -62,9 +69,9 @@ class NotificationService {
         });
         this.smsProvider = client.SMS;
         this.smsProviderType = 'africastalking';
-        console.log('✅ Africa\'s Talking SMS provider initialized');
+        log.info('✅ Africa\'s Talking SMS provider initialized');
       } catch (err) {
-        console.warn('⚠️  Africa\'s Talking not available:', err.message);
+        log.warn('⚠️  Africa\'s Talking not available:', err.message);
       }
     }
 
@@ -74,14 +81,14 @@ class NotificationService {
         const twilio = require('twilio');
         this.smsProvider = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
         this.smsProviderType = 'twilio';
-        console.log('✅ Twilio SMS provider initialized');
+        log.info('✅ Twilio SMS provider initialized');
       } catch (err) {
-        console.warn('⚠️  Twilio not available:', err.message);
+        log.warn('⚠️  Twilio not available:', err.message);
       }
     }
 
     if (!this.smsProvider) {
-      console.warn('⚠️  No SMS provider configured - SMS will be simulated');
+      log.warn('⚠️  No SMS provider configured - SMS will be simulated');
       this.smsProviderType = 'simulated';
     }
   }
@@ -134,12 +141,12 @@ class NotificationService {
       // Remove leading zero if present
       formatted = formatted.replace(/^0/, '');
       // Add DRC country code
-      formatted = '+243' + formatted;
+      formatted = `+243${formatted}`;
     }
 
     // Validate format (basic check)
     if (!/^\+243\d{9}$/.test(formatted)) {
-      console.warn(`Invalid DRC phone number format: ${phoneNumber}`);
+      log.warn(`Invalid DRC phone number format: ${phoneNumber}`);
       return null;
     }
 
@@ -174,7 +181,7 @@ class NotificationService {
 
     // Truncate message if too long
     const truncatedMessage = message.length > CONSTANTS.NOTIFICATION.MAX_SMS_LENGTH
-      ? message.substring(0, CONSTANTS.NOTIFICATION.MAX_SMS_LENGTH - 3) + '...'
+      ? `${message.substring(0, CONSTANTS.NOTIFICATION.MAX_SMS_LENGTH - 3)}...`
       : message;
 
     let lastError = null;
@@ -201,12 +208,12 @@ class NotificationService {
         // Success
         this.smsCount++;
         this.stats.totalSMSSent++;
-        console.log(`✅ SMS sent to ${formattedPhone} (attempt ${attempt + 1})`);
+        log.info(`✅ SMS sent to ${formattedPhone} (attempt ${attempt + 1})`);
         return result;
 
       } catch (error) {
         lastError = error;
-        console.warn(`⚠️  SMS attempt ${attempt + 1} failed:`, error.message);
+        log.warn(`⚠️  SMS attempt ${attempt + 1} failed:`, error.message);
 
         if (attempt === maxRetries) {
           this.stats.totalSMSFailed++;
@@ -263,7 +270,7 @@ class NotificationService {
    * Simulate SMS (no provider configured)
    */
   simulateSMS(phoneNumber, message) {
-    console.log(`[SMS SIMULATED] To: ${phoneNumber}, Message: ${message}`);
+    log.info(`[SMS SIMULATED] To: ${phoneNumber}, Message: ${message}`);
     return {
       success: true,
       provider: 'simulated',
@@ -306,12 +313,12 @@ class NotificationService {
         // Success
         this.emailCount++;
         this.stats.totalEmailsSent++;
-        console.log(`✅ Email sent to ${to} (attempt ${attempt + 1})`);
+        log.info(`✅ Email sent to ${to} (attempt ${attempt + 1})`);
         return { success: true, attempts: attempt + 1 };
 
       } catch (error) {
         lastError = error;
-        console.warn(`⚠️  Email attempt ${attempt + 1} failed:`, error.message);
+        log.warn(`⚠️  Email attempt ${attempt + 1} failed:`, error.message);
 
         if (attempt === maxRetries) {
           this.stats.totalEmailsFailed++;
@@ -352,7 +359,7 @@ class NotificationService {
     const successCount = results.filter(r => r.success).length;
     const failureCount = results.filter(r => !r.success).length;
 
-    console.log(`📊 Bulk SMS complete: ${successCount} sent, ${failureCount} failed`);
+    log.info(`📊 Bulk SMS complete: ${successCount} sent, ${failureCount} failed`);
 
     return {
       total: recipients.length,
@@ -403,7 +410,7 @@ class NotificationService {
         );
       }
     } catch (error) {
-      console.error('Queue processing error:', error);
+      log.error('Queue processing error:', { error: error });
       // Requeue with attempt tracking
       if (item.attempts < this.maxRetries) {
         item.attempts++;

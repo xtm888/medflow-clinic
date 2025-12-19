@@ -272,7 +272,7 @@ exports.enterResults = asyncHandler(async (req, res) => {
   const patientGender = visit.patient?.gender;
 
   // Process results
-  let processedResults = [];
+  const processedResults = [];
   let hasAbnormal = false;
   let hasCritical = false;
 

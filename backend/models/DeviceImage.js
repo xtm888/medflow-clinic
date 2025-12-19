@@ -51,8 +51,8 @@ const deviceImageSchema = new mongoose.Schema({
   imageType: {
     type: String,
     enum: ['OCT', 'fundus', 'topography', 'angiography', 'ultrasound',
-           'slit-lamp', 'anterior-segment', 'visual-field', 'pachymetry',
-           'biometry', 'specular-microscopy', 'other'],
+      'slit-lamp', 'anterior-segment', 'visual-field', 'pachymetry',
+      'biometry', 'specular-microscopy', 'other'],
     required: true
   },
 

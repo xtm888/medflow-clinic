@@ -441,8 +441,8 @@ class CERFAGenerator {
 
         // Draw line
         doc.moveTo(50, tableTop + 15)
-           .lineTo(550, tableTop + 15)
-           .stroke();
+          .lineTo(550, tableTop + 15)
+          .stroke();
 
         // Items
         let currentY = tableTop + 25;
@@ -458,8 +458,8 @@ class CERFAGenerator {
         // Totals
         currentY += 10;
         doc.moveTo(50, currentY)
-           .lineTo(550, currentY)
-           .stroke();
+          .lineTo(550, currentY)
+          .stroke();
 
         currentY += 15;
         doc.fontSize(10).font('Helvetica-Bold');
@@ -742,8 +742,8 @@ class CERFAGenerator {
 
     doc.moveDown(1);
     doc.moveTo(50, doc.y)
-       .lineTo(550, doc.y)
-       .stroke();
+      .lineTo(550, doc.y)
+      .stroke();
   }
 
   /**

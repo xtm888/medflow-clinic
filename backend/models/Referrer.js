@@ -93,7 +93,7 @@ referrerSchema.index({ user: 1 });
 // Virtual for display name
 referrerSchema.virtual('displayName').get(function() {
   return this.type === 'external'
-    ? `Dr. ${this.name} (Externe${this.clinic ? ' - ' + this.clinic : ''})`
+    ? `Dr. ${this.name} (Externe${this.clinic ? ` - ${this.clinic}` : ''})`
     : `Dr. ${this.name} (Interne)`;
 });
 

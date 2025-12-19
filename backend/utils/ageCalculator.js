@@ -137,7 +137,7 @@ function formatAge(dob, options = {}) {
     const category = age.years < 12 ? l.child : l.adolescent;
     return verbose
       ? `${age.years} ${age.years === 1 ? l.year : l.years}${monthPart} (${category})`
-      : `${age.years}${age.months > 0 ? 'a' + age.months + 'm' : 'a'}`;
+      : `${age.years}${age.months > 0 ? `a${age.months}m` : 'a'}`;
   } else {
     // Adult - show years only
     return verbose

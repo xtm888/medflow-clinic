@@ -5,6 +5,9 @@
 
 const mongoose = require('mongoose');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('WestgardQC');
+
 /**
  * QC Control Schema (if not exists in models)
  */
@@ -223,13 +226,13 @@ function getLJPosition(zScore) {
 function generateInterpretation(zScore, violations, warnings) {
   if (violations.length > 0) {
     return `QC FAILURE: ${violations.map(v => v.name).join(', ')}. ` +
-           `Patient results should NOT be released until issue is resolved. ` +
+           'Patient results should NOT be released until issue is resolved. ' +
            `Z-score: ${zScore.toFixed(2)}`;
   }
 
   if (warnings.length > 0) {
     return `QC WARNING: ${warnings.map(w => w.name).join(', ')}. ` +
-           `Monitor closely and review before releasing results. ` +
+           'Monitor closely and review before releasing results. ' +
            `Z-score: ${zScore.toFixed(2)}`;
   }
 
@@ -270,9 +273,9 @@ async function processQCRun(qcData) {
       controlLevel,
       status: { $in: ['accepted', 'warning'] }
     })
-    .sort({ runDate: -1 })
-    .limit(10)
-    .lean();
+      .sort({ runDate: -1 })
+      .limit(10)
+      .lean();
 
     const previousValues = previousResults.map(r => r.measuredValue);
 
@@ -312,7 +315,7 @@ async function processQCRun(qcData) {
       savedAt: qcResult.createdAt
     };
   } catch (error) {
-    console.error('Error processing QC run:', error);
+    log.error('Error processing QC run:', { error: error });
     throw new Error(`QC processing failed: ${error.message}`);
   }
 }
@@ -336,8 +339,8 @@ async function getQCChartData(analyzer, testCode, controlLevel, days = 30) {
       controlLevel,
       runDate: { $gte: startDate }
     })
-    .sort({ runDate: 1 })
-    .lean();
+      .sort({ runDate: 1 })
+      .lean();
 
     if (results.length === 0) {
       return { data: [], stats: null };
@@ -387,7 +390,7 @@ async function getQCChartData(analyzer, testCode, controlLevel, days = 30) {
       }
     };
   } catch (error) {
-    console.error('Error getting QC chart data:', error);
+    log.error('Error getting QC chart data:', { error: error });
     throw new Error(`Failed to get QC chart data: ${error.message}`);
   }
 }

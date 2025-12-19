@@ -5,6 +5,9 @@
 
 const Prescription = require('../models/Prescription');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('TherapeuticClass');
+
 /**
  * Therapeutic Drug Classifications
  * Based on ATC (Anatomical Therapeutic Chemical) classification
@@ -344,7 +347,7 @@ async function checkPatientDuplications(patientId, newMedications = []) {
       requiresOverride: newDuplications.some(d => d.severity === 'CRITICAL')
     };
   } catch (error) {
-    console.error('Error checking patient duplications:', error);
+    log.error('Error checking patient duplications:', { error: error });
     throw new Error(`Duplication check failed: ${error.message}`);
   }
 }
@@ -379,7 +382,7 @@ function generateDuplicationAlert(patientId, duplicationData) {
     severity: alertSeverity[mostSevere.severity] || 'WARNING',
     category: 'prescription',
     code: 'THERAPEUTIC_DUPLICATION',
-    title: `Therapeutic Duplication Detected`,
+    title: 'Therapeutic Duplication Detected',
     message: `${duplicationData.duplications.length} therapeutic class duplication(s) found. ${mostSevere.warning}`,
     triggerField: 'medications',
     triggerValue: duplicationData.duplications.map(d => d.className).join(', '),

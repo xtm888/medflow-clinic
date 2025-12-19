@@ -12,6 +12,9 @@ const axios = require('axios');
 const net = require('net');
 const tls = require('tls');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('LisIntegration');
+
 class LISIntegrationService {
   constructor() {
     this.activeConnections = new Map();
@@ -376,7 +379,7 @@ class LISIntegrationService {
 
       return response.data.access_token;
     } catch (error) {
-      console.error('OAuth2 token error:', error.message);
+      log.error('OAuth2 token error:', error.message);
       throw new Error('Failed to obtain OAuth2 token');
     }
   }
@@ -1020,20 +1023,20 @@ class LISIntegrationService {
         { $group: {
           _id: { direction: '$direction', status: '$status' },
           count: { $sum: 1 }
-        }}
+        } }
       ]),
       // Last 7 days
       LISMessageLog.aggregate([
         { $match: {
           integration: integration._id,
           createdAt: { $gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-        }},
+        } },
         { $group: {
           _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
           inbound: { $sum: { $cond: [{ $eq: ['$direction', 'inbound'] }, 1, 0] } },
           outbound: { $sum: { $cond: [{ $eq: ['$direction', 'outbound'] }, 1, 0] } },
           errors: { $sum: { $cond: [{ $eq: ['$status', 'error'] }, 1, 0] } }
-        }},
+        } },
         { $sort: { _id: 1 } }
       ]),
       // Recent errors

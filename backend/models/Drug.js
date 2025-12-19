@@ -30,10 +30,10 @@ const drugSchema = new mongoose.Schema({
   category: {
     type: String,
     enum: ['antibiotic', 'analgesic', 'antihypertensive', 'antidiabetic', 'anticoagulant',
-           'antidepressant', 'antipsychotic', 'anticonvulsant', 'antihistamine', 'antiviral',
-           'antifungal', 'bronchodilator', 'corticosteroid', 'diuretic', 'proton-pump-inhibitor',
-           'statin', 'nsaid', 'opioid', 'sedative', 'vitamin', 'supplement', 'vaccine',
-           'ophthalmic', 'otic', 'topical', 'other']
+      'antidepressant', 'antipsychotic', 'anticonvulsant', 'antihistamine', 'antiviral',
+      'antifungal', 'bronchodilator', 'corticosteroid', 'diuretic', 'proton-pump-inhibitor',
+      'statin', 'nsaid', 'opioid', 'sedative', 'vitamin', 'supplement', 'vaccine',
+      'ophthalmic', 'otic', 'topical', 'other']
   },
 
   // French categorization from Care Vision
@@ -61,7 +61,7 @@ const drugSchema = new mongoose.Schema({
     form: {
       type: String,
       enum: ['tablet', 'capsule', 'liquid', 'injection', 'patch', 'cream', 'ointment',
-             'gel', 'drops', 'spray', 'inhaler', 'suppository', 'implant', 'powder']
+        'gel', 'drops', 'spray', 'inhaler', 'suppository', 'implant', 'powder']
     },
     strengths: [{
       value: Number,
@@ -70,8 +70,8 @@ const drugSchema = new mongoose.Schema({
     route: {
       type: String,
       enum: ['oral', 'intravenous', 'intramuscular', 'subcutaneous', 'topical',
-             'ophthalmic', 'otic', 'nasal', 'inhalation', 'rectal', 'vaginal',
-             'transdermal', 'sublingual', 'buccal']
+        'ophthalmic', 'otic', 'nasal', 'inhalation', 'rectal', 'vaginal',
+        'transdermal', 'sublingual', 'buccal']
     }
   }],
 

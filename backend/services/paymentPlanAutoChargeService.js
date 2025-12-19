@@ -8,6 +8,9 @@ const Patient = require('../models/Patient');
 const paymentGateway = require('./paymentGateway');
 const crypto = require('crypto');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('PaymentPlanAutoCharge');
+
 class PaymentPlanAutoChargeService {
   constructor() {
     this.schedulerInterval = null;
@@ -21,11 +24,11 @@ class PaymentPlanAutoChargeService {
    */
   startScheduler() {
     if (this.schedulerInterval) {
-      console.log('Auto-charge scheduler already running');
+      log.info('Auto-charge scheduler already running');
       return;
     }
 
-    console.log('Starting payment plan auto-charge scheduler...');
+    log.info('Starting payment plan auto-charge scheduler...');
 
     // Run immediately on start
     this.processAutoCharges();
@@ -43,7 +46,7 @@ class PaymentPlanAutoChargeService {
     if (this.schedulerInterval) {
       clearInterval(this.schedulerInterval);
       this.schedulerInterval = null;
-      console.log('Auto-charge scheduler stopped');
+      log.info('Auto-charge scheduler stopped');
     }
     if (this.notificationInterval) {
       clearInterval(this.notificationInterval);
@@ -56,7 +59,7 @@ class PaymentPlanAutoChargeService {
    */
   async processAutoCharges() {
     if (this.isRunning) {
-      console.log('Auto-charge process already running, skipping...');
+      log.info('Auto-charge process already running, skipping...');
       return;
     }
 
@@ -70,7 +73,7 @@ class PaymentPlanAutoChargeService {
     };
 
     try {
-      console.log(`[${new Date().toISOString()}] Processing payment plan auto-charges...`);
+      log.info(`[${new Date().toISOString()}] Processing payment plan auto-charges...`);
 
       // Find all active payment plans with auto-payment enabled
       const plans = await PaymentPlan.find({
@@ -171,7 +174,7 @@ class PaymentPlanAutoChargeService {
             }
           }
         } catch (planError) {
-          console.error(`Error processing plan ${plan.planId}:`, planError);
+          log.error(`Error processing plan ${plan.planId}:`, { error: planError });
           results.errors.push({
             planId: plan.planId,
             error: planError.message
@@ -179,9 +182,9 @@ class PaymentPlanAutoChargeService {
         }
       }
 
-      console.log(`Auto-charge complete: ${results.successful} successful, ${results.failed} failed, ${results.skipped} skipped`);
+      log.info(`Auto-charge complete: ${results.successful} successful, ${results.failed} failed, ${results.skipped} skipped`);
     } catch (error) {
-      console.error('Auto-charge scheduler error:', error);
+      log.error('Auto-charge scheduler error:', { error: error });
     } finally {
       this.isRunning = false;
     }
@@ -276,7 +279,7 @@ class PaymentPlanAutoChargeService {
         userAgent: 'AutoChargeService'
       });
     } catch (logError) {
-      console.error('Failed to log auto-charge result:', logError);
+      log.error('Failed to log auto-charge result:', { error: logError });
     }
   }
 
@@ -339,7 +342,7 @@ class PaymentPlanAutoChargeService {
         }
       }
     } catch (error) {
-      console.error('Error sending auto-charge notifications:', error);
+      log.error('Error sending auto-charge notifications:', { error: error });
     }
   }
 

@@ -8,6 +8,9 @@
 const ClinicalAlert = require('../models/ClinicalAlert');
 const mongoose = require('mongoose');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ClinicalAlert');
+
 /**
  * Alert Rule Definitions
  * Each rule specifies:
@@ -1021,7 +1024,7 @@ class ClinicalAlertService {
           }
         }
       } catch (error) {
-        console.error(`Error evaluating rule ${rule.code}:`, error);
+        log.error(`Error evaluating rule ${rule.code}:`, { error: error });
       }
     }
 
@@ -1033,7 +1036,7 @@ class ClinicalAlertService {
    */
   async createAlert(rule, trigger, patientId, examId, visitId, userId) {
     // Format message with placeholders
-    let message = rule.message
+    const message = rule.message
       .replace('{eye}', this.formatEye(trigger.eye))
       .replace('{value}', trigger.triggerValue || 'N/A')
       .replace('{threshold}', trigger.triggerThreshold || '');

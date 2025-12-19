@@ -69,7 +69,7 @@ module.exports = {
     SESSION_TIMEOUT_MINUTES: 60,       // User session timeout
     SESSION_TIMEOUT_MS: 60 * 60 * 1000,
     ACCESS_TOKEN_EXPIRY_MINUTES: 15,   // Short-lived access tokens
-    REFRESH_TOKEN_EXPIRY_DAYS: 7,      // Refresh tokens valid for 1 week
+    REFRESH_TOKEN_EXPIRY_DAYS: 14,     // Refresh tokens valid for 2 weeks
     RESET_TOKEN_EXPIRY_HOURS: 1,       // Password reset tokens valid for 1 hour
 
     // Password requirements

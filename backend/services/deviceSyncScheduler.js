@@ -18,6 +18,9 @@ const AdapterFactory = require('./adapters/AdapterFactory');
 const fs = require('fs').promises;
 const path = require('path');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('DeviceSyncScheduler');
+
 class DeviceSyncScheduler {
   constructor() {
     this.syncJobs = new Map(); // deviceId -> cron job
@@ -35,11 +38,11 @@ class DeviceSyncScheduler {
    */
   async start() {
     if (this.isRunning) {
-      console.log('⚠️  Device sync scheduler already running');
+      log.info('⚠️  Device sync scheduler already running');
       return;
     }
 
-    console.log('🔄 Starting device sync scheduler...');
+    log.info('🔄 Starting device sync scheduler...');
 
     try {
       // Load all devices with folder sync enabled
@@ -51,12 +54,12 @@ class DeviceSyncScheduler {
       });
 
       this.isRunning = true;
-      console.log('✅ Device sync scheduler started successfully');
-      console.log(`   - Monitoring ${this.syncJobs.size} devices with folder sync`);
-      console.log('   - Device check: Every 5 minutes');
+      log.info('✅ Device sync scheduler started successfully');
+      log.info(`   - Monitoring ${this.syncJobs.size} devices with folder sync`);
+      log.info('   - Device check: Every 5 minutes');
 
     } catch (error) {
-      console.error('❌ Failed to start device sync scheduler:', error);
+      log.error('❌ Failed to start device sync scheduler:', { error: error });
       throw error;
     }
   }
@@ -69,7 +72,7 @@ class DeviceSyncScheduler {
       return;
     }
 
-    console.log('🛑 Stopping device sync scheduler...');
+    log.info('🛑 Stopping device sync scheduler...');
 
     // Stop main job
     if (this.mainJob) {
@@ -79,13 +82,13 @@ class DeviceSyncScheduler {
     // Stop all device sync jobs
     for (const [deviceId, job] of this.syncJobs.entries()) {
       job.stop();
-      console.log(`   - Stopped sync for device: ${deviceId}`);
+      log.info(`   - Stopped sync for device: ${deviceId}`);
     }
 
     this.syncJobs.clear();
     this.isRunning = false;
 
-    console.log('✅ Device sync scheduler stopped');
+    log.info('✅ Device sync scheduler stopped');
   }
 
   /**
@@ -99,14 +102,14 @@ class DeviceSyncScheduler {
         'integration.folderSync.enabled': true
       });
 
-      console.log(`📁 Found ${devices.length} devices with folder sync enabled`);
+      log.info(`📁 Found ${devices.length} devices with folder sync enabled`);
 
       for (const device of devices) {
         await this.scheduleDeviceSync(device);
       }
 
     } catch (error) {
-      console.error('Error loading devices:', error);
+      log.error('Error loading devices:', { error: error });
       throw error;
     }
   }
@@ -120,7 +123,7 @@ class DeviceSyncScheduler {
 
       // Validate cron expression
       if (!cron.validate(schedule)) {
-        console.warn(`⚠️  Invalid cron schedule for device ${device.name}: ${schedule}`);
+        log.warn(`⚠️  Invalid cron schedule for device ${device.name}: ${schedule}`);
         return;
       }
 
@@ -136,10 +139,10 @@ class DeviceSyncScheduler {
 
       this.syncJobs.set(device._id.toString(), job);
 
-      console.log(`   ✓ Scheduled sync for ${device.name} (${device.type}): ${schedule}`);
+      log.info(`   ✓ Scheduled sync for ${device.name} (${device.type}): ${schedule}`);
 
     } catch (error) {
-      console.error(`Error scheduling device ${device.name}:`, error);
+      log.error(`Error scheduling device ${device.name}:`, { error: error });
     }
   }
 
@@ -154,11 +157,11 @@ class DeviceSyncScheduler {
       const device = await Device.findById(deviceId);
 
       if (!device || !device.active || !device.integration.folderSync.enabled) {
-        console.log(`⚠️  Device ${deviceId} no longer eligible for sync`);
+        log.info(`⚠️  Device ${deviceId} no longer eligible for sync`);
         return;
       }
 
-      console.log(`🔄 Starting folder sync for: ${device.name}`);
+      log.info(`🔄 Starting folder sync for: ${device.name}`);
 
       const folderPath = device.integration.folderSync.sharedFolderPath;
       const filePattern = device.integration.folderSync.filePattern || '*';
@@ -226,7 +229,7 @@ class DeviceSyncScheduler {
           });
 
           if (alreadyProcessed) {
-            console.log(`   ⏭️  Skipping already processed file: ${file}`);
+            log.info(`   ⏭️  Skipping already processed file: ${file}`);
             continue;
           }
 
@@ -262,19 +265,19 @@ class DeviceSyncScheduler {
             status: 'SUCCESS'
           });
 
-          console.log(`   ✅ Processed file: ${file}`);
+          log.info(`   ✅ Processed file: ${file}`);
 
         } catch (error) {
           recordsFailed++;
           errors.push({ file, error: error.message });
 
-          console.error(`   ❌ Error processing file ${file}:`, error.message);
+          log.error(`   ❌ Error processing file ${file}:`, error.message);
 
           // Move to error folder
           try {
             await fs.rename(filePath, path.join(errorFolder, file));
           } catch (moveError) {
-            console.error('Failed to move error file:', moveError);
+            log.error('Failed to move error file:', { error: moveError });
           }
 
           log.folderSync.filesProcessed.push({
@@ -316,12 +319,12 @@ class DeviceSyncScheduler {
       this.stats.successfulSyncs++;
       this.stats.lastSyncTime = new Date();
 
-      console.log(`✅ Completed sync for ${device.name}: ${recordsProcessed} processed, ${recordsFailed} failed (${Date.now() - startTime}ms)`);
+      log.info(`✅ Completed sync for ${device.name}: ${recordsProcessed} processed, ${recordsFailed} failed (${Date.now() - startTime}ms)`);
 
     } catch (error) {
       this.stats.failedSyncs++;
 
-      console.error(`❌ Folder sync failed for device ${deviceId}:`, error.message);
+      log.error(`❌ Folder sync failed for device ${deviceId}:`, error.message);
 
       // Log failure
       await DeviceIntegrationLog.create({
@@ -374,12 +377,12 @@ class DeviceSyncScheduler {
         if (!activeDeviceIds.has(deviceId)) {
           this.syncJobs.get(deviceId).stop();
           this.syncJobs.delete(deviceId);
-          console.log(`   - Removed sync for device: ${deviceId}`);
+          log.info(`   - Removed sync for device: ${deviceId}`);
         }
       }
 
     } catch (error) {
-      console.error('Error checking devices:', error);
+      log.error('Error checking devices:', { error: error });
     }
   }
 
@@ -398,7 +401,7 @@ class DeviceSyncScheduler {
    * Manually trigger sync for a device
    */
   async triggerSync(deviceId) {
-    console.log(`🔄 Manually triggering sync for device: ${deviceId}`);
+    log.info(`🔄 Manually triggering sync for device: ${deviceId}`);
     await this.syncDevice(deviceId);
   }
 }

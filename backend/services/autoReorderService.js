@@ -3,12 +3,17 @@
  * Automatically generates purchase orders when inventory falls below reorder points
  */
 
-const PharmacyInventory = require('../models/PharmacyInventory');
-const FrameInventory = require('../models/FrameInventory');
-const ContactLensInventory = require('../models/ContactLensInventory');
-const ReagentInventory = require('../models/ReagentInventory');
-const LabConsumableInventory = require('../models/LabConsumableInventory');
+const {
+  PharmacyInventory,
+  FrameInventory,
+  ContactLensInventory,
+  ReagentInventory,
+  LabConsumableInventory
+} = require('../models/Inventory');
 const PurchaseOrder = require('../models/PurchaseOrder');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('AutoReorder');
 
 /**
  * Inventory configurations for auto-reorder
@@ -133,7 +138,7 @@ async function checkReorderNeeds(inventoryType, clinicId) {
       suggestedQuantity: item.reorderQuantity || Math.max(10, item.reorderPoint * 2)
     }));
   } catch (error) {
-    console.error(`Error checking reorder needs for ${inventoryType}:`, error);
+    log.error(`Error checking reorder needs for ${inventoryType}:`, { error: error });
     throw new Error(`Failed to check reorder needs: ${error.message}`);
   }
 }
@@ -179,7 +184,7 @@ async function checkAllReorderNeeds(clinicId) {
         }
       }
     } catch (error) {
-      console.error(`Error checking ${type}:`, error);
+      log.error(`Error checking ${type}:`, { error: error });
       results.byType[type] = { error: error.message };
     }
   }
@@ -216,8 +221,8 @@ async function generatePurchaseOrders(clinicId, userId, options = {}) {
 
     const purchaseOrders = [];
     const grouping = groupBySupplier ? reorderNeeds.bySupplier :
-                     groupByDepartment ? reorderNeeds.byDepartment :
-                     { 'All Items': reorderNeeds.itemsNeedingReorder };
+      groupByDepartment ? reorderNeeds.byDepartment :
+        { 'All Items': reorderNeeds.itemsNeedingReorder };
 
     for (const [groupKey, items] of Object.entries(grouping)) {
       if (Array.isArray(items) && items.length > 0) {
@@ -271,7 +276,7 @@ async function generatePurchaseOrders(clinicId, userId, options = {}) {
       message: `Generated ${purchaseOrders.length} purchase order(s) for ${reorderNeeds.totalItems} items`
     };
   } catch (error) {
-    console.error('Error generating purchase orders:', error);
+    log.error('Error generating purchase orders:', { error: error });
     throw new Error(`Failed to generate purchase orders: ${error.message}`);
   }
 }
@@ -301,7 +306,7 @@ async function runScheduledReorderCheck(clinicId, systemUserId) {
       executedAt: new Date()
     };
   } catch (error) {
-    console.error('Scheduled reorder check failed:', error);
+    log.error('Scheduled reorder check failed:', { error: error });
     return {
       success: false,
       error: error.message,

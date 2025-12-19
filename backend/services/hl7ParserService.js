@@ -656,10 +656,10 @@ class HL7ParserService {
     if (!str) return '';
     return str
       .replace(/\\/g, '\\E\\')
-      .replace(new RegExp('\\' + this.fieldSeparator, 'g'), '\\F\\')
-      .replace(new RegExp('\\' + this.componentSeparator, 'g'), '\\S\\')
-      .replace(new RegExp('\\' + this.subcomponentSeparator, 'g'), '\\T\\')
-      .replace(new RegExp('\\' + this.repetitionSeparator, 'g'), '\\R\\')
+      .replace(new RegExp(`\\${this.fieldSeparator}`, 'g'), '\\F\\')
+      .replace(new RegExp(`\\${this.componentSeparator}`, 'g'), '\\S\\')
+      .replace(new RegExp(`\\${this.subcomponentSeparator}`, 'g'), '\\T\\')
+      .replace(new RegExp(`\\${this.repetitionSeparator}`, 'g'), '\\R\\')
       .replace(/\n/g, '\\.br\\');
   }
 

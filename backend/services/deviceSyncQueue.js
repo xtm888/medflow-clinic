@@ -11,6 +11,9 @@
 const EventEmitter = require('events');
 const { getClient, isRedisConnected, initializeRedis, cache } = require('../config/redis');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('DeviceSyncQueue');
+
 class DeviceSyncQueue extends EventEmitter {
   constructor() {
     super();
@@ -42,7 +45,7 @@ class DeviceSyncQueue extends EventEmitter {
     this.registerHandler('folder_index', this.handleFolderIndex.bind(this));
     this.registerHandler('batch_import', this.handleBatchImport.bind(this));
 
-    console.log('Device Sync Queue initialized');
+    log.info('Device Sync Queue initialized');
     return this;
   }
 
@@ -82,7 +85,7 @@ class DeviceSyncQueue extends EventEmitter {
 
     if (!isRedisConnected()) {
       // Fallback: process immediately if Redis not available
-      console.warn('Redis not available, processing job immediately');
+      log.warn('Redis not available, processing job immediately');
       return this.processJobImmediately(job);
     }
 
@@ -112,7 +115,7 @@ class DeviceSyncQueue extends EventEmitter {
       this.emit('jobAdded', { jobId, jobType, priority });
       return { jobId, status: job.status };
     } catch (error) {
-      console.error('Failed to add job to queue:', error);
+      log.error('Failed to add job to queue:', { error: error });
       // Fallback: process immediately
       return this.processJobImmediately(job);
     }
@@ -144,7 +147,7 @@ class DeviceSyncQueue extends EventEmitter {
     if (this.isProcessing) return;
     this.isProcessing = true;
 
-    console.log('Starting queue processing...');
+    log.info('Starting queue processing...');
 
     // Process delayed jobs
     this.pollInterval = setInterval(() => this.processDelayedJobs(), 5000);
@@ -168,14 +171,14 @@ class DeviceSyncQueue extends EventEmitter {
         const job = await this.getNextJob();
         if (job) {
           this.processJob(job).catch(err => {
-            console.error(`Job ${job.id} failed:`, err);
+            log.error(`Job ${job.id} failed:`, { error: err });
           });
         } else {
           // No jobs available, wait a bit
           await this.sleep(1000);
         }
       } catch (error) {
-        console.error('Error in process loop:', error);
+        log.error('Error in process loop:', { error: error });
         await this.sleep(5000);
       }
     }
@@ -202,8 +205,8 @@ class DeviceSyncQueue extends EventEmitter {
           }
         }
       } catch (error) {
-        // Continue to next priority level
-      }
+      log.debug('Suppressed error', { error: error.message });
+    }
     }
 
     return null;
@@ -245,7 +248,7 @@ class DeviceSyncQueue extends EventEmitter {
         }
       }
     } catch (error) {
-      console.error('Error processing delayed jobs:', error);
+      log.error('Error processing delayed jobs:', { error: error });
     }
   }
 
@@ -255,7 +258,7 @@ class DeviceSyncQueue extends EventEmitter {
   async processJob(job) {
     const handler = this.handlers.get(job.type);
     if (!handler) {
-      console.error(`No handler for job type: ${job.type}`);
+      log.error(`No handler for job type: ${job.type}`);
       await this.failJob(job, 'No handler registered');
       return;
     }
@@ -383,7 +386,7 @@ class DeviceSyncQueue extends EventEmitter {
       clearInterval(this.pollInterval);
       this.pollInterval = null;
     }
-    console.log('Queue processing stopped');
+    log.info('Queue processing stopped');
   }
 
   /**

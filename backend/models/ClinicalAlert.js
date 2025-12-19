@@ -270,8 +270,8 @@ clinicalAlertSchema.statics.getEmergencyForExam = async function(examId) {
     severity: 'EMERGENCY',
     status: 'active'
   })
-  .sort({ createdAt: -1 })
-  .lean();
+    .sort({ createdAt: -1 })
+    .lean();
 };
 
 // Static: Check if alert already exists (prevent duplicates)

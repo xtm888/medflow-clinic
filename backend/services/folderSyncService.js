@@ -15,6 +15,9 @@ const websocketService = require('./websocketService');
 const { universalFileProcessor, DEVICE_PATTERNS } = require('./universalFileProcessor');
 const patientFolderIndexer = require('./patientFolderIndexer');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('FolderSync');
+
 class FolderSyncService {
   constructor() {
     this.watchers = new Map(); // deviceId -> watcher instance
@@ -33,7 +36,7 @@ class FolderSyncService {
    * Initialize folder sync for all configured devices
    */
   async initialize() {
-    console.log('[FolderSync] Initializing folder sync service...');
+    log.info('Initializing folder sync service...');
 
     try {
       // Get all devices with folder sync enabled (support both old and new schema)
@@ -53,7 +56,7 @@ class FolderSyncService {
         ]
       });
 
-      console.log(`[FolderSync] Found ${devices.length} devices with folder sync enabled`);
+      log.info(`Found ${devices.length} devices with folder sync enabled`);
 
       for (const device of devices) {
         await this.startWatchingDevice(device);
@@ -62,9 +65,9 @@ class FolderSyncService {
       // Start queue processor
       this.startQueueProcessor();
 
-      console.log('[FolderSync] Folder sync service initialized');
+      log.info('Folder sync service initialized');
     } catch (error) {
-      console.error('[FolderSync] Initialization error:', error);
+      log.error('[FolderSync] Initialization error:', { error: error });
     }
   }
 
@@ -77,7 +80,7 @@ class FolderSyncService {
     const sharedPath = folderConfig?.sharedFolderPath || device.sharedFolderPath;
 
     if (!sharedPath) {
-      console.log(`[FolderSync] No folder path configured for ${device.name}`);
+      log.info(`No folder path configured for ${device.name}`);
       return;
     }
 
@@ -85,7 +88,7 @@ class FolderSyncService {
     const localPath = this.getLocalMountPath(sharedPath);
 
     if (!fs.existsSync(localPath)) {
-      console.log(`[FolderSync] Mount point not available: ${localPath}`);
+      log.info(`Mount point not available: ${localPath}`);
       await this.updateDeviceStatus(device._id, 'disconnected', `Mount point not found: ${localPath}`);
       return;
     }
@@ -95,7 +98,7 @@ class FolderSyncService {
     // IMPORTANT: Skip real-time watchers for network shares - they block the event loop
     // Network shares will only sync via scheduled cron jobs
     if (isNetworkMount) {
-      console.log(`[FolderSync] ${device.name}: Network share detected - using scheduled sync only (no real-time watcher)`);
+      log.info(`${device.name}: Network share detected - using scheduled sync only (no real-time watcher)`);
       await this.updateDeviceStatus(device._id, 'connected', 'Using scheduled sync');
 
       // Schedule periodic sync if configured
@@ -105,7 +108,7 @@ class FolderSyncService {
       return; // Skip chokidar watcher for network shares
     }
 
-    console.log(`[FolderSync] Starting watcher for ${device.name} at ${localPath} (local)`);
+    log.info(`Starting watcher for ${device.name} at ${localPath} (local)`);
 
     // Stop existing watcher if any
     if (this.watchers.has(device._id.toString())) {
@@ -144,7 +147,7 @@ class FolderSyncService {
       .on('change', (filePath) => this.handleFileChange(device, filePath))
       .on('error', (error) => this.handleWatchError(device, error))
       .on('ready', () => {
-        console.log(`[FolderSync] Watcher ready for ${device.name}`);
+        log.info(`Watcher ready for ${device.name}`);
         this.updateDeviceStatus(device._id, 'connected');
       });
 
@@ -194,7 +197,7 @@ class FolderSyncService {
    * Handle new file detection
    */
   async handleNewFile(device, filePath) {
-    console.log(`[FolderSync] New file detected: ${filePath}`);
+    log.info(`New file detected: ${filePath}`);
     this.stats.filesDiscovered++;
 
     // Check if already processed (use file path and device name in metadata)
@@ -204,7 +207,7 @@ class FolderSyncService {
     });
 
     if (existingDoc) {
-      console.log(`[FolderSync] File already processed: ${filePath}`);
+      log.info(`File already processed: ${filePath}`);
       return;
     }
 
@@ -232,7 +235,7 @@ class FolderSyncService {
    * Handle file change
    */
   async handleFileChange(device, filePath) {
-    console.log(`[FolderSync] File changed: ${filePath}`);
+    log.info(`File changed: ${filePath}`);
     // Could re-process if needed
   }
 
@@ -240,7 +243,7 @@ class FolderSyncService {
    * Handle watch error
    */
   async handleWatchError(device, error) {
-    console.error(`[FolderSync] Watcher error for ${device.name}:`, error);
+    log.error(`[FolderSync] Watcher error for ${device.name}:`, { error: error });
     await this.updateDeviceStatus(device._id, 'error', error.message);
   }
 
@@ -258,7 +261,7 @@ class FolderSyncService {
         await this.processFile(item.device, item.filePath);
         this.stats.filesProcessed++;
       } catch (error) {
-        console.error(`[FolderSync] Processing error:`, error);
+        log.error('[FolderSync] Processing error:', { error: error });
         this.stats.filesFailed++;
 
         // Retry logic
@@ -276,7 +279,7 @@ class FolderSyncService {
    * Process a single file
    */
   async processFile(device, filePath) {
-    console.log(`[FolderSync] Processing: ${filePath}`);
+    log.info(`Processing: ${filePath}`);
 
     const fileName = path.basename(filePath);
     const ext = path.extname(filePath).toLowerCase();
@@ -285,7 +288,7 @@ class FolderSyncService {
     try {
       stats = fs.statSync(filePath);
     } catch (e) {
-      console.log(`[FolderSync] Cannot stat file: ${filePath}`);
+      log.info(`Cannot stat file: ${filePath}`);
       return null;
     }
 
@@ -304,10 +307,10 @@ class FolderSyncService {
 
       if (processorResult.success && processorResult.patientInfo) {
         patientInfo = processorResult.patientInfo;
-        console.log(`[FolderSync] Universal processor extracted: ${JSON.stringify(patientInfo)} (method: ${processorResult.method}, confidence: ${processorResult.confidence})`);
+        log.info(`Universal processor extracted: ${JSON.stringify(patientInfo)} (method: ${processorResult.method}, confidence: ${processorResult.confidence})`);
       }
     } catch (universalError) {
-      console.log(`[FolderSync] Universal processor failed, falling back to basic extraction: ${universalError.message}`);
+      log.info(`Universal processor failed, falling back to basic extraction: ${universalError.message}`);
     }
 
     // Fallback to basic extraction if universal processor didn't work
@@ -330,7 +333,7 @@ class FolderSyncService {
     if (!matchedPatient) {
       // Store in unmatched queue for later review
       this.stats.unmatchedFiles = (this.stats.unmatchedFiles || 0) + 1;
-      console.log(`[FolderSync] No patient match for ${fileName} - queued for manual review`);
+      log.info(`No patient match for ${fileName} - queued for manual review`);
 
       // Notify via websocket about unmatched file
       websocketService.broadcast({
@@ -356,7 +359,7 @@ class FolderSyncService {
     const systemUserId = device.assignedTo || device.createdBy;
 
     if (!systemUserId) {
-      console.log(`[FolderSync] No createdBy user available for ${device.name} - skipping document creation`);
+      log.info(`No createdBy user available for ${device.name} - skipping document creation`);
       return null;
     }
 
@@ -418,7 +421,7 @@ class FolderSyncService {
     });
 
     this.stats.patientsMatched++;
-    console.log(`[FolderSync] Matched to patient: ${matchedPatient.firstName} ${matchedPatient.lastName}`);
+    log.info(`Matched to patient: ${matchedPatient.firstName} ${matchedPatient.lastName}`);
 
     return document;
   }
@@ -686,7 +689,7 @@ class FolderSyncService {
     }
 
     const job = cron.schedule(schedule, async () => {
-      console.log(`[FolderSync] Running scheduled sync for ${device.name}`);
+      log.info(`Running scheduled sync for ${device.name}`);
       await this.performFullSync(device);
     });
 
@@ -706,7 +709,7 @@ class FolderSyncService {
     const localPath = this.getLocalMountPath(sharedPath);
 
     if (!fs.existsSync(localPath)) {
-      console.log(`[FolderSync] Mount not available for sync: ${localPath}`);
+      log.info(`Mount not available for sync: ${localPath}`);
       return;
     }
 
@@ -714,7 +717,7 @@ class FolderSyncService {
     const patterns = (folderConfig.filePattern || '*.jpg,*.jpeg,*.png,*.pdf,*.dcm,*.bmp,*.tiff').split(',');
     const files = await this.findFiles(localPath, patterns, [], 0, 10, 5000);
 
-    console.log(`[FolderSync] Full sync found ${files.length} files for ${device.name}`);
+    log.info(`Full sync found ${files.length} files for ${device.name}`);
 
     for (const file of files) {
       await this.handleNewFile(device, file);
@@ -735,7 +738,7 @@ class FolderSyncService {
       items = await fs.promises.readdir(dir, { withFileTypes: true });
     } catch (e) {
       // Network share might be temporarily unavailable
-      console.log(`[FolderSync] Cannot read directory: ${dir}`);
+      log.info(`Cannot read directory: ${dir}`);
       return results;
     }
 
@@ -810,13 +813,13 @@ class FolderSyncService {
    * Stop all watchers
    */
   async shutdown() {
-    console.log('[FolderSync] Shutting down folder sync service...');
+    log.info('Shutting down folder sync service...');
 
     for (const [deviceId] of this.watchers) {
       await this.stopWatchingDevice(deviceId);
     }
 
-    console.log('[FolderSync] Folder sync service stopped');
+    log.info('Folder sync service stopped');
   }
 
   /**

@@ -5,6 +5,9 @@ const EquipmentCatalog = require('../../models/EquipmentCatalog');
 const DeviceMeasurement = require('../../models/DeviceMeasurement');
 const DeviceImage = require('../../models/DeviceImage');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('DeviceIntegration');
+
 class DeviceIntegrationService {
   constructor() {
     this.watchers = new Map();
@@ -35,13 +38,13 @@ class DeviceIntegrationService {
         await this.setupDICOMListener(device);
         break;
       default:
-        console.log(`Manual entry required for ${device.name}`);
+        log.info(`Manual entry required for ${device.name}`);
     }
   }
 
   async setupFolderWatcher(device) {
     if (!device.networkConfig.sharedFolder) {
-      console.error(`No shared folder configured for ${device.name}`);
+      log.error(`No shared folder configured for ${device.name}`);
       return;
     }
 
@@ -56,7 +59,7 @@ class DeviceIntegrationService {
     });
 
     watcher.on('add', async (filePath) => {
-      console.log(`New file from ${device.name}: ${filePath}`);
+      log.info(`New file from ${device.name}: ${filePath}`);
       await this.processDeviceFile(device, filePath);
     });
 
@@ -82,7 +85,7 @@ class DeviceIntegrationService {
       });
 
     } catch (error) {
-      console.error(`Error processing file from ${device.name}:`, error);
+      log.error(`Error processing file from ${device.name}:`, { error: error });
     }
   }
 
@@ -112,7 +115,7 @@ class DeviceIntegrationService {
     });
 
     await deviceImage.save();
-    console.log(`Saved image from ${device.name}: ${fileName}`);
+    log.info(`Saved image from ${device.name}: ${fileName}`);
   }
 
   async processReportFile(device, filePath) {
@@ -147,7 +150,7 @@ class DeviceIntegrationService {
       });
 
       await measurement.save();
-      console.log(`Saved measurement from ${device.name}`);
+      log.info(`Saved measurement from ${device.name}`);
     }
   }
 

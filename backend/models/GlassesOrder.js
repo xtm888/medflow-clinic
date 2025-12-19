@@ -83,12 +83,12 @@ const glassesOrderSchema = new mongoose.Schema({
     },
     tintColor: String,
 
-    // Lens inventory integration (links to OpticalLensInventory for stock tracking)
+    // Lens inventory integration (links to unified Inventory for stock tracking)
     lens: {
-      // Inventory integration - linked to OpticalLensInventory
+      // Inventory integration - linked to unified Inventory (optical_lens type)
       inventoryItem: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'OpticalLensInventory'
+        ref: 'Inventory'
       },
       sku: String,
       reservationId: String,
@@ -118,10 +118,10 @@ const glassesOrderSchema = new mongoose.Schema({
       color: String,
       size: String,
       material: String,
-      // Inventory integration
+      // Inventory integration - unified Inventory (frame type)
       inventoryItem: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'FrameInventory'
+        ref: 'Inventory'
       },
       sku: String,
       reservationId: String,
@@ -140,10 +140,10 @@ const glassesOrderSchema = new mongoose.Schema({
       cylinder: Number,
       axis: Number,
       color: String,
-      // Inventory integration
+      // Inventory integration - unified Inventory (contact_lens type)
       inventoryItem: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ContactLensInventory'
+        ref: 'Inventory'
       },
       sku: String,
       reservationId: String,
@@ -158,10 +158,10 @@ const glassesOrderSchema = new mongoose.Schema({
       cylinder: Number,
       axis: Number,
       color: String,
-      // Inventory integration
+      // Inventory integration - unified Inventory (contact_lens type)
       inventoryItem: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'ContactLensInventory'
+        ref: 'Inventory'
       },
       sku: String,
       reservationId: String,
@@ -182,7 +182,7 @@ const glassesOrderSchema = new mongoose.Schema({
   frameTryOnPhotos: [{
     frameId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'FrameInventory'
+      ref: 'Inventory' // Unified inventory (frame type)
     },
     frameName: {
       type: String,
@@ -504,26 +504,26 @@ const glassesOrderSchema = new mongoose.Schema({
     shippedAt: Date
   },
 
-  // Inventory tracking status
+  // Inventory tracking status - using unified Inventory model
   inventoryStatus: {
     frameReserved: { type: Boolean, default: false },
     frameInventoryItem: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'FrameInventory'
+      ref: 'Inventory' // frame type
     },
     frameReservationId: String,
 
     contactsOdReserved: { type: Boolean, default: false },
     contactsOdInventoryItem: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'ContactLensInventory'
+      ref: 'Inventory' // contact_lens type
     },
     contactsOdReservationId: String,
 
     contactsOsReserved: { type: Boolean, default: false },
     contactsOsInventoryItem: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'ContactLensInventory'
+      ref: 'Inventory' // contact_lens type
     },
     contactsOsReservationId: String,
 
@@ -836,7 +836,7 @@ const glassesOrderSchema = new mongoose.Schema({
   frame: {
     inventoryItem: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'FrameInventory'
+      ref: 'Inventory' // Unified inventory (frame type)
     },
     brand: String,
     model: String,

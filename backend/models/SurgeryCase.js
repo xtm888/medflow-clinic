@@ -192,7 +192,7 @@ const SurgeryCaseSchema = new Schema({
   consumablesUsed: [{
     item: {
       type: Schema.Types.ObjectId,
-      ref: 'PharmacyInventory'
+      ref: 'Inventory' // Unified inventory (pharmacy or surgical_supply type)
     },
     itemName: String,
     quantity: {
@@ -589,7 +589,7 @@ SurgeryCaseSchema.set('toJSON', { virtuals: true });
 SurgeryCaseSchema.set('toObject', { virtuals: true });
 
 // POST-SAVE HOOK: Maintain bidirectional link with Visit
-SurgeryCaseSchema.post('save', async function(doc) {
+SurgeryCaseSchema.post('save', async (doc) => {
   try {
     // If surgeryCase has a visit link, ensure Visit.surgeryCase is set
     if (doc.visit) {

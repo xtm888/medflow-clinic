@@ -16,6 +16,9 @@ const SpecularMicroscopeAdapter = require('./SpecularMicroscopeAdapter');
 const BiometerAdapter = require('./BiometerAdapter');
 const NidekAdapter = require('./NidekAdapter');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('AdapterFactory');
+
 class AdapterFactory {
   /**
    * Registry of device type to adapter class mappings
@@ -81,7 +84,7 @@ class AdapterFactory {
     const AdapterClass = this.adapterRegistry[normalizedType];
 
     if (!AdapterClass) {
-      console.warn(
+      log.warn(
         `No specific adapter found for device type: ${device.type}. ` +
         `Using BaseAdapter as fallback. Device ID: ${device._id}`
       );
@@ -193,7 +196,7 @@ class AdapterFactory {
     const normalizedType = deviceType.toLowerCase().trim();
     this.adapterRegistry[normalizedType] = AdapterClass;
 
-    console.log(`Registered adapter for device type: ${deviceType}`);
+    log.info(`Registered adapter for device type: ${deviceType}`);
   }
 
   /**

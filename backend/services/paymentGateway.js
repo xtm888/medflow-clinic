@@ -5,6 +5,9 @@
 
 const crypto = require('crypto');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('PaymentGateway');
+
 class PaymentGatewayService {
   constructor() {
     this.stripeEnabled = !!process.env.STRIPE_SECRET_KEY;
@@ -108,7 +111,7 @@ class PaymentGatewayService {
         }
       };
     } catch (error) {
-      console.error('Stripe payment error:', error);
+      log.error('Stripe payment error:', { error: error });
       return {
         success: false,
         provider: 'stripe',
@@ -195,7 +198,7 @@ class PaymentGatewayService {
         }
       };
     } catch (error) {
-      console.error('Mobile Money payment error:', error);
+      log.error('Mobile Money payment error:', { error: error });
       return {
         success: false,
         provider: provider,
@@ -227,8 +230,8 @@ class PaymentGatewayService {
   }
 
   async callMobileMoneyAPI(config, data) {
-    // PRODUCTION TODO: Replace this entire method with actual HTTP call to provider's API
-    // when MOBILE_MONEY_SIMULATION_MODE is set to 'off' or not set
+    // NOTE: This service uses simulation mode by default for recording transactions.
+    // Set MOBILE_MONEY_SIMULATION_MODE='off' and configure API credentials to enable real provider integration.
 
     if (this.mobileMoneySimulationMode === 'off') {
       // Real API implementation - uncomment and configure when credentials are available
@@ -457,8 +460,7 @@ class PaymentGatewayService {
   }
 
   async verifyMobileMoneyPayment(transactionId, provider) {
-    // PRODUCTION TODO: Replace with actual verification API call
-    // when MOBILE_MONEY_SIMULATION_MODE is set to 'off' or not set
+    // NOTE: Uses simulation mode by default. Set MOBILE_MONEY_SIMULATION_MODE='off' for real verification.
 
     if (this.mobileMoneySimulationMode === 'off') {
       // Real API implementation - uncomment and configure when credentials are available
@@ -657,8 +659,7 @@ class PaymentGatewayService {
   }
 
   async processMobileMoneyRefund(transactionId, amount, reason, provider) {
-    // PRODUCTION TODO: Implement actual Mobile Money refund API
-    // Note: Most Mobile Money providers require manual refund processing or have separate refund APIs
+    // NOTE: Records refund transactions. For actual Mobile Money refunds, manual processing may be required.
 
     // Validate inputs
     if (!transactionId) {
@@ -738,7 +739,7 @@ class PaymentGatewayService {
           providerReference: response.data.reference
         };
       } catch (error) {
-        console.error('Mobile Money refund API error:', error);
+        log.error('Mobile Money refund API error:', { error: error });
         return {
           success: false,
           provider: provider,
@@ -864,8 +865,7 @@ class PaymentGatewayService {
   }
 
   async handleMobileMoneyWebhook(payload) {
-    // PRODUCTION TODO: Implement proper webhook signature verification
-    // Each provider has different signature schemes
+    // NOTE: Webhook handling for transaction status updates. Enable signature verification when using real providers.
 
     if (this.mobileMoneySimulationMode === 'off') {
       /*

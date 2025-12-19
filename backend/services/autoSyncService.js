@@ -13,6 +13,9 @@ const cron = require('node-cron');
 const chokidar = require('chokidar');
 const path = require('path');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('AutoSync');
+
 class AutoSyncService extends EventEmitter {
   constructor() {
     super();
@@ -61,7 +64,7 @@ class AutoSyncService extends EventEmitter {
     this.setupQueueEvents();
 
     this.stats.startedAt = new Date();
-    console.log('Auto Sync Service initialized');
+    log.info('Auto Sync Service initialized');
 
     // Initial sync on startup
     if (this.config.syncOnStartup) {
@@ -132,11 +135,11 @@ class AutoSyncService extends EventEmitter {
     const cronExpression = `*/${this.config.pollIntervalMinutes} * * * *`;
 
     this.mainPollJob = cron.schedule(cronExpression, async () => {
-      console.log(`[AutoSync] Running scheduled poll at ${new Date().toISOString()}`);
+      log.info(`Running scheduled poll at ${new Date().toISOString()}`);
       await this.syncAllDevices();
     });
 
-    console.log(`Auto sync polling started (every ${this.config.pollIntervalMinutes} minutes)`);
+    log.info(`Auto sync polling started (every ${this.config.pollIntervalMinutes} minutes)`);
   }
 
   /**
@@ -153,7 +156,7 @@ class AutoSyncService extends EventEmitter {
     }
     this.watchers.clear();
 
-    console.log('Auto sync polling stopped');
+    log.info('Auto sync polling stopped');
   }
 
   /**
@@ -168,7 +171,7 @@ class AutoSyncService extends EventEmitter {
         'connection.settings.shareProtocol': 'smb'
       });
 
-      console.log(`[AutoSync] Syncing ${devices.length} devices...`);
+      log.info(`Syncing ${devices.length} devices...`);
 
       const results = [];
       for (const device of devices) {
@@ -194,7 +197,7 @@ class AutoSyncService extends EventEmitter {
 
       return results;
     } catch (error) {
-      console.error('[AutoSync] Error syncing devices:', error);
+      log.error('[AutoSync] Error syncing devices:', { error: error });
       return { error: error.message };
     }
   }
@@ -329,28 +332,28 @@ class AutoSyncService extends EventEmitter {
 
     watcher
       .on('add', (filePath) => {
-        console.log(`[Watcher] File added: ${filePath}`);
+        log.info(`File added: ${filePath}`);
         this.handleFileChange('add', filePath, device);
       })
       .on('change', (filePath) => {
-        console.log(`[Watcher] File changed: ${filePath}`);
+        log.info(`File changed: ${filePath}`);
         this.handleFileChange('change', filePath, device);
       })
       .on('unlink', (filePath) => {
-        console.log(`[Watcher] File removed: ${filePath}`);
+        log.info(`File removed: ${filePath}`);
         this.handleFileChange('unlink', filePath, device);
       })
       .on('addDir', (dirPath) => {
-        console.log(`[Watcher] Directory added: ${dirPath}`);
+        log.info(`Directory added: ${dirPath}`);
         this.handleFolderChange('add', dirPath, device);
       })
       .on('error', (error) => {
-        console.error(`[Watcher] Error for ${deviceId}:`, error);
+        log.error(`[Watcher] Error for ${deviceId}:`, { error: error });
       });
 
     this.watchers.set(deviceId, watcher);
 
-    console.log(`Started watching: ${mountPath} for device ${device.name}`);
+    log.info(`Started watching: ${mountPath} for device ${device.name}`);
     return watcher;
   }
 
@@ -364,7 +367,7 @@ class AutoSyncService extends EventEmitter {
     if (watcher) {
       watcher.close();
       this.watchers.delete(deviceId);
-      console.log(`Stopped watching device ${device.name}`);
+      log.info(`Stopped watching device ${device.name}`);
     }
   }
 
@@ -438,7 +441,7 @@ class AutoSyncService extends EventEmitter {
 
     const { eventType, filePath, patientId, metadata } = payload;
 
-    console.log(`[Webhook] Received from ${device.name}: ${eventType}`);
+    log.info(`Received from ${device.name}: ${eventType}`);
 
     switch (eventType) {
       case 'file_created':
@@ -471,7 +474,7 @@ class AutoSyncService extends EventEmitter {
         break;
 
       default:
-        console.warn(`Unknown webhook event: ${eventType}`);
+        log.warn(`Unknown webhook event: ${eventType}`);
     }
 
     // Update device last activity
@@ -581,13 +584,13 @@ class AutoSyncService extends EventEmitter {
    * Shutdown the service gracefully
    */
   async shutdown() {
-    console.log('Shutting down Auto Sync Service...');
+    log.info('Shutting down Auto Sync Service...');
 
     this.stopScheduledPolling();
     this.syncQueue.stopProcessing();
     await this.smb2Client.closeAll();
 
-    console.log('Auto Sync Service stopped');
+    log.info('Auto Sync Service stopped');
   }
 }
 

@@ -71,7 +71,7 @@ exports.getCompleteProfile = async (req, res) => {
         ...lab.toObject(),
         visitId: visit._id,
         visitDate: visit.visitDate,
-        orderedByName: visit.primaryProvider?.firstName + ' ' + visit.primaryProvider?.lastName
+        orderedByName: `${visit.primaryProvider?.firstName} ${visit.primaryProvider?.lastName}`
       }))
     );
 

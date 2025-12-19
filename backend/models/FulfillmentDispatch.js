@@ -250,6 +250,9 @@ fulfillmentDispatchSchema.index({ 'dispatch.dispatchedAt': 1 });
 fulfillmentDispatchSchema.index({ dueDate: 1, status: 1 });
 fulfillmentDispatchSchema.index({ clinic: 1, status: 1 });
 fulfillmentDispatchSchema.index({ visit: 1 });
+// Compound index for default listing query (sorted by createdAt desc)
+fulfillmentDispatchSchema.index({ createdAt: -1 });
+fulfillmentDispatchSchema.index({ clinic: 1, createdAt: -1 });
 
 // Pre-save hook to add status history
 fulfillmentDispatchSchema.pre('save', function(next) {

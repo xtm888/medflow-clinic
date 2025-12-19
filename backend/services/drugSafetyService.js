@@ -14,6 +14,9 @@
 
 const axios = require('axios');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('DrugSafety');
+
 // External API configuration - ENABLED for production use
 const EXTERNAL_API_CONFIG = {
   // French BDPM API (Base de Données Publique des Médicaments)
@@ -372,9 +375,9 @@ function checkDrugInteractions(newDrug, currentMedications) {
     moderate,
     minor,
     highestSeverity: contraindicated.length > 0 ? 'contraindicated' :
-                     major.length > 0 ? 'major' :
-                     moderate.length > 0 ? 'moderate' :
-                     minor.length > 0 ? 'minor' : null
+      major.length > 0 ? 'major' :
+        moderate.length > 0 ? 'moderate' :
+          minor.length > 0 ? 'minor' : null
   };
 }
 
@@ -429,7 +432,22 @@ function checkAllergies(drug, patientAllergies) {
  * Check contraindications based on patient conditions
  */
 function checkContraindications(drug, patientConditions) {
-  if (!drug || !patientConditions || patientConditions.length === 0) {
+  // Ensure patientConditions is an array
+  if (!drug || !patientConditions) {
+    return { hasContraindication: false };
+  }
+
+  // Handle case where patientConditions is not an array
+  if (!Array.isArray(patientConditions)) {
+    // Try to extract conditions from object format (e.g., patient.medicalHistory.conditions)
+    if (typeof patientConditions === 'object' && patientConditions.conditions) {
+      patientConditions = patientConditions.conditions;
+    } else {
+      return { hasContraindication: false };
+    }
+  }
+
+  if (patientConditions.length === 0) {
     return { hasContraindication: false };
   }
 
@@ -661,7 +679,7 @@ async function checkInteractionsWithExternalAPI(drugName, currentMedications = [
         results.hasInteraction = true;
       }
     } catch (error) {
-      console.warn('BDPM API error:', error.message);
+      log.warn('BDPM API error:', error.message);
     }
   }
 
@@ -684,7 +702,7 @@ async function checkInteractionsWithExternalAPI(drugName, currentMedications = [
         }
       }
     } catch (error) {
-      console.warn('RxNorm API error:', error.message);
+      log.warn('RxNorm API error:', error.message);
     }
   }
 
@@ -698,7 +716,7 @@ async function checkInteractionsWithExternalAPI(drugName, currentMedications = [
         results.hasInteraction = true;
       }
     } catch (error) {
-      console.warn('OpenFDA API error:', error.message);
+      log.warn('OpenFDA API error:', error.message);
     }
   }
 
@@ -712,7 +730,7 @@ async function checkInteractionsWithExternalAPI(drugName, currentMedications = [
         results.hasInteraction = true;
       }
     } catch (error) {
-      console.warn('DrugBank API error:', error.message);
+      log.warn('DrugBank API error:', error.message);
     }
   }
 
@@ -825,7 +843,7 @@ async function checkBDPMInteractions(originalName, normalizedName, currentMedica
       }
     };
   } catch (error) {
-    console.error('BDPM API error:', error.message);
+    log.error('BDPM API error:', error.message);
     return { hasInteraction: false, interactions: [], error: error.message };
   }
 }
@@ -895,7 +913,7 @@ async function checkOpenFDAAdverseEvents(drugName, currentMedications) {
         await new Promise(resolve => setTimeout(resolve, 200));
       } catch (err) {
         // Log error but continue with other medications
-        console.warn(`Drug interaction check failed for ${medication.name}: ${err.message}`);
+        log.warn(`Drug interaction check failed for ${medication.name}: ${err.message}`);
       }
     }
 
@@ -904,7 +922,7 @@ async function checkOpenFDAAdverseEvents(drugName, currentMedications) {
       interactions
     };
   } catch (error) {
-    console.error('OpenFDA API error:', error.message);
+    log.error('OpenFDA API error:', error.message);
     return { hasInteraction: false, interactions: [] };
   }
 }
@@ -1061,7 +1079,7 @@ async function checkOpenFDAWarnings(drugName) {
       source: 'openfda'
     };
   } catch (error) {
-    console.warn('OpenFDA API error:', error.message);
+    log.warn('OpenFDA API error:', error.message);
     return null;
   }
 }

@@ -450,7 +450,7 @@ exports.getICalSubscription = asyncHandler(async (req, res) => {
   const { regenerate = 'false' } = req.query;
 
   // Check for existing subscription
-  let integration = await CalendarIntegration.findOne({
+  const integration = await CalendarIntegration.findOne({
     user: req.user.id,
     provider: 'ical'
   });

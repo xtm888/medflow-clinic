@@ -72,8 +72,8 @@ exports.getEmergencyAlerts = asyncHandler(async (req, res) => {
     severity: 'EMERGENCY',
     status: 'active'
   })
-  .sort({ priority: 1, createdAt: -1 })
-  .lean();
+    .sort({ priority: 1, createdAt: -1 })
+    .lean();
 
   res.json({
     success: true,
@@ -97,9 +97,9 @@ exports.getExamAlerts = async (req, res) => {
       exam: examId,
       status: { $in: ['active', 'acknowledged'] }
     })
-    .sort({ priority: 1, createdAt: -1 })
-    .populate('acknowledgedBy', 'firstName lastName')
-    .lean();
+      .sort({ priority: 1, createdAt: -1 })
+      .populate('acknowledgedBy', 'firstName lastName')
+      .lean();
 
     // Group by severity
     const grouped = {
@@ -161,8 +161,8 @@ exports.evaluateExamAlerts = async (req, res) => {
       _id: { $ne: examId },
       status: 'completed'
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Use provided examData or fall back to exam document
     const dataToEvaluate = examData || exam.toObject();
@@ -183,8 +183,8 @@ exports.evaluateExamAlerts = async (req, res) => {
       exam: examId,
       status: { $in: ['active', 'acknowledged'] }
     })
-    .sort({ priority: 1, createdAt: -1 })
-    .lean();
+      .sort({ priority: 1, createdAt: -1 })
+      .lean();
 
     const hasBlockingAlerts = allAlerts.some(a => a.severity === 'EMERGENCY' && a.status === 'active');
 
@@ -236,8 +236,8 @@ exports.reEvaluateExamAlerts = async (req, res) => {
       _id: { $ne: examId },
       status: 'completed'
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     const dataToEvaluate = examData || exam.toObject();
 
@@ -257,8 +257,8 @@ exports.reEvaluateExamAlerts = async (req, res) => {
       exam: examId,
       status: { $in: ['active', 'acknowledged'] }
     })
-    .sort({ priority: 1, createdAt: -1 })
-    .lean();
+      .sort({ priority: 1, createdAt: -1 })
+      .lean();
 
     res.json({
       success: true,

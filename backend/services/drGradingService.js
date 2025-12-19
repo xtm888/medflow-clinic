@@ -1,3 +1,6 @@
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('DrGrading');
 /**
  * Diabetic Retinopathy Grading Service
  * ETDRS (Early Treatment Diabetic Retinopathy Study) classification
@@ -94,7 +97,7 @@ function calculateDRGrade(findings) {
       followUp: gradeInfo.followUp,
       referrals: [
         ...(gradeInfo.referPRP ? ['Retina specialist for panretinal photocoagulation (PRP)'] : []),
-        ...(gradeInfo.referSurgery ? ['Vitreoretinal surgeon for surgical evaluation'] : []),
+        ...(gradeInfo.referSurgery ? ['Vitreoretinal surgeon for surgical evaluation'] : [])
       ],
       severity: grade >= 61 ? 'PDR' : grade >= 35 ? 'NPDR' : grade === 20 ? 'Minimal NPDR' : 'None',
       isProliferative: grade >= 61,
@@ -107,7 +110,7 @@ function calculateDRGrade(findings) {
       }
     };
   } catch (error) {
-    console.error('Error calculating DR grade:', error);
+    log.error('Error calculating DR grade:', { error: error });
     throw new Error(`DR grading failed: ${error.message}`);
   }
 }
@@ -200,7 +203,7 @@ function assessDME(findings, octData = null) {
       ] : []
     };
   } catch (error) {
-    console.error('Error assessing DME:', error);
+    log.error('Error assessing DME:', { error: error });
     throw new Error(`DME assessment failed: ${error.message}`);
   }
 }
@@ -270,7 +273,7 @@ async function generateDRAlert(patientId, drGrade, dmeStatus, eye) {
       severity = 'WARNING';
       code = 'DR_MODERATELY_SEVERE_NPDR';
       title = `Moderately Severe NPDR - ${eye}`;
-      message = `Approaching severe NPDR (4-2-1 rule). Increased monitoring required.`;
+      message = 'Approaching severe NPDR (4-2-1 rule). Increased monitoring required.';
       recommendedActions.push(
         { action: 'Follow-up in 4 months', priority: 1 },
         { action: 'Consider retina specialist consultation', priority: 2 },
@@ -314,7 +317,7 @@ async function generateDRAlert(patientId, drGrade, dmeStatus, eye) {
       dmeStatus
     };
   } catch (error) {
-    console.error('Error generating DR alert:', error);
+    log.error('Error generating DR alert:', { error: error });
     throw new Error(`Failed to generate DR alert: ${error.message}`);
   }
 }
@@ -335,7 +338,7 @@ async function performDRAssessment(patientId, findings, eye, examId, octData = n
       assessmentDate: new Date()
     };
   } catch (error) {
-    console.error('Error in DR assessment:', error);
+    log.error('Error in DR assessment:', { error: error });
     throw new Error(`DR assessment failed: ${error.message}`);
   }
 }

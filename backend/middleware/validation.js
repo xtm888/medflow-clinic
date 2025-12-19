@@ -54,17 +54,30 @@ const sanitizeString = (value) => {
 
 const validateLogin = [
   body('email')
+    .optional()
     .trim()
     .isEmail()
     .withMessage('Adresse email invalide')
     .normalizeEmail()
     .isLength({ max: 254 })
     .withMessage('Email trop long'),
+  body('username')
+    .optional()
+    .trim()
+    .isLength({ min: 3, max: 50 })
+    .withMessage('Nom d\'utilisateur invalide'),
   body('password')
     .notEmpty()
     .withMessage('Mot de passe requis')
     .isLength({ min: 6, max: 128 })
     .withMessage('Mot de passe invalide'),
+  // Custom validator: at least email or username required
+  body().custom((_, { req }) => {
+    if (!req.body.email && !req.body.username) {
+      throw new Error('Email ou nom d\'utilisateur requis');
+    }
+    return true;
+  }),
   handleValidationErrors
 ];
 

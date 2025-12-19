@@ -188,10 +188,10 @@ exports.getIOPTrends = async (req, res) => {
       createdAt: { $gte: startDate },
       'tonometry.OD': { $exists: true }
     })
-    .select('createdAt tonometry')
-    .sort({ createdAt: 1 })
-    .limit(parseInt(limit))
-    .lean();
+      .select('createdAt tonometry')
+      .sort({ createdAt: 1 })
+      .limit(parseInt(limit))
+      .lean();
 
     const dataPoints = exams.map(exam => {
       const odIOP = extractIOP(exam.tonometry, 'OD');
@@ -278,10 +278,10 @@ exports.getVisualAcuityTrends = async (req, res) => {
       createdAt: { $gte: startDate },
       'visualAcuity.distance': { $exists: true }
     })
-    .select('createdAt visualAcuity')
-    .sort({ createdAt: 1 })
-    .limit(parseInt(limit))
-    .lean();
+      .select('createdAt visualAcuity')
+      .sort({ createdAt: 1 })
+      .limit(parseInt(limit))
+      .lean();
 
     const dataPoints = exams.map(exam => {
       const odVA = extractVA(exam.visualAcuity, 'OD', type);
@@ -315,7 +315,7 @@ exports.getVisualAcuityTrends = async (req, res) => {
         // Positive change in LogMAR = worsening vision
         trend: odLogMAR.length >= 2 ?
           (odLogMAR[odLogMAR.length - 1] - odLogMAR[0] > 0.1 ? 'worsening' :
-           odLogMAR[odLogMAR.length - 1] - odLogMAR[0] < -0.1 ? 'improving' : 'stable') :
+            odLogMAR[odLogMAR.length - 1] - odLogMAR[0] < -0.1 ? 'improving' : 'stable') :
           'insufficient_data'
       },
       OS: {
@@ -325,7 +325,7 @@ exports.getVisualAcuityTrends = async (req, res) => {
         latestLogMAR: osLogMAR.length ? osLogMAR[osLogMAR.length - 1] : null,
         trend: osLogMAR.length >= 2 ?
           (osLogMAR[osLogMAR.length - 1] - osLogMAR[0] > 0.1 ? 'worsening' :
-           osLogMAR[osLogMAR.length - 1] - osLogMAR[0] < -0.1 ? 'improving' : 'stable') :
+            osLogMAR[osLogMAR.length - 1] - osLogMAR[0] < -0.1 ? 'improving' : 'stable') :
           'insufficient_data'
       }
     };
@@ -388,10 +388,10 @@ exports.getCupDiscTrends = async (req, res) => {
         { 'posteriorSegment.OS': { $exists: true } }
       ]
     })
-    .select('createdAt fundus posteriorSegment')
-    .sort({ createdAt: 1 })
-    .limit(parseInt(limit))
-    .lean();
+      .select('createdAt fundus posteriorSegment')
+      .sort({ createdAt: 1 })
+      .limit(parseInt(limit))
+      .lean();
 
     const dataPoints = exams.map(exam => {
       const fundusData = exam.fundus || exam.posteriorSegment || {};
@@ -493,10 +493,10 @@ exports.getRefractionTrends = async (req, res) => {
         { 'refraction.OS': { $exists: true } }
       ]
     })
-    .select('createdAt refraction')
-    .sort({ createdAt: 1 })
-    .limit(parseInt(limit))
-    .lean();
+      .select('createdAt refraction')
+      .sort({ createdAt: 1 })
+      .limit(parseInt(limit))
+      .lean();
 
     const dataPoints = exams.map(exam => {
       const odRef = extractRefraction(exam.refraction, 'OD');
@@ -530,7 +530,7 @@ exports.getRefractionTrends = async (req, res) => {
         change: odSE.length >= 2 ? (odSE[odSE.length - 1] - odSE[0]).toFixed(2) : null,
         trend: odSE.length >= 2 ?
           (odSE[odSE.length - 1] - odSE[0] < -0.5 ? 'myopia_progression' :
-           odSE[odSE.length - 1] - odSE[0] > 0.5 ? 'hyperopia_progression' : 'stable') :
+            odSE[odSE.length - 1] - odSE[0] > 0.5 ? 'hyperopia_progression' : 'stable') :
           'insufficient_data'
       },
       OS: {
@@ -542,7 +542,7 @@ exports.getRefractionTrends = async (req, res) => {
         change: osSE.length >= 2 ? (osSE[osSE.length - 1] - osSE[0]).toFixed(2) : null,
         trend: osSE.length >= 2 ?
           (osSE[osSE.length - 1] - osSE[0] < -0.5 ? 'myopia_progression' :
-           osSE[osSE.length - 1] - osSE[0] > 0.5 ? 'hyperopia_progression' : 'stable') :
+            osSE[osSE.length - 1] - osSE[0] > 0.5 ? 'hyperopia_progression' : 'stable') :
           'insufficient_data'
       }
     };
@@ -610,10 +610,10 @@ exports.getPachymetryTrends = async (req, res) => {
         { 'pachymetry.OS': { $exists: true } }
       ]
     })
-    .select('createdAt pachymetry')
-    .sort({ createdAt: 1 })
-    .limit(parseInt(limit))
-    .lean();
+      .select('createdAt pachymetry')
+      .sort({ createdAt: 1 })
+      .limit(parseInt(limit))
+      .lean();
 
     const dataPoints = exams.map(exam => {
       const extractPachy = (eye) => {
@@ -706,9 +706,9 @@ exports.getAllTrends = async (req, res) => {
       patient: patientId,
       createdAt: { $gte: startDate }
     })
-    .select('createdAt tonometry visualAcuity fundus posteriorSegment refraction pachymetry')
-    .sort({ createdAt: 1 })
-    .lean();
+      .select('createdAt tonometry visualAcuity fundus posteriorSegment refraction pachymetry')
+      .sort({ createdAt: 1 })
+      .lean();
 
     // Process each type of data
     const iop = exams.map(exam => ({
@@ -770,8 +770,8 @@ exports.getTrendSummary = async (req, res) => {
       patient: patientId,
       status: 'completed'
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     if (!latestExam) {
       return res.json({
@@ -789,8 +789,8 @@ exports.getTrendSummary = async (req, res) => {
       _id: { $ne: latestExam._id },
       status: 'completed'
     })
-    .sort({ createdAt: -1 })
-    .lean();
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Extract latest values
     const summary = {

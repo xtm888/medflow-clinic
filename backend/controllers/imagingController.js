@@ -742,8 +742,8 @@ exports.getFileInfo = asyncHandler(async (req, res) => {
         info.height = metadata.height;
         info.format = metadata.format;
       } catch (e) {
-        // Ignore if we can't get image metadata
-      }
+      log.debug('Suppressed error', { error: e.message });
+    }
     }
 
     return success(res, { data: info });
@@ -806,8 +806,8 @@ exports.listDirectoryFiles = asyncHandler(async (req, res) => {
                 modifiedAt: stat.mtime
               });
             } catch (e) {
-              // Skip files we can't read
-            }
+      log.debug('Suppressed error', { error: e.message });
+    }
           }
         }
       }
@@ -850,7 +850,7 @@ function formatFileSize(bytes) {
   const k = 1024;
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
 module.exports = exports;

@@ -100,7 +100,7 @@ function validateMountPath(mountPath) {
 
   // Only allow specific base directories
   const allowedBases = ['/tmp/medflow_mounts', '/Volumes'];
-  const isAllowed = allowedBases.some(base => normalized.startsWith(base + '/') || normalized === base);
+  const isAllowed = allowedBases.some(base => normalized.startsWith(`${base}/`) || normalized === base);
 
   if (!isAllowed) {
     throw new Error('Mount path must be in allowed directory (/tmp/medflow_mounts or /Volumes)');

@@ -12,6 +12,9 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const { sessionStore, isRedisConnected } = require('../config/redis');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Session');
+
 // Session configuration
 const SESSION_CONFIG = {
   // Session TTL in seconds (24 hours by default)
@@ -21,7 +24,7 @@ const SESSION_CONFIG = {
   // Maximum concurrent sessions per user
   maxConcurrentSessions: parseInt(process.env.MAX_SESSIONS) || 5,
   // Session inactivity timeout (2 hours)
-  inactivityTimeout: 2 * 60 * 60,
+  inactivityTimeout: 2 * 60 * 60
 };
 
 /**
@@ -42,7 +45,7 @@ async function createSession(user, options = {}) {
   const {
     rememberMe = false,
     deviceInfo = {},
-    ipAddress = null,
+    ipAddress = null
   } = options;
 
   const sessionId = generateSessionId();
@@ -53,11 +56,11 @@ async function createSession(user, options = {}) {
     {
       id: user._id,
       sessionId,
-      role: user.role,
+      role: user.role
     },
     process.env.JWT_SECRET,
     {
-      expiresIn: ttl,
+      expiresIn: ttl
     }
   );
 
@@ -66,11 +69,11 @@ async function createSession(user, options = {}) {
     {
       id: user._id,
       sessionId,
-      type: 'refresh',
+      type: 'refresh'
     },
     process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET,
     {
-      expiresIn: rememberMe ? SESSION_CONFIG.extendedTTL * 2 : SESSION_CONFIG.defaultTTL * 2,
+      expiresIn: rememberMe ? SESSION_CONFIG.extendedTTL * 2 : SESSION_CONFIG.defaultTTL * 2
     }
   );
 
@@ -87,8 +90,8 @@ async function createSession(user, options = {}) {
       userAgent: deviceInfo.userAgent || null,
       platform: deviceInfo.platform || null,
       browser: deviceInfo.browser || null,
-      ip: ipAddress,
-    },
+      ip: ipAddress
+    }
   };
 
   // Store session in Redis
@@ -106,7 +109,7 @@ async function createSession(user, options = {}) {
       token: token.slice(-10), // Store only last 10 chars for reference
       createdAt: new Date(),
       lastActivity: new Date(),
-      device: sessionData.device,
+      device: sessionData.device
     });
 
     // Limit stored sessions in DB
@@ -122,7 +125,7 @@ async function createSession(user, options = {}) {
     refreshToken,
     sessionId,
     expiresIn: ttl,
-    expiresAt: sessionData.expiresAt,
+    expiresAt: sessionData.expiresAt
   };
 }
 
@@ -166,7 +169,7 @@ async function validateSession(sessionId) {
 
     return session;
   } catch (error) {
-    console.error('Session validation error:', error.message);
+    log.error('Session validation error:', error.message);
     return null;
   }
 }
@@ -194,7 +197,7 @@ async function updateActivity(sessionId) {
       }
     }
   } catch (error) {
-    console.error('Update activity error:', error.message);
+    log.error('Update activity error:', error.message);
   }
 }
 
@@ -305,7 +308,7 @@ async function getUserSessions(userId) {
           ...sessionData,
           lastActivity: redisSession.lastActivity,
           expiresAt: redisSession.expiresAt,
-          isActive: true,
+          isActive: true
         };
       } else {
         sessionData.isActive = false;
@@ -356,13 +359,13 @@ async function refreshSession(refreshToken) {
       {
         id: user._id,
         sessionId: decoded.sessionId,
-        role: user.role,
+        role: user.role
       },
       process.env.JWT_SECRET,
       {
         expiresIn: session.rememberMe
           ? SESSION_CONFIG.extendedTTL
-          : SESSION_CONFIG.defaultTTL,
+          : SESSION_CONFIG.defaultTTL
       }
     );
 
@@ -371,10 +374,10 @@ async function refreshSession(refreshToken) {
 
     return {
       token,
-      sessionId: decoded.sessionId,
+      sessionId: decoded.sessionId
     };
   } catch (error) {
-    console.error('Refresh session error:', error.message);
+    log.error('Refresh session error:', error.message);
     return null;
   }
 }
@@ -391,13 +394,13 @@ async function sessionMiddleware(req, res, next) {
       return res.status(401).json({
         success: false,
         error: 'Session expired or invalid',
-        code: 'SESSION_EXPIRED',
+        code: 'SESSION_EXPIRED'
       });
     }
 
     // Update activity (non-blocking)
     updateActivity(req.user.sessionId).catch(err => {
-      console.error('Activity update error:', err.message);
+      log.error('Activity update error:', err.message);
     });
   }
 
@@ -426,10 +429,10 @@ async function invalidateSessionsByRole(role) {
       { $inc: { tokenVersion: 1 } }
     );
 
-    console.log(`✓ Invalidated ${userIds.length} sessions for role: ${role}`);
+    log.info(`✓ Invalidated ${userIds.length} sessions for role: ${role}`);
     return { invalidated: userIds.length };
   } catch (error) {
-    console.error('Session invalidation error:', error);
+    log.error('Session invalidation error:', { error: error });
     throw error;
   }
 }
@@ -446,5 +449,5 @@ module.exports = {
   getUserSessions,
   refreshSession,
   sessionMiddleware,
-  invalidateSessionsByRole,
+  invalidateSessionsByRole
 };

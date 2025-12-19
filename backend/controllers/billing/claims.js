@@ -10,7 +10,7 @@ const { asyncHandler } = require('../../middleware/errorHandler');
 exports.getClaims = asyncHandler(async (req, res) => {
   const { page = 1, limit = 20, status, provider, patientId } = req.query;
 
-  let query = {};
+  const query = {};
   if (status) query.status = status;
   if (provider) {
     // Escape special regex characters to prevent ReDoS/injection attacks

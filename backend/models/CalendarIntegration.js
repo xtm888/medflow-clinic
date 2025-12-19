@@ -337,7 +337,7 @@ function encryptToken(text) {
     const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return 'enc:' + iv.toString('hex') + ':' + encrypted;
+    return `enc:${iv.toString('hex')}:${encrypted}`;
   } catch (error) {
     console.error('Token encryption error:', error);
     return text; // Return unencrypted on error (dev mode)

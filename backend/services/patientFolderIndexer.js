@@ -15,6 +15,66 @@ const Patient = require('../models/Patient');
 const Device = require('../models/Device');
 const Document = require('../models/Document');
 const websocketService = require('./websocketService');
+const { validateMountPath } = require('../utils/shellSecurity');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('PatientFolderIndexer');
+
+// Allowed base directories for folder indexing (prevent arbitrary filesystem access)
+const ALLOWED_BASE_PATHS = [
+  '/Volumes',
+  '/tmp/medflow_mounts',
+  '/mnt',
+  '/Users' // For development
+];
+
+/**
+ * Validate that a path is safe for indexing (no traversal, within allowed dirs)
+ * @param {string} folderPath - Path to validate
+ * @returns {string} - Validated and normalized path
+ * @throws {Error} - If path is unsafe
+ */
+function validateFolderPath(folderPath) {
+  if (!folderPath || typeof folderPath !== 'string') {
+    throw new Error('Invalid folder path');
+  }
+
+  // Normalize the path to resolve . and ..
+  const normalizedPath = path.normalize(folderPath);
+
+  // Check for path traversal attempts
+  if (normalizedPath.includes('..') || folderPath.includes('..')) {
+    throw new Error('Path traversal detected - ".." not allowed');
+  }
+
+  // Ensure path is absolute
+  if (!path.isAbsolute(normalizedPath)) {
+    throw new Error('Path must be absolute');
+  }
+
+  // Check if path starts with an allowed base directory
+  const isAllowed = ALLOWED_BASE_PATHS.some(base =>
+    normalizedPath.startsWith(base + '/') || normalizedPath === base
+  );
+
+  if (!isAllowed) {
+    throw new Error(`Path not in allowed directories: ${ALLOWED_BASE_PATHS.join(', ')}`);
+  }
+
+  // Additional security: prevent access to sensitive system paths
+  const BLOCKED_PATHS = [
+    '/etc', '/var', '/usr', '/bin', '/sbin', '/lib', '/root',
+    '/private/etc', '/private/var', '/System'
+  ];
+
+  for (const blocked of BLOCKED_PATHS) {
+    if (normalizedPath.startsWith(blocked + '/') || normalizedPath === blocked) {
+      throw new Error('Access to system directories not allowed');
+    }
+  }
+
+  return normalizedPath;
+}
 
 // Common patterns for identifying patient folders
 const PATIENT_FOLDER_PATTERNS = {
@@ -70,7 +130,7 @@ class PatientFolderIndexer {
         active: true
       });
 
-      console.log(`[FolderIndexer] Starting index of ${devices.length} devices`);
+      log.info(`Starting index of ${devices.length} devices`);
 
       for (const device of devices) {
         await this.indexDeviceFolder(device, options);
@@ -79,7 +139,7 @@ class PatientFolderIndexer {
       }
 
       this.stats.lastIndexTime = new Date();
-      console.log(`[FolderIndexer] Indexing complete in ${Date.now() - startTime}ms`);
+      log.info(`Indexing complete in ${Date.now() - startTime}ms`);
 
       return {
         success: true,
@@ -88,7 +148,7 @@ class PatientFolderIndexer {
       };
 
     } catch (error) {
-      console.error('[FolderIndexer] Indexing error:', error);
+      log.error('[FolderIndexer] Indexing error:', { error: error });
       return { error: error.message };
     } finally {
       this.indexing = false;
@@ -103,19 +163,27 @@ class PatientFolderIndexer {
                        device.integration?.folderSync?.sharedFolderPath;
 
     if (!folderPath) {
-      console.log(`[FolderIndexer] No folder path for ${device.name}`);
+      log.info(`No folder path for ${device.name}`);
       return;
     }
 
     // Convert SMB path to local path if needed
-    const localPath = this.smbToLocalPath(folderPath);
+    let localPath = this.smbToLocalPath(folderPath);
 
-    if (!fs.existsSync(localPath)) {
-      console.log(`[FolderIndexer] Path not accessible: ${localPath}`);
+    // SECURITY: Validate path to prevent traversal attacks
+    try {
+      localPath = validateFolderPath(localPath);
+    } catch (error) {
+      log.error(`[FolderIndexer] Security: Invalid path for ${device.name}: ${error.message}`);
       return;
     }
 
-    console.log(`[FolderIndexer] Indexing ${device.name} at ${localPath}`);
+    if (!fs.existsSync(localPath)) {
+      log.info(`Path not accessible: ${localPath}`);
+      return;
+    }
+
+    log.info(`Indexing ${device.name} at ${localPath}`);
 
     const deviceType = this.normalizeDeviceType(device.type, device.name);
 
@@ -139,7 +207,7 @@ class PatientFolderIndexer {
     try {
       items = await fs.promises.readdir(folderPath, { withFileTypes: true });
     } catch (error) {
-      console.log(`[FolderIndexer] Cannot read: ${folderPath}`);
+      log.info(`Cannot read: ${folderPath}`);
       return;
     }
 
@@ -458,7 +526,7 @@ class PatientFolderIndexer {
     await patient.save({ validateBeforeSave: false });
     this.stats.patientsLinked++;
 
-    console.log(`[FolderIndexer] Linked ${folderPath} to patient ${patient.patientId}`);
+    log.info(`Linked ${folderPath} to patient ${patient.patientId}`);
   }
 
   /**
@@ -598,19 +666,27 @@ class PatientFolderIndexer {
    * Manually link a folder to a patient
    */
   async manualLinkFolder(folderPath, patientId, deviceType, userId) {
+    // SECURITY: Validate path to prevent traversal attacks
+    let validatedPath;
+    try {
+      validatedPath = validateFolderPath(folderPath);
+    } catch (error) {
+      throw new Error(`Invalid folder path: ${error.message}`);
+    }
+
     const patient = await Patient.findById(patientId);
     if (!patient) {
       throw new Error('Patient not found');
     }
 
-    const folderName = path.basename(folderPath);
+    const folderName = path.basename(validatedPath);
 
     if (!patient.folderIds) {
       patient.folderIds = [];
     }
 
     // Check if already linked
-    const existing = patient.folderIds.find(f => f.path === folderPath);
+    const existing = patient.folderIds.find(f => f.path === validatedPath);
     if (existing) {
       return { message: 'Folder already linked', patient };
     }
@@ -618,7 +694,7 @@ class PatientFolderIndexer {
     patient.folderIds.push({
       deviceType: deviceType || 'other',
       folderId: folderName,
-      path: folderPath,
+      path: validatedPath,
       linkedAt: new Date(),
       linkedBy: userId
     });
@@ -626,9 +702,9 @@ class PatientFolderIndexer {
     await patient.save({ validateBeforeSave: false });
 
     // Remove from unmatched queue
-    this.unmatchedQueue = this.unmatchedQueue.filter(f => f.path !== folderPath);
+    this.unmatchedQueue = this.unmatchedQueue.filter(f => f.path !== validatedPath);
 
-    console.log(`[FolderIndexer] Manual link: ${folderPath} -> ${patient.patientId}`);
+    log.info(`Manual link: ${validatedPath} -> ${patient.patientId}`);
 
     return { message: 'Folder linked successfully', patient };
   }
@@ -637,8 +713,17 @@ class PatientFolderIndexer {
    * Find patient by folder path (used during file sync)
    */
   async findPatientByFolderPath(filePath) {
+    // SECURITY: Validate path to prevent traversal attacks
+    let validatedPath;
+    try {
+      validatedPath = validateFolderPath(filePath);
+    } catch (error) {
+      log.error(`[FolderIndexer] Security: Invalid file path: ${error.message}`);
+      return null;
+    }
+
     // Traverse up from file to find matching patient folder
-    let currentPath = path.dirname(filePath);
+    let currentPath = path.dirname(validatedPath);
     let maxDepth = 5;
 
     while (maxDepth > 0 && currentPath !== '/') {

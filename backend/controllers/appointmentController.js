@@ -990,7 +990,7 @@ exports.getAppointmentStatistics = asyncHandler(async (req, res, next) => {
           $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] }
         },
         noShow: {
-          $sum: { $cond: [{ $eq: ['$status', 'no-show'] }, 1, 0] }
+          $sum: { $cond: [{ $eq: ['$status', 'no_show'] }, 1, 0] }
         },
         avgWaitingTime: { $avg: '$waitingTime' }
       }
@@ -1351,7 +1351,7 @@ function normalizeTimeString(timeStr) {
   if (/^\d{2}:\d{2}$/.test(timeStr)) return timeStr;
 
   // Handle "H:MM" format - add leading zero
-  if (/^\d:\d{2}$/.test(timeStr)) return '0' + timeStr;
+  if (/^\d:\d{2}$/.test(timeStr)) return `0${timeStr}`;
 
   // Handle "HH:MM:SS" format - strip seconds
   if (/^\d{2}:\d{2}:\d{2}$/.test(timeStr)) return timeStr.slice(0, 5);
@@ -1366,7 +1366,7 @@ function normalizeTimeString(timeStr) {
     if (period === 'PM' && hours !== 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
 
-    return String(hours).padStart(2, '0') + ':' + minutes;
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
   }
 
   // Return original if no pattern matched
@@ -1625,7 +1625,7 @@ exports.createRecurring = asyncHandler(async (req, res, next) => {
   appointments.push(parentAppointment);
 
   // Generate recurring appointments
-  let currentDate = new Date(appointmentData.date);
+  const currentDate = new Date(appointmentData.date);
   let count = 1;
 
   while (count < maxOccurrences) {

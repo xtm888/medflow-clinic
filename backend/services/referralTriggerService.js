@@ -6,6 +6,9 @@
 const ClinicalAlert = require('../models/ClinicalAlert');
 const Patient = require('../models/Patient');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ReferralTrigger');
+
 /**
  * Referral Trigger Rules by Specialty
  */
@@ -409,7 +412,7 @@ async function generateReferralDocument(patientId, referralData, referringPhysic
 
     return referralDoc;
   } catch (error) {
-    console.error('Error generating referral document:', error);
+    log.error('Error generating referral document:', { error: error });
     throw new Error(`Failed to generate referral: ${error.message}`);
   }
 }
@@ -454,7 +457,7 @@ async function createReferralAlert(patientId, referral) {
 
     return alert;
   } catch (error) {
-    console.error('Error creating referral alert:', error);
+    log.error('Error creating referral alert:', { error: error });
     throw new Error(`Failed to create referral alert: ${error.message}`);
   }
 }
@@ -505,7 +508,7 @@ async function processReferralTriggers(patientId, clinicalData, examiningPhysici
       message: `${triggeredReferrals.length} specialist referral(s) recommended.`
     };
   } catch (error) {
-    console.error('Error processing referral triggers:', error);
+    log.error('Error processing referral triggers:', { error: error });
     throw new Error(`Referral processing failed: ${error.message}`);
   }
 }

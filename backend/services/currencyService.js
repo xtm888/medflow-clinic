@@ -6,6 +6,9 @@
 
 const axios = require('axios');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Currency');
+
 class CurrencyService {
   constructor() {
     // Supported currencies
@@ -76,18 +79,18 @@ class CurrencyService {
           return this.rateCache.rates;
         }
       } catch (error) {
-        console.warn(`Exchange rate API ${source.name} failed:`, error.message);
+        log.warn(`Exchange rate API ${source.name} failed:`, error.message);
       }
     }
 
     // All APIs failed, use fallback rates
-    console.warn('All exchange rate APIs failed, using fallback rates');
+    log.warn('All exchange rate APIs failed, using fallback rates');
     return this.getFallbackRates();
   }
 
   async fetchFromSource(source, baseCurrency) {
     let url;
-    let headers = {};
+    const headers = {};
 
     switch (source.name) {
       case 'exchangerate-api':
@@ -223,7 +226,7 @@ class CurrencyService {
       // Get rate with fallback to prevent division by zero
       const rate = rates[currency] || this.fallbackRates[currency] || 1;
       if (rate === 0) {
-        console.warn(`Invalid rate for ${currency}, using fallback`);
+        log.warn(`Invalid rate for ${currency}, using fallback`);
         continue;
       }
 

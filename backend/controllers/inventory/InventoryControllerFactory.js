@@ -124,12 +124,12 @@ class InventoryControllerFactory {
       const processedItems = this.postProcessItems
         ? this.postProcessItems(items)
         : items.map(item => ({
-            ...item,
-            inventory: {
-              ...item.inventory,
-              available: (item.inventory?.currentStock || 0) - (item.inventory?.reserved || 0)
-            }
-          }));
+          ...item,
+          inventory: {
+            ...item.inventory,
+            available: (item.inventory?.currentStock || 0) - (item.inventory?.reserved || 0)
+          }
+        }));
 
       res.json({
         success: true,

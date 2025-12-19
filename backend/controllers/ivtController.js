@@ -4,7 +4,7 @@ const Visit = require('../models/Visit');
 const Appointment = require('../models/Appointment');
 const Invoice = require('../models/Invoice');
 const FeeSchedule = require('../models/FeeSchedule');
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { Inventory, PharmacyInventory } = require('../models/Inventory');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const { asyncHandler } = require('../middleware/errorHandler');
 

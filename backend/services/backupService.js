@@ -6,6 +6,9 @@ const execAsync = promisify(exec);
 const crypto = require('crypto');
 const CONSTANTS = require('../config/constants');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Backup');
+
 /**
  * Automated Backup Service
  *
@@ -48,9 +51,9 @@ class BackupService {
       await fs.mkdir(path.join(this.backupDir, 'daily'), { recursive: true });
       await fs.mkdir(path.join(this.backupDir, 'monthly'), { recursive: true });
       await fs.mkdir(path.join(this.backupDir, 'yearly'), { recursive: true });
-      console.log('✅ Backup directories initialized');
+      log.info('✅ Backup directories initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize backup directories:', error);
+      log.error('❌ Failed to initialize backup directories:', { error: error });
       throw error;
     }
   }
@@ -60,7 +63,7 @@ class BackupService {
    */
   async createBackup(type = 'daily') {
     const startTime = Date.now();
-    console.log(`Starting ${type} backup...`);
+    log.info(`Starting ${type} backup...`);
 
     try {
       // Ensure directories exist
@@ -71,16 +74,16 @@ class BackupService {
       const backupPath = path.join(this.backupDir, type, backupName);
 
       // Step 1: Create MongoDB dump
-      console.log('Creating MongoDB dump...');
+      log.info('Creating MongoDB dump...');
       await this.createMongoDump(backupPath);
 
       // Step 2: Compress backup
-      console.log('Compressing backup...');
+      log.info('Compressing backup...');
       await this.compressBackup(backupPath);
 
       // Step 3: Encrypt backup (MANDATORY in production)
       if (this.encryptionKey) {
-        console.log('Encrypting backup...');
+        log.info('Encrypting backup...');
         await this.encryptBackup(`${backupPath}.tar.gz`);
       } else if (process.env.NODE_ENV === 'production') {
         // In production, unencrypted backups containing PHI are not allowed
@@ -89,11 +92,11 @@ class BackupService {
           'Backups contain PHI and must be encrypted. Set BACKUP_ENCRYPTION_KEY environment variable.'
         );
       } else {
-        console.warn('⚠️  Backup encryption disabled - BACKUP_ENCRYPTION_KEY not set (OK for development only)');
+        log.warn('⚠️  Backup encryption disabled - BACKUP_ENCRYPTION_KEY not set (OK for development only)');
       }
 
       // Step 4: Verify backup integrity
-      console.log('Verifying backup...');
+      log.info('Verifying backup...');
       const finalPath = this.encryptionKey ? `${backupPath}.tar.gz.enc` : `${backupPath}.tar.gz`;
       await this.verifyBackup(finalPath);
 
@@ -102,12 +105,12 @@ class BackupService {
 
       // Step 6: Upload to cloud if configured
       if (process.env.BACKUP_CLOUD_ENABLED === 'true') {
-        console.log('Uploading to cloud...');
+        log.info('Uploading to cloud...');
         await this.uploadToCloud(finalPath, type);
       }
 
       // Step 7: Clean old backups
-      console.log('Cleaning old backups...');
+      log.info('Cleaning old backups...');
       await this.cleanOldBackups(type);
 
       // Update statistics
@@ -117,7 +120,7 @@ class BackupService {
       this.stats.lastBackupSize = backupSize;
       this.stats.lastBackupDuration = duration;
 
-      console.log(`✅ ${type} backup completed successfully in ${duration}ms`);
+      log.info(`✅ ${type} backup completed successfully in ${duration}ms`);
 
       return {
         success: true,
@@ -132,7 +135,7 @@ class BackupService {
 
     } catch (error) {
       this.stats.totalBackupsFailed++;
-      console.error(`❌ ${type} backup failed:`, error);
+      log.error(`❌ ${type} backup failed:`, { error: error });
       throw error;
     }
   }
@@ -156,12 +159,12 @@ class BackupService {
       });
 
       if (stderr && !stderr.includes('writing')) {
-        console.warn('mongodump warnings:', stderr);
+        log.warn('mongodump warnings:', { data: stderr });
       }
 
       return stdout;
     } catch (error) {
-      console.error('mongodump error:', error.message);
+      log.error('mongodump error:', error.message);
       throw new Error(`MongoDB dump failed: ${error.message}`);
     }
   }
@@ -309,20 +312,20 @@ class BackupService {
         for (const file of filesToDelete) {
           const filePath = path.join(typeDir, file);
           await fs.unlink(filePath);
-          console.log(`Deleted old backup: ${file}`);
+          log.info(`Deleted old backup: ${file}`);
 
           // Also delete checksum file if exists
           try {
             await fs.unlink(`${filePath}.checksum`);
           } catch (error) {
-            // Checksum file might not exist
-          }
+      log.debug('Suppressed error', { error: error.message });
+    }
         }
 
-        console.log(`Cleaned ${filesToDelete.length} old ${type} backup(s)`);
+        log.info(`Cleaned ${filesToDelete.length} old ${type} backup(s)`);
       }
     } catch (error) {
-      console.error(`Failed to clean old backups: ${error.message}`);
+      log.error(`Failed to clean old backups: ${error.message}`);
       // Don't throw - cleanup failure shouldn't fail the backup
     }
   }
@@ -342,7 +345,7 @@ class BackupService {
         throw new Error(`Unsupported cloud provider: ${provider}`);
       }
     } catch (error) {
-      console.error('Cloud upload failed:', error.message);
+      log.error('Cloud upload failed:', error.message);
       // Don't throw - cloud upload failure shouldn't fail the backup
     }
   }
@@ -353,7 +356,7 @@ class BackupService {
   async uploadToS3(filePath, type) {
     // Placeholder for S3 upload implementation
     // Would use AWS SDK here
-    console.log(`[S3] Uploading ${path.basename(filePath)} to bucket...`);
+    log.info(`Uploading ${path.basename(filePath)} to bucket...`);
 
     // const AWS = require('aws-sdk');
     // const s3 = new AWS.S3();
@@ -370,7 +373,7 @@ class BackupService {
    */
   async uploadToAzure(filePath, type) {
     // Placeholder for Azure upload implementation
-    console.log(`[Azure] Uploading ${path.basename(filePath)} to blob storage...`);
+    log.info(`Uploading ${path.basename(filePath)} to blob storage...`);
 
     // const { BlobServiceClient } = require('@azure/storage-blob');
     // const blobServiceClient = BlobServiceClient.fromConnectionString(
@@ -387,7 +390,7 @@ class BackupService {
    * Restore backup
    */
   async restoreBackup(backupName, options = {}) {
-    console.log(`Starting backup restoration: ${backupName}`);
+    log.info(`Starting backup restoration: ${backupName}`);
     const startTime = Date.now();
 
     try {
@@ -411,17 +414,17 @@ class BackupService {
 
       // Decrypt if encrypted
       if (backupPath.endsWith('.enc')) {
-        console.log('Decrypting backup...');
+        log.info('Decrypting backup...');
         backupPath = await this.decryptBackup(backupPath);
       }
 
       // Decompress
-      console.log('Decompressing backup...');
+      log.info('Decompressing backup...');
       const extractPath = backupPath.replace('.tar.gz', '');
       await execAsync(`tar -xzf "${backupPath}" -C "${path.dirname(backupPath)}"`);
 
       // Restore MongoDB
-      console.log('Restoring MongoDB...');
+      log.info('Restoring MongoDB...');
       const mongoUri = process.env.MONGODB_URI;
 
       // Safety check
@@ -441,7 +444,7 @@ class BackupService {
       const duration = Date.now() - startTime;
       this.stats.totalRestorations++;
 
-      console.log(`✅ Backup restored successfully in ${duration}ms`);
+      log.info(`✅ Backup restored successfully in ${duration}ms`);
 
       return {
         success: true,
@@ -451,7 +454,7 @@ class BackupService {
       };
 
     } catch (error) {
-      console.error('❌ Backup restoration failed:', error);
+      log.error('❌ Backup restoration failed:', { error: error });
       throw error;
     }
   }
@@ -500,7 +503,7 @@ class BackupService {
 
       } catch (error) {
         // Directory might not exist yet
-        console.warn(`Could not list ${type} backups:`, error.message);
+        log.warn(`Could not list ${type} backups:`, error.message);
       }
     }
 
@@ -523,22 +526,22 @@ class BackupService {
    * Test backup system
    */
   async testBackup() {
-    console.log('Testing backup system...');
+    log.info('Testing backup system...');
 
     try {
       // Test 1: Create test backup
-      console.log('1. Creating test backup...');
+      log.info('1. Creating test backup...');
       const result = await this.createBackup('test');
-      console.log('✅ Test backup created');
+      log.info('✅ Test backup created');
 
       // Test 2: Verify backup exists
-      console.log('2. Verifying backup exists...');
+      log.info('2. Verifying backup exists...');
       const backups = await this.listBackups();
-      console.log('✅ Backup verified');
+      log.info('✅ Backup verified');
 
       // Test 3: Test restoration (dry run)
-      console.log('3. Testing restoration...');
-      console.log('⚠️  Skipping actual restoration in test mode');
+      log.info('3. Testing restoration...');
+      log.info('⚠️  Skipping actual restoration in test mode');
 
       return {
         success: true,
@@ -550,7 +553,7 @@ class BackupService {
       };
 
     } catch (error) {
-      console.error('❌ Backup test failed:', error);
+      log.error('❌ Backup test failed:', { error: error });
       return {
         success: false,
         error: error.message

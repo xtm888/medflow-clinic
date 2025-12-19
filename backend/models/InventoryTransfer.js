@@ -441,7 +441,7 @@ inventoryTransferSchema.methods.ship = async function(userId, shippingInfo = {})
           }
         }
       } catch (invError) {
-        console.error(`[TRANSFER] Error deducting from source inventory:`, invError);
+        console.error('[TRANSFER] Error deducting from source inventory:', invError);
         // Continue - don't fail the entire shipment
       }
     }
@@ -508,7 +508,7 @@ inventoryTransferSchema.methods.receive = async function(userId, receivedItems) 
           const Model = inventoryModels[item.inventoryModel];
           if (Model) {
             // Find or create inventory item at destination clinic
-            let destInventory = await Model.findOne({
+            const destInventory = await Model.findOne({
               clinic: this.destination.clinic,
               $or: [
                 { 'product.sku': item.productSku },
@@ -553,7 +553,7 @@ inventoryTransferSchema.methods.receive = async function(userId, receivedItems) 
             }
           }
         } catch (invError) {
-          console.error(`[TRANSFER] Error adding to destination inventory:`, invError);
+          console.error('[TRANSFER] Error adding to destination inventory:', invError);
           // Continue - don't fail the entire receipt
         }
       }

@@ -366,9 +366,9 @@ correspondenceSchema.statics.getPendingFollowUps = async function(userId, daysAh
     'followUp.completed': { $ne: true },
     'followUp.date': { $lte: futureDate }
   })
-  .populate('patient', 'firstName lastName')
-  .populate('createdBy', 'firstName lastName')
-  .sort({ 'followUp.date': 1 });
+    .populate('patient', 'firstName lastName')
+    .populate('createdBy', 'firstName lastName')
+    .sort({ 'followUp.date': 1 });
 };
 
 // Static method to get correspondence history

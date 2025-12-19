@@ -1125,7 +1125,7 @@ exports.previewCoverage = asyncHandler(async (req, res) => {
     }
 
     const categorySettings = company.getCategorySettings(category);
-    let coveragePercentage = categorySettings.percentage ?? baseCoveragePercentage;
+    const coveragePercentage = categorySettings.percentage ?? baseCoveragePercentage;
     let companyShare = Math.round((itemTotal * coveragePercentage) / 100);
 
     const itemWarnings = [];

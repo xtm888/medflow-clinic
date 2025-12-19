@@ -749,6 +749,16 @@ const visitSchema = new mongoose.Schema({
   version: {
     type: Number,
     default: 0
+  },
+
+  // Edit lock - prevents concurrent editing by multiple users
+  editLock: {
+    lockedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    lockedAt: Date,
+    lockExpires: Date
   }
 }, {
   timestamps: true,
@@ -975,7 +985,7 @@ visitSchema.methods.captureConventionSnapshot = async function() {
 
     return this.billing.conventionSnapshot;
   } catch (error) {
-    console.error(`[VISIT] Error capturing convention snapshot:`, error.message);
+    console.error('[VISIT] Error capturing convention snapshot:', error.message);
     return null;
   }
 };
@@ -1067,9 +1077,9 @@ visitSchema.methods.completeVisit = async function(userId) {
     session = await mongoose.startSession();
     await session.startTransaction();
     useTransaction = true;
-    console.log(`[VISIT COMPLETION] Using MongoDB transaction for data consistency`);
+    console.log('[VISIT COMPLETION] Using MongoDB transaction for data consistency');
   } catch (transactionError) {
-    console.warn(`[VISIT COMPLETION] Transactions not available (standalone mode), proceeding without transaction`);
+    console.warn('[VISIT COMPLETION] Transactions not available (standalone mode), proceeding without transaction');
     if (session) {
       session.endSession();
       session = null;
@@ -1143,7 +1153,7 @@ visitSchema.methods.completeVisit = async function(userId) {
         // Clear plan.medications since they're now in a proper Prescription
         this.plan.medications = [];
       } catch (prescriptionError) {
-        console.error(`[VISIT COMPLETION] Error creating prescription from plan.medications:`, prescriptionError.message);
+        console.error('[VISIT COMPLETION] Error creating prescription from plan.medications:', prescriptionError.message);
         // Continue - don't fail visit completion for this
       }
     }
@@ -1197,7 +1207,7 @@ visitSchema.methods.completeVisit = async function(userId) {
     console.log(`[VISIT COMPLETION] Inventory reservation complete: ${successfulReservations} successful, ${failedReservations} failed`);
     if (failedReservations > 0) {
       const failures = reservationResults.filter(r => !r.success);
-      console.warn(`[VISIT COMPLETION] Failed reservations:`, failures);
+      console.warn('[VISIT COMPLETION] Failed reservations:', failures);
     }
 
     // 2. Generate invoice if not already created
@@ -1294,7 +1304,7 @@ visitSchema.methods.completeVisit = async function(userId) {
     };
 
   } catch (error) {
-    console.error(`[VISIT COMPLETION] Error during visit completion:`, error);
+    console.error('[VISIT COMPLETION] Error during visit completion:', error);
 
     // Rollback if using transactions
     if (useTransaction && session) {
@@ -1412,7 +1422,7 @@ visitSchema.methods._createCriticalAlert = async function(message, details) {
     });
     console.error(`[CRITICAL ALERT] ${message}`, details);
   } catch (alertError) {
-    console.error(`[CRITICAL ALERT] Failed to create alert:`, alertError);
+    console.error('[CRITICAL ALERT] Failed to create alert:', alertError);
   }
 };
 
@@ -1518,7 +1528,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
               act.feeScheduleRef = fee._id;
             }
           } catch (err) {
-            console.error(`[Visit.generateInvoice] Error looking up FeeSchedule reference:`, err.message);
+            console.error('[Visit.generateInvoice] Error looking up FeeSchedule reference:', err.message);
           }
 
           visitModified = true;
@@ -1556,7 +1566,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
   // Save the visit if we added any fallback prices
   if (visitModified) {
     await this.save();
-    console.log(`[Visit.generateInvoice] Saved visit with updated clinical act prices`);
+    console.log('[Visit.generateInvoice] Saved visit with updated clinical act prices');
   }
 
   // 2.5 Add device/diagnostic charges (OCT, tonometry, autorefractor, etc.)
@@ -1919,7 +1929,7 @@ visitSchema.statics.getTimeline = async function(patientId, limit = 10) {
 //
 // RACE CONDITION FIX: Uses atomic findOneAndUpdate with conditional update
 // to prevent race conditions when multiple visits are saved concurrently.
-visitSchema.post('save', async function(doc) {
+visitSchema.post('save', async (doc) => {
   try {
     const Patient = require('./Patient');
 
@@ -1980,5 +1990,112 @@ visitSchema.post('save', async function(doc) {
     // Don't throw - this is a non-critical operation
   }
 });
+
+// ==========================================
+// EDIT LOCK METHODS
+// ==========================================
+
+// Lock duration in milliseconds (5 minutes default)
+const LOCK_DURATION_MS = 5 * 60 * 1000;
+
+/**
+ * Acquire edit lock on visit
+ * @param {ObjectId} userId - User acquiring the lock
+ * @param {number} durationMs - Lock duration in ms (default 5 minutes)
+ * @returns {boolean} True if lock acquired
+ */
+visitSchema.methods.acquireLock = async function(userId, durationMs = LOCK_DURATION_MS) {
+  const now = new Date();
+
+  // Check if already locked by another user
+  if (this.editLock?.lockedBy &&
+      this.editLock.lockedBy.toString() !== userId.toString() &&
+      this.editLock.lockExpires > now) {
+    return false; // Lock held by another user
+  }
+
+  // Acquire or extend lock
+  this.editLock = {
+    lockedBy: userId,
+    lockedAt: now,
+    lockExpires: new Date(now.getTime() + durationMs)
+  };
+
+  await this.save();
+  return true;
+};
+
+/**
+ * Release edit lock
+ * @param {ObjectId} userId - User releasing the lock
+ * @returns {boolean} True if lock released
+ */
+visitSchema.methods.releaseLock = async function(userId) {
+  // Only the lock holder can release
+  if (this.editLock?.lockedBy &&
+      this.editLock.lockedBy.toString() !== userId.toString()) {
+    return false;
+  }
+
+  this.editLock = undefined;
+  await this.save();
+  return true;
+};
+
+/**
+ * Check if visit is locked by another user
+ * @param {ObjectId} userId - Current user
+ * @returns {object|null} Lock info if locked by another user, null if not locked
+ */
+visitSchema.methods.isLockedByOther = function(userId) {
+  if (!this.editLock?.lockedBy) {
+    return null; // Not locked
+  }
+
+  const now = new Date();
+  if (this.editLock.lockExpires <= now) {
+    return null; // Lock expired
+  }
+
+  if (this.editLock.lockedBy.toString() === userId.toString()) {
+    return null; // Locked by current user (allowed)
+  }
+
+  return {
+    lockedBy: this.editLock.lockedBy,
+    lockedAt: this.editLock.lockedAt,
+    lockExpires: this.editLock.lockExpires
+  };
+};
+
+/**
+ * Extend existing lock
+ * @param {ObjectId} userId - User extending the lock
+ * @param {number} durationMs - Additional duration in ms
+ * @returns {boolean} True if lock extended
+ */
+visitSchema.methods.extendLock = async function(userId, durationMs = LOCK_DURATION_MS) {
+  // Only lock holder can extend
+  if (!this.editLock?.lockedBy ||
+      this.editLock.lockedBy.toString() !== userId.toString()) {
+    return false;
+  }
+
+  this.editLock.lockExpires = new Date(Date.now() + durationMs);
+  await this.save();
+  return true;
+};
+
+/**
+ * Static method to clear expired locks (cleanup job)
+ */
+visitSchema.statics.clearExpiredLocks = async function() {
+  const now = new Date();
+  const result = await this.updateMany(
+    { 'editLock.lockExpires': { $lte: now } },
+    { $unset: { editLock: 1 } }
+  );
+  return result.modifiedCount;
+};
 
 module.exports = mongoose.model('Visit', visitSchema);

@@ -34,13 +34,13 @@ function createRateLimiter(options = {}) {
     message = 'Too many requests from this IP, please try again later.',
     prefix = 'rl:api:',
     skipFailedRequests = false,
-    skipSuccessfulRequests = false,
+    skipSuccessfulRequests = false
   } = options;
 
   // Create Redis store
   const store = new RedisStore({
     prefix,
-    windowMs,
+    windowMs
   });
 
   // Initialize store (non-blocking)
@@ -61,7 +61,7 @@ function createRateLimiter(options = {}) {
     keyGenerator: (req) => {
       // Use user ID if authenticated, otherwise use IP
       return req.user?._id?.toString() || req.ip;
-    },
+    }
   });
 }
 
@@ -73,7 +73,7 @@ const apiLimiter = createRateLimiter({
   windowMs: CONSTANTS.RATE_LIMIT.GENERAL_WINDOW_MS,
   max: CONSTANTS.RATE_LIMIT.GENERAL_MAX_REQUESTS,
   prefix: 'rl:api:',
-  message: 'Too many requests from this IP, please try again later.',
+  message: 'Too many requests from this IP, please try again later.'
 });
 
 /**
@@ -85,7 +85,7 @@ const authLimiter = createRateLimiter({
   max: CONSTANTS.RATE_LIMIT.LOGIN_MAX_ATTEMPTS,
   prefix: 'rl:auth:',
   message: 'Too many authentication attempts. Please try again in 15 minutes.',
-  skipSuccessfulRequests: true, // Don't count successful logins
+  skipSuccessfulRequests: true // Don't count successful logins
 });
 
 /**
@@ -96,7 +96,7 @@ const passwordResetLimiter = createRateLimiter({
   windowMs: CONSTANTS.RATE_LIMIT.RESET_WINDOW_MS,
   max: CONSTANTS.RATE_LIMIT.RESET_MAX_ATTEMPTS,
   prefix: 'rl:pwreset:',
-  message: 'Too many password reset requests. Please try again in an hour.',
+  message: 'Too many password reset requests. Please try again in an hour.'
 });
 
 /**
@@ -107,7 +107,7 @@ const registrationLimiter = createRateLimiter({
   windowMs: 60 * 60 * 1000,
   max: 3,
   prefix: 'rl:register:',
-  message: 'Too many accounts created from this IP. Please try again later.',
+  message: 'Too many accounts created from this IP. Please try again later.'
 });
 
 /**
@@ -118,7 +118,7 @@ const uploadLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 20,
   prefix: 'rl:upload:',
-  message: 'Too many file uploads. Please try again later.',
+  message: 'Too many file uploads. Please try again later.'
 });
 
 /**
@@ -129,7 +129,7 @@ const reportLimiter = createRateLimiter({
   windowMs: CONSTANTS.RATE_LIMIT.REPORT_WINDOW_MS,
   max: CONSTANTS.RATE_LIMIT.REPORT_MAX_REQUESTS,
   prefix: 'rl:report:',
-  message: 'Too many report generation requests. Please try again later.',
+  message: 'Too many report generation requests. Please try again later.'
 });
 
 /**
@@ -140,7 +140,7 @@ const sensitiveLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: 30,
   prefix: 'rl:sensitive:',
-  message: 'Too many sensitive operations. Please slow down.',
+  message: 'Too many sensitive operations. Please slow down.'
 });
 
 /**
@@ -151,7 +151,7 @@ const searchLimiter = createRateLimiter({
   windowMs: CONSTANTS.RATE_LIMIT.SEARCH_WINDOW_MS,
   max: CONSTANTS.RATE_LIMIT.SEARCH_MAX_REQUESTS,
   prefix: 'rl:search:',
-  message: 'Too many search requests. Please slow down.',
+  message: 'Too many search requests. Please slow down.'
 });
 
 /**
@@ -162,7 +162,7 @@ const wsConnectionLimiter = createRateLimiter({
   windowMs: 60 * 1000,
   max: 10,
   prefix: 'rl:ws:',
-  message: 'Too many WebSocket connections. Please try again later.',
+  message: 'Too many WebSocket connections. Please try again later.'
 });
 
 module.exports = {
@@ -175,5 +175,5 @@ module.exports = {
   reportLimiter,
   sensitiveLimiter,
   searchLimiter,
-  wsConnectionLimiter,
+  wsConnectionLimiter
 };

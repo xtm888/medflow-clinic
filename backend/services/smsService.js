@@ -1,5 +1,8 @@
 const twilio = require('twilio');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Sms');
+
 class SMSService {
   constructor() {
     this.client = null;
@@ -16,12 +19,12 @@ class SMSService {
           process.env.TWILIO_AUTH_TOKEN
         );
         this.initialized = true;
-        console.log('✅ SMS service initialized successfully');
+        log.info('✅ SMS service initialized successfully');
       } else {
-        console.warn('⚠️ SMS service not configured - missing Twilio credentials');
+        log.warn('⚠️ SMS service not configured - missing Twilio credentials');
       }
     } catch (error) {
-      console.error('❌ SMS service initialization failed:', error.message);
+      log.error('❌ SMS service initialization failed:', error.message);
       this.initialized = false;
     }
   }
@@ -46,7 +49,7 @@ class SMSService {
   // Send appointment confirmation SMS
   async sendAppointmentConfirmation(phoneNumber, appointmentData) {
     if (!this.initialized) {
-      console.warn('SMS service not initialized');
+      log.warn('SMS service not initialized');
       return false;
     }
 
@@ -160,7 +163,7 @@ class SMSService {
   // Core SMS sending function
   async sendSMS(to, body) {
     if (!this.initialized) {
-      console.warn('Cannot send SMS - service not initialized');
+      log.warn('Cannot send SMS - service not initialized');
       return false;
     }
 
@@ -169,7 +172,7 @@ class SMSService {
 
       // Truncate message if too long (SMS limit is 160 characters)
       if (body.length > 160) {
-        body = body.substring(0, 157) + '...';
+        body = `${body.substring(0, 157)}...`;
       }
 
       const message = await this.client.messages.create({
@@ -178,7 +181,7 @@ class SMSService {
         from: this.fromNumber
       });
 
-      console.log(`SMS sent successfully: ${message.sid}`);
+      log.info(`SMS sent successfully: ${message.sid}`);
       return {
         success: true,
         messageId: message.sid,
@@ -186,7 +189,7 @@ class SMSService {
         status: message.status
       };
     } catch (error) {
-      console.error('Failed to send SMS:', error.message);
+      log.error('Failed to send SMS:', error.message);
       return {
         success: false,
         error: error.message
@@ -228,7 +231,7 @@ class SMSService {
         dateUpdated: message.dateUpdated
       };
     } catch (error) {
-      console.error('Failed to check SMS status:', error.message);
+      log.error('Failed to check SMS status:', error.message);
       return null;
     }
   }
@@ -254,7 +257,7 @@ class SMSService {
 
       return stats;
     } catch (error) {
-      console.error('Failed to get SMS stats:', error.message);
+      log.error('Failed to get SMS stats:', error.message);
       return null;
     }
   }

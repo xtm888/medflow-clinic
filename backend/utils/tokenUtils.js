@@ -10,28 +10,27 @@ exports.generateToken = (userId) => {
   );
 };
 
-// Send token response with separate access and refresh tokens
+// Send token response with HttpOnly cookies (XSS protection)
+// SECURITY: Tokens are stored in HttpOnly cookies only, NOT in response body
 exports.sendTokenResponse = (user, statusCode, res, message = '', extraData = {}) => {
+  const CONSTANTS = require('../config/constants');
+
   // Generate short-lived access token
   const accessToken = user.getSignedJwtToken();
 
   // Generate long-lived refresh token with separate secret
   const refreshToken = user.getSignedRefreshToken();
 
-  // Cookie options for access token (short-lived)
+  // Cookie options for access token (short-lived, 15 minutes)
   const accessTokenOptions = {
-    expires: new Date(
-      Date.now() + 15 * 60 * 1000 // 15 minutes
-    ),
+    expires: new Date(Date.now() + CONSTANTS.AUTH.ACCESS_TOKEN_EXPIRY_MINUTES * 60 * 1000),
     httpOnly: true,
     sameSite: 'strict'
   };
 
-  // Cookie options for refresh token (long-lived, more restrictive)
+  // Cookie options for refresh token (long-lived, 14 days)
   const refreshTokenOptions = {
-    expires: new Date(
-      Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
-    ),
+    expires: new Date(Date.now() + CONSTANTS.AUTH.REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60 * 1000),
     httpOnly: true,
     sameSite: 'strict',
     path: '/api/auth/refresh' // Only send refresh token to refresh endpoint
@@ -56,16 +55,17 @@ exports.sendTokenResponse = (user, statusCode, res, message = '', extraData = {}
     twoFactorEnabled: user.twoFactorEnabled || false
   };
 
+  // SECURITY: Set tokens in HttpOnly cookies only - NOT in response body
+  // This prevents XSS attacks from stealing tokens via JavaScript
   res
     .status(statusCode)
-    .cookie('token', accessToken, accessTokenOptions)
+    .cookie('accessToken', accessToken, accessTokenOptions)
     .cookie('refreshToken', refreshToken, refreshTokenOptions)
     .json({
       success: true,
       message,
-      token: accessToken,
-      refreshToken, // Include refresh token in response for clients that need it
-      expiresIn: 900, // 15 minutes in seconds
+      // SECURITY: Tokens removed from response body - use cookies instead
+      expiresIn: CONSTANTS.AUTH.ACCESS_TOKEN_EXPIRY_MINUTES * 60, // in seconds
       user: userData,
       ...extraData
     });

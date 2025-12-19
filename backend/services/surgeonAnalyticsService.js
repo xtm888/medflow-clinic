@@ -7,6 +7,9 @@ const SurgeryCase = require('../models/SurgeryCase');
 const SurgicalSafetyChecklist = require('../models/SurgicalSafetyChecklist');
 const User = require('../models/User');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('SurgeonAnalytics');
+
 /**
  * Performance metrics categories
  */
@@ -93,7 +96,7 @@ async function getSurgeonPerformanceReport(surgeonId, startDate, endDate) {
       generatedAt: new Date()
     };
   } catch (error) {
-    console.error('Error generating surgeon performance report:', error);
+    log.error('Error generating surgeon performance report:', { error: error });
     throw new Error(`Failed to generate performance report: ${error.message}`);
   }
 }
@@ -392,7 +395,7 @@ async function getSurgeonBenchmarks(startDate, endDate) {
         : null
     };
   } catch (error) {
-    console.error('Error getting benchmarks:', error);
+    log.error('Error getting benchmarks:', { error: error });
     return null;
   }
 }

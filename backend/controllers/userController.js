@@ -285,7 +285,7 @@ exports.resetUserPassword = asyncHandler(async (req, res, next) => {
   }
 
   // Generate temporary password
-  const tempPassword = Math.random().toString(36).slice(-8) + 'Aa1!';
+  const tempPassword = `${Math.random().toString(36).slice(-8)}Aa1!`;
 
   user.password = tempPassword;
   user.passwordChangedAt = Date.now();
@@ -333,5 +333,390 @@ exports.getUserPrescriptions = asyncHandler(async (req, res, next) => {
     page: parseInt(page),
     pages: Math.ceil(total / parseInt(limit)),
     data: prescriptions
+  });
+});
+
+// ========================================
+// Current User / Preferences Management
+// ========================================
+
+// @desc    Get current user profile and preferences
+// @route   GET /api/users/me
+// @access  Private
+exports.getCurrentUser = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id)
+    .select('-password -twoFactorSecret -sessions');
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    data: user
+  });
+});
+
+// @desc    Update current user preferences
+// @route   PUT /api/users/me/preferences
+// @access  Private
+exports.updatePreferences = asyncHandler(async (req, res, next) => {
+  const allowedFields = [
+    'viewPreference',
+    'dashboardLayout',
+    'prescriptionDefaults',
+    'examDefaults',
+    'maxFavoriteMedications'
+  ];
+
+  const updates = {};
+  allowedFields.forEach(field => {
+    if (req.body[field] !== undefined) {
+      updates[`preferences.${field}`] = req.body[field];
+    }
+  });
+
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $set: updates },
+    { new: true, runValidators: true }
+  ).select('preferences');
+
+  res.status(200).json({
+    success: true,
+    data: user.preferences
+  });
+});
+
+// @desc    Get favorite medications
+// @route   GET /api/users/me/favorites/medications
+// @access  Private
+exports.getFavoriteMedications = asyncHandler(async (req, res, next) => {
+  const user = await User.findById(req.user.id)
+    .select('preferences.favoriteMedications preferences.maxFavoriteMedications');
+
+  const favorites = user?.preferences?.favoriteMedications || [];
+
+  // Sort by position if set, otherwise by usage count
+  favorites.sort((a, b) => {
+    if (a.position !== undefined && b.position !== undefined) {
+      return a.position - b.position;
+    }
+    return (b.usageCount || 0) - (a.usageCount || 0);
+  });
+
+  res.status(200).json({
+    success: true,
+    count: favorites.length,
+    maxAllowed: user?.preferences?.maxFavoriteMedications || 15,
+    data: favorites
+  });
+});
+
+// @desc    Add medication to favorites
+// @route   POST /api/users/me/favorites/medications
+// @access  Private
+exports.addFavoriteMedication = asyncHandler(async (req, res, next) => {
+  const { drugId, drugName, genericName, icon, defaultDosage, color } = req.body;
+
+  if (!drugName) {
+    return res.status(400).json({
+      success: false,
+      error: 'Drug name is required'
+    });
+  }
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  try {
+    await user.addFavoriteMedication({
+      drugId,
+      drugName,
+      genericName,
+      icon: icon || '💧',
+      defaultDosage: defaultDosage || { eye: 'OU', frequencyCode: 'BID' },
+      color
+    });
+
+    res.status(201).json({
+      success: true,
+      message: 'Medication added to favorites',
+      data: user.preferences.favoriteMedications
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Remove medication from favorites
+// @route   DELETE /api/users/me/favorites/medications/:medicationId
+// @access  Private
+exports.removeFavoriteMedication = asyncHandler(async (req, res, next) => {
+  const { medicationId } = req.params;
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  try {
+    await user.removeFavoriteMedication(medicationId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Medication removed from favorites',
+      data: user.preferences.favoriteMedications
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Reorder favorite medications
+// @route   PUT /api/users/me/favorites/medications/reorder
+// @access  Private
+exports.reorderFavoriteMedications = asyncHandler(async (req, res, next) => {
+  const { orderedIds } = req.body;
+
+  if (!orderedIds || !Array.isArray(orderedIds)) {
+    return res.status(400).json({
+      success: false,
+      error: 'orderedIds array is required'
+    });
+  }
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  try {
+    await user.reorderFavoriteMedications(orderedIds);
+
+    res.status(200).json({
+      success: true,
+      message: 'Favorites reordered successfully',
+      data: user.preferences.favoriteMedications
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Update favorite medication dosage
+// @route   PUT /api/users/me/favorites/medications/:medicationId/dosage
+// @access  Private
+exports.updateFavoriteMedicationDosage = asyncHandler(async (req, res, next) => {
+  const { medicationId } = req.params;
+  const { dosage } = req.body;
+
+  if (!dosage) {
+    return res.status(400).json({
+      success: false,
+      error: 'Dosage object is required'
+    });
+  }
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  try {
+    await user.updateFavoriteDosage(medicationId, dosage);
+
+    res.status(200).json({
+      success: true,
+      message: 'Dosage updated successfully',
+      data: user.preferences.favoriteMedications
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Record favorite medication usage
+// @route   POST /api/users/me/favorites/medications/:medicationId/usage
+// @access  Private
+exports.recordFavoriteUsage = asyncHandler(async (req, res, next) => {
+  const { medicationId } = req.params;
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  try {
+    await user.recordFavoriteUsage(medicationId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Usage recorded'
+    });
+  } catch (error) {
+    return res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get recent patients
+// @route   GET /api/users/me/recent-patients
+// @access  Private
+exports.getRecentPatients = asyncHandler(async (req, res, next) => {
+  const { limit = 10 } = req.query;
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  const recentPatients = await user.getRecentPatients(parseInt(limit));
+
+  res.status(200).json({
+    success: true,
+    count: recentPatients.length,
+    data: recentPatients
+  });
+});
+
+// @desc    Add patient to recent list
+// @route   POST /api/users/me/recent-patients
+// @access  Private
+exports.addRecentPatient = asyncHandler(async (req, res, next) => {
+  const { patientId } = req.body;
+
+  if (!patientId) {
+    return res.status(400).json({
+      success: false,
+      error: 'Patient ID is required'
+    });
+  }
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  await user.addRecentPatient(patientId);
+
+  res.status(200).json({
+    success: true,
+    message: 'Patient added to recent list'
+  });
+});
+
+// @desc    Get favorite protocols
+// @route   GET /api/users/me/favorites/protocols
+// @access  Private
+exports.getFavoriteProtocols = asyncHandler(async (req, res, next) => {
+  const TreatmentProtocol = require('../models/TreatmentProtocol');
+
+  const user = await User.findById(req.user.id)
+    .select('preferences.favoriteProtocols');
+
+  const protocolIds = user?.preferences?.favoriteProtocols || [];
+
+  const protocols = await TreatmentProtocol.find({
+    _id: { $in: protocolIds },
+    isActive: true
+  }).sort('displayOrder name');
+
+  res.status(200).json({
+    success: true,
+    count: protocols.length,
+    data: protocols
+  });
+});
+
+// @desc    Toggle protocol favorite status
+// @route   POST /api/users/me/favorites/protocols/:protocolId
+// @access  Private
+exports.toggleFavoriteProtocol = asyncHandler(async (req, res, next) => {
+  const { protocolId } = req.params;
+
+  const user = await User.findById(req.user.id);
+
+  if (!user) {
+    return res.status(404).json({
+      success: false,
+      error: 'User not found'
+    });
+  }
+
+  // Initialize if not exists
+  if (!user.preferences) {
+    user.preferences = {};
+  }
+  if (!user.preferences.favoriteProtocols) {
+    user.preferences.favoriteProtocols = [];
+  }
+
+  const index = user.preferences.favoriteProtocols.findIndex(
+    id => id.toString() === protocolId
+  );
+
+  let isFavorite;
+  if (index === -1) {
+    user.preferences.favoriteProtocols.push(protocolId);
+    isFavorite = true;
+  } else {
+    user.preferences.favoriteProtocols.splice(index, 1);
+    isFavorite = false;
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    isFavorite,
+    data: user.preferences.favoriteProtocols
   });
 });

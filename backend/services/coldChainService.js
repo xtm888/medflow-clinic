@@ -312,8 +312,8 @@ function generateColdChainAlert(excursionData) {
     triggerValue: `${excursionData.temperature}°C`,
     recommendedActions: [
       { action: excursionData.isCritical
-          ? 'Quarantine all affected vials immediately'
-          : 'Check refrigerator function', priority: 1 },
+        ? 'Quarantine all affected vials immediately'
+        : 'Check refrigerator function', priority: 1 },
       { action: 'Document excursion in cold chain log', priority: 2 },
       { action: 'Notify pharmacy supervisor', priority: 3 },
       { action: 'Review vial stability data before use', priority: 4 }
@@ -337,8 +337,8 @@ async function getExpiringVials(clinicId, daysAhead = 30) {
     currentStatus: { $in: ['in_stock', 'in_use'] },
     expirationDate: { $lte: futureDate }
   })
-  .sort({ expirationDate: 1 })
-  .lean();
+    .sort({ expirationDate: 1 })
+    .lean();
 
   return expiringVials.map(vial => ({
     vialNumber: vial.vialNumber,

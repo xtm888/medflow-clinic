@@ -26,8 +26,8 @@ const redisConfig = {
       // Exponential backoff: 100ms, 200ms, 400ms, etc.
       return Math.min(retries * 100, 3000);
     },
-    connectTimeout: 10000,
-  },
+    connectTimeout: 10000
+  }
 };
 
 /**
@@ -282,7 +282,7 @@ const sessionStore = {
       console.error('Delete user sessions error:', error.message);
       return false;
     }
-  },
+  }
 };
 
 /**
@@ -358,8 +358,96 @@ const cache = {
       console.error('Cache deletePattern error:', error.message);
       return false;
     }
-  },
+  }
 };
+
+/**
+ * Two-Factor Authentication code store
+ * Uses Redis to track used 2FA codes, preventing replay attacks
+ * Falls back to in-memory with warning when Redis unavailable
+ */
+const memoryFallback = new Map();
+
+const twoFactorStore = {
+  /**
+   * Mark a 2FA code as used
+   * @param {string} userId - User ID
+   * @param {string} code - The 2FA code
+   * @param {number} ttlSeconds - Time to live (default 600 = 10 min)
+   */
+  async markUsed(userId, code, ttlSeconds = 600) {
+    const key = `2fa:used:${userId}:${code}`;
+
+    if (!redisClient || !isRedisConnected()) {
+      // Fallback to memory with warning (only warn once per restart)
+      if (!memoryFallback.has('_warned')) {
+        console.warn('[SECURITY] Redis unavailable - 2FA replay protection using memory fallback');
+        memoryFallback.set('_warned', true);
+      }
+      memoryFallback.set(key, Date.now() + ttlSeconds * 1000);
+      return true;
+    }
+
+    try {
+      await redisClient.setEx(key, ttlSeconds, '1');
+      return true;
+    } catch (error) {
+      console.error('2FA markUsed error:', error.message);
+      // Fallback to memory on error
+      memoryFallback.set(key, Date.now() + ttlSeconds * 1000);
+      return true;
+    }
+  },
+
+  /**
+   * Check if a 2FA code has already been used
+   * @param {string} userId - User ID
+   * @param {string} code - The 2FA code
+   * @returns {boolean} True if code was already used
+   */
+  async isUsed(userId, code) {
+    const key = `2fa:used:${userId}:${code}`;
+
+    if (!redisClient || !isRedisConnected()) {
+      // Check memory fallback
+      const expiry = memoryFallback.get(key);
+      if (expiry && expiry > Date.now()) {
+        return true;
+      }
+      // Clean up expired entry
+      if (expiry) {
+        memoryFallback.delete(key);
+      }
+      return false;
+    }
+
+    try {
+      const exists = await redisClient.exists(key);
+      return exists === 1;
+    } catch (error) {
+      console.error('2FA isUsed error:', error.message);
+      // Check memory fallback on error
+      const expiry = memoryFallback.get(key);
+      return expiry ? expiry > Date.now() : false;
+    }
+  },
+
+  /**
+   * Clean up expired memory fallback entries
+   * Called periodically when Redis is unavailable
+   */
+  cleanupMemory() {
+    const now = Date.now();
+    for (const [key, expiry] of memoryFallback.entries()) {
+      if (key !== '_warned' && expiry < now) {
+        memoryFallback.delete(key);
+      }
+    }
+  }
+};
+
+// Clean up memory fallback every 5 minutes
+setInterval(() => twoFactorStore.cleanupMemory(), 5 * 60 * 1000);
 
 module.exports = {
   initializeRedis,
@@ -369,4 +457,5 @@ module.exports = {
   RedisStore,
   sessionStore,
   cache,
+  twoFactorStore
 };

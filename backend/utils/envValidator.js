@@ -126,13 +126,13 @@ function validateProductionEnv() {
     if (value && isExposedSecret(value)) {
       errors.push(
         `CRITICAL: ${name} contains a known exposed secret that was committed to git history! ` +
-        `This secret MUST be rotated immediately. Run: node scripts/rotateSecrets.js`
+        'This secret MUST be rotated immediately. Run: node scripts/rotateSecrets.js'
       );
     } else if (value && !isSecureSecret(value)) {
       if (isProduction) {
         errors.push(
           `${name} is insecure: Must be at least ${MIN_SECRET_LENGTH} characters ` +
-          `and not contain weak patterns like 'default', 'change-in-production', etc.`
+          'and not contain weak patterns like \'default\', \'change-in-production\', etc.'
         );
       } else {
         warnings.push(`${name} uses weak value (OK for development, but change for production)`);

@@ -43,7 +43,7 @@ async function paginateCursor(model, options = {}) {
   const safeLimit = Math.min(limit, CONSTANTS.PAGINATION.MAX_PAGE_SIZE);
 
   // Build query
-  let query = { ...filter };
+  const query = { ...filter };
 
   // Add cursor condition if provided
   if (cursor) {

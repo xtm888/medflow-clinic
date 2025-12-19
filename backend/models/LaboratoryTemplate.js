@@ -383,9 +383,9 @@ laboratoryTemplateSchema.methods.getReferenceRangeForAnalyzer = function(analyze
   );
 
   // Use analyzer-specific range if available, otherwise fall back to default
-  let range = analyzerConfig?.referenceRange || this.referenceRange || {};
+  const range = analyzerConfig?.referenceRange || this.referenceRange || {};
 
-  let result = {
+  const result = {
     min: range.min,
     max: range.max,
     criticalLow: range.criticalLow,

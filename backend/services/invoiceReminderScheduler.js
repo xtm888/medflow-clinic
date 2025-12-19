@@ -11,6 +11,9 @@ const PaymentPlan = require('../models/PaymentPlan');
 const notificationFacade = require('./notificationFacade');
 const AuditLog = require('../models/AuditLog');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('InvoiceReminderScheduler');
+
 // Configuration for reminder intervals (in days after due date)
 const REMINDER_INTERVALS = [
   { days: 1, type: 'first_reminder', urgency: 'low' },
@@ -27,7 +30,7 @@ let schedulerInterval = null;
 async function processPaymentReminders() {
   try {
     const now = new Date();
-    console.log(`[Invoice Reminder] Processing payment reminders at ${now.toISOString()}`);
+    log.info(`[Invoice Reminder] Processing payment reminders at ${now.toISOString()}`);
 
     // Get all overdue invoices
     const overdueInvoices = await Invoice.find({
@@ -48,7 +51,7 @@ async function processPaymentReminders() {
           remindersSent++;
         }
       } catch (error) {
-        console.error(`[Invoice Reminder] Error processing invoice ${invoice.invoiceId}:`, error.message);
+        log.error(`[Invoice Reminder] Error processing invoice ${invoice.invoiceId}:`, error.message);
         errors++;
       }
     }
@@ -56,11 +59,11 @@ async function processPaymentReminders() {
     // Also process payment plan reminders
     const planRemindersSent = await processPaymentPlanReminders(now);
 
-    console.log(`[Invoice Reminder] Processed ${overdueInvoices.length} overdue invoices. Sent ${remindersSent} reminders. Errors: ${errors}. Payment plan reminders: ${planRemindersSent}`);
+    log.info(`[Invoice Reminder] Processed ${overdueInvoices.length} overdue invoices. Sent ${remindersSent} reminders. Errors: ${errors}. Payment plan reminders: ${planRemindersSent}`);
 
     return { invoicesProcessed: overdueInvoices.length, remindersSent, planRemindersSent, errors };
   } catch (error) {
-    console.error('[Invoice Reminder] Error processing reminders:', error);
+    log.error('[Invoice Reminder] Error processing reminders:', { error: error });
     throw error;
   }
 }
@@ -122,7 +125,7 @@ async function processInvoiceReminder(invoice, now) {
 
     return { sent: true, type: reminderToSend.type };
   } catch (error) {
-    console.error(`[Invoice Reminder] Failed to send reminder for ${invoice.invoiceId}:`, error.message);
+    log.error(`[Invoice Reminder] Failed to send reminder for ${invoice.invoiceId}:`, error.message);
     return { sent: false, reason: 'send_failed', error: error.message };
   }
 }
@@ -179,7 +182,7 @@ async function sendPaymentReminder(invoice, reminderConfig, daysOverdue) {
       }
     });
   } catch (err) {
-    console.error('Failed to log reminder to audit:', err.message);
+    log.error('Failed to log reminder to audit:', err.message);
   }
 }
 
@@ -256,13 +259,13 @@ async function processPaymentPlanReminders(now) {
 
             remindersSent++;
           } catch (error) {
-            console.error(`[Invoice Reminder] Failed to send plan reminder for ${plan.planId}:`, error.message);
+            log.error(`[Invoice Reminder] Failed to send plan reminder for ${plan.planId}:`, error.message);
           }
         }
       }
     }
   } catch (error) {
-    console.error('[Invoice Reminder] Error processing payment plan reminders:', error);
+    log.error('[Invoice Reminder] Error processing payment plan reminders:', { error: error });
   }
 
   return remindersSent;
@@ -286,10 +289,10 @@ async function updateOverdueStatuses() {
       }
     );
 
-    console.log(`[Invoice Reminder] Updated ${result.modifiedCount} invoices to overdue status`);
+    log.info(`[Invoice Reminder] Updated ${result.modifiedCount} invoices to overdue status`);
     return result.modifiedCount;
   } catch (error) {
-    console.error('[Invoice Reminder] Error updating overdue statuses:', error);
+    log.error('[Invoice Reminder] Error updating overdue statuses:', { error: error });
     return 0;
   }
 }
@@ -338,11 +341,11 @@ async function getOverdueStats() {
  */
 function startScheduler() {
   if (schedulerInterval) {
-    console.log('[Invoice Reminder] Already running');
+    log.info('[Invoice Reminder] Already running');
     return;
   }
 
-  console.log('[Invoice Reminder] Starting scheduler...');
+  log.info('[Invoice Reminder] Starting scheduler...');
 
   // Run immediately on start
   updateOverdueStatuses().then(() => processPaymentReminders());
@@ -353,7 +356,7 @@ function startScheduler() {
     await processPaymentReminders();
   }, 6 * 60 * 60 * 1000);
 
-  console.log('[Invoice Reminder] Scheduler started (running every 6 hours)');
+  log.info('[Invoice Reminder] Scheduler started (running every 6 hours)');
 }
 
 /**
@@ -363,7 +366,7 @@ function stopScheduler() {
   if (schedulerInterval) {
     clearInterval(schedulerInterval);
     schedulerInterval = null;
-    console.log('[Invoice Reminder] Scheduler stopped');
+    log.info('[Invoice Reminder] Scheduler stopped');
   }
 }
 

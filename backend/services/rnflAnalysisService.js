@@ -5,6 +5,9 @@
 
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('RnflAnalysis');
+
 // Normal RNFL thickness values by age group (micrometers)
 const RNFL_NORMATIVE_DATA = {
   '20-29': { global: 107, superior: 131, inferior: 138, nasal: 83, temporal: 76 },
@@ -12,7 +15,7 @@ const RNFL_NORMATIVE_DATA = {
   '40-49': { global: 99, superior: 123, inferior: 130, nasal: 77, temporal: 70 },
   '50-59': { global: 95, superior: 119, inferior: 126, nasal: 74, temporal: 67 },
   '60-69': { global: 91, superior: 115, inferior: 122, nasal: 71, temporal: 64 },
-  '70+': { global: 87, superior: 111, inferior: 118, nasal: 68, temporal: 61 },
+  '70+': { global: 87, superior: 111, inferior: 118, nasal: 68, temporal: 61 }
 };
 
 // Standard deviations for percentile calculations
@@ -21,7 +24,7 @@ const RNFL_STD_DEV = {
   superior: 14,
   inferior: 15,
   nasal: 11,
-  temporal: 9,
+  temporal: 9
 };
 
 const NORMAL_AGING_RATE = 0.5; // μm/year - normal age-related loss
@@ -96,7 +99,7 @@ function analyzeRNFL(rnflData, patientAge) {
         deviation: measuredValue - expectedValue,
         zScore: parseFloat(zScore.toFixed(2)),
         percentile: parseFloat(percentile.toFixed(1)),
-        classification,
+        classification
       };
 
       sectorAnalysis.push(sectorResult);
@@ -143,7 +146,7 @@ function analyzeRNFL(rnflData, patientAge) {
       analysisDate: new Date()
     };
   } catch (error) {
-    console.error('Error in RNFL analysis:', error);
+    log.error('Error in RNFL analysis:', { error: error });
     throw new Error(`RNFL analysis failed: ${error.message}`);
   }
 }
@@ -161,9 +164,9 @@ async function detectRNFLProgression(patientId, eye) {
       patient: patientId,
       [`rnfl.${eye}.global`]: { $exists: true, $ne: null }
     })
-    .sort({ examDate: 1 })
-    .select(`examDate rnfl.${eye}`)
-    .lean();
+      .sort({ examDate: 1 })
+      .select(`examDate rnfl.${eye}`)
+      .lean();
 
     if (exams.length < 2) {
       return {
@@ -171,7 +174,7 @@ async function detectRNFLProgression(patientId, eye) {
         isProgressing: false,
         confidence: 'INSUFFICIENT_DATA',
         recommendation: 'At least 2 OCT scans required to assess progression. Schedule follow-up OCT.',
-        examsAnalyzed: exams.length,
+        examsAnalyzed: exams.length
       };
     }
 
@@ -179,7 +182,7 @@ async function detectRNFLProgression(patientId, eye) {
     const dataPoints = exams.map(exam => ({
       date: new Date(exam.examDate),
       global: exam.rnfl[eye].global,
-      timeFromBaseline: 0,
+      timeFromBaseline: 0
     }));
 
     // Calculate time from baseline in years
@@ -246,11 +249,11 @@ async function detectRNFLProgression(patientId, eye) {
       dataPoints: dataPoints.map(p => ({
         date: p.date,
         global: p.global,
-        yearsFromBaseline: parseFloat(p.timeFromBaseline.toFixed(2)),
-      })),
+        yearsFromBaseline: parseFloat(p.timeFromBaseline.toFixed(2))
+      }))
     };
   } catch (error) {
-    console.error('Error detecting RNFL progression:', error);
+    log.error('Error detecting RNFL progression:', { error: error });
     throw new Error(`RNFL progression detection failed: ${error.message}`);
   }
 }
@@ -337,7 +340,7 @@ async function generateRNFLAlert(patientId, rnflData, patientAge, eye) {
       progression
     };
   } catch (error) {
-    console.error('Error generating RNFL alert:', error);
+    log.error('Error generating RNFL alert:', { error: error });
     throw new Error(`Failed to generate RNFL alert: ${error.message}`);
   }
 }
@@ -358,7 +361,7 @@ async function performRNFLAssessment(patientId, rnflData, patientAge, eye, examI
       assessmentDate: new Date()
     };
   } catch (error) {
-    console.error('Error in RNFL assessment:', error);
+    log.error('Error in RNFL assessment:', { error: error });
     throw new Error(`RNFL assessment failed: ${error.message}`);
   }
 }

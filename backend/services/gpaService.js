@@ -5,6 +5,9 @@
 
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Gpa');
+
 // GPA Analysis Constants
 const MIN_EXAMS_FOR_GPA = 3;
 const MIN_EXAMS_FOR_TREND = 5;
@@ -53,9 +56,9 @@ async function performGPAAnalysis(patientId, eye) {
       patient: patientId,
       [`visualField.${eye}.md`]: { $exists: true, $ne: null }
     })
-    .sort({ examDate: 1 })
-    .select(`examDate visualField.${eye}`)
-    .lean();
+      .sort({ examDate: 1 })
+      .select(`examDate visualField.${eye}`)
+      .lean();
 
     if (exams.length < MIN_EXAMS_FOR_GPA) {
       return {
@@ -173,7 +176,7 @@ async function performGPAAnalysis(patientId, eye) {
       analysisDate: new Date()
     };
   } catch (error) {
-    console.error('Error in GPA analysis:', error);
+    log.error('Error in GPA analysis:', { error: error });
     throw new Error(`GPA analysis failed: ${error.message}`);
   }
 }
@@ -418,7 +421,7 @@ function generateInterpretation(progressionStatus, staging, mdProgression) {
       break;
 
     case 'POSSIBLE_PROGRESSION':
-      interpretation = `Possible visual field progression noted. Continue monitoring. `;
+      interpretation = 'Possible visual field progression noted. Continue monitoring. ';
       interpretation += `Current staging: ${staging.stage}. `;
       recommendations.push('Maintain current treatment');
       recommendations.push('Repeat visual field in 6 months');
@@ -426,7 +429,7 @@ function generateInterpretation(progressionStatus, staging, mdProgression) {
       break;
 
     case 'IMPROVING':
-      interpretation = `Visual field appears stable or improving. `;
+      interpretation = 'Visual field appears stable or improving. ';
       recommendations.push('Continue current management');
       recommendations.push('Routine follow-up');
       break;
@@ -513,7 +516,7 @@ async function performCompleteGPAAssessment(patientId, eye) {
       assessmentDate: new Date()
     };
   } catch (error) {
-    console.error('Error in complete GPA assessment:', error);
+    log.error('Error in complete GPA assessment:', { error: error });
     throw new Error(`Complete GPA assessment failed: ${error.message}`);
   }
 }

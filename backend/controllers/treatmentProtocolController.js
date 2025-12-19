@@ -352,3 +352,282 @@ exports.toggleFavorite = async (req, res) => {
     });
   }
 };
+
+// =====================================================
+// STUDIOVISION PARITY - ENHANCED ENDPOINTS
+// =====================================================
+
+/**
+ * Apply protocol - Get prescription-ready medications
+ * StudioVision Parity: "2-Click" prescription workflow
+ */
+exports.applyProtocol = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { eye, patientId } = req.body; // Optional overrides
+
+    const protocol = await TreatmentProtocol.findById(id)
+      .populate('medications.medicationTemplate');
+
+    if (!protocol) {
+      return res.status(404).json({
+        success: false,
+        message: 'Treatment protocol not found'
+      });
+    }
+
+    // Record usage with enhanced tracking
+    await protocol.incrementUsage(req.user._id, patientId);
+
+    // Generate prescription-ready medications
+    const prescriptionMedications = protocol.toPrescriptionMedications({ eye });
+
+    res.json({
+      success: true,
+      message: `Protocol "${protocol.name}" applied`,
+      data: {
+        protocol: {
+          id: protocol._id,
+          name: protocol.name,
+          nameFr: protocol.nameFr,
+          category: protocol.category,
+          description: protocol.description
+        },
+        medications: prescriptionMedications,
+        expectedDuration: protocol.expectedDuration,
+        contraindications: protocol.contraindications
+      }
+    });
+  } catch (error) {
+    console.error('Error applying protocol:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error applying treatment protocol',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get protocols by category with enhanced filtering
+ * StudioVision Parity: Category-organized protocol selection
+ */
+exports.getProtocolsByCategory = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { includePersonal = 'true' } = req.query;
+
+    // Build query
+    const query = {
+      category,
+      isActive: true,
+      $or: [
+        { visibility: 'system' },
+        { isSystemWide: true }
+      ]
+    };
+
+    // Include personal protocols if requested
+    if (includePersonal === 'true') {
+      query.$or.push(
+        { visibility: 'personal', createdBy: req.user._id },
+        { visibility: 'clinic', clinic: req.user.clinic }
+      );
+    }
+
+    const protocols = await TreatmentProtocol.find(query)
+      .select('-usageHistory')
+      .populate('medications.medicationTemplate', 'name genericName')
+      .sort({ displayOrder: 1, usageCount: -1 });
+
+    // Group by subcategory if available
+    const grouped = protocols.reduce((acc, protocol) => {
+      const key = protocol.subcategory || 'general';
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(protocol);
+      return acc;
+    }, {});
+
+    res.json({
+      success: true,
+      category,
+      count: protocols.length,
+      data: protocols,
+      grouped
+    });
+  } catch (error) {
+    console.error('Error getting protocols by category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving protocols by category',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get all categories with protocol counts
+ * StudioVision Parity: Quick category overview
+ */
+exports.getCategories = async (req, res) => {
+  try {
+    const categories = await TreatmentProtocol.aggregate([
+      {
+        $match: {
+          isActive: true,
+          $or: [
+            { visibility: 'system' },
+            { isSystemWide: true },
+            { createdBy: req.user._id }
+          ]
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          totalUsage: { $sum: '$usageCount' },
+          icons: { $addToSet: '$icon' },
+          colors: { $addToSet: '$color' }
+        }
+      },
+      { $sort: { totalUsage: -1 } }
+    ]);
+
+    // Add category metadata
+    const categoryLabels = {
+      'post_operatoire': 'Post-opératoire',
+      'post_surgical': 'Post-Surgical',
+      'glaucome': 'Glaucome',
+      'glaucoma': 'Glaucoma',
+      'infection': 'Infection',
+      'inflammation': 'Inflammation',
+      'uveite': 'Uvéite',
+      'allergie': 'Allergie',
+      'allergy': 'Allergy',
+      'secheresse_oculaire': 'Sécheresse Oculaire',
+      'dry_eye': 'Dry Eye',
+      'cataracte': 'Cataracte',
+      'dmla': 'DMLA',
+      'retinopathie_diabetique': 'Rétinopathie Diabétique',
+      'injection': 'Injections',
+      'prophylaxie': 'Prophylaxie',
+      'pediatric': 'Pédiatrique',
+      'emergency': 'Urgence'
+    };
+
+    const enrichedCategories = categories.map(cat => ({
+      category: cat._id,
+      label: categoryLabels[cat._id] || cat._id,
+      count: cat.count,
+      totalUsage: cat.totalUsage,
+      icon: cat.icons[0] || '💊',
+      color: cat.colors[0] || '#6B7280'
+    }));
+
+    res.json({
+      success: true,
+      count: enrichedCategories.length,
+      data: enrichedCategories
+    });
+  } catch (error) {
+    console.error('Error getting categories:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving protocol categories',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Get protocols for a specific diagnosis (ICD code)
+ * StudioVision Parity: Smart protocol suggestions
+ */
+exports.getProtocolsForDiagnosis = async (req, res) => {
+  try {
+    const { icdCode } = req.params;
+
+    const protocols = await TreatmentProtocol.find({
+      isActive: true,
+      $or: [
+        { 'indications.icdCode': icdCode },
+        { 'indications.icdCode': new RegExp(`^${icdCode.split('.')[0]}`, 'i') }
+      ],
+      $or: [
+        { visibility: 'system' },
+        { isSystemWide: true },
+        { createdBy: req.user._id }
+      ]
+    })
+      .select('-usageHistory')
+      .populate('medications.medicationTemplate', 'name genericName')
+      .sort({ usageCount: -1 });
+
+    res.json({
+      success: true,
+      icdCode,
+      count: protocols.length,
+      data: protocols
+    });
+  } catch (error) {
+    console.error('Error getting protocols for diagnosis:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error retrieving protocols for diagnosis',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Duplicate a protocol for personalization
+ * StudioVision Parity: Create personal copy of system protocol
+ */
+exports.duplicateProtocol = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+
+    const originalProtocol = await TreatmentProtocol.findById(id);
+
+    if (!originalProtocol) {
+      return res.status(404).json({
+        success: false,
+        message: 'Treatment protocol not found'
+      });
+    }
+
+    // Create duplicate
+    const duplicateData = originalProtocol.toObject();
+    delete duplicateData._id;
+    delete duplicateData.protocolId;
+    delete duplicateData.createdAt;
+    delete duplicateData.updatedAt;
+    delete duplicateData.usageCount;
+    delete duplicateData.usageHistory;
+    delete duplicateData.lastUsed;
+
+    duplicateData.name = name || `${originalProtocol.name} (Copy)`;
+    duplicateData.nameFr = duplicateData.nameFr ? `${duplicateData.nameFr} (Copie)` : null;
+    duplicateData.createdBy = req.user._id;
+    duplicateData.type = 'personal';
+    duplicateData.visibility = 'personal';
+    duplicateData.isSystemWide = false;
+
+    const newProtocol = await TreatmentProtocol.create(duplicateData);
+
+    res.status(201).json({
+      success: true,
+      message: 'Protocol duplicated successfully',
+      data: newProtocol
+    });
+  } catch (error) {
+    console.error('Error duplicating protocol:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error duplicating protocol',
+      error: error.message
+    });
+  }
+};

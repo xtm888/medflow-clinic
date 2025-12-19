@@ -1520,7 +1520,7 @@ invoiceSchema.methods.refreshCachedNames = async function() {
         updates['companyBilling.companyId'] = company.companyId;
       }
     } catch (err) {
-      console.error(`[INVOICE] Error refreshing company name:`, err.message);
+      console.error('[INVOICE] Error refreshing company name:', err.message);
     }
   }
 
@@ -1534,7 +1534,7 @@ invoiceSchema.methods.refreshCachedNames = async function() {
         updates['referrerCommission.referrerType'] = referrer.type;
       }
     } catch (err) {
-      console.error(`[INVOICE] Error refreshing referrer name:`, err.message);
+      console.error('[INVOICE] Error refreshing referrer name:', err.message);
     }
   }
 
@@ -1552,7 +1552,7 @@ invoiceSchema.methods.refreshCachedNames = async function() {
         }
       }
     } catch (err) {
-      console.error(`[INVOICE] Error refreshing facility names:`, err.message);
+      console.error('[INVOICE] Error refreshing facility names:', err.message);
     }
   }
 
@@ -2393,7 +2393,7 @@ invoiceSchema.statics.getPatientBalance = async function(patientId) {
 };
 
 // Post-save hook to update Patient.invoices array and account balance
-invoiceSchema.post('save', async function(doc) {
+invoiceSchema.post('save', async (doc) => {
   if (!doc.patient) return;
 
   try {
@@ -2638,7 +2638,7 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
               date: new Date(),
               performedBy: invoice.updatedBy || invoice.createdBy,
               reference: `Invoice ${invoice.invoiceId} - Prescription ${prescription._id}`,
-              notes: `Auto-dispensed on payment`
+              notes: 'Auto-dispensed on payment'
             });
 
             await inventoryItem.save();

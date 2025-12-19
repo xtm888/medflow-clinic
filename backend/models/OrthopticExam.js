@@ -122,64 +122,64 @@ const orthopticExamSchema = new mongoose.Schema({
       droitExterne: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       droitInterne: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       droitSuperieur: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       droitInferieur: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       grandOblique: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       petitOblique: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       }
     },
     OS: {
       droitExterne: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       droitInterne: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       droitSuperieur: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       droitInferieur: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       grandOblique: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       },
       petitOblique: {
         type: String,
         enum: ['Normal', '++', '+++', 'Abaissement', 'Abduction', 'Adduction', 'Élévation',
-               'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
+          'Hyperaction', 'Limitation', 'Paralysie', 'Parésie', 'Sous action']
       }
     },
     versions: String, // Free text for version testing
@@ -274,7 +274,7 @@ const orthopticExamSchema = new mongoose.Schema({
       result: {
         type: String,
         enum: ['fusion', 'diplopie_croisee', 'diplopie_homonyme', 'neutralisation_OD',
-               'neutralisation_OS', 'suppression_alternante']
+          'neutralisation_OS', 'suppression_alternante']
       },
       description: String
     },
@@ -282,7 +282,7 @@ const orthopticExamSchema = new mongoose.Schema({
       result: {
         type: String,
         enum: ['fusion', 'diplopie_croisee', 'diplopie_homonyme', 'neutralisation_OD',
-               'neutralisation_OS', 'suppression_alternante']
+          'neutralisation_OS', 'suppression_alternante']
       },
       description: String
     }
@@ -458,7 +458,7 @@ const orthopticExamSchema = new mongoose.Schema({
     type: {
       type: String,
       enum: ['reeducation_orthoptique', 'barre_lecture', 'diploscope', 'synoptophore',
-             'exercices_domicile', 'prismes', 'occlusion', 'combined']
+        'exercices_domicile', 'prismes', 'occlusion', 'combined']
     },
     frequency: String, // e.g., "2 times per week"
     duration: String, // e.g., "12 weeks"

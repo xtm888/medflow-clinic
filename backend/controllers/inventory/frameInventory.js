@@ -6,7 +6,7 @@
  */
 
 const mongoose = require('mongoose');
-const FrameInventory = require('../../models/FrameInventory');
+const { FrameInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 const { verifyClinicAccess } = require('../../utils/clinicFilter');
 const { sanitizeNumber, sanitizePrice } = require('../../utils/sanitize');

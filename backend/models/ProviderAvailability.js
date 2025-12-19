@@ -190,7 +190,7 @@ providerAvailabilitySchema.methods.getWorkingHoursForDate = function(date) {
   }
 
   // Apply recurring time-off
-  let breaks = [...(regularDay.breaks || [])];
+  const breaks = [...(regularDay.breaks || [])];
   const recurringOff = this.recurringTimeOff.filter(r => r.dayOfWeek === dayOfWeek);
   recurringOff.forEach(r => {
     breaks.push({

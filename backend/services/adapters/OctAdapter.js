@@ -21,6 +21,9 @@ const crypto = require('crypto');
 const path = require('path');
 const fs = require('fs').promises;
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('OctAdapter');
+
 class OctAdapter extends BaseAdapter {
   constructor(device) {
     super(device);
@@ -357,7 +360,7 @@ class OctAdapter extends BaseAdapter {
       return deviceImage;
 
     } catch (error) {
-      console.error('DICOM processing error:', error);
+      log.error('DICOM processing error:', { error: error });
       throw new Error(`DICOM processing failed: ${error.message}`);
     }
   }

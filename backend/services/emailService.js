@@ -1,6 +1,22 @@
+/**
+ * Email Service
+ *
+ * @internal This is an INTERNAL implementation service used by notificationFacade.
+ * For external use, import from notificationFacade.js instead:
+ *   const notificationFacade = require('./notificationFacade');
+ *
+ * Provides direct email sending with:
+ * - Template rendering
+ * - Attachment support
+ * - HTML/text content
+ */
+
 const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs').promises;
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Email');
 
 class EmailService {
   constructor() {
@@ -26,9 +42,9 @@ class EmailService {
       // Verify connection
       await this.transporter.verify();
       this.initialized = true;
-      console.log('✅ Email service initialized successfully');
+      log.info('✅ Email service initialized successfully');
     } catch (error) {
-      console.error('❌ Email service initialization failed:', error.message);
+      log.error('❌ Email service initialization failed:', error.message);
       this.initialized = false;
     }
   }
@@ -36,7 +52,7 @@ class EmailService {
   // Send appointment confirmation email
   async sendAppointmentConfirmation(recipient, appointmentData) {
     if (!this.initialized) {
-      console.warn('Email service not initialized');
+      log.warn('Email service not initialized');
       return false;
     }
 
@@ -80,7 +96,7 @@ class EmailService {
       console.log('Appointment confirmation email sent:', info.messageId);
       return true;
     } catch (error) {
-      console.error('Failed to send appointment email:', error);
+      log.error('Failed to send appointment email:', { error: error });
       return false;
     }
   }
@@ -127,7 +143,7 @@ class EmailService {
       });
       return true;
     } catch (error) {
-      console.error('Failed to send reminder email:', error);
+      log.error('Failed to send reminder email:', { error: error });
       return false;
     }
   }
@@ -171,7 +187,7 @@ class EmailService {
       });
       return true;
     } catch (error) {
-      console.error('Failed to send prescription email:', error);
+      log.error('Failed to send prescription email:', { error: error });
       return false;
     }
   }
@@ -215,7 +231,7 @@ class EmailService {
       });
       return true;
     } catch (error) {
-      console.error('Failed to send lab results email:', error);
+      log.error('Failed to send lab results email:', { error: error });
       return false;
     }
   }
@@ -282,7 +298,7 @@ class EmailService {
       });
       return true;
     } catch (error) {
-      console.error('Failed to send invoice email:', error);
+      log.error('Failed to send invoice email:', { error: error });
       return false;
     }
   }
@@ -328,7 +344,7 @@ class EmailService {
       });
       return true;
     } catch (error) {
-      console.error('Failed to send password reset email:', error);
+      log.error('Failed to send password reset email:', { error: error });
       return false;
     }
   }
@@ -384,7 +400,7 @@ class EmailService {
       });
       return true;
     } catch (error) {
-      console.error('Failed to send welcome email:', error);
+      log.error('Failed to send welcome email:', { error: error });
       return false;
     }
   }

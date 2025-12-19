@@ -34,7 +34,7 @@ const sendEmail = async (options) => {
 
   if (process.env.NODE_ENV === 'production') {
     // Production email service configuration
-    transporter = nodemailer.createTransporter({
+    transporter = nodemailer.createTransport({
       host: process.env.EMAIL_HOST,
       port: process.env.EMAIL_PORT,
       secure: process.env.EMAIL_PORT === '465',
@@ -46,7 +46,7 @@ const sendEmail = async (options) => {
   } else {
     // Development: Use Ethereal Email for testing
     const testAccount = await nodemailer.createTestAccount();
-    transporter = nodemailer.createTransporter({
+    transporter = nodemailer.createTransport({
       host: 'smtp.ethereal.email',
       port: 587,
       secure: false,

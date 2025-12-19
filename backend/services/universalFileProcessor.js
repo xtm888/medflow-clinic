@@ -15,6 +15,9 @@ const path = require('path');
 const axios = require('axios');
 const AdapterFactory = require('./adapters/AdapterFactory');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('UniversalFileProcessor');
+
 // OCR Service configuration
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://localhost:8002';
 const OCR_SERVICE_TIMEOUT = 30000; // 30 seconds
@@ -278,7 +281,7 @@ class UniversalFileProcessor {
       this.stats.totalProcessed++;
       result.error = error.message;
       result.processingTimeMs = Date.now() - startTime;
-      console.error(`[UniversalProcessor] Error processing ${fileName}:`, error.message);
+      log.error(`[UniversalProcessor] Error processing ${fileName}:`, error.message);
       return result;
     }
   }
@@ -315,7 +318,7 @@ class UniversalFileProcessor {
    * Detect device type from folder path and filename
    */
   detectDeviceType(folderPath, fileName) {
-    const pathLower = (folderPath + '/' + fileName).toLowerCase();
+    const pathLower = (`${folderPath}/${fileName}`).toLowerCase();
 
     // Check folder patterns
     for (const [device, patterns] of Object.entries(DEVICE_PATTERNS.folderPatterns)) {
@@ -394,7 +397,7 @@ class UniversalFileProcessor {
 
       return { success: false, confidence: 0 };
     } catch (error) {
-      console.error('[UniversalProcessor] DICOM processing error:', error.message);
+      log.error('[UniversalProcessor] DICOM processing error:', error.message);
       return { success: false, confidence: 0, error: error.message };
     }
   }
@@ -443,7 +446,7 @@ class UniversalFileProcessor {
 
       return { success: false, confidence: 0 };
     } catch (error) {
-      console.error('[UniversalProcessor] Adapter processing error:', error.message);
+      log.error('[UniversalProcessor] Adapter processing error:', error.message);
       return { success: false, confidence: 0, error: error.message };
     }
   }
@@ -563,9 +566,9 @@ class UniversalFileProcessor {
     } catch (error) {
       // OCR service might not be running - this is OK
       if (error.code === 'ECONNREFUSED') {
-        console.log('[UniversalProcessor] OCR service not available');
+        log.info('OCR service not available');
       } else {
-        console.error('[UniversalProcessor] OCR processing error:', error.message);
+        log.error('[UniversalProcessor] OCR processing error:', error.message);
       }
       return { success: false, confidence: 0, error: error.message };
     }

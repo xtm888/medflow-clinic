@@ -172,7 +172,7 @@ function phiEncryptionPlugin(schema, options = {}) {
     const schemaPath = schema.path(fieldPath);
     if (schemaPath) {
       // Add getter and setter
-      schemaPath.get(function(value) {
+      schemaPath.get((value) => {
         try {
           return decrypt(value);
         } catch (err) {
@@ -180,7 +180,7 @@ function phiEncryptionPlugin(schema, options = {}) {
         }
       });
 
-      schemaPath.set(function(value) {
+      schemaPath.set((value) => {
         try {
           return encrypt(value);
         } catch (err) {

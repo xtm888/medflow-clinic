@@ -53,15 +53,15 @@ commentTemplateSchema.statics.getByCategory = async function(category) {
     category,
     isActive: true
   })
-  .sort({ sortOrder: 1, usageCount: -1 })
-  .select('title text category usageCount');
+    .sort({ sortOrder: 1, usageCount: -1 })
+    .select('title text category usageCount');
 };
 
 commentTemplateSchema.statics.getMostUsed = async function(limit = 10) {
   return await this.find({ isActive: true })
-  .sort({ usageCount: -1 })
-  .limit(limit)
-  .select('title text category usageCount');
+    .sort({ usageCount: -1 })
+    .limit(limit)
+    .select('title text category usageCount');
 };
 
 module.exports = mongoose.model('CommentTemplate', commentTemplateSchema);
