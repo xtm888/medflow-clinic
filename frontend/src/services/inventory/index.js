@@ -1159,3 +1159,541 @@ export const labConsumableInventoryService = {
     ];
   }
 };
+
+// ==========================================
+// SURGICAL SUPPLY INVENTORY SERVICE
+// ==========================================
+
+const surgicalSupplyInventoryServiceBase = createInventoryService('/surgical-supply-inventory');
+
+export const surgicalSupplyInventoryService = {
+  ...surgicalSupplyInventoryServiceBase,
+
+  // Backward compatibility aliases
+  getSupplies: surgicalSupplyInventoryServiceBase.getAll,
+  getSupply: surgicalSupplyInventoryServiceBase.getById,
+  createSupply: surgicalSupplyInventoryServiceBase.create,
+  updateSupply: surgicalSupplyInventoryServiceBase.update,
+  deleteSupply: surgicalSupplyInventoryServiceBase.delete,
+  searchSupplies: surgicalSupplyInventoryServiceBase.search,
+
+  /**
+   * Get IOL inventory
+   * @param {object} params - Query parameters
+   * @returns {Promise} IOL inventory data
+   */
+  getIOLInventory: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    const response = await api.get('/surgical-supply-inventory', {
+      params: { ...params, ...clinicFilter, supplyType: 'iol' }
+    });
+    return response.data;
+  },
+
+  /**
+   * Get available IOL powers
+   * @param {string} manufacturer - IOL manufacturer
+   * @param {string} model - IOL model
+   * @returns {Promise} Available powers
+   */
+  getAvailableIOLPowers: async (manufacturer, model) => {
+    const clinicFilter = getActiveClinicFilter();
+    const response = await api.get('/surgical-supply-inventory/iol-powers', {
+      params: { manufacturer, model, ...clinicFilter }
+    });
+    return response.data;
+  },
+
+  /**
+   * Get supply types (static)
+   * @returns {Array} Supply types array
+   */
+  getSupplyTypes: () => {
+    return [
+      { value: 'iol', label: 'Lentilles intraoculaires (IOL)' },
+      { value: 'viscoelastic', label: 'Viscoélastiques' },
+      { value: 'suture', label: 'Sutures' },
+      { value: 'blade', label: 'Lames' },
+      { value: 'cannula', label: 'Canules' },
+      { value: 'implant', label: 'Implants' },
+      { value: 'instrument', label: 'Instruments' },
+      { value: 'drape', label: 'Champs opératoires' },
+      { value: 'other', label: 'Autre' }
+    ];
+  }
+};
+
+// ==========================================
+// UNIFIED INVENTORY SERVICE
+// ==========================================
+// New unified API for all inventory types using discriminator-based model
+
+/**
+ * Unified Inventory Service
+ *
+ * Single service for all inventory operations across all types.
+ * Uses the /api/unified-inventory endpoint with inventoryType filtering.
+ *
+ * @example
+ * // Get all pharmacy inventory
+ * const meds = await unifiedInventoryService.getAll({ inventoryType: 'pharmacy' });
+ *
+ * // Search across all types
+ * const results = await unifiedInventoryService.search('aspirin');
+ *
+ * // Get low stock across all types
+ * const lowStock = await unifiedInventoryService.getLowStock();
+ */
+export const unifiedInventoryService = {
+  // ==========================================
+  // READ OPERATIONS
+  // ==========================================
+
+  /**
+   * Get inventory types enum
+   * @returns {Promise} Inventory types
+   */
+  getTypes: async () => {
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/types');
+        return response.data?.data || response.data;
+      },
+      'unifiedInventory',
+      'types',
+      { cacheExpiry: 86400 } // 24 hours - static data
+    );
+  },
+
+  /**
+   * Get all inventory items
+   * @param {object} params - Query parameters (inventoryType, clinic, status, search, etc.)
+   * @returns {Promise} Inventory data with pagination
+   */
+  getAll: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `list:${JSON.stringify(params)}`,
+      { cacheExpiry: 1800 } // 30 minutes
+    );
+  },
+
+  /**
+   * Get inventory item by ID
+   * @param {string} id - Item ID
+   * @returns {Promise} Item data
+   */
+  getById: async (id) => {
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get(`/unified-inventory/${id}`);
+        return response.data;
+      },
+      'unifiedInventory',
+      id,
+      { cacheExpiry: 1800 } // 30 minutes
+    );
+  },
+
+  /**
+   * Search inventory across all types
+   * @param {string} query - Search query
+   * @param {object} options - Search options (inventoryType, inStockOnly, limit)
+   * @returns {Promise} Search results
+   */
+  search: async (query, options = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/search', {
+          params: { q: query, ...options, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `search:${query}:${JSON.stringify(options)}`,
+      { cacheExpiry: 600 } // 10 minutes
+    );
+  },
+
+  /**
+   * Get inventory statistics
+   * @param {object} params - Query parameters (clinic, inventoryType)
+   * @returns {Promise} Stats data
+   */
+  getStats: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/stats', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `stats:${JSON.stringify(params)}`,
+      { cacheExpiry: 3600 } // 1 hour
+    );
+  },
+
+  /**
+   * Get low stock items across all types
+   * @param {object} params - Query parameters (inventoryType)
+   * @returns {Promise} Low stock items
+   */
+  getLowStock: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/low-stock', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `lowStock:${JSON.stringify(params)}`,
+      { cacheExpiry: 300 } // 5 minutes
+    );
+  },
+
+  /**
+   * Get expiring items across all types
+   * @param {number} days - Days until expiration (default 30)
+   * @param {object} params - Additional parameters
+   * @returns {Promise} Expiring items
+   */
+  getExpiring: async (days = 30, params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/expiring', {
+          params: { days, ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `expiring:${days}:${JSON.stringify(params)}`,
+      { cacheExpiry: 600 } // 10 minutes
+    );
+  },
+
+  /**
+   * Get inventory value
+   * @param {object} params - Query parameters (clinic, inventoryType)
+   * @returns {Promise} Value data
+   */
+  getInventoryValue: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/value', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `value:${JSON.stringify(params)}`,
+      { cacheExpiry: 3600 } // 1 hour
+    );
+  },
+
+  /**
+   * Get alerts across all inventory types
+   * @param {object} params - Query parameters (inventoryType, resolved)
+   * @returns {Promise} Alerts data
+   */
+  getAlerts: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/alerts', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `alerts:${JSON.stringify(params)}`,
+      { cacheExpiry: 300 } // 5 minutes
+    );
+  },
+
+  /**
+   * Get all brands
+   * @param {object} params - Query parameters (inventoryType)
+   * @returns {Promise} Brands list
+   */
+  getBrands: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/brands', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `brands:${JSON.stringify(params)}`,
+      { cacheExpiry: 3600 } // 1 hour
+    );
+  },
+
+  /**
+   * Get all categories
+   * @param {object} params - Query parameters (inventoryType)
+   * @returns {Promise} Categories list
+   */
+  getCategories: async (params = {}) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/categories', {
+          params: { ...params, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `categories:${JSON.stringify(params)}`,
+      { cacheExpiry: 3600 } // 1 hour
+    );
+  },
+
+  /**
+   * Check item availability
+   * @param {string} itemId - Item ID
+   * @param {number} quantity - Requested quantity
+   * @returns {Promise} Availability data
+   */
+  checkAvailability: async (itemId, quantity = 1) => {
+    const clinicFilter = getActiveClinicFilter();
+    return await offlineWrapper.get(
+      async () => {
+        const response = await api.get('/unified-inventory/check-availability', {
+          params: { itemId, quantity, ...clinicFilter }
+        });
+        return response.data;
+      },
+      'unifiedInventory',
+      `availability:${itemId}:${quantity}`,
+      { cacheExpiry: 300 } // 5 minutes
+    );
+  },
+
+  /**
+   * Get transaction history
+   * @param {string} id - Item ID
+   * @param {object} params - Pagination params (page, limit)
+   * @returns {Promise} Transaction history
+   */
+  getTransactions: async (id, params = {}) => {
+    const response = await api.get(`/unified-inventory/${id}/transactions`, { params });
+    return response.data;
+  },
+
+  // ==========================================
+  // WRITE OPERATIONS - ONLINE ONLY
+  // ==========================================
+
+  /**
+   * Create new inventory item
+   * @param {object} data - Item data (must include inventoryType)
+   * @returns {Promise} Created item
+   */
+  create: async (data) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post('/unified-inventory', data);
+    return response.data;
+  },
+
+  /**
+   * Update inventory item
+   * @param {string} id - Item ID
+   * @param {object} data - Updated data
+   * @returns {Promise} Updated item
+   */
+  update: async (id, data) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.put(`/unified-inventory/${id}`, data);
+    return response.data;
+  },
+
+  /**
+   * Delete (discontinue) inventory item
+   * @param {string} id - Item ID
+   * @param {string} reason - Reason for discontinuation
+   * @returns {Promise} Response
+   */
+  delete: async (id, reason) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.delete(`/unified-inventory/${id}`, {
+      data: { reason }
+    });
+    return response.data;
+  },
+
+  /**
+   * Add stock (receive batch)
+   * @param {string} id - Item ID
+   * @param {object} batchData - Batch data (lotNumber, quantity, expirationDate, etc.)
+   * @returns {Promise} Updated stock info
+   */
+  addStock: async (id, batchData) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post(`/unified-inventory/${id}/add-stock`, batchData);
+    return response.data;
+  },
+
+  /**
+   * Adjust stock
+   * @param {string} id - Item ID
+   * @param {object} adjustment - Adjustment data (quantity, type, reason)
+   * @returns {Promise} Updated stock info
+   */
+  adjustStock: async (id, adjustment) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post(`/unified-inventory/${id}/adjust`, adjustment);
+    return response.data;
+  },
+
+  /**
+   * Reserve stock
+   * @param {string} id - Item ID
+   * @param {object} reserveData - Reserve data (quantity, reference)
+   * @returns {Promise} Reservation info
+   */
+  reserveStock: async (id, reserveData) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post(`/unified-inventory/${id}/reserve`, reserveData);
+    return response.data;
+  },
+
+  /**
+   * Release reservation
+   * @param {string} id - Item ID
+   * @param {object} releaseData - Release data (quantity, reference)
+   * @returns {Promise} Updated stock info
+   */
+  releaseReservation: async (id, releaseData) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post(`/unified-inventory/${id}/release-reservation`, releaseData);
+    return response.data;
+  },
+
+  /**
+   * Transfer stock between clinics
+   * @param {string} id - Source item ID
+   * @param {object} transferData - Transfer data (targetClinicId, quantity, reason)
+   * @returns {Promise} Transfer result
+   */
+  transfer: async (id, transferData) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post(`/unified-inventory/${id}/transfer`, transferData);
+    return response.data;
+  },
+
+  /**
+   * Resolve alert
+   * @param {string} itemId - Item ID
+   * @param {string} alertId - Alert ID
+   * @returns {Promise} Response
+   */
+  resolveAlert: async (itemId, alertId) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const response = await api.post(`/unified-inventory/${itemId}/alerts/${alertId}/resolve`);
+    return response.data;
+  },
+
+  /**
+   * Check expirations and generate alerts
+   * @param {object} params - Parameters (inventoryType, days)
+   * @returns {Promise} Check result
+   */
+  checkExpirations: async (params = {}) => {
+    if (!navigator.onLine) {
+      throw new Error('Cette opération nécessite une connexion internet.');
+    }
+    const clinicFilter = getActiveClinicFilter();
+    const response = await api.post('/unified-inventory/check-expirations', null, {
+      params: { ...params, ...clinicFilter }
+    });
+    return response.data;
+  },
+
+  // ==========================================
+  // HELPER METHODS
+  // ==========================================
+
+  /**
+   * Get inventory type label
+   * @param {string} type - Inventory type value
+   * @returns {string} Human-readable label
+   */
+  getTypeLabel: (type) => {
+    const labels = {
+      pharmacy: 'Pharmacie',
+      frame: 'Montures',
+      contact_lens: 'Lentilles de contact',
+      optical_lens: 'Verres optiques',
+      reagent: 'Réactifs',
+      lab_consumable: 'Consommables laboratoire',
+      surgical_supply: 'Fournitures chirurgicales'
+    };
+    return labels[type] || type;
+  },
+
+  /**
+   * Get status label
+   * @param {string} status - Status value
+   * @returns {string} Human-readable label
+   */
+  getStatusLabel: (status) => {
+    const labels = {
+      in_stock: 'En stock',
+      low_stock: 'Stock faible',
+      out_of_stock: 'Rupture de stock',
+      overstocked: 'Surstock',
+      discontinued: 'Discontinué'
+    };
+    return labels[status] || status;
+  },
+
+  /**
+   * Get status color
+   * @param {string} status - Status value
+   * @returns {string} Color class
+   */
+  getStatusColor: (status) => {
+    const colors = {
+      in_stock: 'success',
+      low_stock: 'warning',
+      out_of_stock: 'error',
+      overstocked: 'info',
+      discontinued: 'default'
+    };
+    return colors[status] || 'default';
+  }
+};

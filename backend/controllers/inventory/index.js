@@ -17,7 +17,10 @@
 // Base factory class
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
-// Type-specific controller extensions
+// Unified controller (NEW - uses discriminator-based model)
+const UnifiedInventoryController = require('./UnifiedInventoryController');
+
+// Type-specific controller extensions (LEGACY - kept for backwards compatibility)
 const frameInventory = require('./frameInventory');
 const contactLensInventory = require('./contactLensInventory');
 const opticalLensInventory = require('./opticalLensInventory');
@@ -26,10 +29,13 @@ const labConsumableInventory = require('./labConsumableInventory');
 const surgicalSupplyInventory = require('./surgicalSupplyInventory');
 
 module.exports = {
+  // Unified controller (preferred for new code)
+  UnifiedInventoryController,
+
   // Factory class for creating custom inventory controllers
   InventoryControllerFactory,
 
-  // Pre-configured controllers
+  // Pre-configured controllers (legacy - use UnifiedInventoryController for new features)
   frameInventory,
   contactLensInventory,
   opticalLensInventory,
