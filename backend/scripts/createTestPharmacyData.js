@@ -106,7 +106,7 @@ async function createTestData() {
   // Add prescription to visit
   visit.prescriptions = [prescription._id];
   await visit.save();
-  console.log(`Added prescription to visit`);
+  console.log('Added prescription to visit');
 
   // Generate invoice (which should now include medications)
   console.log('\n=== Generating Invoice ===');
@@ -129,13 +129,13 @@ async function createTestData() {
     console.log(`  - ${item.description}: ${item.total} FC (${item.status})`);
   });
 
-  console.log(`\n========================================`);
-  console.log(`TEST DATA READY!`);
-  console.log(`========================================`);
+  console.log('\n========================================');
+  console.log('TEST DATA READY!');
+  console.log('========================================');
   console.log(`Visit ID: ${visit._id}`);
   console.log(`Invoice ID: ${invoice._id}`);
   console.log(`Prescription ID: ${prescription._id}`);
-  console.log(`\nTest pharmacy endpoint with:`);
+  console.log('\nTest pharmacy endpoint with:');
   console.log(`curl -s "http://localhost:5001/api/invoices/pharmacy/${visit._id}" -H "Authorization: Bearer <TOKEN>"`);
 
   await mongoose.disconnect();

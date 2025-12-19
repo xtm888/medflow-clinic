@@ -4,11 +4,8 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const PharmacyInventory = require('../models/PharmacyInventory');
-const FrameInventory = require('../models/FrameInventory');
-const ContactLensInventory = require('../models/ContactLensInventory');
-const ReagentInventory = require('../models/ReagentInventory');
-const LabConsumableInventory = require('../models/LabConsumableInventory');
+const { PharmacyInventory, FrameInventory, ContactLensInventory, ReagentInventory, LabConsumableInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 async function main() {

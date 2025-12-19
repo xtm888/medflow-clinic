@@ -5,7 +5,8 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const ReagentInventory = require('../models/ReagentInventory');
+const { ReagentInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 // Laboratory reagents by category and lab section
@@ -164,12 +165,12 @@ async function main() {
         const sku = generateSKU(reagent.name, reagent.category, clinicCode);
 
         // Pricing based on category
-        let costPrice = reagent.category === 'reagent-kit' ? randomInt(50000, 200000) :
-                       reagent.category === 'control-material' ? randomInt(80000, 250000) :
-                       reagent.category === 'calibrator' ? randomInt(100000, 300000) :
-                       reagent.category === 'antibody' ? randomInt(30000, 80000) :
-                       reagent.category === 'culture-media' ? randomInt(40000, 100000) :
-                       randomInt(10000, 50000);
+        const costPrice = reagent.category === 'reagent-kit' ? randomInt(50000, 200000) :
+          reagent.category === 'control-material' ? randomInt(80000, 250000) :
+            reagent.category === 'calibrator' ? randomInt(100000, 300000) :
+              reagent.category === 'antibody' ? randomInt(30000, 80000) :
+                reagent.category === 'culture-media' ? randomInt(40000, 100000) :
+                  randomInt(10000, 50000);
 
         const currentStock = randomInt(2, 20);
         const minimumStock = 2;
@@ -249,7 +250,7 @@ async function main() {
       totalCreated += reagents.length;
     }
 
-    console.log(`\n=== Summary ===`);
+    console.log('\n=== Summary ===');
     console.log(`Total reagent inventory entries created: ${totalCreated}`);
     console.log(`Entries per clinic: ~${Math.round(totalCreated / clinics.length)}`);
 

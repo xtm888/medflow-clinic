@@ -42,7 +42,7 @@ async function testAllRoles() {
     const result = await testLogin(user.email, 'Admin123!');
 
     if (result) {
-      console.log(`✅ Login successful`);
+      console.log('✅ Login successful');
       console.log(`   Email: ${result.user.email}`);
       console.log(`   Name: ${result.user.firstName} ${result.user.lastName}`);
       console.log(`   Role: ${result.user.role}`);
@@ -53,7 +53,7 @@ async function testAllRoles() {
     }
   }
 
-  console.log('\n' + '='.repeat(50));
+  console.log(`\n${'='.repeat(50)}`);
   console.log('✨ Role testing complete!\n');
 
   console.log('📋 Role-based menu access summary:');

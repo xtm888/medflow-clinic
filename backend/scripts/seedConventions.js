@@ -448,7 +448,7 @@ async function seedConventions() {
     // ========================================
     // SUMMARY
     // ========================================
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('📊 SEED SUMMARY');
     console.log('='.repeat(60));
     console.log(`  Parent conventions created:  ${parentCount}`);

@@ -122,7 +122,7 @@ async function fixConventionInvoices() {
       console.log('-'.repeat(120));
     }
 
-    console.log(`\nSummary:`);
+    console.log('\nSummary:');
     console.log(`  - Convention invoices checked: ${conventionInvoices.length}`);
     console.log(`  - Already correct: ${alreadyCorrectCount}`);
     console.log(`  - ${isDryRun ? 'Would fix' : 'Fixed'}: ${fixedCount}`);

@@ -120,9 +120,9 @@ router.post('/egfr/calculate',
         egfr,
         unit: 'mL/min/1.73m²',
         interpretation: egfr >= 90 ? 'Normal' :
-                       egfr >= 60 ? 'Mildly decreased' :
-                       egfr >= 30 ? 'Moderately decreased' :
-                       egfr >= 15 ? 'Severely decreased' : 'Kidney failure'
+          egfr >= 60 ? 'Mildly decreased' :
+            egfr >= 30 ? 'Moderately decreased' :
+              egfr >= 15 ? 'Severely decreased' : 'Kidney failure'
       }
     });
   })

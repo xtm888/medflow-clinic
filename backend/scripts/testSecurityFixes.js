@@ -9,6 +9,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 const jwt = require('jsonwebtoken');
 const http = require('http');
 
@@ -149,7 +150,7 @@ async function testScheduleIIBlocking() {
   console.log('TEST: Schedule II Refill Blocking');
   console.log('========================================\n');
 
-  const PharmacyInventory = require('../models/PharmacyInventory');
+  
 
   // Check if we can find the controlled substance validation code
   const fs = require('fs');
@@ -160,7 +161,7 @@ async function testScheduleIIBlocking() {
 
   // Check for Schedule II blocking code
   if (prescriptionController.includes("schedule === 'II'") &&
-      prescriptionController.includes("refills = { allowed: 0, remaining: 0 }")) {
+      prescriptionController.includes('refills = { allowed: 0, remaining: 0 }')) {
     pass('Schedule II refill blocking code exists in prescriptionController');
   } else {
     fail('Schedule II refill blocking', 'Code not found in prescriptionController');

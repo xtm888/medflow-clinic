@@ -84,7 +84,7 @@ async function inspect() {
         console.log(`  Diagnoses: ${visit.diagnoses?.length || 0}`);
         console.log(`  Vital Signs: ${visit.vitalSigns ? 'YES' : 'NO'}`);
         console.log(`  Chief Complaint: ${visit.chiefComplaint?.complaint || 'N/A'}`);
-        console.log(`  Notes: ${visit.notes ? visit.notes.substring(0, 50) + '...' : 'N/A'}`);
+        console.log(`  Notes: ${visit.notes ? `${visit.notes.substring(0, 50)}...` : 'N/A'}`);
 
         // Financial check
         console.log('\nFINANCIAL CHECK:');
@@ -150,7 +150,7 @@ async function inspect() {
       console.log('─'.repeat(80));
     }
 
-    console.log('\n\n' + '█'.repeat(100));
+    console.log(`\n\n${'█'.repeat(100)}`);
     console.log('INSPECTION COMPLETE');
     console.log('█'.repeat(100));
 

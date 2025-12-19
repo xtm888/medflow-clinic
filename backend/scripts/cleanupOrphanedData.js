@@ -20,7 +20,7 @@ async function cleanupOrphanedData() {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow', {
       useNewUrlParser: true,
-      useUnifiedTopology: true,
+      useUnifiedTopology: true
     });
     console.log('Connected to MongoDB\n');
 
@@ -35,7 +35,7 @@ async function cleanupOrphanedData() {
     patients.forEach(p => {
       console.log(`  - ${p.firstName} ${p.lastName} (${p.patientId})`);
     });
-    console.log('\n' + '-'.repeat(60));
+    console.log(`\n${'-'.repeat(60)}`);
 
     // Track cleanup results
     const results = {
@@ -142,7 +142,7 @@ async function cleanupOrphanedData() {
     }
 
     // Summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('CLEANUP SUMMARY');
     console.log('='.repeat(60));
     console.log(`
@@ -166,7 +166,7 @@ Visits               | ${results.visits.found.toString().padStart(5)} | ${result
       console.log('No orphaned records found. Database is already consistent.');
     }
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
 
   } catch (error) {
     console.error('Cleanup failed:', error);

@@ -5,7 +5,8 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const PharmacyInventory = require('../models/PharmacyInventory');
+const { PharmacyInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 async function main() {
@@ -66,11 +67,11 @@ async function main() {
       }
     }
 
-    console.log(`\n=== Summary ===`);
+    console.log('\n=== Summary ===');
     console.log(`Set ${outOfStockCount} items to out-of-stock`);
     console.log(`Set ${lowStockCount} items to low-stock`);
-    console.log(`\nOther clinics should still have stock for these items.`);
-    console.log(`Visit http://localhost:5173/cross-clinic-inventory to see alerts.`);
+    console.log('\nOther clinics should still have stock for these items.');
+    console.log('Visit http://localhost:5173/cross-clinic-inventory to see alerts.');
 
     process.exit(0);
   } catch (error) {

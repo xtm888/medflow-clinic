@@ -35,8 +35,8 @@ async function createAdminUser() {
     // Verify password was saved
     const savedUser = await User.findOne({ email: defaults.admin.email }).select('+password');
     console.log('\n✅ Admin user created successfully!');
-    console.log('📧 Email: ' + defaults.admin.email);
-    console.log('🔑 Password: ' + defaults.admin.password);
+    console.log(`📧 Email: ${defaults.admin.email}`);
+    console.log(`🔑 Password: ${defaults.admin.password}`);
     console.log('✓ Password saved:', !!savedUser.password);
     console.log('✓ Password length:', savedUser.password?.length || 0);
     console.log('\nYou can now login with these credentials!');

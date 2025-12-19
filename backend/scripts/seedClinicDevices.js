@@ -411,7 +411,7 @@ async function seedDevices() {
       $set: { networkShares }
     });
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`Summary: ${created} created, ${updated} updated, ${errors} errors`);
     console.log(`Network shares registered: ${networkShares.length}`);
 

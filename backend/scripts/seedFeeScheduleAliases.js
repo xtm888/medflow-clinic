@@ -55,7 +55,7 @@ const aliases = [
   { code: 'YAG_IRIDO', name: 'YAG iridotomie', category: 'Procedure', price: 50000 },
   { code: 'PARACENTESE', name: 'Ponction de chambre antérieure', category: 'Procedure', price: 30000 },
   { code: 'CHALAZION', name: 'Incision chalazion', category: 'Procedure', price: 25000 },
-  { code: 'CORPS_ETRANGER', name: 'Ablation corps étranger cornéen', category: 'Procedure', price: 20000 },
+  { code: 'CORPS_ETRANGER', name: 'Ablation corps étranger cornéen', category: 'Procedure', price: 20000 }
 ];
 
 async function seedAliases() {

@@ -10,13 +10,9 @@
  */
 
 const mongoose = require('mongoose');
+const { PharmacyInventory, FrameInventory, ContactLensInventory, ReagentInventory, LabConsumableInventory } = require('../models/Inventory');
 require('dotenv').config();
 
-const PharmacyInventory = require('../models/PharmacyInventory');
-const FrameInventory = require('../models/FrameInventory');
-const ContactLensInventory = require('../models/ContactLensInventory');
-const LabConsumableInventory = require('../models/LabConsumableInventory');
-const ReagentInventory = require('../models/ReagentInventory');
 const Clinic = require('../models/Clinic');
 
 const isDryRun = process.argv.includes('--dry-run');
@@ -130,7 +126,7 @@ async function migrate() {
     }
 
     // Step 4: Print summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('MIGRATION SUMMARY');
     console.log('='.repeat(60));
     console.log(`\nDefault Clinic: ${defaultClinic.name}`);

@@ -45,7 +45,7 @@ async function importPatients() {
 
   const patients = [];
   let skipped = 0;
-  let patientIndex = 0;
+  const patientIndex = 0;
 
   for (const row of parseResult.data) {
     // Skip if no patient ID
@@ -166,7 +166,7 @@ async function importPatients() {
     }
   }
 
-  console.log(`\n=== IMPORT COMPLETE ===`);
+  console.log('\n=== IMPORT COMPLETE ===');
   console.log(`Inserted: ${totalInserted} patients`);
   console.log(`Errors: ${totalErrors}`);
 

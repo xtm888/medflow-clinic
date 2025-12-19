@@ -127,7 +127,7 @@ async function test() {
           break;
         }
       } else {
-        console.log(`  No invoice - generating one...`);
+        console.log('  No invoice - generating one...');
         try {
           const fullVisit = await Visit.findById(visit._id);
           const invoice = await fullVisit.generateInvoice({ generateInvoiceNumber: true });

@@ -103,7 +103,7 @@ async function testWorkflow() {
     console.log('Approval Issues:', invoice.companyBilling.hasApprovalIssues ? 'YES - Needs délibération' : 'No');
     console.log();
     console.log('Item: PHACO-TEST');
-    console.log('  Coverage:', invoice.items[0].coveragePercentage + '%');
+    console.log('  Coverage:', `${invoice.items[0].coveragePercentage}%`);
     console.log('  Has Approval:', invoice.items[0].hasApproval);
     console.log('  Status:', invoice.items[0].approvalStatus);
     console.log();
@@ -223,7 +223,7 @@ async function testWorkflow() {
       console.log('Approval Issues:', updatedInvoice.companyBilling.hasApprovalIssues ? 'YES' : 'NO - All approved');
       console.log();
       console.log('Item: PHACO-TEST');
-      console.log('  Coverage:', updatedInvoice.items[0].coveragePercentage + '%');
+      console.log('  Coverage:', `${updatedInvoice.items[0].coveragePercentage}%`);
       console.log('  Has Approval:', updatedInvoice.items[0].hasApproval);
       console.log('  Status:', updatedInvoice.items[0].approvalStatus);
       console.log('  Company Share:', updatedInvoice.items[0].companyShare?.toLocaleString(), 'FC');

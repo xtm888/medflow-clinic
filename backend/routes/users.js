@@ -10,14 +10,55 @@ const {
   activateUser,
   deactivateUser,
   resetUserPassword,
-  getUserPrescriptions
+  getUserPrescriptions,
+  // Current user / preferences
+  getCurrentUser,
+  updatePreferences,
+  getFavoriteMedications,
+  addFavoriteMedication,
+  removeFavoriteMedication,
+  reorderFavoriteMedications,
+  updateFavoriteMedicationDosage,
+  recordFavoriteUsage,
+  getRecentPatients,
+  addRecentPatient,
+  getFavoriteProtocols,
+  toggleFavoriteProtocol
 } = require('../controllers/userController');
 
 const { protect, authorize } = require('../middleware/auth');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 
-// Protect all routes and require admin role
+// Protect all routes
 router.use(protect);
+
+// ========================================
+// Current User Routes (any authenticated user)
+// ========================================
+
+// Current user profile
+router.get('/me', getCurrentUser);
+router.put('/me/preferences', updatePreferences);
+
+// Favorite medications
+router.get('/me/favorites/medications', getFavoriteMedications);
+router.post('/me/favorites/medications', addFavoriteMedication);
+router.delete('/me/favorites/medications/:medicationId', removeFavoriteMedication);
+router.put('/me/favorites/medications/reorder', reorderFavoriteMedications);
+router.put('/me/favorites/medications/:medicationId/dosage', updateFavoriteMedicationDosage);
+router.post('/me/favorites/medications/:medicationId/usage', recordFavoriteUsage);
+
+// Favorite protocols
+router.get('/me/favorites/protocols', getFavoriteProtocols);
+router.post('/me/favorites/protocols/:protocolId', toggleFavoriteProtocol);
+
+// Recent patients
+router.get('/me/recent-patients', getRecentPatients);
+router.post('/me/recent-patients', addRecentPatient);
+
+// ========================================
+// Admin Routes (admin role required)
+// ========================================
 router.use(authorize('admin'));
 
 // Routes

@@ -35,7 +35,7 @@ async function seedImagingData() {
     }
 
     // Get a sample examiner (admin or doctor)
-    let examiner = await User.findOne({ role: { $in: ['admin', 'doctor'] } });
+    const examiner = await User.findOne({ role: { $in: ['admin', 'doctor'] } });
     if (!examiner) {
       console.error('No admin or doctor found. Please create a user first.');
       process.exit(1);

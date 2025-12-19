@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 const Drug = require('../models/Drug');
-const PharmacyInventory = require('../models/PharmacyInventory');
+
 const Clinic = require('../models/Clinic');
 require('dotenv').config();
 
@@ -84,7 +85,7 @@ function mapCategory(drugCategory, categoryFrName) {
       'VITAMINES': 'vitamin',
 
       // Supplements
-      'VASCULOTROPES': 'supplement',
+      'VASCULOTROPES': 'supplement'
 
       // Everything else maps to 'other' including:
       // MYDRIATIQUES, LARMES ARTIFICIELLES, ANTI GLAUCOMATEUX,
@@ -261,7 +262,7 @@ async function seedPharmacyInventory() {
     }
 
     // Summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('PHARMACY INVENTORY SEEDING SUMMARY');
     console.log('='.repeat(60));
     console.log(`Clinics: ${clinics.length}`);
@@ -291,7 +292,7 @@ async function seedPharmacyInventory() {
       }
     });
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('DATABASE STATUS');
     console.log('='.repeat(60));
     console.log(`Total medications in inventory: ${totalCount}`);

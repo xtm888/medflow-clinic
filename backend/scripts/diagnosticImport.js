@@ -162,7 +162,7 @@ async function diagnosticImport() {
               console.log(`    Message: ${e.errmsg || e.err?.message}`);
             });
           } else {
-            console.log(`✗ Batch insert FAILED:`, error.message);
+            console.log('✗ Batch insert FAILED:', error.message);
           }
         }
 

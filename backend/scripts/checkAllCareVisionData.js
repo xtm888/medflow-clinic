@@ -147,7 +147,7 @@ async function checkAllData() {
     }
 
     // Summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('SUMMARY');
     console.log('='.repeat(60));
     console.log('Laboratory Templates:', labCount);

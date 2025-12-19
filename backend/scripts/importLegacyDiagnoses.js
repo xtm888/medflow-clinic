@@ -287,7 +287,7 @@ async function executeBatch(updates) {
 function printSummary() {
   const elapsed = Math.round((Date.now() - stats.startTime) / 1000);
 
-  console.log('\n' + '='.repeat(50));
+  console.log(`\n${'='.repeat(50)}`);
   console.log('IMPORT SUMMARY');
   console.log('='.repeat(50));
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE IMPORT'}`);

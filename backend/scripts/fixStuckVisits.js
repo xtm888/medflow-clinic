@@ -74,7 +74,7 @@ async function fixStuckVisits() {
             // Complete the visit (this will generate invoice if needed)
             const result = await visit.completeVisit(visit.signedBy || visit.primaryProvider);
 
-            console.log(`  ✅ FIXED - Status: completed`);
+            console.log('  ✅ FIXED - Status: completed');
             console.log(`     Invoice: ${result.invoiceGenerated ? 'Generated' : 'Already existed or not generated'}`);
             fixedCount++;
           } catch (err) {
@@ -82,7 +82,7 @@ async function fixStuckVisits() {
             errorCount++;
           }
         } else {
-          console.log(`  [DRY RUN] Would complete this visit`);
+          console.log('  [DRY RUN] Would complete this visit');
           fixedCount++;
         }
       }

@@ -253,7 +253,7 @@ async function processImageFile(filePath, filename, share, devices) {
   } else {
     stats.patientsMissing++;
     if (verbose) {
-      console.log(`    ⚠️  No patient match found`);
+      console.log('    ⚠️  No patient match found');
     }
   }
 
@@ -261,7 +261,7 @@ async function processImageFile(filePath, filename, share, devices) {
   const fileStat = fs.statSync(filePath);
 
   // Get image dimensions if possible
-  let dimensions = { width: null, height: null };
+  const dimensions = { width: null, height: null };
   try {
     const metadata = await sharp(filePath).metadata();
     dimensions.width = metadata.width;

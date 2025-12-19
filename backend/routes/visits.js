@@ -953,4 +953,88 @@ router.get('/:id/summary', protect, async (req, res) => {
   }
 });
 
+// @desc    Generate Fiche d'Ophtalmologie PDF
+// @route   GET /api/visits/:id/fiche-pdf
+// @access  Private
+router.get('/:id/fiche-pdf', protect, logPatientDataAccess, async (req, res) => {
+  try {
+    const pdfGenerator = require('../services/pdfGenerator');
+    const Prescription = require('../models/Prescription');
+    const User = require('../models/User');
+
+    // Fetch visit with all related data
+    const visit = await Visit.findById(req.params.id)
+      .populate('patient')
+      .populate('primaryProvider', 'firstName lastName title specialization');
+
+    if (!visit) {
+      return res.status(404).json({
+        success: false,
+        error: 'Visit not found'
+      });
+    }
+
+    // Fetch prescriptions for this visit
+    const prescriptions = await Prescription.find({ visit: visit._id })
+      .populate('prescriber', 'firstName lastName title')
+      .sort({ prescriptionDate: -1 });
+
+    // Flatten medications from all prescriptions
+    const allMedications = prescriptions.flatMap(rx =>
+      (rx.medications || []).map(med => ({
+        medication: med.drug?.name || med.medication || med.name,
+        dosage: med.dosage,
+        frequency: med.frequency,
+        duration: med.duration,
+        applicationLocation: med.applicationLocation,
+        renew: med.renewInstruction || (med.refillsAllowed > 0 ? 'A RENOUVELER' : ''),
+        instruction: med.instructions
+      }))
+    );
+
+    // Prepare data for PDF generation
+    const pdfData = {
+      patient: visit.patient,
+      visit: {
+        visitId: visit.visitId,
+        visitNumber: visit.visitNumber,
+        createdAt: visit.visitDate || visit.createdAt,
+        date: visit.visitDate,
+        time: visit.visitTime,
+        chiefComplaint: visit.chiefComplaint?.complaint || visit.chiefComplaint,
+        complaint: visit.chiefComplaint,
+        reason: visit.reason,
+        diagnosis: visit.diagnoses?.[0]?.diagnosis?.name || visit.diagnoses?.[0]?.name ||
+                   visit.assessment?.primaryDiagnosis || visit.notes,
+        provider: visit.primaryProvider,
+        followUp: visit.followUp,
+        warning: visit.treatmentWarning || ''
+      },
+      prescriptions: allMedications,
+      provider: visit.primaryProvider,
+      documentNumber: `${visit.patient?.patientId || ''}${visit.visitNumber ? '/' + visit.visitNumber : ''}`,
+      warning: req.query.warning || 'NE JAMAIS ARRETER LE TRAITEMENT SANS AVIS MEDICAL',
+      nextAppointment: req.query.nextAppointment || visit.followUp?.instructions || '',
+      diagnosis: visit.diagnoses?.[0]?.diagnosis?.name || visit.diagnoses?.[0]?.name || ''
+    };
+
+    // Generate PDF
+    const pdfBuffer = await pdfGenerator.generateFicheOphtalmologiePDF(pdfData);
+
+    // Set response headers for PDF download
+    const filename = `fiche-ophta-${visit.patient?.patientId || 'patient'}-${new Date().toISOString().split('T')[0]}.pdf`;
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error('Error generating Fiche PDF:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 module.exports = router;

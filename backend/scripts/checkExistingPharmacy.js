@@ -1,8 +1,8 @@
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 require('dotenv').config();
 const Drug = require('../models/Drug');
 const MedicationTemplate = require('../models/MedicationTemplate');
-const PharmacyInventory = require('../models/PharmacyInventory');
 
 async function checkPharmacy() {
   try {

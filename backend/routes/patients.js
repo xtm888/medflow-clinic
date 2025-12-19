@@ -44,7 +44,14 @@ const {
   searchByLegacyId,
   linkFolderToPatient,
   unlinkFolderFromPatient,
-  getPatientsWithLegacyData
+  getPatientsWithLegacyData,
+  // Patient alerts
+  getPatientAlerts,
+  addPatientAlert,
+  dismissPatientAlert,
+  acknowledgePatientAlert,
+  syncAllergyAlerts,
+  generateFollowupAlerts
 } = require('../controllers/patientController');
 
 const { getPatientBilling } = require('../controllers/billing');
@@ -220,5 +227,13 @@ router
 // Medical issues
 router.get('/:id/medical-issues', logPatientDataAccess, getMedicalIssues);
 router.put('/:id/medical-issues/:issueId', requirePermission('manage_medical_records'), logAction('MEDICAL_ISSUE_UPDATE'), updateMedicalIssue);
+
+// Patient Alerts
+router.get('/:id/alerts', logPatientDataAccess, getPatientAlerts);
+router.post('/:id/alerts', requirePermission('manage_medical_records'), logAction('PATIENT_ALERT_ADD'), addPatientAlert);
+router.put('/:id/alerts/:alertId/dismiss', logAction('PATIENT_ALERT_DISMISS'), dismissPatientAlert);
+router.put('/:id/alerts/:alertId/acknowledge', logAction('PATIENT_ALERT_ACK'), acknowledgePatientAlert);
+router.post('/:id/alerts/sync-allergies', requirePermission('manage_medical_records'), syncAllergyAlerts);
+router.post('/:id/alerts/generate-followup', requirePermission('manage_medical_records'), generateFollowupAlerts);
 
 module.exports = router;

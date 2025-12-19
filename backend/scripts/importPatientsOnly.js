@@ -165,7 +165,7 @@ async function importPatients() {
             }
           }
 
-          console.log(`\n=== IMPORT COMPLETE ===`);
+          console.log('\n=== IMPORT COMPLETE ===');
           console.log(`Inserted: ${totalInserted} patients`);
           console.log(`Errors: ${totalErrors}`);
 

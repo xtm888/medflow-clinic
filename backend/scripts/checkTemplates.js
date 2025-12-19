@@ -7,7 +7,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
   // Check comment templates
   console.log('=== COMMENT TEMPLATES ===');
   const comments = await db.collection('commenttemplates').find({}).toArray();
-  comments.forEach(c => console.log('-', c.name || c.code || c.title, ':', c.text?.substring(0, 50) + '...'));
+  comments.forEach(c => console.log('-', c.name || c.code || c.title, ':', `${c.text?.substring(0, 50)}...`));
 
   // Check examination templates - should include orthoptic data
   console.log('\n=== EXAMINATION TEMPLATES (types) ===');

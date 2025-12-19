@@ -121,7 +121,7 @@ async function migrate() {
     }
 
     // 6. Summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('Migration Summary');
     console.log('='.repeat(60));
 

@@ -36,7 +36,7 @@ router.get('/stats', asyncHandler(async (req, res) => {
     Appointment.countDocuments({
       ...clinicFilter,
       date: { $gte: today, $lt: tomorrow },
-      status: { $in: ['checked-in', 'in-progress', 'waiting', 'scheduled'] }
+      status: { $in: ['checked-in', 'in-progress'] }  // Match queue page logic - only show actually waiting/in-progress
     }),
     Prescription.countDocuments({ ...clinicFilter, status: 'pending' }),
     Invoice.aggregate([
@@ -149,7 +149,7 @@ router.get('/today-tasks', asyncHandler(async (req, res) => {
         // Receptionists handle check-ins
         if (apt.status === 'scheduled' || apt.status === 'confirmed') {
           taskDescription = `Enregistrement - ${apt.reason || apt.type || 'Consultation'}`;
-          taskLink = `/queue`;
+          taskLink = '/queue';
         } else {
           taskLink = `/patients/${patientId}`;
         }
@@ -163,7 +163,7 @@ router.get('/today-tasks', asyncHandler(async (req, res) => {
           taskLink = `/ophthalmology/new-consultation?patientId=${patientId}`;
         } else {
           taskDescription = `RDV prévu - ${apt.reason || apt.type || 'Consultation'}`;
-          taskLink = `/queue`;
+          taskLink = '/queue';
         }
         break;
 
@@ -184,7 +184,7 @@ router.get('/today-tasks', asyncHandler(async (req, res) => {
           taskDescription = `Examen orthoptique - ${patientName}`;
           taskLink = `/orthoptic-exams?patientId=${patientId}`;
         } else {
-          taskLink = `/queue`;
+          taskLink = '/queue';
         }
         break;
 
@@ -446,7 +446,7 @@ router.get('/pending-actions', asyncHandler(async (req, res) => {
 router.get('/revenue-trends', asyncHandler(async (req, res) => {
   const { period = '30days' } = req.query;
 
-  let startDate = new Date();
+  const startDate = new Date();
   if (period === '7days') {
     startDate.setDate(startDate.getDate() - 7);
   } else if (period === '30days') {

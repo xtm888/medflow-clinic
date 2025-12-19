@@ -202,10 +202,10 @@ async function runControllerLogicTest() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB\n');
 
-    console.log('╔' + '═'.repeat(78) + '╗');
-    console.log('║' + ' '.repeat(15) + 'INVOICE CONTROLLER LOGIC VERIFICATION' + ' '.repeat(24) + '║');
-    console.log('║' + ' '.repeat(12) + 'Testing actual controller billing calculations' + ' '.repeat(19) + '║');
-    console.log('╚' + '═'.repeat(78) + '╝');
+    console.log(`╔${'═'.repeat(78)}╗`);
+    console.log(`║${' '.repeat(15)}INVOICE CONTROLLER LOGIC VERIFICATION${' '.repeat(24)}║`);
+    console.log(`║${' '.repeat(12)}Testing actual controller billing calculations${' '.repeat(19)}║`);
+    console.log(`╚${'═'.repeat(78)}╝`);
 
     const companies = await Company.find({});
     const companyMap = {};
@@ -215,7 +215,7 @@ async function runControllerLogicTest() {
     let failed = 0;
 
     for (const test of TEST_CASES) {
-      console.log('\n' + '─'.repeat(80));
+      console.log(`\n${'─'.repeat(80)}`);
       console.log(`📋 ${test.name}`);
       console.log('─'.repeat(80));
 
@@ -230,11 +230,11 @@ async function runControllerLogicTest() {
         assumeApproved: test.assumeApproved
       });
 
-      console.log(`   Items:`);
+      console.log('   Items:');
       for (const item of result.items) {
         console.log(`      ${item.description}: Company $${item.companyShare}, Patient $${item.patientShare}`);
         if (item.discountApplied) console.log(`         (Discount: $${item.discountApplied})`);
-        if (item.notCovered) console.log(`         (Not covered)`);
+        if (item.notCovered) console.log('         (Not covered)');
       }
 
       console.log(`   TOTALS: Company $${result.totalCompanyShare}, Patient $${result.totalPatientShare}`);
@@ -250,16 +250,16 @@ async function runControllerLogicTest() {
       }
 
       if (testPassed) {
-        console.log(`   ✅ PASSED`);
+        console.log('   ✅ PASSED');
         passed++;
       } else {
-        console.log(`   ❌ FAILED`);
+        console.log('   ❌ FAILED');
         failed++;
       }
     }
 
     // Also verify the logic matches line-by-line with invoiceController
-    console.log('\n\n' + '═'.repeat(80));
+    console.log(`\n\n${'═'.repeat(80)}`);
     console.log('  CODE COMPARISON: Extracted Logic vs invoiceController.js');
     console.log('═'.repeat(80));
 
@@ -287,7 +287,7 @@ async function runControllerLogicTest() {
       }
     }
 
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     console.log('  FINAL RESULTS');
     console.log('═'.repeat(80));
     console.log(`\n  Test Cases: ${TEST_CASES.length}`);

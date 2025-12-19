@@ -92,7 +92,7 @@ async function backfillDataStatus() {
   console.log('╚════════════════════════════════════════════════════════════╝\n');
 
   console.log(`Mode: ${DRY_RUN ? '🔍 DRY RUN (no changes)' : '💾 LIVE (will update database)'}`);
-  console.log('\n' + '─'.repeat(60) + '\n');
+  console.log(`\n${'─'.repeat(60)}\n`);
 
   // Find all patients that might be legacy (have legacyId or folderIds or phoneNumber starting with 999)
   const legacyPatients = await Patient.find({
@@ -150,14 +150,14 @@ async function backfillDataStatus() {
   }
 
   // Print summary
-  console.log('\n' + '═'.repeat(60));
+  console.log(`\n${'═'.repeat(60)}`);
   console.log('                        SUMMARY');
   console.log('═'.repeat(60));
   console.log(`  Legacy patients found:  ${legacyPatients.length}`);
   console.log(`  Updated:                ${updated}`);
   console.log(`  Already complete:       ${alreadyComplete}`);
   console.log(`  Already tracked:        ${alreadyTracked}`);
-  console.log('═'.repeat(60) + '\n');
+  console.log(`${'═'.repeat(60)}\n`);
 
   if (DRY_RUN) {
     console.log('⚠️  DRY RUN - No changes were made to the database\n');

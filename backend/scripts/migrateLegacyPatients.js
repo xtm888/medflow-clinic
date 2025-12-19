@@ -334,7 +334,7 @@ function parseDateString(dateStr) {
     /^(\d{2})(\d{2})(\d{4})$/, // DDMMYYYY
     /^(\d{4})(\d{2})(\d{2})$/, // YYYYMMDD
     /^(\d{2})\/(\d{2})\/(\d{4})$/, // DD/MM/YYYY
-    /^(\d{4})-(\d{2})-(\d{2})$/, // YYYY-MM-DD
+    /^(\d{4})-(\d{2})-(\d{2})$/ // YYYY-MM-DD
   ];
 
   for (let i = 0; i < formats.length; i++) {
@@ -532,9 +532,9 @@ async function createPatientFromLegacy(legacyPatient) {
       linkedAt: new Date()
     }],
     medicalHistory: {
-      notes: `Migrated from legacy system on ${new Date().toISOString()}. ` +
-             (!legacyPatient.dateOfBirth ? 'DOB: Unknown (placeholder). ' : '') +
-             (!legacyPatient.phone ? 'Phone: Unknown (placeholder).' : '')
+      notes: `Migrated from legacy system on ${new Date().toISOString()}. ${
+        !legacyPatient.dateOfBirth ? 'DOB: Unknown (placeholder). ' : ''
+      }${!legacyPatient.phone ? 'Phone: Unknown (placeholder).' : ''}`
     },
     status: 'active',
     // Mark as legacy import for easy identification
@@ -725,7 +725,7 @@ async function processLegacyPatient(legacyPatient, index, total) {
     }
 
     log(`[${index + 1}/${total}] ${legacyPatient.folderId || legacyPatient.legacyId}: ${action} (${(matchConfidence * 100).toFixed(0)}% confidence)`,
-        action === 'needs_review' ? 'warn' : 'info');
+      action === 'needs_review' ? 'warn' : 'info');
 
     return { action, patient, matchConfidence, examsImported };
 
@@ -763,7 +763,7 @@ async function generateReport(results) {
       `${r.firstName || ''} ${r.lastName || ''}`.trim(),
       r.dateOfBirth ? new Date(r.dateOfBirth).toISOString().split('T')[0] : '',
       result.result.action,
-      ((result.result.matchConfidence || 0) * 100).toFixed(0) + '%',
+      `${((result.result.matchConfidence || 0) * 100).toFixed(0)}%`,
       result.result.patient?._id || '',
       result.result.examsImported || 0,
       result.result.error || ''

@@ -22,6 +22,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { PharmacyInventory, FrameInventory } = require('../models/Inventory');
 
 // Models
 const Patient = require('../models/Patient');
@@ -38,8 +39,6 @@ const SurgeryCase = require('../models/SurgeryCase');
 const GlassesOrder = require('../models/GlassesOrder');
 const Invoice = require('../models/Invoice');
 const Approval = require('../models/Approval');
-const FrameInventory = require('../models/FrameInventory');
-const PharmacyInventory = require('../models/PharmacyInventory');
 
 const TEST_PREFIX = 'CONV_TEST_';
 
@@ -250,7 +249,7 @@ class ComprehensiveConventionTest {
       }
     });
     logSuccess(`Created ACTIVA patient: ${this.testData.patients.activa.firstName} ${this.testData.patients.activa.lastName}`);
-    logInfo(`  Convention: ACTIVA - 100% coverage, approval for surgery/optical >$100`);
+    logInfo('  Convention: ACTIVA - 100% coverage, approval for surgery/optical >$100');
 
     // Patient 2: GGA (optical not covered)
     this.testData.patients.gga = await Patient.create({
@@ -267,7 +266,7 @@ class ComprehensiveConventionTest {
       }
     });
     logSuccess(`Created GGA patient: ${this.testData.patients.gga.firstName} ${this.testData.patients.gga.lastName}`);
-    logInfo(`  Convention: GGA - 100% medical, optical NOT COVERED`);
+    logInfo('  Convention: GGA - 100% medical, optical NOT COVERED');
 
     // Patient 3: No convention
     this.testData.patients.noConvention = await Patient.create({
@@ -278,7 +277,7 @@ class ComprehensiveConventionTest {
       // No convention
     });
     logSuccess(`Created CASH patient: ${this.testData.patients.noConvention.firstName} ${this.testData.patients.noConvention.lastName}`);
-    logInfo(`  No convention - Patient pays 100%`);
+    logInfo('  No convention - Patient pays 100%');
   }
 
   // ============================================
@@ -289,7 +288,7 @@ class ComprehensiveConventionTest {
     const company = this.testData.companies.activa;
 
     logInfo(`Testing patient: ${patient.firstName} ${patient.lastName}`);
-    logInfo(`Convention: ACTIVA - 100% coverage`);
+    logInfo('Convention: ACTIVA - 100% coverage');
 
     // Test 1: Consultation (no approval needed)
     await this.testService({
@@ -484,7 +483,7 @@ class ComprehensiveConventionTest {
     const company = this.testData.companies.gga;
 
     logInfo(`Testing patient: ${patient.firstName} ${patient.lastName}`);
-    logInfo(`Convention: GGA - 100% medical, optical NOT COVERED`);
+    logInfo('Convention: GGA - 100% medical, optical NOT COVERED');
 
     // Test 1: Consultation (covered 100%)
     await this.testService({
@@ -589,7 +588,7 @@ class ComprehensiveConventionTest {
     const patient = this.testData.patients.noConvention;
 
     logInfo(`Testing patient: ${patient.firstName} ${patient.lastName}`);
-    logInfo(`No convention - Patient pays 100%`);
+    logInfo('No convention - Patient pays 100%');
 
     // Test 1: Consultation (patient pays 100%)
     await this.testService({
@@ -911,7 +910,7 @@ class ComprehensiveConventionTest {
           coverage = 0;
           companyPays = 0;
           patientPays = total;
-          logWarning(`Approval required but not granted`);
+          logWarning('Approval required but not granted');
         } else {
           coverage = opticalConfig?.coveragePercentage ?? company.defaultCoverage?.percentage ?? 100;
           companyPays = Math.round(total * coverage / 100);
@@ -1036,13 +1035,13 @@ class ComprehensiveConventionTest {
           `${s.name.substring(0, 44).padEnd(45)} ` +
           `${s.price.toLocaleString().padStart(12)} ` +
           `${s.actualCompanyPays.toLocaleString().padStart(12)} ` +
-          `${s.actualPatientPays.toLocaleString().padStart(12)} ` +
-          status
+          `${s.actualPatientPays.toLocaleString().padStart(12)} ${
+            status}`
         );
       }
     }
 
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     const total = this.results.passed + this.results.failed;
     const percentage = total > 0 ? Math.round((this.results.passed / total) * 100) : 0;
 

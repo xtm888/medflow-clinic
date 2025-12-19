@@ -21,6 +21,41 @@ router.get('/favorites',
   treatmentProtocolController.getFavoriteProtocols
 );
 
+// =====================================================
+// STUDIOVISION PARITY - ENHANCED ROUTES
+// =====================================================
+
+// GET /api/treatment-protocols/categories - Get all categories with counts
+router.get('/categories',
+  treatmentProtocolController.getCategories
+);
+
+// GET /api/treatment-protocols/category/:category - Get protocols by category
+router.get('/category/:category',
+  treatmentProtocolController.getProtocolsByCategory
+);
+
+// GET /api/treatment-protocols/diagnosis/:icdCode - Get protocols for diagnosis
+router.get('/diagnosis/:icdCode',
+  treatmentProtocolController.getProtocolsForDiagnosis
+);
+
+// POST /api/treatment-protocols/:id/apply - Apply protocol (get prescription-ready meds)
+router.post('/:id/apply',
+  authorize(['doctor', 'ophthalmologist', 'admin']),
+  treatmentProtocolController.applyProtocol
+);
+
+// POST /api/treatment-protocols/:id/duplicate - Duplicate protocol for personalization
+router.post('/:id/duplicate',
+  authorize(['doctor', 'ophthalmologist', 'admin']),
+  treatmentProtocolController.duplicateProtocol
+);
+
+// =====================================================
+// STANDARD CRUD ROUTES
+// =====================================================
+
 // GET /api/treatment-protocols/:id - Get single protocol
 router.get('/:id',
   treatmentProtocolController.getTreatmentProtocolById

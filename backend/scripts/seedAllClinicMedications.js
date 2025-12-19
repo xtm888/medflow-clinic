@@ -580,7 +580,7 @@ async function seedAllClinicMedications() {
     console.log('\n✨ ALL CLINIC MEDICATIONS SEEDED SUCCESSFULLY!');
     console.log(`   Total categories: ${Object.keys(allClinicMedications).length}`);
     console.log(`   Total medications: ${totalMedications}`);
-    console.log(`   Including ALL non-eye medications from clinic maquettes`);
+    console.log('   Including ALL non-eye medications from clinic maquettes');
 
   } catch (error) {
     console.error('❌ Error seeding medications:', error);

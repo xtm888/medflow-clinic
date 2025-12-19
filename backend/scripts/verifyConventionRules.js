@@ -691,7 +691,7 @@ async function runVerification() {
     }
 
     // Summary
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     console.log('  VERIFICATION SUMMARY');
     console.log('═'.repeat(80));
     console.log(`\n  Total Verified: ${totalVerified}`);
@@ -701,7 +701,7 @@ async function runVerification() {
 
     // Return failed companies for fixing
     if (failedCompanies.length > 0) {
-      console.log('\n' + '─'.repeat(80));
+      console.log(`\n${'─'.repeat(80)}`);
       console.log('  COMPANIES NEEDING FIXES');
       console.log('─'.repeat(80));
       failedCompanies.forEach(fc => {

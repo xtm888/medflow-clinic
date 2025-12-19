@@ -558,7 +558,7 @@ async function processFHIRDiagnosticReport(integration, resource) {
 
   // Find or create order
   const Visit = require('../models/Visit');
-  let order = await Visit.findOne({
+  const order = await Visit.findOne({
     $or: [
       { _id: parsed.externalId },
       { externalId: parsed.externalId }

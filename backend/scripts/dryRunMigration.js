@@ -60,10 +60,10 @@ async function dryRun() {
         console.log(`   Invoice: ${visit.billing?.invoice ? 'YES' : 'NO'}`);
 
         if (index === 0) {
-          console.log(`   👉 This visit will keep the appointment link`);
+          console.log('   👉 This visit will keep the appointment link');
           totalToKeep++;
         } else {
-          console.log(`   👉 This visit's appointment field will be set to NULL`);
+          console.log('   👉 This visit\'s appointment field will be set to NULL');
           totalToUnlink++;
         }
         console.log('');

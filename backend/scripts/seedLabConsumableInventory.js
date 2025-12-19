@@ -5,7 +5,8 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const LabConsumableInventory = require('../models/LabConsumableInventory');
+const { LabConsumableInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 // Laboratory consumables data
@@ -149,21 +150,21 @@ async function main() {
         const sku = generateSKU(item.name, item.category, clinicCode);
 
         // Pricing based on category and quantity
-        let costPerUnit = item.category === 'collection-tube' ? randomInt(200, 800) :
-                         item.category === 'needle' ? randomInt(50, 200) :
-                         item.category === 'syringe' ? randomInt(100, 400) :
-                         item.category === 'lancet' ? randomInt(50, 150) :
-                         item.category === 'slide' ? randomInt(30, 100) :
-                         item.category === 'coverslip' ? randomInt(20, 50) :
-                         item.category === 'container' ? randomInt(100, 500) :
-                         item.category === 'swab' ? randomInt(100, 800) :
-                         item.category === 'pipette-tip' ? randomInt(10, 50) :
-                         item.category === 'cuvette' ? randomInt(50, 500) :
-                         item.category === 'glove' ? randomInt(80, 200) :
-                         item.category === 'mask' ? randomInt(50, 500) :
-                         item.category === 'protective-wear' ? randomInt(200, 1000) :
-                         item.category === 'transport-media' ? randomInt(500, 1500) :
-                         randomInt(100, 500);
+        const costPerUnit = item.category === 'collection-tube' ? randomInt(200, 800) :
+          item.category === 'needle' ? randomInt(50, 200) :
+            item.category === 'syringe' ? randomInt(100, 400) :
+              item.category === 'lancet' ? randomInt(50, 150) :
+                item.category === 'slide' ? randomInt(30, 100) :
+                  item.category === 'coverslip' ? randomInt(20, 50) :
+                    item.category === 'container' ? randomInt(100, 500) :
+                      item.category === 'swab' ? randomInt(100, 800) :
+                        item.category === 'pipette-tip' ? randomInt(10, 50) :
+                          item.category === 'cuvette' ? randomInt(50, 500) :
+                            item.category === 'glove' ? randomInt(80, 200) :
+                              item.category === 'mask' ? randomInt(50, 500) :
+                                item.category === 'protective-wear' ? randomInt(200, 1000) :
+                                  item.category === 'transport-media' ? randomInt(500, 1500) :
+                                    randomInt(100, 500);
 
         const unitsPerBox = item.specs.unitsPerBox || 100;
         const costPerBox = costPerUnit * unitsPerBox;
@@ -231,8 +232,8 @@ async function main() {
           },
           storage: {
             location: item.category === 'collection-tube' ? 'Phlebotomy Area' :
-                     item.category === 'glove' || item.category === 'mask' ? 'Supply Room' :
-                     'Laboratory Storage',
+              item.category === 'glove' || item.category === 'mask' ? 'Supply Room' :
+                'Laboratory Storage',
             temperature: 'room-temp'
           },
           isActive: true
@@ -245,7 +246,7 @@ async function main() {
       totalCreated += consumables.length;
     }
 
-    console.log(`\n=== Summary ===`);
+    console.log('\n=== Summary ===');
     console.log(`Total lab consumable inventory entries created: ${totalCreated}`);
     console.log(`Entries per clinic: ~${Math.round(totalCreated / clinics.length)}`);
 

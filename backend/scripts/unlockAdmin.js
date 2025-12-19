@@ -23,7 +23,7 @@ async function unlockAdmin() {
   admin.password = defaults.admin.password;
   await admin.save();
 
-  console.log('Admin account unlocked and password reset to: ' + defaults.admin.password);
+  console.log(`Admin account unlocked and password reset to: ${defaults.admin.password}`);
 
   await mongoose.disconnect();
 }

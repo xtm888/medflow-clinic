@@ -54,10 +54,10 @@ function simulatePackageDetection(items, company) {
 
       const matchIndex = unmatchedCodes.findIndex(code =>
         itemCode === code ||
-        itemCode.startsWith(code + '-') ||
-        itemCode.startsWith(code + '_') ||
-        code.startsWith(itemCode + '-') ||
-        code.startsWith(itemCode + '_')
+        itemCode.startsWith(`${code}-`) ||
+        itemCode.startsWith(`${code}_`) ||
+        code.startsWith(`${itemCode}-`) ||
+        code.startsWith(`${itemCode}_`)
       );
 
       if (matchIndex !== -1) {
@@ -160,7 +160,7 @@ function simulateConventionBilling(items, company, options = {}) {
       }
     }
 
-    let coveragePercentage = categorySettings?.coveragePercentage ?? baseCoveragePercentage;
+    const coveragePercentage = categorySettings?.coveragePercentage ?? baseCoveragePercentage;
 
     if (approvalRequired && !autoApproved && !options.assumeApproved) {
       calc.pendingApproval = true;
@@ -477,10 +477,10 @@ async function runExtendedAudit() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB\n');
 
-    console.log('╔' + '═'.repeat(78) + '╗');
-    console.log('║' + ' '.repeat(18) + 'EXTENDED DEEP AUDIT - EDGE CASES' + ' '.repeat(27) + '║');
-    console.log('║' + ' '.repeat(15) + 'Testing boundary conditions and edge cases' + ' '.repeat(20) + '║');
-    console.log('╚' + '═'.repeat(78) + '╝');
+    console.log(`╔${'═'.repeat(78)}╗`);
+    console.log(`║${' '.repeat(18)}EXTENDED DEEP AUDIT - EDGE CASES${' '.repeat(27)}║`);
+    console.log(`║${' '.repeat(15)}Testing boundary conditions and edge cases${' '.repeat(20)}║`);
+    console.log(`╚${'═'.repeat(78)}╝`);
 
     const companies = await Company.find({});
     const companyMap = {};
@@ -492,7 +492,7 @@ async function runExtendedAudit() {
 
     // Run extended scenarios
     for (const scenario of EXTENDED_SCENARIOS) {
-      console.log('\n' + '─'.repeat(80));
+      console.log(`\n${'─'.repeat(80)}`);
       console.log(`📋 SCENARIO: ${scenario.name}`);
       console.log('─'.repeat(80));
 
@@ -519,9 +519,9 @@ async function runExtendedAudit() {
       console.log('\n   Item Breakdown:');
       for (const calc of billingResult.calculations) {
         console.log(`      ${calc.item}: $${calc.originalPrice} → Company: $${calc.companyShare}, Patient: $${calc.patientShare}`);
-        if (calc.autoApproved) console.log(`         🔓 Auto-approved`);
-        if (calc.pendingApproval) console.log(`         ⏳ Pending approval`);
-        if (calc.notCovered) console.log(`         ⛔ Not covered`);
+        if (calc.autoApproved) console.log('         🔓 Auto-approved');
+        if (calc.pendingApproval) console.log('         ⏳ Pending approval');
+        if (calc.notCovered) console.log('         ⛔ Not covered');
         if (calc.globalDiscount) console.log(`         🏷️ ${calc.globalDiscount}% discount`);
         if (calc.maxApplied) console.log(`         📊 Max limit: $${calc.maxLimit}`);
       }
@@ -535,7 +535,7 @@ async function runExtendedAudit() {
           console.log(`   ❌ Company share WRONG: expected $${scenario.expected.companyShare}, got $${billingResult.totalCompanyShare}`);
           scenarioPass = false;
         } else {
-          console.log(`   ✅ Company share CORRECT`);
+          console.log('   ✅ Company share CORRECT');
         }
       }
       if (scenario.expected.patientShare !== undefined) {
@@ -543,24 +543,24 @@ async function runExtendedAudit() {
           console.log(`   ❌ Patient share WRONG: expected $${scenario.expected.patientShare}, got $${billingResult.totalPatientShare}`);
           scenarioPass = false;
         } else {
-          console.log(`   ✅ Patient share CORRECT`);
+          console.log('   ✅ Patient share CORRECT');
         }
       }
 
       if (scenarioPass) {
         passed++;
-        console.log(`   🎉 PASSED`);
+        console.log('   🎉 PASSED');
       } else {
         failed++;
         failures.push({ scenario: scenario.name, expected: scenario.expected, actual: billingResult });
-        console.log(`   ❌ FAILED`);
+        console.log('   ❌ FAILED');
       }
     }
 
     // ============================================
     // VALIDATE ALL 136 COMPANIES
     // ============================================
-    console.log('\n\n' + '═'.repeat(80));
+    console.log(`\n\n${'═'.repeat(80)}`);
     console.log('  VALIDATING ALL COMPANY CONFIGURATIONS');
     console.log('═'.repeat(80));
 
@@ -629,7 +629,7 @@ async function runExtendedAudit() {
     // ============================================
     // SUB-COMPANY INHERITANCE CHECK
     // ============================================
-    console.log('\n\n' + '═'.repeat(80));
+    console.log(`\n\n${'═'.repeat(80)}`);
     console.log('  VALIDATING SUB-COMPANY INHERITANCE');
     console.log('═'.repeat(80));
 
@@ -694,7 +694,7 @@ async function runExtendedAudit() {
     // ============================================
     // FINAL SUMMARY
     // ============================================
-    console.log('\n\n' + '═'.repeat(80));
+    console.log(`\n\n${'═'.repeat(80)}`);
     console.log('  EXTENDED AUDIT FINAL SUMMARY');
     console.log('═'.repeat(80));
 
@@ -718,7 +718,7 @@ async function runExtendedAudit() {
     }
 
     const totalIssues = failed + invalidCompanies + inheritanceInvalid;
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     if (totalIssues === 0) {
       console.log('  ✅ ALL EXTENDED TESTS PASSED - BILLING SYSTEM VALIDATED');
     } else {

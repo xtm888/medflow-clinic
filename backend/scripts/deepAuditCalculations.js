@@ -62,10 +62,10 @@ function simulatePackageDetection(items, company) {
 
       const matchIndex = unmatchedCodes.findIndex(code =>
         itemCode === code ||
-        itemCode.startsWith(code + '-') ||
-        itemCode.startsWith(code + '_') ||
-        code.startsWith(itemCode + '-') ||
-        code.startsWith(itemCode + '_')
+        itemCode.startsWith(`${code}-`) ||
+        itemCode.startsWith(`${code}_`) ||
+        code.startsWith(`${itemCode}-`) ||
+        code.startsWith(`${itemCode}_`)
       );
 
       if (matchIndex !== -1) {
@@ -177,7 +177,7 @@ function simulateConventionBilling(items, company, options = {}) {
     }
 
     // Calculate coverage
-    let coveragePercentage = categorySettings?.coveragePercentage ?? baseCoveragePercentage;
+    const coveragePercentage = categorySettings?.coveragePercentage ?? baseCoveragePercentage;
 
     // If approval required and not auto-approved, no coverage (would need manual approval)
     if (approvalRequired && !autoApproved && !options.assumeApproved) {
@@ -566,10 +566,10 @@ async function runDeepAudit() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected to MongoDB\n');
 
-    console.log('╔' + '═'.repeat(78) + '╗');
-    console.log('║' + ' '.repeat(20) + 'DEEP AUDIT - BILLING CALCULATIONS' + ' '.repeat(23) + '║');
-    console.log('║' + ' '.repeat(15) + 'Tracing every calculation step in detail' + ' '.repeat(22) + '║');
-    console.log('╚' + '═'.repeat(78) + '╝');
+    console.log(`╔${'═'.repeat(78)}╗`);
+    console.log(`║${' '.repeat(20)}DEEP AUDIT - BILLING CALCULATIONS${' '.repeat(23)}║`);
+    console.log(`║${' '.repeat(15)}Tracing every calculation step in detail${' '.repeat(22)}║`);
+    console.log(`╚${'═'.repeat(78)}╝`);
 
     const companies = await Company.find({});
     const companyMap = {};
@@ -580,7 +580,7 @@ async function runDeepAudit() {
     const failures = [];
 
     for (const scenario of TEST_SCENARIOS) {
-      console.log('\n' + '─'.repeat(80));
+      console.log(`\n${'─'.repeat(80)}`);
       console.log(`📋 SCENARIO: ${scenario.name}`);
       console.log('─'.repeat(80));
 
@@ -620,11 +620,11 @@ async function runDeepAudit() {
           }
         }
       } else {
-        console.log(`      → No package applied`);
+        console.log('      → No package applied');
         if (scenario.expected.packageApplied === false) {
-          console.log(`      ✅ Correctly did NOT apply package`);
+          console.log('      ✅ Correctly did NOT apply package');
         } else if (scenario.expected.packageApplied === true) {
-          console.log(`      ❌ Package should have been applied!`);
+          console.log('      ❌ Package should have been applied!');
         }
       }
 
@@ -636,14 +636,14 @@ async function runDeepAudit() {
       });
 
       console.log('\n   Item-by-Item Breakdown:');
-      console.log('   ' + '─'.repeat(70));
+      console.log(`   ${'─'.repeat(70)}`);
 
       for (const calc of billingResult.calculations) {
         console.log(`\n      ${calc.item} (${calc.category})`);
         console.log(`         Original Price: $${calc.originalPrice}`);
 
         if (calc.isPackage) {
-          console.log(`         📦 This is a PACKAGE item`);
+          console.log('         📦 This is a PACKAGE item');
         }
 
         if (calc.notCovered) {
@@ -671,8 +671,8 @@ async function runDeepAudit() {
       }
 
       // Summary
-      console.log('\n   ' + '─'.repeat(70));
-      console.log(`\n   📊 SUMMARY:`);
+      console.log(`\n   ${'─'.repeat(70)}`);
+      console.log('\n   📊 SUMMARY:');
       console.log(`      Total Company Share: $${billingResult.totalCompanyShare}`);
       console.log(`      Total Patient Share: $${billingResult.totalPatientShare}`);
 
@@ -707,16 +707,16 @@ async function runDeepAudit() {
 
       if (scenarioPass) {
         passed++;
-        console.log(`\n   🎉 SCENARIO PASSED`);
+        console.log('\n   🎉 SCENARIO PASSED');
       } else {
         failed++;
         failures.push({ scenario: scenario.name, expected: scenario.expected, actual: billingResult });
-        console.log(`\n   ❌ SCENARIO FAILED`);
+        console.log('\n   ❌ SCENARIO FAILED');
       }
     }
 
     // Final Summary
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     console.log('  DEEP AUDIT SUMMARY');
     console.log('═'.repeat(80));
     console.log(`\n  Total Scenarios: ${TEST_SCENARIOS.length}`);
@@ -730,7 +730,7 @@ async function runDeepAudit() {
       });
     }
 
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
 
   } catch (error) {
     console.error('Deep audit error:', error);

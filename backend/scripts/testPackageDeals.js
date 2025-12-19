@@ -48,10 +48,10 @@ function applyPackageDeals(items, company) {
 
       const matchIndex = unmatchedCodes.findIndex(code =>
         itemCode === code ||
-        itemCode.startsWith(code + '-') ||
-        itemCode.startsWith(code + '_') ||
-        code.startsWith(itemCode + '-') ||
-        code.startsWith(itemCode + '_')
+        itemCode.startsWith(`${code}-`) ||
+        itemCode.startsWith(`${code}_`) ||
+        code.startsWith(`${itemCode}-`) ||
+        code.startsWith(`${itemCode}_`)
       );
 
       if (matchIndex !== -1) {
@@ -132,12 +132,12 @@ async function runTest() {
       return;
     }
 
-    console.log(`\n📦 BRALIMA Package Configuration:`);
+    console.log('\n📦 BRALIMA Package Configuration:');
     if (bralima.packageDeals?.length > 0) {
       const pkg = bralima.packageDeals[0];
       console.log(`   Name: ${pkg.name}`);
       console.log(`   Price: $${pkg.price}`);
-      console.log(`   Acts included:`);
+      console.log('   Acts included:');
       pkg.includedActs?.forEach(act => {
         console.log(`     - ${act.actCode}: ${act.actName}`);
       });
@@ -153,7 +153,7 @@ async function runTest() {
       { code: 'FLUORO', description: 'Test fluorescéine', unitPrice: 10, quantity: 1, category: 'examination' }
     ];
 
-    console.log(`\n📋 Invoice Items (before package detection):`);
+    console.log('\n📋 Invoice Items (before package detection):');
     let totalBefore = 0;
     bralimaItems.forEach(item => {
       console.log(`   ${item.code}: ${item.description} - $${item.unitPrice}`);
@@ -164,7 +164,7 @@ async function runTest() {
     // Apply package detection
     const bralimaResult = applyPackageDeals(bralimaItems, bralima);
 
-    console.log(`\n✅ Package Detection Result:`);
+    console.log('\n✅ Package Detection Result:');
     if (bralimaResult.packagesApplied.length > 0) {
       const applied = bralimaResult.packagesApplied[0];
       console.log(`   Package Applied: ${applied.packageName}`);
@@ -176,7 +176,7 @@ async function runTest() {
       console.log('   ❌ No package was applied!');
     }
 
-    console.log(`\n📋 Invoice Items (after package detection):`);
+    console.log('\n📋 Invoice Items (after package detection):');
     let totalAfter = 0;
     bralimaResult.bundledItems.forEach(item => {
       if (item.isPackage) {
@@ -189,7 +189,7 @@ async function runTest() {
     console.log(`   TOTAL: $${totalAfter}`);
 
     // Test 2: MSO KINSHASA package (different acts)
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('TEST 2: MSO KINSHASA $65 Package Detection');
     console.log('='.repeat(60));
 
@@ -197,12 +197,12 @@ async function runTest() {
     if (!mso) {
       console.log('❌ MSO KINSHASA company not found');
     } else {
-      console.log(`\n📦 MSO KINSHASA Package Configuration:`);
+      console.log('\n📦 MSO KINSHASA Package Configuration:');
       if (mso.packageDeals?.length > 0) {
         const pkg = mso.packageDeals[0];
         console.log(`   Name: ${pkg.name}`);
         console.log(`   Price: $${pkg.price}`);
-        console.log(`   Acts included:`);
+        console.log('   Acts included:');
         pkg.includedActs?.forEach(act => {
           console.log(`     - ${act.actCode}: ${act.actName}`);
         });
@@ -218,7 +218,7 @@ async function runTest() {
         { code: 'RETINO', description: 'Rétinographie', unitPrice: 40, quantity: 1, category: 'imaging' }
       ];
 
-      console.log(`\n📋 Invoice Items (before):`);
+      console.log('\n📋 Invoice Items (before):');
       let msoTotalBefore = 0;
       msoItems.forEach(item => {
         console.log(`   ${item.code}: $${item.unitPrice}`);
@@ -228,7 +228,7 @@ async function runTest() {
 
       const msoResult = applyPackageDeals(msoItems, mso);
 
-      console.log(`\n✅ Package Detection Result:`);
+      console.log('\n✅ Package Detection Result:');
       if (msoResult.packagesApplied.length > 0) {
         const applied = msoResult.packagesApplied[0];
         console.log(`   Package Applied: ${applied.packageName}`);
@@ -241,17 +241,17 @@ async function runTest() {
     }
 
     // Test 3: Partial package (should NOT apply)
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('TEST 3: Partial Package (should NOT apply)');
     console.log('='.repeat(60));
 
     const partialItems = [
       { code: 'CONSULT', description: 'Consultation', unitPrice: 25, quantity: 1, category: 'consultation' },
-      { code: 'REFRACTO', description: 'Réfractométrie', unitPrice: 15, quantity: 1, category: 'examination' },
+      { code: 'REFRACTO', description: 'Réfractométrie', unitPrice: 15, quantity: 1, category: 'examination' }
       // Missing: TONO, BIOMICRO, FOND-ND, FLUORO
     ];
 
-    console.log(`\n📋 Invoice Items (only 2 of 6 package acts):`);
+    console.log('\n📋 Invoice Items (only 2 of 6 package acts):');
     partialItems.forEach(item => {
       console.log(`   ${item.code}: $${item.unitPrice}`);
     });
@@ -259,31 +259,31 @@ async function runTest() {
     const partialResult = applyPackageDeals(partialItems, bralima);
 
     if (partialResult.packagesApplied.length === 0) {
-      console.log(`\n✅ Correctly did NOT apply package (missing required acts)`);
+      console.log('\n✅ Correctly did NOT apply package (missing required acts)');
     } else {
-      console.log(`\n❌ ERROR: Package was applied when it shouldn't have been!`);
+      console.log('\n❌ ERROR: Package was applied when it shouldn\'t have been!');
     }
 
     // Test 4: Non-convention company (no package)
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('TEST 4: Company without package deals');
     console.log('='.repeat(60));
 
     const cigna = await Company.findOne({ name: { $regex: /cigna/i } });
     if (cigna) {
-      console.log(`\n📦 CIGNA Package Configuration:`);
+      console.log('\n📦 CIGNA Package Configuration:');
       console.log(`   Package deals: ${cigna.packageDeals?.length || 0}`);
 
       const cignaResult = applyPackageDeals(bralimaItems, cigna);
 
       if (cignaResult.packagesApplied.length === 0) {
-        console.log(`\n✅ Correctly did NOT apply package (CIGNA has no package deals)`);
+        console.log('\n✅ Correctly did NOT apply package (CIGNA has no package deals)');
       } else {
-        console.log(`\n❌ ERROR: Package was applied when it shouldn't have been!`);
+        console.log('\n❌ ERROR: Package was applied when it shouldn\'t have been!');
       }
     }
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('TEST COMPLETE');
     console.log('='.repeat(60));
 

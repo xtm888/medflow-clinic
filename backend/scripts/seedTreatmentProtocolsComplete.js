@@ -4,6 +4,97 @@ const TreatmentProtocol = require('../models/TreatmentProtocol');
 const Drug = require('../models/Drug');
 const User = require('../models/User');
 
+// =====================================================
+// HELPER FUNCTIONS - StudioVision Enhanced Fields
+// =====================================================
+
+// Map French posologie to standard frequency codes
+function mapFrequencyToCode(posologie) {
+  const mapping = {
+    '1x_jour': 'QD',
+    '2x_jour': 'BID',
+    '3x_jour': 'TID',
+    '4x_jour': 'QID',
+    '6x_jour': 'Q4H',
+    'toutes_2h': 'Q2H',
+    'toutes_heures': 'Q1H',
+    'au_coucher': 'QHS',
+    'si_besoin': 'PRN',
+    '1x_jour_alterné': 'QOD',
+    '1x_semaine': 'QW'
+  };
+  return mapping[posologie] || 'QD';
+}
+
+// Extract numeric duration value
+function extractDurationValue(durationStr) {
+  if (!durationStr) return 7;
+  const match = durationStr.match(/(\d+)/);
+  if (match) return parseInt(match[1], 10);
+  if (durationStr.includes('mois')) return 30;
+  if (durationStr.includes('semaine')) return 7;
+  return 7;
+}
+
+// Extract duration unit
+function extractDurationUnit(durationStr) {
+  if (!durationStr) return 'days';
+  if (durationStr.includes('mois') || durationStr.includes('month')) return 'months';
+  if (durationStr.includes('semaine') || durationStr.includes('week')) return 'weeks';
+  if (durationStr.includes('long') || durationStr.includes('continu')) return 'continuous';
+  return 'days';
+}
+
+// Get icon based on category
+function getCategoryIcon(category) {
+  const icons = {
+    'post_operatoire': '🔪',
+    'post_surgical': '🔪',
+    'glaucome': '👁️',
+    'glaucoma': '👁️',
+    'infection': '🦠',
+    'inflammation': '🔥',
+    'uveite': '🔥',
+    'allergie': '🌸',
+    'allergy': '🌸',
+    'secheresse_oculaire': '💧',
+    'dry_eye': '💧',
+    'cataracte': '🔍',
+    'dmla': '🎯',
+    'retinopathie_diabetique': '🩸',
+    'injection': '💉',
+    'prophylaxie': '🛡️',
+    'pediatric': '👶',
+    'emergency': '🚨'
+  };
+  return icons[category] || '💊';
+}
+
+// Get color based on category
+function getCategoryColor(category) {
+  const colors = {
+    'post_operatoire': '#10B981', // Green
+    'post_surgical': '#10B981',
+    'glaucome': '#8B5CF6', // Purple
+    'glaucoma': '#8B5CF6',
+    'infection': '#EF4444', // Red
+    'inflammation': '#F97316', // Orange
+    'uveite': '#F97316',
+    'allergie': '#EC4899', // Pink
+    'allergy': '#EC4899',
+    'secheresse_oculaire': '#3B82F6', // Blue
+    'dry_eye': '#3B82F6',
+    'cataracte': '#6366F1', // Indigo
+    'dmla': '#14B8A6', // Teal
+    'retinopathie_diabetique': '#F59E0B', // Amber
+    'injection': '#DC2626', // Red 600
+    'prophylaxie': '#059669', // Emerald
+    'pediatric': '#8B5CF6', // Violet
+    'emergency': '#B91C1C' // Red 700
+  };
+  return colors[category] || '#6B7280'; // Gray default
+}
+
 // Protocol definitions with medication references by brand name
 const protocolDefinitions = [
   // POST-CATARACT SURGERY PROTOCOLS
@@ -482,12 +573,30 @@ async function seedTreatmentProtocols() {
         if (drug) {
           medications.push({
             medicationTemplate: drug._id,
+            // Enhanced fields for StudioVision parity
+            drugName: drug.name || medSearch.searchTerm,
+            genericName: drug.genericName,
+            // Legacy fields (backward compatibility)
             dose: medSearch.dose,
             posologie: medSearch.posologie,
             details: medSearch.details,
             duration: medSearch.duration,
             instructions: medSearch.instructions,
-            order: medSearch.order
+            instructionsFr: medSearch.instructions, // French instruction same for now
+            order: medSearch.order,
+            // New enhanced dosage format
+            dosage: {
+              eye: 'OU',
+              frequency: medSearch.posologie?.text || 'As directed',
+              frequencyCode: mapFrequencyToCode(medSearch.posologie?.value),
+              duration: {
+                value: extractDurationValue(medSearch.duration?.value),
+                unit: extractDurationUnit(medSearch.duration?.value)
+              }
+            },
+            // Taper schedule for steroid protocols
+            taper: medSearch.taper || { enabled: false, schedule: [] },
+            waitTimeAfter: 5 // Standard 5 minutes between drops
           });
         } else {
           console.log(`  ⚠ Drug not found: ${medSearch.searchTerm} (for ${protocolDef.name})`);
@@ -499,16 +608,25 @@ async function seedTreatmentProtocols() {
       if (medications.length > 0) {
         const protocol = {
           name: protocolDef.name,
+          nameFr: protocolDef.nameFr || protocolDef.name, // French name
           description: protocolDef.description,
+          descriptionFr: protocolDef.description, // French description
           category: protocolDef.category,
           type: protocolDef.type,
+          // Enhanced visibility settings
+          visibility: 'system',
           isSystemWide: protocolDef.isSystemWide,
           tags: protocolDef.tags,
           indication: protocolDef.indication,
+          indications: protocolDef.indications || [],
           expectedDuration: protocolDef.expectedDuration,
           medications: medications,
           createdBy: systemUser._id,
-          isActive: true
+          isActive: true,
+          // UI settings
+          displayOrder: protocolDef.displayOrder || 0,
+          icon: getCategoryIcon(protocolDef.category),
+          color: getCategoryColor(protocolDef.category)
         };
 
         await TreatmentProtocol.create(protocol);
@@ -522,7 +640,7 @@ async function seedTreatmentProtocols() {
       }
     }
 
-    console.log('\n' + '='.repeat(50));
+    console.log(`\n${'='.repeat(50)}`);
     console.log('SUMMARY');
     console.log('='.repeat(50));
     console.log(`Protocols created: ${created}`);

@@ -19,7 +19,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
 
   console.log('\n=== SAMPLE DRUGS ===');
   const samples = await db.collection('drugs').find({}).limit(15).toArray();
-  samples.forEach(d => console.log('-', d.name || d.genericName, '(' + (d.category || 'none') + ')'));
+  samples.forEach(d => console.log('-', d.name || d.genericName, `(${d.category || 'none'})`));
 
   // Check if maquettes categories are present
   console.log('\n=== MAQUETTES CATEGORIES CHECK ===');
@@ -36,7 +36,7 @@ mongoose.connect(process.env.MONGODB_URI).then(async () => {
 
   maquetteCategories.forEach(cat => {
     const found = categories[cat] ? categories[cat].length : 0;
-    console.log(`${cat}: ${found > 0 ? '✓ ' + found + ' items' : '✗ MISSING'}`);
+    console.log(`${cat}: ${found > 0 ? `✓ ${found} items` : '✗ MISSING'}`);
   });
 
   // Sample specific drugs from maquettes

@@ -8,6 +8,7 @@ const { protect, authorize } = require('../middleware/auth');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const Document = require('../models/Document');
 const documentController = require('../controllers/documentController');
+const DocumentTemplate = require('../models/DocumentTemplate');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -17,7 +18,7 @@ const storage = multer.diskStorage({
     cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
     cb(null, uniqueSuffix + path.extname(file.originalname));
   }
 });
@@ -309,6 +310,66 @@ router.get('/audio/recent/:patientId', protect, authorize('admin', 'doctor', 'op
     });
   } catch (error) {
     console.error('Error fetching audio notes:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ============================================================
+// Document Templates Routes (must be before /:id route)
+// ============================================================
+
+// @desc    Get document templates
+// @route   GET /api/documents/templates
+// @access  Private (Medical staff)
+router.get('/templates', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'), async (req, res) => {
+  try {
+    const { category, specialty, status } = req.query;
+
+    const query = { status: status || 'active' };
+    if (category) query.category = category;
+    if (specialty) query.specialty = specialty;
+
+    const templates = await DocumentTemplate.find(query)
+      .sort({ category: 1, name: 1 })
+      .select('-previousVersions');
+
+    res.json({
+      success: true,
+      count: templates.length,
+      data: templates
+    });
+  } catch (error) {
+    console.error('Error fetching document templates:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get single document template
+// @route   GET /api/documents/templates/:id
+// @access  Private (Medical staff)
+router.get('/templates/:id', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'), async (req, res) => {
+  try {
+    const template = await DocumentTemplate.findById(req.params.id);
+
+    if (!template) {
+      return res.status(404).json({
+        success: false,
+        error: 'Template not found'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: template
+    });
+  } catch (error) {
+    console.error('Error fetching document template:', error);
     res.status(500).json({
       success: false,
       error: error.message

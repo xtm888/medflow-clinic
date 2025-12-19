@@ -12,6 +12,7 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 const jwt = require('jsonwebtoken');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
@@ -162,7 +163,7 @@ async function testCrossClinicInventory() {
   console.log('TEST 3: Cross-Clinic Inventory');
   console.log('========================================\n');
 
-  const PharmacyInventory = require('../models/PharmacyInventory');
+  
   const Clinic = require('../models/Clinic');
 
   // Test 3.1: Clinic model has isDepot field
@@ -263,7 +264,7 @@ async function testControlledSubstances() {
   console.log('TEST 5: Controlled Substance Compliance');
   console.log('========================================\n');
 
-  const PharmacyInventory = require('../models/PharmacyInventory');
+  
   const Prescription = require('../models/Prescription');
   const User = require('../models/User');
 

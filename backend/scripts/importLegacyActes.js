@@ -216,7 +216,7 @@ async function importActes() {
   stats.startTime = Date.now();
 
   // Get clinic and system user
-  const tombalbaye = await Clinic.findOne({ clinicId: 'TOMBALBAYE_KIN' });
+  const tombalbaye = await Clinic.findOne({ clinicId: 'TOMBALBAYE-001' });
   if (!tombalbaye) {
     throw new Error('Tombalbaye clinic not found!');
   }
@@ -523,7 +523,7 @@ async function insertInvoiceBatch(invoices) {
 function printSummary() {
   const elapsed = Math.round((Date.now() - stats.startTime) / 1000);
 
-  console.log('\n' + '='.repeat(50));
+  console.log(`\n${'='.repeat(50)}`);
   console.log('IMPORT SUMMARY');
   console.log('='.repeat(50));
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE IMPORT'}`);

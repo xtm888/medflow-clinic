@@ -33,12 +33,12 @@ async function migrateInvoiceItemIds() {
       useUnifiedTopology: true
     });
 
-    console.log(`\n🔄 Invoice ItemID Migration Script`);
+    console.log('\n🔄 Invoice ItemID Migration Script');
     console.log(`Mode: ${isDryRun ? 'DRY RUN (no changes will be saved)' : 'LIVE (changes will be saved)'}`);
     if (limit) {
       console.log(`Limit: Processing ${limit} invoices only`);
     }
-    console.log(`\n`);
+    console.log('\n');
 
     // Find all invoices
     let query = Invoice.find({});
@@ -49,7 +49,7 @@ async function migrateInvoiceItemIds() {
 
     console.log(`Found ${invoices.length} invoices to process\n`);
 
-    let stats = {
+    const stats = {
       total: invoices.length,
       itemsUpdated: 0,
       paymentsConverted: 0,
@@ -128,7 +128,7 @@ async function migrateInvoiceItemIds() {
 
     // Print summary
     console.log(`\n${'='.repeat(60)}`);
-    console.log(`📊 Migration Summary`);
+    console.log('📊 Migration Summary');
     console.log(`${'='.repeat(60)}`);
     console.log(`Total invoices processed:     ${stats.total}`);
     console.log(`Items updated with itemId:    ${stats.itemsUpdated}`);
@@ -138,16 +138,16 @@ async function migrateInvoiceItemIds() {
     console.log(`${'='.repeat(60)}\n`);
 
     if (errors.length > 0) {
-      console.log(`\n❌ Errors encountered:\n`);
+      console.log('\n❌ Errors encountered:\n');
       errors.forEach(error => console.log(`  • ${error}`));
-      console.log(`\n`);
+      console.log('\n');
     }
 
     if (isDryRun) {
-      console.log(`\n⚠️  DRY RUN MODE: No changes were saved`);
-      console.log(`   Run without --dry-run to apply changes\n`);
+      console.log('\n⚠️  DRY RUN MODE: No changes were saved');
+      console.log('   Run without --dry-run to apply changes\n');
     } else {
-      console.log(`\n✅ Migration complete!\n`);
+      console.log('\n✅ Migration complete!\n');
     }
 
     // Disconnect

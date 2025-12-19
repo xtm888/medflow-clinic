@@ -165,7 +165,7 @@ for (const [file, stats] of sortedFiles) {
   }
 }
 
-console.log('\n' + '='.repeat(60));
+console.log(`\n${'='.repeat(60)}`);
 console.log('SUMMARY:');
 console.log(`  Total console.log: ${totalLog}`);
 console.log(`  Total console.error: ${totalError}`);

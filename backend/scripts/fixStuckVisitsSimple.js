@@ -88,14 +88,14 @@ async function fixStuckVisits() {
               });
             }
 
-            console.log(`  ✅ COMPLETED`);
+            console.log('  ✅ COMPLETED');
             fixedCount++;
           } catch (err) {
             console.log(`  ❌ ERROR: ${err.message}`);
             errorCount++;
           }
         } else {
-          console.log(`  [DRY RUN] Would complete this visit`);
+          console.log('  [DRY RUN] Would complete this visit');
           fixedCount++;
         }
       }

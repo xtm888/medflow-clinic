@@ -30,8 +30,8 @@ async function fixAdmin() {
 
     await adminUser.save();
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: ' + defaults.admin.email);
-    console.log('🔑 Password: ' + defaults.admin.password);
+    console.log(`📧 Email: ${defaults.admin.email}`);
+    console.log(`🔑 Password: ${defaults.admin.password}`);
 
   } catch (error) {
     console.error('Error:', error);

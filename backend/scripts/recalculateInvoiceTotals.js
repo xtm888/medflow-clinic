@@ -37,7 +37,7 @@ async function recalculateTotals() {
 
         const needsDeliberation = inv.items.filter(i => i.requiresApproval && !i.hasApproval);
         if (needsDeliberation.length > 0) {
-          console.log(`   ⚠️  Items needing délibération:`);
+          console.log('   ⚠️  Items needing délibération:');
           needsDeliberation.forEach(item => {
             console.log(`      - ${item.description}: ${(item.patientShare || 0).toLocaleString()} FC`);
           });

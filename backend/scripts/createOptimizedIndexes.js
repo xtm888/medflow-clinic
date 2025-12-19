@@ -12,6 +12,7 @@
  */
 
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 require('dotenv').config();
 
 // Import all models to ensure they're registered
@@ -21,7 +22,7 @@ const Appointment = require('../models/Appointment');
 const Prescription = require('../models/Prescription');
 const Invoice = require('../models/Invoice');
 const User = require('../models/User');
-const PharmacyInventory = require('../models/PharmacyInventory');
+
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 const AuditLog = require('../models/AuditLog');
 
@@ -60,13 +61,17 @@ async function createIndexes() {
     await Patient.collection.createIndex({ email: 1 }, { sparse: true });
     await Patient.collection.createIndex({ clinic: 1, createdAt: -1 });
     await Patient.collection.createIndex({ lastVisitDate: -1 });
+    // Home clinic + status for active patients by clinic queries
+    await Patient.collection.createIndex({ homeClinic: 1, status: 1 });
+    // Allergy lookups for drug safety checks
+    await Patient.collection.createIndex({ 'medicalHistory.allergies.allergen': 1 });
     // Text index for search
     await Patient.collection.createIndex(
       { firstName: 'text', lastName: 'text', patientId: 'text' },
       { weights: { patientId: 10, lastName: 5, firstName: 3 } }
     );
-    stats.created += 8;
-    console.log('  ✓ Patient indexes created (8)');
+    stats.created += 10;
+    console.log('  ✓ Patient indexes created (10)');
 
     // ==========================================
     // VISIT INDEXES
@@ -90,8 +95,10 @@ async function createIndexes() {
     await Visit.collection.createIndex({ clinic: 1, status: 1, visitDate: -1 });
     // Invoice lookup
     await Visit.collection.createIndex({ 'billing.invoice': 1 });
-    stats.created += 11;
-    console.log('  ✓ Visit indexes created (11)');
+    // Surgery-linked visits
+    await Visit.collection.createIndex({ surgeryCase: 1 }, { sparse: true });
+    stats.created += 12;
+    console.log('  ✓ Visit indexes created (12)');
 
     // ==========================================
     // APPOINTMENT INDEXES
@@ -113,8 +120,10 @@ async function createIndexes() {
     await Appointment.collection.createIndex({ date: 1, status: 1, department: 1 });
     await Appointment.collection.createIndex({ date: 1, status: 1, queueNumber: 1 });
     await Appointment.collection.createIndex({ status: 1, date: 1, priority: 1 });
-    stats.created += 10;
-    console.log('  ✓ Appointment indexes created (10)');
+    // Visit lookup (for appointment-to-visit relationships)
+    await Appointment.collection.createIndex({ visit: 1 }, { sparse: true });
+    stats.created += 11;
+    console.log('  ✓ Appointment indexes created (11)');
 
     // ==========================================
     // PRESCRIPTION INDEXES
@@ -156,12 +165,14 @@ async function createIndexes() {
     // Payment tracking
     await Invoice.collection.createIndex({ 'summary.amountDue': 1 });
     await Invoice.collection.createIndex({ dueDate: 1, paymentStatus: 1 });
+    // Overdue reports (status + dueDate descending)
+    await Invoice.collection.createIndex({ status: 1, dueDate: -1 });
     // Compound indexes for common queries
     await Invoice.collection.createIndex({ patient: 1, paymentStatus: 1, dateIssued: -1 });
     await Invoice.collection.createIndex({ status: 1, paymentStatus: 1, dateIssued: -1 });
     await Invoice.collection.createIndex({ clinic: 1, status: 1, dateIssued: -1 });
-    stats.created += 12;
-    console.log('  ✓ Invoice indexes created (12)');
+    stats.created += 13;
+    console.log('  ✓ Invoice indexes created (13)');
 
     // ==========================================
     // USER INDEXES
@@ -245,7 +256,7 @@ async function createIndexes() {
     // ==========================================
     // SUMMARY
     // ==========================================
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('📊 Index Creation Summary');
     console.log('='.repeat(60));
     console.log(`Total indexes created:    ${stats.created}`);

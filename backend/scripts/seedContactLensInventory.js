@@ -5,7 +5,8 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const ContactLensInventory = require('../models/ContactLensInventory');
+const { ContactLensInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 // Popular contact lens brands and product lines
@@ -158,8 +159,8 @@ async function main() {
 
             // Pricing based on wear schedule and lens type
             let costPrice = product.wearSchedule === 'daily' ? randomInt(15000, 35000) :
-                           product.wearSchedule === 'bi-weekly' ? randomInt(20000, 45000) :
-                           randomInt(25000, 60000);
+              product.wearSchedule === 'bi-weekly' ? randomInt(20000, 45000) :
+                randomInt(25000, 60000);
 
             if (product.lensType === 'toric') costPrice = Math.round(costPrice * 1.3);
             if (product.lensType === 'multifocal') costPrice = Math.round(costPrice * 1.4);
@@ -242,7 +243,7 @@ async function main() {
       totalCreated += lenses.length;
     }
 
-    console.log(`\n=== Summary ===`);
+    console.log('\n=== Summary ===');
     console.log(`Total contact lens inventory entries created: ${totalCreated}`);
     console.log(`Entries per clinic: ~${Math.round(totalCreated / clinics.length)}`);
 

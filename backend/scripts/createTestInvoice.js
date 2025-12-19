@@ -150,7 +150,7 @@ async function createTestInvoice() {
     console.log('   • CDF (Franc Congolais)');
     console.log('   • USD (Dollar US)');
     console.log('   • EUR (Euro)');
-    console.log('\n🌐 Navigate to: Finances → Facturation → Find invoice ' + invoice.invoiceId);
+    console.log(`\n🌐 Navigate to: Finances → Facturation → Find invoice ${invoice.invoiceId}`);
     console.log('\n');
 
   } catch (error) {

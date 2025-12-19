@@ -5,7 +5,8 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const FrameInventory = require('../models/FrameInventory');
+const { FrameInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 // Popular frame brands and models
@@ -103,9 +104,9 @@ async function main() {
               randomElement(['economic', 'standard', 'premium']);
 
             const costPrice = category === 'luxury' ? randomInt(150000, 400000) :
-                             category === 'premium' ? randomInt(80000, 180000) :
-                             category === 'standard' ? randomInt(40000, 100000) :
-                             randomInt(15000, 50000);
+              category === 'premium' ? randomInt(80000, 180000) :
+                category === 'standard' ? randomInt(40000, 100000) :
+                  randomInt(15000, 50000);
 
             const sellingPrice = Math.round(costPrice * (1.5 + Math.random() * 0.5));
             const currentStock = randomInt(2, 15);
@@ -172,7 +173,7 @@ async function main() {
       totalCreated += frames.length;
     }
 
-    console.log(`\n=== Summary ===`);
+    console.log('\n=== Summary ===');
     console.log(`Total frame inventory entries created: ${totalCreated}`);
     console.log(`Entries per clinic: ~${Math.round(totalCreated / clinics.length)}`);
 

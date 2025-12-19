@@ -1,7 +1,8 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 const Drug = require('../models/Drug');
-const PharmacyInventory = require('../models/PharmacyInventory');
+
 const MedicationTemplate = require('../models/MedicationTemplate');
 
 mongoose.connect(process.env.MONGODB_URI, {
@@ -40,8 +41,8 @@ db.once('open', async () => {
         },
         formulations: [{
           form: template.form === 'cp' ? 'tablet' :
-                template.form === 'inj' ? 'injection' :
-                template.form === 'sp' ? 'liquid' : 'tablet',
+            template.form === 'inj' ? 'injection' :
+              template.form === 'sp' ? 'liquid' : 'tablet',
           route: 'oral',
           strengths: template.dosage ? [{
             value: parseFloat(template.dosage) || 1,
@@ -63,8 +64,8 @@ db.once('open', async () => {
           nameFr: template.name,
           strength: template.dosage || '1 unit',
           formulation: template.form === 'cp' ? 'tablet' :
-                      template.form === 'inj' ? 'injection' :
-                      template.form === 'sp' ? 'liquid' : 'tablet',
+            template.form === 'inj' ? 'injection' :
+              template.form === 'sp' ? 'liquid' : 'tablet',
           route: 'oral'
         },
         category: 'vitamin',

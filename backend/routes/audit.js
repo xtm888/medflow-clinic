@@ -658,7 +658,7 @@ router.get('/export', asyncHandler(async (req, res) => {
 
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename=audit-log-${Date.now()}.csv`);
-    res.send('\ufeff' + csvRows.join('\n')); // BOM for Excel UTF-8
+    res.send(`\ufeff${csvRows.join('\n')}`); // BOM for Excel UTF-8
   } else {
     // JSON format
     res.status(200).json({

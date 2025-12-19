@@ -63,7 +63,7 @@ async function migrate() {
       ]
     };
 
-    let cursor = Patient.find(query).cursor();
+    const cursor = Patient.find(query).cursor();
     let processedCount = 0;
     let batch = [];
 

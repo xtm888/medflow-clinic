@@ -6,6 +6,7 @@
  */
 
 const mongoose = require('mongoose');
+const { PharmacyInventory } = require('../models/Inventory');
 require('dotenv').config();
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
@@ -56,7 +57,7 @@ async function seedMedicationFeeSchedules() {
     await mongoose.connect(MONGODB_URI);
     console.log('✓ Connected to MongoDB\n');
 
-    const PharmacyInventory = require('../models/PharmacyInventory');
+    
     const FeeSchedule = require('../models/FeeSchedule');
 
     // Get all active medications from pharmacy inventory
@@ -94,7 +95,7 @@ async function seedMedicationFeeSchedules() {
         const price = med.pricing?.sellingPrice || med.pricing?.cost || 0;
 
         // Map category
-        let category = 'medication';
+        const category = 'medication';
         let displayCategory = 'Médicament';
 
         if (med.category === 'antibiotic') {
@@ -169,7 +170,7 @@ async function seedMedicationFeeSchedules() {
       }
     }
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('MEDICATION FEE SCHEDULE SEEDING COMPLETE');
     console.log('='.repeat(60));
     console.log(`Total medications processed: ${medications.length}`);
@@ -184,7 +185,7 @@ async function seedMedicationFeeSchedules() {
       active: true
     });
 
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`TOTAL ACTIVE MEDICATION FEE SCHEDULES: ${totalMedicationFees}`);
     console.log('='.repeat(60));
 

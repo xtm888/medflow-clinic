@@ -117,7 +117,7 @@ function parseConclusion(conclusionText) {
   // Parse Visual Acuity (AV) - multiple formats
   // Format 1: "AV OD : 10/10 avec correction / OG : 10/10"
   // Format 2: "Acuité Visuelle : OD : 10/10 OG : 8/10"
-  let avMatch = conclusionText.match(/(?:AV|Acuit[eé]\s*Visuelle)\s*:?\s*OD\s*:\s*([\d\/]+)[^\/\n]*(?:\/\s*)?OG\s*:\s*([\d\/]+)/i);
+  const avMatch = conclusionText.match(/(?:AV|Acuit[eé]\s*Visuelle)\s*:?\s*OD\s*:\s*([\d\/]+)[^\/\n]*(?:\/\s*)?OG\s*:\s*([\d\/]+)/i);
   if (avMatch) {
     result.visualAcuity.OD = avMatch[1].trim();
     result.visualAcuity.OS = avMatch[2].trim();
@@ -277,7 +277,7 @@ async function importConsultations() {
   stats.startTime = Date.now();
 
   // Get clinic and system user
-  const tombalbaye = await Clinic.findOne({ clinicId: 'TOMBALBAYE_KIN' });
+  const tombalbaye = await Clinic.findOne({ clinicId: 'TOMBALBAYE-001' });
   if (!tombalbaye) {
     throw new Error('Tombalbaye clinic not found! Run seedClinics.js first.');
   }
@@ -565,7 +565,7 @@ async function processBatch(visits, exams) {
 function printSummary() {
   const elapsed = Math.round((Date.now() - stats.startTime) / 1000);
 
-  console.log('\n' + '='.repeat(50));
+  console.log(`\n${'='.repeat(50)}`);
   console.log('IMPORT SUMMARY');
   console.log('='.repeat(50));
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN' : 'LIVE IMPORT'}`);

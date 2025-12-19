@@ -324,7 +324,7 @@ async function runAudit() {
     let totalPassed = 0;
 
     // Audit parent conventions
-    console.log('\n' + '─'.repeat(80));
+    console.log(`\n${'─'.repeat(80)}`);
     console.log('  PARENT CONVENTIONS');
     console.log('─'.repeat(80));
 
@@ -337,7 +337,7 @@ async function runAudit() {
     }
 
     // Audit standalone companies (most conventions)
-    console.log('\n' + '─'.repeat(80));
+    console.log(`\n${'─'.repeat(80)}`);
     console.log('  STANDALONE CONVENTIONS');
     console.log('─'.repeat(80));
 
@@ -351,7 +351,7 @@ async function runAudit() {
 
     // Audit sub-companies
     if (subCompanies.length > 0) {
-      console.log('\n' + '─'.repeat(80));
+      console.log(`\n${'─'.repeat(80)}`);
       console.log('  SUB-COMPANIES (inherit from parent)');
       console.log('─'.repeat(80));
 
@@ -367,7 +367,7 @@ async function runAudit() {
     }
 
     // Summary
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     console.log('  AUDIT SUMMARY');
     console.log('═'.repeat(80));
     console.log(`\n  Total Companies: ${companies.length}`);
@@ -377,13 +377,13 @@ async function runAudit() {
     console.log(`  ❌ Total Issues: ${totalIssues}`);
 
     // Test calculations
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     console.log('  BILLING CALCULATION TESTS');
     console.log('═'.repeat(80));
 
     await testCalculations(companies);
 
-    console.log('\n' + '═'.repeat(80));
+    console.log(`\n${'═'.repeat(80)}`);
     console.log('  AUDIT COMPLETE');
     console.log('═'.repeat(80));
 
@@ -489,20 +489,20 @@ async function testCalculations(companies) {
       }
     }
 
-    console.log(`     ─────────────────────────────`);
+    console.log('     ─────────────────────────────');
     console.log(`     Company Share: $${companyShare}`);
     console.log(`     Patient Share: $${patientShare}`);
 
     if (test.expectedCompanyShare !== undefined) {
       if (companyShare === test.expectedCompanyShare) {
-        console.log(`     ✅ Company share correct`);
+        console.log('     ✅ Company share correct');
       } else {
         console.log(`     ❌ Company share should be $${test.expectedCompanyShare}`);
       }
     }
     if (test.expectedPatientShare !== undefined) {
       if (patientShare === test.expectedPatientShare) {
-        console.log(`     ✅ Patient share correct`);
+        console.log('     ✅ Patient share correct');
       } else {
         console.log(`     ❌ Patient share should be $${test.expectedPatientShare}`);
       }

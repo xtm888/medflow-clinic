@@ -5,7 +5,8 @@
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const FrameInventory = require('../models/FrameInventory');
+const { FrameInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 
 // Sample depot frames with base prices (in CDF)
@@ -30,7 +31,7 @@ const DEPOT_FRAMES = [
   { brand: 'Local Brand', model: 'Economy Basic', color: 'Black', sku: 'LOC-ECO-BLK', category: 'economic', material: 'plastic', frameType: 'full-rim', gender: 'unisex', basePrice: 25000, costPrice: 12000 },
   { brand: 'Local Brand', model: 'Economy Basic', color: 'Brown', sku: 'LOC-ECO-BRN', category: 'economic', material: 'plastic', frameType: 'full-rim', gender: 'unisex', basePrice: 25000, costPrice: 12000 },
   { brand: 'Local Brand', model: 'Kids Fun', color: 'Blue', sku: 'LOC-KID-BLU', category: 'children', material: 'tr90', frameType: 'full-rim', gender: 'children', basePrice: 35000, costPrice: 15000 },
-  { brand: 'Local Brand', model: 'Kids Fun', color: 'Pink', sku: 'LOC-KID-PNK', category: 'children', material: 'tr90', frameType: 'full-rim', gender: 'children', basePrice: 35000, costPrice: 15000 },
+  { brand: 'Local Brand', model: 'Kids Fun', color: 'Pink', sku: 'LOC-KID-PNK', category: 'children', material: 'tr90', frameType: 'full-rim', gender: 'children', basePrice: 35000, costPrice: 15000 }
 ];
 
 async function seedFrames() {
@@ -140,7 +141,7 @@ async function seedFrames() {
     }
 
     console.log(`\n${'═'.repeat(50)}`);
-    console.log(`✅ COMPLETE`);
+    console.log('✅ COMPLETE');
     console.log(`   Depot frames: ${depotCreated} created, ${skipped} already existed`);
     console.log(`   Clinic frames: ${clinicCreated} created`);
     console.log(`${'═'.repeat(50)}`);

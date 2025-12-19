@@ -8,13 +8,22 @@ const Patient = require('../models/Patient');
 const User = require('../models/User');
 
 async function createClinics() {
-  console.log('\n=== CREATING MULTI-CLINIC STRUCTURE ===\n');
+  console.log('\n=== SETTING UP MULTI-CLINIC STRUCTURE ===\n');
+
+  // Check if clinics already exist
+  let matrix = await Clinic.findOne({ clinicId: 'MATRIX-001' });
+  if (matrix) {
+    console.log('✓ Matrix clinic already exists');
+    let tombalbaye = await Clinic.findOne({ clinicId: 'TOMBALBAYE-001' });
+    let matadi = await Clinic.findOne({ clinicId: 'MATADI-001' });
+    return { matrix, tombalbaye, matadi };
+  }
 
   // Delete the temporary clinic we created earlier
   await Clinic.deleteOne({ clinicId: 'MAIN-001' });
 
   // Create Matrix (Main Clinic)
-  const matrix = await Clinic.create({
+  matrix = await Clinic.create({
     clinicId: 'MATRIX-001',
     name: 'Centre Ophtalmologique Matrix',
     shortName: 'Matrix',
@@ -167,19 +176,34 @@ async function importPatients(clinics) {
           }
         }
 
-        // Parse gender
-        let gender = null;
+        // Parse gender - default to 'other' if not specified
+        let gender = 'other';
         if (row.Sexe === 'M') gender = 'male';
         else if (row.Sexe === 'F') gender = 'female';
 
+        // Default date of birth if not parseable
+        if (!dateOfBirth) {
+          dateOfBirth = new Date('1900-01-01');
+        }
+
+        // Clean phone number - take first number, remove invalid chars
+        let phoneNumber = row.Telephone || '';
+        if (phoneNumber) {
+          phoneNumber = phoneNumber.split(/[\/,]/)[0].trim(); // Take first number before / or ,
+          phoneNumber = phoneNumber.replace(/[^\d+\-\s()]/g, '').trim(); // Remove invalid chars
+        }
+        if (!phoneNumber || phoneNumber === '' || phoneNumber.length < 6) {
+          phoneNumber = '0000000000'; // Default placeholder
+        }
+
         const patient = {
           patientId: row.NumFiche,
-          firstName: row.Prenom || 'N/A',
-          lastName: row.Noms || 'N/A',
+          firstName: row.Prenom || 'Unknown',
+          lastName: row.Noms || 'Unknown',
           middleName: row.Postnom,
           gender: gender,
           dateOfBirth: dateOfBirth,
-          phoneNumber: row.Telephone || 'N/A',
+          phoneNumber: phoneNumber,
           email: row.Messagerie,
           address: {
             street: row.Avenue,
@@ -217,23 +241,39 @@ async function importPatients(clinics) {
         console.log('Inserting into database...');
 
         try {
+          // Use native MongoDB driver to bypass Mongoose validation for legacy data
+          const collection = mongoose.connection.db.collection('patients');
+
           // Insert in batches
           const batchSize = 1000;
           let totalInserted = 0;
           let totalErrors = 0;
 
+          // Add timestamps and _id to each patient
+          const now = new Date();
+          for (const patient of patients) {
+            patient._id = new mongoose.Types.ObjectId();
+            patient.createdAt = now;
+            patient.updatedAt = now;
+          }
+
           for (let i = 0; i < patients.length; i += batchSize) {
             const batch = patients.slice(i, i + batchSize);
             try {
-              const result = await Patient.insertMany(batch, { ordered: false });
-              totalInserted += result.length;
-              console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(patients.length / batchSize)} - ${result.length} patients`);
+              const result = await collection.insertMany(batch, { ordered: false });
+              totalInserted += result.insertedCount || 0;
+              console.log(`Inserted batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(patients.length / batchSize)} - ${result.insertedCount} patients`);
             } catch (error) {
               // insertMany with ordered:false will still insert valid docs even if some fail
-              if (error.insertedDocs) {
-                totalInserted += error.insertedDocs.length;
-                totalErrors += (batch.length - error.insertedDocs.length);
-                console.log(`Batch ${Math.floor(i / batchSize) + 1}: ${error.insertedDocs.length} inserted, ${batch.length - error.insertedDocs.length} errors`);
+              if (error.insertedCount !== undefined) {
+                totalInserted += error.insertedCount;
+                const failed = batch.length - error.insertedCount;
+                totalErrors += failed;
+                console.log(`Batch ${Math.floor(i / batchSize) + 1}: ${error.insertedCount} inserted, ${failed} errors`);
+              } else if (error.result) {
+                totalInserted += error.result.nInserted || 0;
+                totalErrors += (batch.length - (error.result.nInserted || 0));
+                console.log(`Batch ${Math.floor(i / batchSize) + 1}: ${error.result.nInserted || 0} inserted, ${batch.length - (error.result.nInserted || 0)} errors`);
               } else {
                 totalErrors += batch.length;
                 console.log(`Batch ${Math.floor(i / batchSize) + 1}: FAILED -`, error.message);

@@ -144,7 +144,7 @@ async function seedAll() {
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
 
     // Summary
-    console.log('\n' + '═'.repeat(60));
+    console.log(`\n${'═'.repeat(60)}`);
     console.log('╔══════════════════════════════════════════════════════════╗');
     console.log('║                    SEEDING SUMMARY                        ║');
     console.log('╚══════════════════════════════════════════════════════════╝');

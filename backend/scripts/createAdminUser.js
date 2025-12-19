@@ -37,8 +37,8 @@ async function createAdminUser() {
     });
 
     console.log('✅ Admin user created successfully!');
-    console.log('📧 Email: ' + defaults.admin.email);
-    console.log('🔑 Password: ' + defaults.admin.password);
+    console.log(`📧 Email: ${defaults.admin.email}`);
+    console.log(`🔑 Password: ${defaults.admin.password}`);
     console.log('');
     console.log('You can now login with these credentials!');
 

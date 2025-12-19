@@ -17,6 +17,7 @@
  */
 
 const mongoose = require('mongoose');
+const { PharmacyInventory, FrameInventory } = require('../models/Inventory');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
@@ -33,8 +34,7 @@ const SurgeryCase = require('../models/SurgeryCase');
 const GlassesOrder = require('../models/GlassesOrder');
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
-const PharmacyInventory = require('../models/PharmacyInventory');
-const FrameInventory = require('../models/FrameInventory');
+
 const Clinic = require('../models/Clinic');
 
 // Test configuration
@@ -164,7 +164,7 @@ class E2EWorkflowTest {
     logSuccess(`Using receptionist: ${this.testData.receptionist.firstName}`);
 
     // Get a pharmacist
-    let pharmacist = await User.findOne({ role: { $in: ['pharmacist', 'admin'] } });
+    const pharmacist = await User.findOne({ role: { $in: ['pharmacist', 'admin'] } });
     this.testData.pharmacist = pharmacist || doctor;
     logSuccess(`Using pharmacist: ${this.testData.pharmacist.firstName}`);
 
@@ -248,8 +248,8 @@ class E2EWorkflowTest {
       logSuccess(`Patient created: ${patient.firstName} ${patient.lastName}`);
       logInfo(`Patient ID: ${patient.patientId || patient._id}`);
       logInfo(`Convention: ${this.testData.company.name} (Employee ID: ${patient.employeeId})`);
-      logInfo(`Medical history: Diabetes Type 2, Hypertension`);
-      logInfo(`Allergy: Penicillin (Severe)`);
+      logInfo('Medical history: Diabetes Type 2, Hypertension');
+      logInfo('Allergy: Penicillin (Severe)');
 
       this.results.passed++;
       this.results.steps.push({ step: 1, name: 'Patient Registration', status: 'passed' });
@@ -294,7 +294,7 @@ class E2EWorkflowTest {
 
       const appointment = await Appointment.create(appointmentData);
       this.testData.appointment = appointment;
-      logSuccess(`Emergency appointment created`);
+      logSuccess('Emergency appointment created');
       logInfo(`Type: ${appointment.appointmentType}, Priority: ${appointment.priority}`);
 
       // Check-in the patient (simulate queue workflow)
@@ -303,7 +303,7 @@ class E2EWorkflowTest {
       appointment.queueNumber = Math.floor(Math.random() * 100) + 1;
       await appointment.save();
 
-      logSuccess(`Patient checked in to queue`);
+      logSuccess('Patient checked in to queue');
       logInfo(`Queue number: ${appointment.queueNumber}`);
       logInfo(`Check-in time: ${appointment.checkInTime.toLocaleTimeString()}`);
 
@@ -386,7 +386,7 @@ class E2EWorkflowTest {
       logSuccess(`Visit created: ${visit.visitType}`);
       logInfo(`Chief complaint: ${visit.chiefComplaint.complaint}`);
       logInfo(`Vital signs: BP ${visit.physicalExamination?.vitalSigns?.bloodPressure || 'N/A'}`);
-      logInfo(`Clinical act: Emergency ophthalmology consultation`);
+      logInfo('Clinical act: Emergency ophthalmology consultation');
 
       this.results.passed++;
       this.results.steps.push({ step: 3, name: 'Consultation Visit', status: 'passed' });
@@ -613,10 +613,10 @@ class E2EWorkflowTest {
       this.testData.visit.ophthalmologyExam = exam._id;
       await this.testData.visit.save();
 
-      logSuccess(`Ophthalmology exam completed`);
+      logSuccess('Ophthalmology exam completed');
       logInfo(`Visual Acuity OD: ${exam.visualAcuity.distance.OD.corrected}, OS: ${exam.visualAcuity.distance.OS.corrected}`);
       logInfo(`IOP: OD ${exam.iop.OD.value}mmHg (ELEVATED), OS ${exam.iop.OS.value}mmHg`);
-      logInfo(`Diagnoses:`);
+      logInfo('Diagnoses:');
       exam.assessment.diagnoses.forEach(d => {
         logInfo(`  - ${d.eye}: ${d.diagnosis} (${d.icdCode})`);
       });
@@ -737,11 +737,11 @@ class E2EWorkflowTest {
       labOrder.resultsEnteredBy = this.testData.doctor._id;
       await labOrder.save();
 
-      logSuccess(`Lab results entered`);
-      logInfo(`  HbA1c: 9.2% (HIGH - poor diabetic control)`);
-      logInfo(`  FBS: 165 mg/dL (HIGH)`);
-      logInfo(`  Creatinine: 1.1 mg/dL (Normal - safe for contrast/IVT)`);
-      logInfo(`  Urinalysis: Protein 1+ (early nephropathy)`);
+      logSuccess('Lab results entered');
+      logInfo('  HbA1c: 9.2% (HIGH - poor diabetic control)');
+      logInfo('  FBS: 165 mg/dL (HIGH)');
+      logInfo('  Creatinine: 1.1 mg/dL (Normal - safe for contrast/IVT)');
+      logInfo('  Urinalysis: Protein 1+ (early nephropathy)');
 
       this.results.passed++;
       this.results.steps.push({ step: 5, name: 'Laboratory Orders', status: 'passed' });
@@ -845,13 +845,13 @@ class E2EWorkflowTest {
       prescription.medications.forEach(m => {
         logInfo(`  - ${m.name}: ${m.dosage} ${m.frequency} (${m.route})`);
       });
-      logInfo(`Safety check: Allergy screening passed (no penicillin-class drugs)`);
-      logInfo(`Warning: Beta-blocker interaction noted with antihypertensives`);
+      logInfo('Safety check: Allergy screening passed (no penicillin-class drugs)');
+      logInfo('Warning: Beta-blocker interaction noted with antihypertensives');
 
       // Simulate pharmacy workflow
       prescription.pharmacyStatus = 'preparing';
       await prescription.save();
-      logSuccess(`Prescription sent to pharmacy - status: preparing`);
+      logSuccess('Prescription sent to pharmacy - status: preparing');
 
       this.results.passed++;
       this.results.steps.push({ step: 6, name: 'Medication Prescriptions', status: 'passed' });
@@ -940,7 +940,7 @@ class E2EWorkflowTest {
       const ivt = await IVTInjection.create(ivtData);
       this.testData.ivt = ivt;
 
-      logSuccess(`IVT injection scheduled`);
+      logSuccess('IVT injection scheduled');
       logInfo(`Medication: ${ivt.medication.name} ${ivt.medication.dose.value}${ivt.medication.dose.unit}`);
       logInfo(`Eye: ${ivt.eye}`);
       logInfo(`Indication: ${ivt.indication.primary}`);
@@ -985,10 +985,10 @@ class E2EWorkflowTest {
       };
       await ivt.save();
 
-      logSuccess(`IVT injection completed successfully`);
+      logSuccess('IVT injection completed successfully');
       logInfo(`Post-injection IOP: ${ivt.procedure.immediateAssessment.iop}mmHg (normal)`);
-      logInfo(`Complications: None`);
-      logInfo(`Next injection scheduled: 4 weeks`);
+      logInfo('Complications: None');
+      logInfo('Next injection scheduled: 4 weeks');
 
       this.results.passed++;
       this.results.steps.push({ step: 7, name: 'IVT Injection', status: 'passed' });
@@ -1073,7 +1073,7 @@ class E2EWorkflowTest {
       this.testData.surgery = surgery;
       this.testData.surgeryInvoice = surgeryInvoice;
 
-      logSuccess(`Surgery case created`);
+      logSuccess('Surgery case created');
       logInfo(`Type: ${surgery.surgeryDescription}`);
       logInfo(`Eye: ${surgery.eye}`);
       logInfo(`IOL: ${surgery.iolDetails.model} ${surgery.iolDetails.power}`);
@@ -1084,7 +1084,7 @@ class E2EWorkflowTest {
       surgery.estimatedDuration = 45;
       await surgery.save();
 
-      logSuccess(`Surgery scheduled`);
+      logSuccess('Surgery scheduled');
       logInfo(`Date: ${surgery.scheduledDate.toLocaleDateString()}`);
       logInfo(`Duration: ~${surgery.estimatedDuration} minutes`);
 
@@ -1145,7 +1145,7 @@ class E2EWorkflowTest {
 
       const opticalRx = await Prescription.create(opticalRxData);
       this.testData.opticalPrescription = opticalRx;
-      logSuccess(`Optical prescription created`);
+      logSuccess('Optical prescription created');
 
       // Now create glasses order
       const glassesOrderData = {
@@ -1263,7 +1263,7 @@ class E2EWorkflowTest {
 
       logSuccess(`Glasses order created: ${glassesOrder.orderNumber}`);
       logInfo(`Frame: ${glassesOrder.frame.brand} ${glassesOrder.frame.model}`);
-      logInfo(`Lenses: Progressive polycarbonate with AR + Blue light`);
+      logInfo('Lenses: Progressive polycarbonate with AR + Blue light');
       logInfo(`Total: ${glassesOrder.pricing.finalTotal.toLocaleString()} CDF`);
       logInfo(`Convention (${this.testData.company.name}): ${glassesOrder.conventionBilling.coveragePercentage}%`);
       logInfo(`  Company pays: ${glassesOrder.conventionBilling.companyPortion.toLocaleString()} CDF`);
@@ -1272,7 +1272,7 @@ class E2EWorkflowTest {
       // Submit for verification
       glassesOrder.status = 'pending_verification';
       await glassesOrder.save();
-      logSuccess(`Order submitted for technician verification`);
+      logSuccess('Order submitted for technician verification');
 
       this.results.passed++;
       this.results.steps.push({ step: 9, name: 'Glasses Order', status: 'passed' });
@@ -1508,7 +1508,7 @@ class E2EWorkflowTest {
       logInfo(`\nConvention breakdown (${this.testData.company.name}):`);
       logInfo(`  Company pays: ${companyTotal.toLocaleString()} CDF`);
       logInfo(`  Patient pays: ${patientTotal.toLocaleString()} CDF`);
-      logInfo(`\nItems:`);
+      logInfo('\nItems:');
       items.forEach(item => {
         logInfo(`  - ${item.description}: ${item.total.toLocaleString()} CDF`);
       });
@@ -1530,9 +1530,9 @@ class E2EWorkflowTest {
       invoice.status = 'paid';
       await invoice.save();
 
-      logSuccess(`Payment received at reception`);
+      logSuccess('Payment received at reception');
       logInfo(`Amount paid: ${patientTotal.toLocaleString()} CDF (Cash)`);
-      logInfo(`Invoice status: PAID`);
+      logInfo('Invoice status: PAID');
 
       this.results.passed++;
       this.results.steps.push({ step: 10, name: 'Billing & Invoicing', status: 'passed' });
@@ -1559,13 +1559,13 @@ class E2EWorkflowTest {
       this.testData.prescription.status = 'dispensed';
       await this.testData.prescription.save();
 
-      logSuccess(`Prescription dispensed`);
+      logSuccess('Prescription dispensed');
       this.testData.prescription.medications.forEach(m => {
         logInfo(`  - ${m.name}: Dispensed`);
       });
 
       // Note: In production, this would also decrement inventory
-      logInfo(`Inventory updated (simulation)`);
+      logInfo('Inventory updated (simulation)');
 
       this.results.passed++;
       this.results.steps.push({ step: 11, name: 'Pharmacy Dispensing', status: 'passed' });
@@ -1609,7 +1609,7 @@ class E2EWorkflowTest {
       this.testData.appointment.consultationEndTime = new Date();
       await this.testData.appointment.save();
 
-      logSuccess(`Visit completed`);
+      logSuccess('Visit completed');
       logInfo(`Diagnosis: ${this.testData.visit.assessment.diagnosis}`);
       logInfo(`Follow-up: ${this.testData.visit.assessment.followUp.interval}`);
 

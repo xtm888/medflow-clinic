@@ -30,7 +30,7 @@ const secrets = {
   CALENDAR_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
   LIS_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
   PHI_ENCRYPTION_KEY: crypto.randomBytes(32).toString('hex'),
-  HEALTH_API_KEY: crypto.randomBytes(16).toString('hex'),
+  HEALTH_API_KEY: crypto.randomBytes(16).toString('hex')
 };
 
 console.log('Copy these values to your .env file:\n');
@@ -47,4 +47,4 @@ console.log('2. If secrets were exposed, force logout all users');
 console.log('3. Rotate database credentials separately');
 console.log('4. Consider enabling 2FA for all admin accounts');
 console.log('5. Review audit logs for suspicious activity');
-console.log('\n' + '='.repeat(60));
+console.log(`\n${'='.repeat(60)}`);

@@ -186,7 +186,7 @@ async function uploadFile(filePath) {
   return new Promise((resolve, reject) => {
     const url = new URL(`/api/devices/webhook/${config.deviceId}`, config.apiUrl);
     const isHttps = url.protocol === 'https:';
-    const boundary = '----MedFlowBoundary' + Date.now();
+    const boundary = `----MedFlowBoundary${Date.now()}`;
 
     const filename = path.basename(filePath);
     const relativePath = getRelativePath(filePath);
@@ -195,17 +195,17 @@ async function uploadFile(filePath) {
     // Build multipart form data
     const prefix = `--${boundary}\r\n` +
       `Content-Disposition: form-data; name="file"; filename="${filename}"\r\n` +
-      `Content-Type: application/octet-stream\r\n\r\n`;
+      'Content-Type: application/octet-stream\r\n\r\n';
 
     const metadata = `\r\n--${boundary}\r\n` +
-      `Content-Disposition: form-data; name="metadata"\r\n` +
-      `Content-Type: application/json\r\n\r\n` +
-      JSON.stringify({
-        eventType: 'file_created',
-        filePath: relativePath,
-        originalPath: filePath,
-        timestamp: new Date().toISOString()
-      });
+      'Content-Disposition: form-data; name="metadata"\r\n' +
+      `Content-Type: application/json\r\n\r\n${
+        JSON.stringify({
+          eventType: 'file_created',
+          filePath: relativePath,
+          originalPath: filePath,
+          timestamp: new Date().toISOString()
+        })}`;
 
     const suffix = `\r\n--${boundary}--\r\n`;
 
@@ -470,7 +470,7 @@ async function main() {
     process.exit(0);
   });
 
-  log('info', `Agent running. Press Ctrl+C to stop.`);
+  log('info', 'Agent running. Press Ctrl+C to stop.');
   log('info', `Pending files: ${pendingFiles.size}`);
 }
 

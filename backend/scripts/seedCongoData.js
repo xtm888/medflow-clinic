@@ -28,7 +28,7 @@ async function seedCongoData() {
     // Connect to MongoDB
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow', {
       useNewUrlParser: true,
-      useUnifiedTopology: true,
+      useUnifiedTopology: true
     });
     console.log('Connected to MongoDB\n');
 
@@ -79,7 +79,7 @@ async function seedCongoData() {
     }
 
     // Get a clinic for references (required for OphthalmologyExam)
-    let clinic = await Clinic.findOne({ isActive: true });
+    const clinic = await Clinic.findOne({ isActive: true });
     if (!clinic) {
       console.log('⚠️  No clinic found. Please run seedClinics.js first.');
       console.log('Skipping ophthalmology exams creation...');
@@ -379,87 +379,87 @@ async function seedCongoData() {
     console.log('Skipping prescriptions (require visit references)');
 
     // Create ophthalmology exams (only if clinic exists)
-    let exams = [];
+    const exams = [];
     if (clinic) {
-    const examsData = [
-      {
-        patient: patients[2]._id,
-        examiner: doctor._id,
-        clinic: clinic._id,
-        examType: 'comprehensive',
-        visualAcuity: {
-          distance: {
-            OD: { uncorrected: '20/40', corrected: '20/25' },
-            OS: { uncorrected: '20/50', corrected: '20/30' }
-          }
-        },
-        iop: {
-          OD: { value: 22, method: 'goldmann' },
-          OS: { value: 24, method: 'goldmann' }
-        },
-        refraction: {
-          subjective: {
-            OD: { sphere: -1.50, cylinder: -0.50, axis: 90 },
-            OS: { sphere: -1.75, cylinder: -0.75, axis: 85 }
-          }
-        },
-        assessment: {
-          summary: 'Glaucome à angle ouvert bilatéral avec pression intraoculaire élevée',
-          diagnoses: [
-            { eye: 'OU', diagnosis: 'Glaucome primaire à angle ouvert', icdCode: 'H40.1', status: 'stable' }
-          ]
-        },
-        plan: {
-          followUp: {
-            required: true,
-            timeframe: '3 months',
-            reason: 'Contrôle pression intraoculaire'
-          }
-        },
-        status: 'completed'
-      },
-      {
-        patient: patients[4]._id,
-        examiner: doctor._id,
-        clinic: clinic._id,
-        examType: 'refraction',
-        visualAcuity: {
-          distance: {
-            OD: { uncorrected: '20/200', corrected: '20/25' },
-            OS: { uncorrected: '20/200', corrected: '20/25' }
-          }
-        },
-        refraction: {
-          subjective: {
-            OD: { sphere: -6.00, cylinder: -1.25, axis: 180 },
-            OS: { sphere: -5.75, cylinder: -1.00, axis: 175 }
-          }
-        },
-        assessment: {
-          summary: 'Myopie forte bilatérale stable',
-          diagnoses: [
-            { eye: 'OU', diagnosis: 'Myopie dégénérative', icdCode: 'H44.2', status: 'stable' }
-          ]
-        },
-        plan: {
-          followUp: {
-            required: true,
-            timeframe: '1 year',
-            reason: 'Surveillance du fond d\'œil'
+      const examsData = [
+        {
+          patient: patients[2]._id,
+          examiner: doctor._id,
+          clinic: clinic._id,
+          examType: 'comprehensive',
+          visualAcuity: {
+            distance: {
+              OD: { uncorrected: '20/40', corrected: '20/25' },
+              OS: { uncorrected: '20/50', corrected: '20/30' }
+            }
           },
-          education: ['Verres amincis recommandés']
+          iop: {
+            OD: { value: 22, method: 'goldmann' },
+            OS: { value: 24, method: 'goldmann' }
+          },
+          refraction: {
+            subjective: {
+              OD: { sphere: -1.50, cylinder: -0.50, axis: 90 },
+              OS: { sphere: -1.75, cylinder: -0.75, axis: 85 }
+            }
+          },
+          assessment: {
+            summary: 'Glaucome à angle ouvert bilatéral avec pression intraoculaire élevée',
+            diagnoses: [
+              { eye: 'OU', diagnosis: 'Glaucome primaire à angle ouvert', icdCode: 'H40.1', status: 'stable' }
+            ]
+          },
+          plan: {
+            followUp: {
+              required: true,
+              timeframe: '3 months',
+              reason: 'Contrôle pression intraoculaire'
+            }
+          },
+          status: 'completed'
         },
-        status: 'completed'
-      }
-    ];
+        {
+          patient: patients[4]._id,
+          examiner: doctor._id,
+          clinic: clinic._id,
+          examType: 'refraction',
+          visualAcuity: {
+            distance: {
+              OD: { uncorrected: '20/200', corrected: '20/25' },
+              OS: { uncorrected: '20/200', corrected: '20/25' }
+            }
+          },
+          refraction: {
+            subjective: {
+              OD: { sphere: -6.00, cylinder: -1.25, axis: 180 },
+              OS: { sphere: -5.75, cylinder: -1.00, axis: 175 }
+            }
+          },
+          assessment: {
+            summary: 'Myopie forte bilatérale stable',
+            diagnoses: [
+              { eye: 'OU', diagnosis: 'Myopie dégénérative', icdCode: 'H44.2', status: 'stable' }
+            ]
+          },
+          plan: {
+            followUp: {
+              required: true,
+              timeframe: '1 year',
+              reason: 'Surveillance du fond d\'œil'
+            },
+            education: ['Verres amincis recommandés']
+          },
+          status: 'completed'
+        }
+      ];
 
-    // Use save() to trigger pre-save hook for examId generation
-    for (const examData of examsData) {
-      const exam = new OphthalmologyExam(examData);
-      await exam.save();
-      exams.push(exam);
-    }
-    console.log(`Created ${exams.length} ophthalmology exams`);
+      // Use save() to trigger pre-save hook for examId generation
+      for (const examData of examsData) {
+        const exam = new OphthalmologyExam(examData);
+        await exam.save();
+        exams.push(exam);
+      }
+      console.log(`Created ${exams.length} ophthalmology exams`);
     } else {
       console.log('Skipped ophthalmology exams (no clinic found)');
     }
@@ -470,7 +470,7 @@ async function seedCongoData() {
     const finalExamCount = await OphthalmologyExam.countDocuments();
 
     // Summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('CONGO DATA SEED COMPLETE');
     console.log('='.repeat(60));
     console.log(`

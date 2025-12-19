@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
-const OpticalLensInventory = require('../models/OpticalLensInventory');
+const { OpticalLensInventory } = require('../models/Inventory');
+
 const Clinic = require('../models/Clinic');
 require('dotenv').config();
 
@@ -144,7 +145,7 @@ async function seedOpticalLensInventory() {
     console.log('Cleared existing optical lens inventory');
 
     const lensesToInsert = [];
-    let skuSet = new Set();
+    const skuSet = new Set();
 
     for (const clinic of clinics) {
       const clinicCode = clinic._id.toString().slice(-4).toUpperCase();
@@ -192,15 +193,15 @@ async function seedOpticalLensInventory() {
 
                 const baseCost = productLine.category === 'premium' ? getRandomInt(80000, 200000)
                   : productLine.category === 'standard' ? getRandomInt(30000, 80000)
-                  : getRandomInt(10000, 30000);
+                    : getRandomInt(10000, 30000);
 
                 const materialMultiplier = material.index >= 1.67 ? 1.5
                   : material.index >= 1.60 ? 1.2
-                  : 1.0;
+                    : 1.0;
 
                 const coatingMultiplier = coatings.includes('shmc') ? 1.3
                   : coatings.includes('hmc') ? 1.15
-                  : 1.0;
+                    : 1.0;
 
                 const costPrice = Math.round(baseCost * materialMultiplier * coatingMultiplier);
                 const sellingPrice = Math.round(costPrice * (1.4 + Math.random() * 0.4));
@@ -262,7 +263,7 @@ async function seedOpticalLensInventory() {
                     reorderQuantity: lensType === 'stock' ? 20 : 10,
                     status: currentStock === 0 ? 'out-of-stock'
                       : currentStock <= (lensType === 'stock' ? 5 : 2) ? 'low-stock'
-                      : 'in-stock'
+                        : 'in-stock'
                   },
                   pricing: {
                     costPrice,
@@ -294,7 +295,7 @@ async function seedOpticalLensInventory() {
                     surfacingRequired: lensType === 'blank' || lensType === 'semi-finished',
                     edgingDifficulty: material.index >= 1.67 ? 'difficult'
                       : material.id === 'polycarbonate' ? 'medium'
-                      : 'easy',
+                        : 'easy',
                     specialInstructions: material.index >= 1.74
                       ? 'Use diamond wheel for edging'
                       : undefined

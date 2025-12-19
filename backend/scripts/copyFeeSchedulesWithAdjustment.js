@@ -45,7 +45,7 @@ async function copyWithAdjustment() {
     console.log(`\nFound ${templates.length} template fee schedules`);
 
     for (const clinicConfig of CLINIC_ADJUSTMENTS) {
-      console.log('\n' + '-'.repeat(50));
+      console.log(`\n${'-'.repeat(50)}`);
       console.log(`Processing: ${clinicConfig.name}`);
       console.log(`Adjustment: ${clinicConfig.description}`);
       console.log(`Multiplier: ${clinicConfig.multiplier}`);
@@ -99,7 +99,7 @@ async function copyWithAdjustment() {
     }
 
     // Final summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('Summary');
     console.log('='.repeat(60));
 

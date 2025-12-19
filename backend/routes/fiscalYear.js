@@ -18,7 +18,7 @@ router.use(protect);
 router.get('/', authorize('admin', 'accountant'), asyncHandler(async (req, res) => {
   const { status, includeClosed = true } = req.query;
 
-  let query = {};
+  const query = {};
   if (status) {
     query.status = status;
   } else if (includeClosed === 'false') {

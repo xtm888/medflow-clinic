@@ -231,7 +231,7 @@ async function seedClinicalProcedures() {
     }
 
     // Summary
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('SEEDING SUMMARY');
     console.log('='.repeat(60));
     console.log(`Total procedures processed: ${totalProcessed}`);

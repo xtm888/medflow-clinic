@@ -485,7 +485,7 @@ async function seedCompleteFeeSchedule() {
     // ========================================
     // SUMMARY
     // ========================================
-    console.log('\n\n' + '='.repeat(60));
+    console.log(`\n\n${'='.repeat(60)}`);
     console.log('SEEDING COMPLETE - SUMMARY');
     console.log('='.repeat(60));
     console.log(`Total items processed: ${shortCodeAliases.length + clinicalProcedures.length}`);
@@ -494,7 +494,7 @@ async function seedCompleteFeeSchedule() {
     console.log(`Skipped: ${skipped}`);
 
     // Breakdown by category
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log('BREAKDOWN BY CATEGORY');
     console.log('='.repeat(60));
     const breakdown = await FeeSchedule.aggregate([
@@ -515,7 +515,7 @@ async function seedCompleteFeeSchedule() {
 
     // Total count
     const totalCount = await FeeSchedule.countDocuments({ active: true });
-    console.log('\n' + '='.repeat(60));
+    console.log(`\n${'='.repeat(60)}`);
     console.log(`TOTAL ACTIVE FEE SCHEDULES: ${totalCount}`);
     console.log('='.repeat(60));
 

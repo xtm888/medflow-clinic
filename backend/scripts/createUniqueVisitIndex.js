@@ -59,7 +59,7 @@ async function createIndex() {
           for (let i = 1; i < visits.length; i++) {
             await visitsCollection.updateOne(
               { _id: visits[i]._id },
-              { $unset: { appointment: "" } }
+              { $unset: { appointment: '' } }
             );
             console.log(`  ✓ Unlinked visit ${visits[i]._id} from appointment ${dup._id}`);
             fixedCount++;

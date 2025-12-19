@@ -147,6 +147,7 @@ const SCRIPT_REGISTRY = {
     scripts: [
       { name: 'seedImagingData', file: 'seedImagingData.js', desc: 'Imaging equipment' },
       { name: 'seedAdditionalServices', file: 'seedAdditionalServices.js', desc: 'Extra services' },
+      { name: 'seedComprehensiveConfig', file: 'seedComprehensiveConfig.js', desc: 'Rooms, taxes, fiscal years, referrers, surgical supplies, etc.' },
     ]
   },
 
@@ -174,6 +175,7 @@ const SCRIPT_REGISTRY = {
       { name: 'createTestPatients', file: 'createTestPatients.js', desc: 'Test patients' },
       { name: 'createTestPharmacyData', file: 'createTestPharmacyData.js', desc: 'Test pharmacy data' },
       { name: 'createSampleApprovals', file: 'createSampleApprovals.js', desc: 'Sample approvals' },
+      { name: 'seedTestTransactionalData', file: 'seedTestTransactionalData.js', desc: 'All transactional test data (prescriptions, lab orders, etc.)' },
     ]
   },
 };

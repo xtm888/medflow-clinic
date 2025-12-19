@@ -13,8 +13,8 @@ async function resetAdmin() {
     admin.password = defaults.admin.password;
     await admin.save();
     console.log('Admin password reset successfully');
-    console.log('📧 Email: ' + defaults.admin.email);
-    console.log('🔑 Password: ' + defaults.admin.password);
+    console.log(`📧 Email: ${defaults.admin.email}`);
+    console.log(`🔑 Password: ${defaults.admin.password}`);
   } else {
     console.log('Admin user not found, creating...');
     // Set PLAIN TEXT password - pre-save hook will hash it
@@ -32,8 +32,8 @@ async function resetAdmin() {
     });
     await newAdmin.save();
     console.log('Admin created');
-    console.log('📧 Email: ' + defaults.admin.email);
-    console.log('🔑 Password: ' + defaults.admin.password);
+    console.log(`📧 Email: ${defaults.admin.email}`);
+    console.log(`🔑 Password: ${defaults.admin.password}`);
   }
   await mongoose.disconnect();
 }

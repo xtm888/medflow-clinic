@@ -25,7 +25,7 @@ const indexDefinitions = {
     // Filter by gender and date of birth (for demographics)
     { fields: { gender: 1, dateOfBirth: 1 }, options: { name: 'patient_demographics' } },
     // Find patients with recent visits
-    { fields: { lastVisitDate: -1, isActive: 1 }, options: { name: 'patient_last_visit' } },
+    { fields: { lastVisitDate: -1, isActive: 1 }, options: { name: 'patient_last_visit' } }
   ],
 
   // Appointment indexes
@@ -41,7 +41,7 @@ const indexDefinitions = {
     // Status-based queries with time ordering
     { fields: { status: 1, date: -1, startTime: 1 }, options: { name: 'appointment_status_time' } },
     // Reminder queries (scheduled appointments in the future)
-    { fields: { status: 1, date: 1, 'reminders.sent': 1 }, options: { name: 'appointment_reminders' } },
+    { fields: { status: 1, date: 1, 'reminders.sent': 1 }, options: { name: 'appointment_reminders' } }
   ],
 
   // Invoice indexes
@@ -55,7 +55,7 @@ const indexDefinitions = {
     // Insurance claims tracking
     { fields: { 'insurance.status': 1, dateIssued: -1 }, options: { name: 'invoice_insurance', sparse: true } },
     // Overdue invoices
-    { fields: { status: 1, dueDate: 1, 'summary.balance': 1 }, options: { name: 'invoice_overdue' } },
+    { fields: { status: 1, dueDate: 1, 'summary.balance': 1 }, options: { name: 'invoice_overdue' } }
   ],
 
   // Prescription indexes
@@ -69,7 +69,7 @@ const indexDefinitions = {
     // Type and status filtering
     { fields: { type: 1, status: 1, createdAt: -1 }, options: { name: 'prescription_type_status' } },
     // Expiring prescriptions
-    { fields: { expiryDate: 1, status: 1 }, options: { name: 'prescription_expiry' } },
+    { fields: { expiryDate: 1, status: 1 }, options: { name: 'prescription_expiry' } }
   ],
 
   // Pharmacy Inventory indexes
@@ -83,7 +83,7 @@ const indexDefinitions = {
     // Category browsing
     { fields: { category: 1, 'medication.brandName': 1 }, options: { name: 'inventory_category' } },
     // SKU lookup
-    { fields: { sku: 1 }, options: { name: 'inventory_sku', unique: true, sparse: true } },
+    { fields: { sku: 1 }, options: { name: 'inventory_sku', unique: true, sparse: true } }
   ],
 
   // Visit indexes
@@ -95,7 +95,7 @@ const indexDefinitions = {
     // Active visits (for dashboard)
     { fields: { status: 1, visitDate: -1 }, options: { name: 'visit_status_date' } },
     // Department workload
-    { fields: { department: 1, visitDate: 1, status: 1 }, options: { name: 'visit_department' } },
+    { fields: { department: 1, visitDate: 1, status: 1 }, options: { name: 'visit_department' } }
   ],
 
   // Ophthalmology Exam indexes
@@ -107,7 +107,7 @@ const indexDefinitions = {
     // Exam type queries
     { fields: { examType: 1, examDate: -1 }, options: { name: 'ophthalmo_type' } },
     // Linked visit lookup
-    { fields: { visit: 1 }, options: { name: 'ophthalmo_visit' } },
+    { fields: { visit: 1 }, options: { name: 'ophthalmo_visit' } }
   ],
 
   // Queue indexes
@@ -119,7 +119,7 @@ const indexDefinitions = {
     // Provider queue
     { fields: { assignedTo: 1, status: 1, checkInTime: 1 }, options: { name: 'queue_provider' } },
     // Priority ordering
-    { fields: { status: 1, priority: 1, checkInTime: 1 }, options: { name: 'queue_priority' } },
+    { fields: { status: 1, priority: 1, checkInTime: 1 }, options: { name: 'queue_priority' } }
   ],
 
   // Audit Log indexes
@@ -131,7 +131,7 @@ const indexDefinitions = {
     // Action filtering
     { fields: { action: 1, timestamp: -1 }, options: { name: 'audit_action' } },
     // Date range queries (with TTL - auto-delete after 365 days)
-    { fields: { timestamp: 1 }, options: { name: 'audit_timestamp_ttl', expireAfterSeconds: 365 * 24 * 60 * 60 } },
+    { fields: { timestamp: 1 }, options: { name: 'audit_timestamp_ttl', expireAfterSeconds: 365 * 24 * 60 * 60 } }
   ],
 
   // User indexes
@@ -141,7 +141,7 @@ const indexDefinitions = {
     // Role-based queries
     { fields: { role: 1, isActive: 1 }, options: { name: 'user_role_active' } },
     // Department staff lookup
-    { fields: { department: 1, role: 1, isActive: 1 }, options: { name: 'user_department' } },
+    { fields: { department: 1, role: 1, isActive: 1 }, options: { name: 'user_department' } }
   ],
 
   // Document indexes
@@ -153,7 +153,7 @@ const indexDefinitions = {
     // Type filtering
     { fields: { type: 1, createdAt: -1 }, options: { name: 'document_type' } },
     // Full-text search on document content
-    { fields: { title: 'text', description: 'text', tags: 'text' }, options: { name: 'document_search_text' } },
+    { fields: { title: 'text', description: 'text', tags: 'text' }, options: { name: 'document_search_text' } }
   ],
 
   // Notification indexes
@@ -163,7 +163,7 @@ const indexDefinitions = {
     // Unread count
     { fields: { user: 1, read: 1 }, options: { name: 'notification_unread' } },
     // TTL - auto-delete after 30 days
-    { fields: { createdAt: 1 }, options: { name: 'notification_ttl', expireAfterSeconds: 30 * 24 * 60 * 60 } },
+    { fields: { createdAt: 1 }, options: { name: 'notification_ttl', expireAfterSeconds: 30 * 24 * 60 * 60 } }
   ],
 
   // Consultation Session indexes
@@ -173,7 +173,7 @@ const indexDefinitions = {
     // Provider sessions
     { fields: { provider: 1, startTime: -1 }, options: { name: 'consultation_provider' } },
     // Active sessions
-    { fields: { status: 1, startTime: -1 }, options: { name: 'consultation_status' } },
+    { fields: { status: 1, startTime: -1 }, options: { name: 'consultation_status' } }
   ],
 
   // Clinical Alerts indexes
@@ -183,7 +183,7 @@ const indexDefinitions = {
     // Active alerts by severity
     { fields: { status: 1, severity: 1, createdAt: -1 }, options: { name: 'clinicalalert_severity' } },
     // Unacknowledged alerts
-    { fields: { status: 1, acknowledgedAt: 1 }, options: { name: 'clinicalalert_unacked' } },
+    { fields: { status: 1, acknowledgedAt: 1 }, options: { name: 'clinicalalert_unacked' } }
   ],
 
   // Lab Orders indexes
@@ -193,8 +193,8 @@ const indexDefinitions = {
     // Pending orders (for lab technicians)
     { fields: { status: 1, priority: 1, orderDate: 1 }, options: { name: 'laborder_pending' } },
     // Provider orders
-    { fields: { orderedBy: 1, orderDate: -1 }, options: { name: 'laborder_provider' } },
-  ],
+    { fields: { orderedBy: 1, orderDate: -1 }, options: { name: 'laborder_provider' } }
+  ]
 };
 
 async function createIndexes() {
@@ -205,7 +205,7 @@ async function createIndexes() {
   try {
     await mongoose.connect(mongoUri, {
       useNewUrlParser: true,
-      useUnifiedTopology: true,
+      useUnifiedTopology: true
     });
 
     console.log('✅ Connected to MongoDB\n');
@@ -224,7 +224,7 @@ async function createIndexes() {
         // Check if collection exists
         const collections = await db.listCollections({ name: collectionName }).toArray();
         if (collections.length === 0) {
-          console.log(`   ⚠️  Collection does not exist, skipping\n`);
+          console.log('   ⚠️  Collection does not exist, skipping\n');
           continue;
         }
 
@@ -259,7 +259,7 @@ async function createIndexes() {
     }
 
     console.log('═══════════════════════════════════════');
-    console.log(`📊 Summary:`);
+    console.log('📊 Summary:');
     console.log(`   Created: ${totalCreated}`);
     console.log(`   Skipped: ${totalSkipped} (already exist)`);
     console.log(`   Errors:  ${totalErrors}`);
