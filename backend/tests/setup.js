@@ -3,6 +3,19 @@ process.env.NODE_ENV = 'test';
 process.env.DISABLE_SCHEDULERS = 'true';
 process.env.DISABLE_CACHE_WARMING = 'true';
 
+// Mock email service to prevent actual email sending during tests
+jest.mock('../services/emailService', () => ({
+  sendEmail: jest.fn().mockResolvedValue({ success: true, messageId: 'test-id' }),
+  sendPasswordResetEmail: jest.fn().mockResolvedValue({ success: true }),
+  sendWelcomeEmail: jest.fn().mockResolvedValue({ success: true }),
+  sendVerificationEmail: jest.fn().mockResolvedValue({ success: true }),
+  sendAppointmentReminder: jest.fn().mockResolvedValue({ success: true })
+}));
+
+jest.mock('../utils/sendEmail', () => ({
+  sendEmail: jest.fn().mockResolvedValue({ success: true })
+}));
+
 const { MongoMemoryServer } = require('mongodb-memory-server');
 const mongoose = require('mongoose');
 
@@ -48,5 +61,5 @@ afterAll(async () => {
   console.log('✅ Test database disconnected');
 });
 
-// Global test timeout
-jest.setTimeout(30000);
+// Note: Global timeout is set in jest.config.js (60000ms)
+// Don't override here to avoid conflicts

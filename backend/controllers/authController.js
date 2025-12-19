@@ -3,7 +3,7 @@ const User = require('../models/User');
 const Counter = require('../models/Counter');
 const notificationFacade = require('../services/notificationFacade');
 const { generateToken, sendTokenResponse, verifyRefreshToken } = require('../utils/tokenUtils');
-const { success, error, unauthorized, forbidden } = require('../utils/apiResponse');
+const { success, error, badRequest, unauthorized, forbidden } = require('../utils/apiResponse');
 const { auth: authLogger } = require('../utils/structuredLogger');
 const { AUTH, RATE_LIMIT } = require('../config/constants');
 
@@ -42,7 +42,7 @@ exports.register = async (req, res, next) => {
     });
 
     if (existingUser) {
-      return error(res, 'User with that email or username already exists');
+      return badRequest(res, 'User with that email or username already exists');
     }
 
     // Generate employee ID
