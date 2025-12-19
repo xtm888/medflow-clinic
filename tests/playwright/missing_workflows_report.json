@@ -1,0 +1,526 @@
+{
+  "timestamp": "2025-12-16T23:31:06.556712",
+  "phases": {
+    "Roles": {
+      "passed": 30,
+      "failed": 6,
+      "tests": [
+        {
+          "name": "Administrateur login",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Administrateur -> Dashboard",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Administrateur -> Patients",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Administrateur -> Queue",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Administrateur -> Appointments",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Administrateur -> Invoicing",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "M\u00e9decin login",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "M\u00e9decin -> Dashboard",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "M\u00e9decin -> Patients",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "M\u00e9decin -> Queue",
+          "passed": false,
+          "details": "No access"
+        },
+        {
+          "name": "M\u00e9decin -> Appointments",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "M\u00e9decin -> Invoicing",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Ophtalmologue login",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Ophtalmologue -> Dashboard",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Ophtalmologue -> Patients",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Ophtalmologue -> Queue",
+          "passed": false,
+          "details": "No access"
+        },
+        {
+          "name": "Ophtalmologue -> Appointments",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Ophtalmologue -> Invoicing",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Infirmier(\u00e8re) login",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Infirmier(\u00e8re) -> Dashboard",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Infirmier(\u00e8re) -> Patients",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Infirmier(\u00e8re) -> Queue",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Infirmier(\u00e8re) -> Appointments",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Infirmier(\u00e8re) -> Invoicing",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Pharmacien(ne) login",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Pharmacien(ne) -> Dashboard",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Pharmacien(ne) -> Patients",
+          "passed": false,
+          "details": "No access"
+        },
+        {
+          "name": "Pharmacien(ne) -> Queue",
+          "passed": false,
+          "details": "No access"
+        },
+        {
+          "name": "Pharmacien(ne) -> Appointments",
+          "passed": false,
+          "details": "No access"
+        },
+        {
+          "name": "Pharmacien(ne) -> Invoicing",
+          "passed": false,
+          "details": "No access"
+        },
+        {
+          "name": "R\u00e9ceptionniste login",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "R\u00e9ceptionniste -> Dashboard",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "R\u00e9ceptionniste -> Patients",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "R\u00e9ceptionniste -> Queue",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "R\u00e9ceptionniste -> Appointments",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "R\u00e9ceptionniste -> Invoicing",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    },
+    "PDF": {
+      "passed": 3,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Invoice print button found",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Invoice PDF opens",
+          "passed": false,
+          "details": "Timeout 30000ms exceeded while waiting for event \"page\""
+        },
+        {
+          "name": "Prescription print button found",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Prescription print clicked",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    },
+    "Devices": {
+      "passed": 6,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Discovery page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Scan button found",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Discovery scan executed",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Device list visible",
+          "passed": false,
+          "details": "Found 0 devices"
+        },
+        {
+          "name": "Add device button found",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Add device form opens",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Sync status visible",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    },
+    "Surgery": {
+      "passed": 3,
+      "failed": 6,
+      "tests": [
+        {
+          "name": "Dashboard loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Surgery cases visible",
+          "passed": false,
+          "details": "Found 0 cases"
+        },
+        {
+          "name": "New case form loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Form field: Patient",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Form field: Proc\u00e9dure",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "Form field: Date",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "Form field: Chirurgien",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "Form field: Anesth\u00e9sie",
+          "passed": false,
+          "details": ""
+        },
+        {
+          "name": "Check-in button found",
+          "passed": false,
+          "details": "No pending surgeries"
+        }
+      ]
+    },
+    "Glasses": {
+      "passed": 4,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Orders page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Tab: Toutes",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Tab: Contr\u00f4le Qualit\u00e9",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Tab: Pr\u00eats \u00e0 retirer",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Order detail opens",
+          "passed": false,
+          "details": "No orders to view"
+        }
+      ]
+    },
+    "Lab": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "Worklist page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Config page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Config section: Analyseurs",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Config section: Tests",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Check-in page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Reagent inventory loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Lot tracking visible",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    },
+    "Templates": {
+      "passed": 4,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Template list loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Templates visible",
+          "passed": false,
+          "details": "Found 0"
+        },
+        {
+          "name": "Builder page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Builder has: Nom",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Builder has: Contenu",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    },
+    "Advanced": {
+      "passed": 7,
+      "failed": 1,
+      "tests": [
+        {
+          "name": "Alerts page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Alerts visible",
+          "passed": false,
+          "details": "Found 0"
+        },
+        {
+          "name": "Notifications page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "External facilities page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Backup page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Backup button found",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Fiscal year page loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Drug safety page loads",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    },
+    "Portal": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "name": "Portal Login loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Public Booking loads",
+          "passed": true,
+          "details": ""
+        },
+        {
+          "name": "Display Board loads",
+          "passed": true,
+          "details": ""
+        }
+      ]
+    }
+  },
+  "total_tests": 84,
+  "passed": 67,
+  "failed": 17,
+  "screenshots": [
+    "screenshots/missing/roles/admin_dashboard.png",
+    "screenshots/missing/roles/admin_final.png",
+    "screenshots/missing/roles/doctor_dashboard.png",
+    "screenshots/missing/roles/doctor_final.png",
+    "screenshots/missing/roles/ophthalmologist_dashboard.png",
+    "screenshots/missing/roles/ophthalmologist_final.png",
+    "screenshots/missing/roles/nurse_dashboard.png",
+    "screenshots/missing/roles/nurse_final.png",
+    "screenshots/missing/roles/pharmacist_dashboard.png",
+    "screenshots/missing/roles/pharmacist_final.png",
+    "screenshots/missing/roles/receptionist_dashboard.png",
+    "screenshots/missing/roles/receptionist_final.png",
+    "screenshots/missing/pdf/invoice_list.png",
+    "screenshots/missing/pdf/invoice_after_print_click.png",
+    "screenshots/missing/pdf/prescription_list.png",
+    "screenshots/missing/pdf/prescription_after_print.png",
+    "screenshots/missing/devices/discovery_page.png",
+    "screenshots/missing/devices/discovery_results.png",
+    "screenshots/missing/devices/device_manager.png",
+    "screenshots/missing/devices/add_device_form.png",
+    "screenshots/missing/devices/sync_status.png",
+    "screenshots/missing/surgery/surgery_dashboard.png",
+    "screenshots/missing/surgery/new_surgery_form.png",
+    "screenshots/missing/glasses/glasses_orders_list.png",
+    "screenshots/missing/glasses/glasses_tab_toutes.png",
+    "screenshots/missing/glasses/glasses_tab_contr\u00f4le_qualit\u00e9.png",
+    "screenshots/missing/glasses/glasses_tab_pr\u00eats_\u00e0_retirer.png",
+    "screenshots/missing/lab/lab_worklist.png",
+    "screenshots/missing/lab/lab_config.png",
+    "screenshots/missing/lab/lab_checkin.png",
+    "screenshots/missing/lab/reagent_inventory.png",
+    "screenshots/missing/templates/template_list.png",
+    "screenshots/missing/templates/template_builder.png",
+    "screenshots/missing/advanced/clinical_alerts.png",
+    "screenshots/missing/advanced/notifications.png",
+    "screenshots/missing/advanced/external_facilities.png",
+    "screenshots/missing/advanced/backup_management.png",
+    "screenshots/missing/advanced/fiscal_year.png",
+    "screenshots/missing/advanced/drug_safety.png",
+    "screenshots/missing/portal/portal_login.png",
+    "screenshots/missing/portal/public_booking.png",
+    "screenshots/missing/portal/display_board.png"
+  ]
+}

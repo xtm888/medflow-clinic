@@ -1,0 +1,253 @@
+{
+  "name": "Full Patient Journey Tests",
+  "timestamp": "2025-12-15T15:13:56.917447",
+  "duration_seconds": 44.214318,
+  "summary": {
+    "total": 30,
+    "passed": 30,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Registration wizard loads",
+      "passed": true,
+      "details": "",
+      "category": "registration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:03.180060"
+    },
+    {
+      "test": "Personal info form visible",
+      "passed": true,
+      "details": "Wizard loaded (photo/personal step)",
+      "category": "registration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:03.238118"
+    },
+    {
+      "test": "Queue page loads",
+      "passed": true,
+      "details": "",
+      "category": "queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:06.730182"
+    },
+    {
+      "test": "Check-in button present",
+      "passed": true,
+      "details": "",
+      "category": "queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:06.755870"
+    },
+    {
+      "test": "Check-in modal opens",
+      "passed": true,
+      "details": "",
+      "category": "queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:07.807551"
+    },
+    {
+      "test": "Call next button present",
+      "passed": true,
+      "details": "",
+      "category": "queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:08.369135"
+    },
+    {
+      "test": "Consultation page loads",
+      "passed": true,
+      "details": "",
+      "category": "consultation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:11.829502"
+    },
+    {
+      "test": "Patient selection available",
+      "passed": true,
+      "details": "",
+      "category": "consultation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:11.840846"
+    },
+    {
+      "test": "Consultation type selection",
+      "passed": true,
+      "details": "",
+      "category": "consultation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:11.841785"
+    },
+    {
+      "test": "Prescriptions page loads",
+      "passed": true,
+      "details": "",
+      "category": "prescription",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:15.305410"
+    },
+    {
+      "test": "New prescription button",
+      "passed": true,
+      "details": "",
+      "category": "prescription",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:15.319114"
+    },
+    {
+      "test": "Prescription list visible",
+      "passed": true,
+      "details": "",
+      "category": "prescription",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:15.330801"
+    },
+    {
+      "test": "PA status filter",
+      "passed": true,
+      "details": "",
+      "category": "prescription",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:15.333619"
+    },
+    {
+      "test": "Invoicing page loads",
+      "passed": true,
+      "details": "",
+      "category": "invoicing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:18.843667"
+    },
+    {
+      "test": "New invoice button",
+      "passed": true,
+      "details": "",
+      "category": "invoicing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:18.874185"
+    },
+    {
+      "test": "Invoice categories present",
+      "passed": true,
+      "details": "Found category cards",
+      "category": "invoicing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:18.890009"
+    },
+    {
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "category": "invoicing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:18.911996"
+    },
+    {
+      "test": "Invoice detail loads",
+      "passed": true,
+      "details": "No pending invoices",
+      "category": "payment",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:19.065503"
+    },
+    {
+      "test": "Payment methods available",
+      "passed": true,
+      "details": "In payment modal",
+      "category": "payment",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:22.016256"
+    },
+    {
+      "test": "Journey - Dashboard accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "journey_verify",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:26.244686"
+    },
+    {
+      "test": "Journey - Patients accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "category": "journey_verify",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:29.166512"
+    },
+    {
+      "test": "Journey - Queue accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/queue",
+      "category": "journey_verify",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:32.077446"
+    },
+    {
+      "test": "Journey - Appointments accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/appointments",
+      "category": "journey_verify",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:34.985288"
+    },
+    {
+      "test": "Journey - Prescriptions accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/prescriptions",
+      "category": "journey_verify",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:37.891843"
+    },
+    {
+      "test": "Journey - Invoicing accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/invoicing",
+      "category": "journey_verify",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:40.849533"
+    },
+    {
+      "test": "E2E API - Get patient",
+      "passed": true,
+      "details": "Patient ID: 693a98ee...",
+      "category": "e2e_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:41.098306"
+    },
+    {
+      "test": "E2E API - Get visits",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "e2e_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:41.106753"
+    },
+    {
+      "test": "E2E API - Get invoices",
+      "passed": true,
+      "details": "Found 20 invoices",
+      "category": "e2e_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:41.123578"
+    },
+    {
+      "test": "E2E API - Get prescriptions",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "e2e_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:41.127284"
+    },
+    {
+      "test": "E2E API - Get queue",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "e2e_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:41.131680"
+    }
+  ]
+}

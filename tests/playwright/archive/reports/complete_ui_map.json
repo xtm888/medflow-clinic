@@ -1,0 +1,2446 @@
+{
+  "timestamp": "2025-12-13T17:14:10.658350",
+  "summary": {
+    "screenshots": 406,
+    "pages": 30,
+    "elements": 376
+  },
+  "pages": {
+    "Home": {
+      "url": "http://localhost:5173/home",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Accueil\n7 modules",
+          "action": "state_change",
+          "screenshot": "0002_Home_button_Accueil_7_modules.jpg"
+        },
+        {
+          "type": "button",
+          "text": "11\nClinique\n11 modules",
+          "action": "navigate",
+          "screenshot": "0003_Home_button_11_Clinique_11_modules.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Postes de Travail\n7 modules",
+          "action": "state_change",
+          "screenshot": "0004_Home_button_Postes_de_Travail_7_mod.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Optique & Vente\n5 modules",
+          "action": "navigate",
+          "screenshot": "0005_Home_button_Optique___Vente_5_modul.jpg"
+        }
+      ],
+      "main_screenshot": "0001_Home_view.jpg"
+    },
+    "Dashboard": {
+      "url": "http://localhost:5173/dashboard",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0007_Dashboard_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0008_Dashboard_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0009_Dashboard_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0010_Dashboard_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0011_Dashboard_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0012_Dashboard_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0013_Dashboard_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Actualiser",
+          "action": "logout_trigger",
+          "screenshot": "0014_Dashboard_button_Actualiser.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Voir toutes les actions (10)",
+          "action": "state_change",
+          "screenshot": "0015_Dashboard_button_Voir_toutes_les_ac.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "state_change",
+          "screenshot": "0016_Dashboard_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0017_Dashboard_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0018_Dashboard_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0019_Dashboard_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0020_Dashboard_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0021_Dashboard_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0022_Dashboard_link_Journal_d_audit.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0023_Dashboard_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0024_Dashboard_icon_Accueil_-_Menu_princ.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0025_Dashboard_icon_Pr\u00e9parer_pour_le_mod.jpg"
+        }
+      ],
+      "main_screenshot": "0006_Dashboard_view.jpg"
+    },
+    "Patients": {
+      "url": "http://localhost:5173/patients",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0027_Patients_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0028_Patients_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0029_Patients_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0030_Patients_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0031_Patients_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0032_Patients_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0033_Patients_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "action": "logout_trigger",
+          "screenshot": "0034_Patients_button_Raccourcis.jpg"
+        },
+        {
+          "type": "button",
+          "text": "S\u00e9lection",
+          "action": "state_change",
+          "screenshot": "0035_Patients_button_S\u00e9lection.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouveau patient",
+          "action": "state_change",
+          "screenshot": "0036_Patients_button_Nouveau_patient.jpg"
+        }
+      ],
+      "main_screenshot": "0026_Patients_view.jpg"
+    },
+    "Queue": {
+      "url": "http://localhost:5173/queue",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0038_Queue_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0039_Queue_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0040_Queue_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0041_Queue_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0042_Queue_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0043_Queue_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0044_Queue_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "action": "logout_trigger",
+          "screenshot": "0045_Queue_button_Raccourcis.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Enregistrer arriv\u00e9e",
+          "action": "state_change",
+          "screenshot": "0046_Queue_button_Enregistrer_arriv\u00e9e.jpg"
+        }
+      ],
+      "main_screenshot": "0037_Queue_view.jpg"
+    },
+    "Appointments": {
+      "url": "http://localhost:5173/appointments",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0048_Appointments_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0049_Appointments_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0050_Appointments_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0051_Appointments_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0052_Appointments_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0053_Appointments_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0054_Appointments_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "action": "logout_trigger",
+          "screenshot": "0055_Appointments_button_Raccourcis.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Disponibilit\u00e9s",
+          "action": "state_change",
+          "screenshot": "0056_Appointments_button_Disponibilit\u00e9s.jpg"
+        }
+      ],
+      "main_screenshot": "0047_Appointments_view.jpg"
+    },
+    "Ophthalmology": {
+      "url": "http://localhost:5173/ophthalmology",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0058_Ophthalmology_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0059_Ophthalmology_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0060_Ophthalmology_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0061_Ophthalmology_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0062_Ophthalmology_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0063_Ophthalmology_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0064_Ophthalmology_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Consultation\nNouvelle visite",
+          "action": "logout_trigger",
+          "screenshot": "0065_Ophthalmology_button_Consultation_N.jpg"
+        },
+        {
+          "type": "button",
+          "text": "File d'Attente\n0 patients",
+          "action": "navigate",
+          "screenshot": "0066_Ophthalmology_button_File_d_Attente.jpg"
+        },
+        {
+          "type": "button",
+          "text": "R\u00e9fraction\nExamen rapide",
+          "action": "state_change",
+          "screenshot": "0067_Ophthalmology_button_R\u00e9fraction_Exa.jpg"
+        }
+      ],
+      "main_screenshot": "0057_Ophthalmology_view.jpg"
+    },
+    "OphthalmologyConsultation": {
+      "url": "http://localhost:5173/ophthalmology/new",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0069_OphthalmologyConsultation_button_Re.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0070_OphthalmologyConsultation_button_Ac.jpg"
+        }
+      ],
+      "main_screenshot": "0068_OphthalmologyConsultation_view.jpg"
+    },
+    "Prescriptions": {
+      "url": "http://localhost:5173/prescriptions",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0072_Prescriptions_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0073_Prescriptions_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0074_Prescriptions_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0075_Prescriptions_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0076_Prescriptions_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0077_Prescriptions_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0078_Prescriptions_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "action": "logout_trigger",
+          "screenshot": "0079_Prescriptions_button_Raccourcis.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouvelle Prescription",
+          "action": "navigate",
+          "screenshot": "0080_Prescriptions_button_Nouvelle_Presc.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Toutes",
+          "action": "state_change",
+          "screenshot": "0081_Prescriptions_button_Toutes.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Sans PA",
+          "action": "state_change",
+          "screenshot": "0082_Prescriptions_button_Sans_PA.jpg"
+        },
+        {
+          "type": "button",
+          "text": "PA En cours",
+          "action": "state_change",
+          "screenshot": "0083_Prescriptions_button_PA_En_cours.jpg"
+        },
+        {
+          "type": "button",
+          "text": "PA Approuv\u00e9es",
+          "action": "state_change",
+          "screenshot": "0084_Prescriptions_button_PA_Approuv\u00e9es.jpg"
+        },
+        {
+          "type": "button",
+          "text": "PA Refus\u00e9es",
+          "action": "state_change",
+          "screenshot": "0085_Prescriptions_button_PA_Refus\u00e9es.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0086_Prescriptions_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0087_Prescriptions_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0088_Prescriptions_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0089_Prescriptions_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Ordonnances",
+          "action": "state_change",
+          "screenshot": "0090_Prescriptions_link_Ordonnances.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Laboratoire",
+          "action": "navigate",
+          "screenshot": "0091_Prescriptions_link_Laboratoire.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Imagerie",
+          "action": "navigate",
+          "screenshot": "0092_Prescriptions_link_Imagerie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Pharmacie",
+          "action": "navigate",
+          "screenshot": "0093_Prescriptions_link_Pharmacie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Ophtalmologie",
+          "action": "navigate",
+          "screenshot": "0094_Prescriptions_link_Ophtalmologie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Orthoptie",
+          "action": "navigate",
+          "screenshot": "0095_Prescriptions_link_Orthoptie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "IVT",
+          "action": "navigate",
+          "screenshot": "0096_Prescriptions_link_IVT.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Chirurgie",
+          "action": "navigate",
+          "screenshot": "0097_Prescriptions_link_Chirurgie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Boutique Optique",
+          "action": "navigate",
+          "screenshot": "0098_Prescriptions_link_Boutique_Optique.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Appareils",
+          "action": "navigate",
+          "screenshot": "0099_Prescriptions_link_Appareils.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0100_Prescriptions_link_Notifications.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0101_Prescriptions_icon_Accueil_-_Menu_p.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0102_Prescriptions_icon_Pr\u00e9parer_pour_le.jpg"
+        }
+      ],
+      "main_screenshot": "0071_Prescriptions_view.jpg"
+    },
+    "Surgery": {
+      "url": "http://localhost:5173/surgery",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0104_Surgery_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0105_Surgery_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0106_Surgery_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0107_Surgery_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0108_Surgery_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0109_Surgery_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0110_Surgery_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Vue Chirurgien",
+          "action": "logout_trigger",
+          "screenshot": "0111_Surgery_button_Vue_Chirurgien.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouveau Cas",
+          "action": "navigate",
+          "screenshot": "0112_Surgery_button_Nouveau_Cas.jpg"
+        },
+        {
+          "type": "button",
+          "text": "File d'attente\n0",
+          "action": "state_change",
+          "screenshot": "0113_Surgery_button_File_d_attente_0.jpg"
+        }
+      ],
+      "main_screenshot": "0103_Surgery_view.jpg"
+    },
+    "SurgeryPlanning": {
+      "url": "http://localhost:5173/surgery/planning",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0115_SurgeryPlanning_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0116_SurgeryPlanning_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0117_SurgeryPlanning_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0118_SurgeryPlanning_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0119_SurgeryPlanning_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0120_SurgeryPlanning_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0121_SurgeryPlanning_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Retour au tableau de bord",
+          "action": "logout_trigger",
+          "screenshot": "0122_SurgeryPlanning_button_Retour_au_ta.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0123_SurgeryPlanning_link_Tableau_de_bor.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0124_SurgeryPlanning_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0125_SurgeryPlanning_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0126_SurgeryPlanning_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0127_SurgeryPlanning_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0128_SurgeryPlanning_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0129_SurgeryPlanning_link_Journal_d_audi.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0130_SurgeryPlanning_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0131_SurgeryPlanning_icon_Accueil_-_Menu.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0132_SurgeryPlanning_icon_Pr\u00e9parer_pour_.jpg"
+        }
+      ],
+      "main_screenshot": "0114_SurgeryPlanning_view.jpg"
+    },
+    "Laboratory": {
+      "url": "http://localhost:5173/laboratory",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0134_Laboratory_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0135_Laboratory_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0136_Laboratory_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0137_Laboratory_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0138_Laboratory_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0139_Laboratory_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0140_Laboratory_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Configuration",
+          "action": "logout_trigger",
+          "screenshot": "0141_Laboratory_button_Configuration.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Exporter",
+          "action": "state_change",
+          "screenshot": "0142_Laboratory_button_Exporter.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Demandes en Attente\n2 urgent\n1",
+          "action": "state_change",
+          "screenshot": "0143_Laboratory_button_Demandes_en_Atten.jpg"
+        },
+        {
+          "type": "button",
+          "text": "R\u00e9sultats",
+          "action": "state_change",
+          "screenshot": "0144_Laboratory_button_R\u00e9sultats.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0145_Laboratory_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0146_Laboratory_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0147_Laboratory_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0148_Laboratory_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Ordonnances",
+          "action": "navigate",
+          "screenshot": "0149_Laboratory_link_Ordonnances.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Laboratoire",
+          "action": "state_change",
+          "screenshot": "0150_Laboratory_link_Laboratoire.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Imagerie",
+          "action": "navigate",
+          "screenshot": "0151_Laboratory_link_Imagerie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Pharmacie",
+          "action": "navigate",
+          "screenshot": "0152_Laboratory_link_Pharmacie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Ophtalmologie",
+          "action": "navigate",
+          "screenshot": "0153_Laboratory_link_Ophtalmologie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Orthoptie",
+          "action": "navigate",
+          "screenshot": "0154_Laboratory_link_Orthoptie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "IVT",
+          "action": "navigate",
+          "screenshot": "0155_Laboratory_link_IVT.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Chirurgie",
+          "action": "navigate",
+          "screenshot": "0156_Laboratory_link_Chirurgie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Boutique Optique",
+          "action": "navigate",
+          "screenshot": "0157_Laboratory_link_Boutique_Optique.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Appareils",
+          "action": "navigate",
+          "screenshot": "0158_Laboratory_link_Appareils.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0159_Laboratory_link_Notifications.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0160_Laboratory_icon_Accueil_-_Menu_prin.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0161_Laboratory_icon_Pr\u00e9parer_pour_le_mo.jpg"
+        }
+      ],
+      "main_screenshot": "0133_Laboratory_view.jpg"
+    },
+    "LabPending": {
+      "url": "http://localhost:5173/laboratory/pending",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0163_LabPending_button_Retour.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0164_LabPending_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0162_LabPending_view.jpg"
+    },
+    "LabResults": {
+      "url": "http://localhost:5173/laboratory/results",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0166_LabResults_button_Retour.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0167_LabResults_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0165_LabResults_view.jpg"
+    },
+    "Invoicing": {
+      "url": "http://localhost:5173/invoicing",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0169_Invoicing_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0170_Invoicing_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0171_Invoicing_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0172_Invoicing_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0173_Invoicing_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0174_Invoicing_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0175_Invoicing_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Actualiser",
+          "action": "logout_trigger",
+          "screenshot": "0176_Invoicing_button_Actualiser.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouvelle facture",
+          "action": "state_change",
+          "screenshot": "0177_Invoicing_button_Nouvelle_facture.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Voir les d\u00e9tails",
+          "action": "state_change",
+          "screenshot": "0178_Invoicing_button_Voir_les_d\u00e9tails.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Voir",
+          "action": "state_change",
+          "screenshot": "0179_Invoicing_button_Voir.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Imprimer",
+          "action": "state_change",
+          "screenshot": "0180_Invoicing_button_Imprimer.jpg"
+        }
+      ],
+      "main_screenshot": "0168_Invoicing_view.jpg"
+    },
+    "FinancialReports": {
+      "url": "http://localhost:5173/reports/financial",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0182_FinancialReports_button_Retour.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0183_FinancialReports_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0181_FinancialReports_view.jpg"
+    },
+    "Conventions": {
+      "url": "http://localhost:5173/conventions",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0185_Conventions_button_Retour.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0186_Conventions_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0184_Conventions_view.jpg"
+    },
+    "Approvals": {
+      "url": "http://localhost:5173/approvals",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0188_Approvals_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0189_Approvals_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0190_Approvals_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0191_Approvals_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0192_Approvals_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0193_Approvals_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0194_Approvals_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouvelle demande",
+          "action": "logout_trigger",
+          "screenshot": "0195_Approvals_button_Nouvelle_demande.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Filtres",
+          "action": "state_change",
+          "screenshot": "0196_Approvals_button_Filtres.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Cr\u00e9er une demande",
+          "action": "state_change",
+          "screenshot": "0197_Approvals_button_Cr\u00e9er_une_demande.jpg"
+        }
+      ],
+      "main_screenshot": "0187_Approvals_view.jpg"
+    },
+    "Services": {
+      "url": "http://localhost:5173/services",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0199_Services_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0200_Services_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0201_Services_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0202_Services_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0203_Services_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0204_Services_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0205_Services_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouveau service",
+          "action": "logout_trigger",
+          "screenshot": "0206_Services_button_Nouveau_service.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0207_Services_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0208_Services_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0209_Services_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0210_Services_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Facturation",
+          "action": "navigate",
+          "screenshot": "0211_Services_link_Facturation.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rapports financiers",
+          "action": "navigate",
+          "screenshot": "0212_Services_link_Rapports_financiers.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Conventions",
+          "action": "navigate",
+          "screenshot": "0213_Services_link_Conventions.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Approbations",
+          "action": "navigate",
+          "screenshot": "0214_Services_link_Approbations.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Services",
+          "action": "state_change",
+          "screenshot": "0215_Services_link_Services.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0216_Services_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0217_Services_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0218_Services_link_Journal_d_audit.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0219_Services_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0220_Services_icon_Accueil_-_Menu_princ.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0221_Services_icon_Pr\u00e9parer_pour_le_mod.jpg"
+        }
+      ],
+      "main_screenshot": "0198_Services_view.jpg"
+    },
+    "Pharmacy": {
+      "url": "http://localhost:5173/pharmacy",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0223_Pharmacy_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0224_Pharmacy_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0225_Pharmacy_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0226_Pharmacy_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0227_Pharmacy_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0228_Pharmacy_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0229_Pharmacy_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Ajouter un m\u00e9dicament",
+          "action": "logout_trigger",
+          "screenshot": "0230_Pharmacy_button_Ajouter_un_m\u00e9dicame.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Stock Faible",
+          "action": "state_change",
+          "screenshot": "0231_Pharmacy_button_Stock_Faible.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Expire Bient\u00f4t",
+          "action": "state_change",
+          "screenshot": "0232_Pharmacy_button_Expire_Bient\u00f4t.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire Complet\n635 article",
+          "action": "state_change",
+          "screenshot": "0233_Pharmacy_button_Inventaire_Complet_.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0234_Pharmacy_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0235_Pharmacy_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0236_Pharmacy_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0237_Pharmacy_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Ordonnances",
+          "action": "navigate",
+          "screenshot": "0238_Pharmacy_link_Ordonnances.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Laboratoire",
+          "action": "navigate",
+          "screenshot": "0239_Pharmacy_link_Laboratoire.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Imagerie",
+          "action": "navigate",
+          "screenshot": "0240_Pharmacy_link_Imagerie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Pharmacie",
+          "action": "state_change",
+          "screenshot": "0241_Pharmacy_link_Pharmacie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Ophtalmologie",
+          "action": "navigate",
+          "screenshot": "0242_Pharmacy_link_Ophtalmologie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Orthoptie",
+          "action": "navigate",
+          "screenshot": "0243_Pharmacy_link_Orthoptie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "IVT",
+          "action": "navigate",
+          "screenshot": "0244_Pharmacy_link_IVT.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Chirurgie",
+          "action": "navigate",
+          "screenshot": "0245_Pharmacy_link_Chirurgie.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Boutique Optique",
+          "action": "navigate",
+          "screenshot": "0246_Pharmacy_link_Boutique_Optique.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Appareils",
+          "action": "navigate",
+          "screenshot": "0247_Pharmacy_link_Appareils.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0248_Pharmacy_link_Notifications.jpg"
+        },
+        {
+          "type": "row_action",
+          "text": "view_row",
+          "action": "state_change",
+          "screenshot": "0249_Pharmacy_row_action_view_row.jpg"
+        }
+      ],
+      "main_screenshot": "0222_Pharmacy_view.jpg"
+    },
+    "PharmacyInventory": {
+      "url": "http://localhost:5173/pharmacy/inventory",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0251_PharmacyInventory_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0252_PharmacyInventory_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0253_PharmacyInventory_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0254_PharmacyInventory_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0255_PharmacyInventory_button_All_Clinic.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0256_PharmacyInventory_button_Synchronis.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0257_PharmacyInventory_button_En_ligne.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0258_PharmacyInventory_link_Tableau_de_b.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0259_PharmacyInventory_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0260_PharmacyInventory_link_File_d_atten.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0261_PharmacyInventory_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0262_PharmacyInventory_link_Notification.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0263_PharmacyInventory_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0264_PharmacyInventory_link_Journal_d_au.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0265_PharmacyInventory_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0266_PharmacyInventory_icon_Accueil_-_Me.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0267_PharmacyInventory_icon_Pr\u00e9parer_pou.jpg"
+        }
+      ],
+      "main_screenshot": "0250_PharmacyInventory_view.jpg"
+    },
+    "Inventory": {
+      "url": "http://localhost:5173/inventory",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0269_Inventory_button_Retour.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0270_Inventory_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0268_Inventory_view.jpg"
+    },
+    "OpticalShop": {
+      "url": "http://localhost:5173/optical-shop",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0272_OpticalShop_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0273_OpticalShop_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0274_OpticalShop_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0275_OpticalShop_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Centre Ophtalmologique Matadi",
+          "action": "state_change",
+          "screenshot": "0276_OpticalShop_button_Centre_Ophtalmol.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0277_OpticalShop_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0278_OpticalShop_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Actualiser",
+          "action": "logout_trigger",
+          "screenshot": "0279_OpticalShop_button_Actualiser.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Verification\n\n3 en attente",
+          "action": "navigate",
+          "screenshot": "0280_OpticalShop_button_Verification__3_.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Commandes Externes\n\n0 en cours",
+          "action": "navigate",
+          "screenshot": "0281_OpticalShop_button_Commandes_Extern.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Performance\n\nStatistiques des ",
+          "action": "navigate",
+          "screenshot": "0282_OpticalShop_button_Performance__Sta.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Toutes les commandes\n\nHistoriq",
+          "action": "navigate",
+          "screenshot": "0283_OpticalShop_button_Toutes_les_comma.jpg"
+        }
+      ],
+      "main_screenshot": "0271_OpticalShop_view.jpg"
+    },
+    "GlassesOrders": {
+      "url": "http://localhost:5173/glasses-orders",
+      "elements": [
+        {
+          "type": "button",
+          "text": "R\u00e9essayer",
+          "action": "state_change",
+          "screenshot": "0285_GlassesOrders_button_R\u00e9essayer.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0286_GlassesOrders_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0284_GlassesOrders_view.jpg"
+    },
+    "Companies": {
+      "url": "http://localhost:5173/companies",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0288_Companies_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0289_Companies_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0290_Companies_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0291_Companies_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0292_Companies_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0293_Companies_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0294_Companies_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Nouvelle entreprise",
+          "action": "logout_trigger",
+          "screenshot": "0295_Companies_button_Nouvelle_entrepris.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Hi\u00e9rarchie",
+          "action": "state_change",
+          "screenshot": "0296_Companies_button_Hi\u00e9rarchie.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Liste",
+          "action": "state_change",
+          "screenshot": "0297_Companies_button_Liste.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Filtres",
+          "action": "state_change",
+          "screenshot": "0298_Companies_button_Filtres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0299_Companies_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0300_Companies_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0301_Companies_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0302_Companies_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Facturation",
+          "action": "navigate",
+          "screenshot": "0303_Companies_link_Facturation.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rapports financiers",
+          "action": "navigate",
+          "screenshot": "0304_Companies_link_Rapports_financiers.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Conventions",
+          "action": "state_change",
+          "screenshot": "0305_Companies_link_Conventions.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Approbations",
+          "action": "navigate",
+          "screenshot": "0306_Companies_link_Approbations.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Services",
+          "action": "navigate",
+          "screenshot": "0307_Companies_link_Services.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0308_Companies_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0309_Companies_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0310_Companies_link_Journal_d_audit.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0311_Companies_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0312_Companies_icon_Accueil_-_Menu_princ.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0313_Companies_icon_Pr\u00e9parer_pour_le_mod.jpg"
+        }
+      ],
+      "main_screenshot": "0287_Companies_view.jpg"
+    },
+    "MultiClinic": {
+      "url": "http://localhost:5173/multi-clinic",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Retour",
+          "action": "navigate",
+          "screenshot": "0315_MultiClinic_button_Retour.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0316_MultiClinic_button_Accueil.jpg"
+        }
+      ],
+      "main_screenshot": "0314_MultiClinic_view.jpg"
+    },
+    "Settings": {
+      "url": "http://localhost:5173/settings",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0318_Settings_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0319_Settings_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0320_Settings_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0321_Settings_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0322_Settings_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0323_Settings_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0324_Settings_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Profil",
+          "action": "logout_trigger",
+          "screenshot": "0325_Settings_button_Profil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Notifications",
+          "action": "state_change",
+          "screenshot": "0326_Settings_button_Notifications.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Calendrier",
+          "action": "state_change",
+          "screenshot": "0327_Settings_button_Calendrier.jpg"
+        },
+        {
+          "type": "button",
+          "text": "S\u00e9curit\u00e9",
+          "action": "state_change",
+          "screenshot": "0328_Settings_button_S\u00e9curit\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Facturation",
+          "action": "state_change",
+          "screenshot": "0329_Settings_button_Facturation.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Tarifs",
+          "action": "state_change",
+          "screenshot": "0330_Settings_button_Tarifs.jpg"
+        }
+      ],
+      "main_screenshot": "0317_Settings_view.jpg"
+    },
+    "Documents": {
+      "url": "http://localhost:5173/documents",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0332_Documents_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0333_Documents_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0334_Documents_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0335_Documents_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0336_Documents_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0337_Documents_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0338_Documents_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "UC\nUnknown Client Externe (pha",
+          "action": "logout_trigger",
+          "screenshot": "0339_Documents_button_UC_Unknown_Client_.jpg"
+        },
+        {
+          "type": "button",
+          "text": "JK\nJean KULALUKA\nID: 10000C01\n",
+          "action": "state_change",
+          "screenshot": "0340_Documents_button_JK_Jean_KULALUKA_I.jpg"
+        }
+      ],
+      "main_screenshot": "0331_Documents_view.jpg"
+    },
+    "AuditLog": {
+      "url": "http://localhost:5173/audit",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0342_AuditLog_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0343_AuditLog_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0344_AuditLog_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0345_AuditLog_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0346_AuditLog_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0347_AuditLog_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0348_AuditLog_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Actualiser",
+          "action": "logout_trigger",
+          "screenshot": "0349_AuditLog_button_Actualiser.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Exporter",
+          "action": "state_change",
+          "screenshot": "0350_AuditLog_button_Exporter.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Activit\u00e9 Employ\u00e9s",
+          "action": "state_change",
+          "screenshot": "0351_AuditLog_button_Activit\u00e9_Employ\u00e9s.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Tous les \u00e9v\u00e9nements",
+          "action": "state_change",
+          "screenshot": "0352_AuditLog_button_Tous_les_\u00e9v\u00e9nements.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Activit\u00e9s suspectes",
+          "action": "state_change",
+          "screenshot": "0353_AuditLog_button_Activit\u00e9s_suspectes.jpg"
+        },
+        {
+          "type": "button",
+          "text": "S\u00e9curit\u00e9",
+          "action": "state_change",
+          "screenshot": "0354_AuditLog_button_S\u00e9curit\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Acc\u00e8s Patients",
+          "action": "state_change",
+          "screenshot": "0355_AuditLog_button_Acc\u00e8s_Patients.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Rapports Conformit\u00e9",
+          "action": "state_change",
+          "screenshot": "0356_AuditLog_button_Rapports_Conformit\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Modifications",
+          "action": "state_change",
+          "screenshot": "0357_AuditLog_button_Modifications.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Op\u00e9rations Critiques",
+          "action": "state_change",
+          "screenshot": "0358_AuditLog_button_Op\u00e9rations_Critique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "R\u00e9initialiser",
+          "action": "state_change",
+          "screenshot": "0359_AuditLog_button_R\u00e9initialiser.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0360_AuditLog_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0361_AuditLog_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0362_AuditLog_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0363_AuditLog_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0364_AuditLog_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0365_AuditLog_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "state_change",
+          "screenshot": "0366_AuditLog_link_Journal_d_audit.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0367_AuditLog_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0368_AuditLog_icon_Accueil_-_Menu_princ.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0369_AuditLog_icon_Pr\u00e9parer_pour_le_mod.jpg"
+        }
+      ],
+      "main_screenshot": "0341_AuditLog_view.jpg"
+    },
+    "Notifications": {
+      "url": "http://localhost:5173/notifications",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0371_Notifications_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0372_Notifications_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0373_Notifications_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0374_Notifications_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "action": "state_change",
+          "screenshot": "0375_Notifications_button_All_Clinics.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0376_Notifications_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0377_Notifications_button_En_ligne.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0378_Notifications_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0379_Notifications_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0380_Notifications_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0381_Notifications_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "state_change",
+          "screenshot": "0382_Notifications_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0383_Notifications_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0384_Notifications_link_Journal_d_audit.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0385_Notifications_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0386_Notifications_icon_Accueil_-_Menu_p.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0387_Notifications_icon_Pr\u00e9parer_pour_le.jpg"
+        }
+      ],
+      "main_screenshot": "0370_Notifications_view.jpg"
+    },
+    "Analytics": {
+      "url": "http://localhost:5173/analytics",
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "action": "state_change",
+          "screenshot": "0389_Analytics_button_Clinique.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "action": "state_change",
+          "screenshot": "0390_Analytics_button_Finances.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "action": "state_change",
+          "screenshot": "0391_Analytics_button_Inventaire.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "action": "navigate",
+          "screenshot": "0392_Analytics_button_Accueil.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Centre Ophtalmologique Matadi",
+          "action": "state_change",
+          "screenshot": "0393_Analytics_button_Centre_Ophtalmolog.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Synchronis\u00e9",
+          "action": "state_change",
+          "screenshot": "0394_Analytics_button_Synchronis\u00e9.jpg"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "action": "state_change",
+          "screenshot": "0395_Analytics_button_En_ligne.jpg"
+        },
+        {
+          "type": "button",
+          "text": "Exporter",
+          "action": "state_change",
+          "screenshot": "0396_Analytics_button_Exporter.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "action": "navigate",
+          "screenshot": "0397_Analytics_link_Tableau_de_bord.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "action": "navigate",
+          "screenshot": "0398_Analytics_link_Patients.jpg"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "action": "navigate",
+          "screenshot": "0399_Analytics_link_File_d_attente.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "action": "navigate",
+          "screenshot": "0400_Analytics_link_Rendez-vous.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "action": "navigate",
+          "screenshot": "0401_Analytics_link_Notifications.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "action": "navigate",
+          "screenshot": "0402_Analytics_link_Param\u00e8tres.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "action": "navigate",
+          "screenshot": "0403_Analytics_link_Journal_d_audit.jpg"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "action": "navigate",
+          "screenshot": "0404_Analytics_link_Documents.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "action": "navigate",
+          "screenshot": "0405_Analytics_icon_Accueil_-_Menu_princ.jpg"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "action": "state_change",
+          "screenshot": "0406_Analytics_icon_Pr\u00e9parer_pour_le_mod.jpg"
+        }
+      ],
+      "main_screenshot": "0388_Analytics_view.jpg"
+    }
+  }
+}

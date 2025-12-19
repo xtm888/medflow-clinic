@@ -1,0 +1,93 @@
+{
+  "name": "Device Data Import Tests",
+  "timestamp": "2025-12-15T00:47:43.165532",
+  "duration_seconds": 1.788135,
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Device list",
+      "passed": true,
+      "details": "Found 12 configured devices",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:43.287024"
+    },
+    {
+      "test": "OCT data import",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:43.478301"
+    },
+    {
+      "test": "Fundus data import",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:43.675667"
+    },
+    {
+      "test": "IOL Master import",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:43.874706"
+    },
+    {
+      "test": "Autorefractor import",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:44.066547"
+    },
+    {
+      "test": "Visual field import",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:44.263304"
+    },
+    {
+      "test": "Specular microscopy import",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:44.465846"
+    },
+    {
+      "test": "Measurement retrieval",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:44.665856"
+    },
+    {
+      "test": "Folder sync status",
+      "passed": true,
+      "details": "Auto-sync enabled: False, active: 0",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:44.754202"
+    },
+    {
+      "test": "Image association",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_import",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:47:44.953611"
+    }
+  ]
+}

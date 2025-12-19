@@ -1,0 +1,669 @@
+{
+  "name": "role_access",
+  "timestamp": "2025-12-13T19:52:56.939056",
+  "duration_seconds": 152.451523,
+  "summary": {
+    "total": 82,
+    "passed": 82,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Login - Administrateur",
+      "passed": true,
+      "details": "Logged in as admin@medflow.com",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:01.378748"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:04.769953"
+    },
+    {
+      "test": "Access /patients",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:06.790078"
+    },
+    {
+      "test": "Access /queue",
+      "passed": true,
+      "details": "URL: http://localhost:5173/queue",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:08.767125"
+    },
+    {
+      "test": "Access /appointments",
+      "passed": true,
+      "details": "URL: http://localhost:5173/appointments",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:10.757482"
+    },
+    {
+      "test": "Access /settings",
+      "passed": true,
+      "details": "URL: http://localhost:5173/settings",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:12.748340"
+    },
+    {
+      "test": "Access /users",
+      "passed": true,
+      "details": "URL: http://localhost:5173/users",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:14.772308"
+    },
+    {
+      "test": "Access /audit",
+      "passed": true,
+      "details": "URL: http://localhost:5173/audit",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:16.738342"
+    },
+    {
+      "test": "Access /financial",
+      "passed": true,
+      "details": "URL: http://localhost:5173/financial",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:19.988896"
+    },
+    {
+      "test": "Access /pharmacy",
+      "passed": true,
+      "details": "URL: http://localhost:5173/pharmacy",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:21.915554"
+    },
+    {
+      "test": "Access /laboratory",
+      "passed": true,
+      "details": "URL: http://localhost:5173/laboratory",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:23.955335"
+    },
+    {
+      "test": "Access /invoicing",
+      "passed": true,
+      "details": "URL: http://localhost:5173/invoicing",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:25.929685"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:29.181308"
+    },
+    {
+      "test": "Menu shows 'Patients'",
+      "passed": true,
+      "details": "",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:29.184346"
+    },
+    {
+      "test": "Menu shows 'Param\u00e8tres'",
+      "passed": true,
+      "details": "",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:29.186860"
+    },
+    {
+      "test": "Menu shows 'Journal'",
+      "passed": true,
+      "details": "",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:29.189655"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button visible",
+      "category": "role_admin",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:31.197262"
+    },
+    {
+      "test": "Login - M\u00e9decin",
+      "passed": true,
+      "details": "Logged in as dr.lumumba@medflow.com",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:32.959984"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:34.970113"
+    },
+    {
+      "test": "Access /patients",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:36.981295"
+    },
+    {
+      "test": "Access /queue",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:39.421978"
+    },
+    {
+      "test": "Access /appointments",
+      "passed": true,
+      "details": "URL: http://localhost:5173/appointments",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:41.436155"
+    },
+    {
+      "test": "Access /prescriptions",
+      "passed": true,
+      "details": "URL: http://localhost:5173/prescriptions",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:43.417507"
+    },
+    {
+      "test": "Blocked from /settings",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:45.109938"
+    },
+    {
+      "test": "Blocked from /users",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:47.493350"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:49.454491"
+    },
+    {
+      "test": "Menu shows 'Patients'",
+      "passed": true,
+      "details": "",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:49.456649"
+    },
+    {
+      "test": "Menu shows 'Rendez-vous'",
+      "passed": true,
+      "details": "",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:49.462115"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button visible",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:51.416203"
+    },
+    {
+      "test": "Login - Infirmier(\u00e8re)",
+      "passed": true,
+      "details": "Logged in as nurse.marie@medflow.com",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:53.082359"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:55.097295"
+    },
+    {
+      "test": "Access /patients",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:57.083989"
+    },
+    {
+      "test": "Access /queue",
+      "passed": true,
+      "details": "URL: http://localhost:5173/queue",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:53:59.054416"
+    },
+    {
+      "test": "Blocked from /settings",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:00.709927"
+    },
+    {
+      "test": "Blocked from /users",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:03.080340"
+    },
+    {
+      "test": "Blocked from /financial",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:05.535498"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:07.461659"
+    },
+    {
+      "test": "Menu shows 'Patients'",
+      "passed": true,
+      "details": "",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:07.464652"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button visible",
+      "category": "role_nurse",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:09.415448"
+    },
+    {
+      "test": "Login - R\u00e9ceptionniste",
+      "passed": true,
+      "details": "Logged in as reception@medflow.com",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:11.010188"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:13.020204"
+    },
+    {
+      "test": "Access /patients",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:15.009987"
+    },
+    {
+      "test": "Access /queue",
+      "passed": true,
+      "details": "URL: http://localhost:5173/queue",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:16.969509"
+    },
+    {
+      "test": "Access /appointments",
+      "passed": true,
+      "details": "URL: http://localhost:5173/appointments",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:18.948933"
+    },
+    {
+      "test": "Blocked from /settings",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:20.630614"
+    },
+    {
+      "test": "Blocked from /users",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:23.041868"
+    },
+    {
+      "test": "Blocked from /prescriptions",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:25.447143"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:27.377805"
+    },
+    {
+      "test": "Menu shows 'Patients'",
+      "passed": true,
+      "details": "",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:27.380804"
+    },
+    {
+      "test": "Menu shows 'Rendez-vous'",
+      "passed": true,
+      "details": "",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:27.382884"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button visible",
+      "category": "role_receptionist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:29.345309"
+    },
+    {
+      "test": "Login - Pharmacien(ne)",
+      "passed": true,
+      "details": "Logged in as pharmacy@medflow.com",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:31.002540"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:33.006614"
+    },
+    {
+      "test": "Access /pharmacy",
+      "passed": true,
+      "details": "URL: http://localhost:5173/pharmacy",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:34.982718"
+    },
+    {
+      "test": "Access /prescriptions",
+      "passed": true,
+      "details": "URL: http://localhost:5173/prescriptions",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:36.941182"
+    },
+    {
+      "test": "Blocked from /settings",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:38.622740"
+    },
+    {
+      "test": "Blocked from /users",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:41.011970"
+    },
+    {
+      "test": "Blocked from /laboratory",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:43.547901"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:45.468836"
+    },
+    {
+      "test": "Menu shows 'Pharmacie'",
+      "passed": true,
+      "details": "",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:45.472392"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button hidden",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:47.880392"
+    },
+    {
+      "test": "Login - Technicien Labo",
+      "passed": true,
+      "details": "Logged in as lab@medflow.com",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:49.492818"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:51.498498"
+    },
+    {
+      "test": "Access /laboratory",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:54.047657"
+    },
+    {
+      "test": "Blocked from /settings",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:55.723046"
+    },
+    {
+      "test": "Blocked from /users",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:54:58.106635"
+    },
+    {
+      "test": "Blocked from /pharmacy",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:00.549614"
+    },
+    {
+      "test": "Blocked from /financial",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:03.020878"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:04.948730"
+    },
+    {
+      "test": "Menu shows 'Laboratoire'",
+      "passed": true,
+      "details": "",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:04.950931"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button visible",
+      "category": "role_lab_technician",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:06.959747"
+    },
+    {
+      "test": "Login - Comptable",
+      "passed": true,
+      "details": "Logged in as accountant@medflow.com",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:08.638100"
+    },
+    {
+      "test": "Access /dashboard",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:10.652231"
+    },
+    {
+      "test": "Access /financial",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:13.224673"
+    },
+    {
+      "test": "Access /invoicing",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:15.646255"
+    },
+    {
+      "test": "Blocked from /settings",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:17.311654"
+    },
+    {
+      "test": "Blocked from /users",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:19.747025"
+    },
+    {
+      "test": "Blocked from /prescriptions",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:22.211206"
+    },
+    {
+      "test": "Blocked from /laboratory",
+      "passed": true,
+      "details": "Correctly blocked",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:24.785953"
+    },
+    {
+      "test": "Menu shows 'Tableau de bord'",
+      "passed": true,
+      "details": "",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:26.733893"
+    },
+    {
+      "test": "Menu shows 'Finances'",
+      "passed": true,
+      "details": "",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:26.736158"
+    },
+    {
+      "test": "New Patient button visibility",
+      "passed": true,
+      "details": "Button hidden",
+      "category": "role_accountant",
+      "screenshot": null,
+      "timestamp": "2025-12-13T19:55:29.168018"
+    }
+  ]
+}

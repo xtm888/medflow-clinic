@@ -1,0 +1,243 @@
+{
+  "timestamp": "2025-12-15T15:35:43.399060",
+  "api_failures": [
+    {
+      "name": "Repairs API",
+      "endpoint": "/api/repairs",
+      "status": 500,
+      "error": null,
+      "response_time": "0.01s",
+      "response_body": {
+        "success": false,
+        "error": "Cannot populate path `assignedTechnician` because it is not in your schema. Set the `strictPopulate` option to false to override."
+      },
+      "headers": {
+        "Content-Security-Policy": "default-src 'self';base-uri 'self';font-src 'self' https: data:;form-action 'self';frame-ancestors 'self';img-src 'self' data: http://localhost:5001 http://localhost:5173;object-src 'none';script-src 'self';script-src-attr 'none';style-src 'self' https: 'unsafe-inline';upgrade-insecure-requests",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Origin-Agent-Cluster": "?1",
+        "Referrer-Policy": "no-referrer",
+        "Strict-Transport-Security": "max-age=15552000; includeSubDomains",
+        "X-Content-Type-Options": "nosniff",
+        "X-DNS-Prefetch-Control": "off",
+        "X-Download-Options": "noopen",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Permitted-Cross-Domain-Policies": "none",
+        "X-XSS-Protection": "0",
+        "Vary": "Origin, Accept-Encoding",
+        "Access-Control-Allow-Credentials": "true",
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Length": "157",
+        "ETag": "W/\"9d-umKseLlKuDm/jPtT/vexKKfKHV4\"",
+        "Date": "Mon, 15 Dec 2025 14:35:43 GMT",
+        "Connection": "keep-alive",
+        "Keep-Alive": "timeout=5"
+      },
+      "expected_issue": "500 Server Error"
+    },
+    {
+      "name": "External Facilities API",
+      "endpoint": "/api/external-facilities",
+      "status": null,
+      "error": "Timeout after 30s",
+      "response_time": null,
+      "response_body": null,
+      "headers": null,
+      "expected_issue": "Timeout"
+    },
+    {
+      "name": "Fulfillment Dispatches API",
+      "endpoint": "/api/fulfillment/dispatches",
+      "status": 404,
+      "error": null,
+      "response_time": "0.00s",
+      "response_body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<title>Error</title>\n</head>\n<body>\n<pre>Cannot GET /api/fulfillment/dispatches</pre>\n</body>\n</html>\n",
+      "headers": {
+        "Content-Security-Policy": "default-src 'none'",
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Resource-Policy": "cross-origin",
+        "Origin-Agent-Cluster": "?1",
+        "Referrer-Policy": "no-referrer",
+        "Strict-Transport-Security": "max-age=15552000; includeSubDomains",
+        "X-Content-Type-Options": "nosniff",
+        "X-DNS-Prefetch-Control": "off",
+        "X-Download-Options": "noopen",
+        "X-Frame-Options": "SAMEORIGIN",
+        "X-Permitted-Cross-Domain-Policies": "none",
+        "X-XSS-Protection": "0",
+        "Vary": "Origin, Accept-Encoding",
+        "Access-Control-Allow-Credentials": "true",
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Length": "165",
+        "Date": "Mon, 15 Dec 2025 14:36:33 GMT",
+        "Connection": "keep-alive",
+        "Keep-Alive": "timeout=5"
+      },
+      "expected_issue": "Timeout"
+    }
+  ],
+  "ui_failures": [
+    {
+      "name": "Financial Dashboard Revenue Cards",
+      "url": "http://localhost:5173/financial",
+      "page_loaded": true,
+      "screenshot": "screenshots/diagnostics/diag_financial_dashboard_revenue_cards.png",
+      "elements_found": {
+        "Stat cards": {
+          "selector": ".stat-card",
+          "count": 0,
+          "found": false,
+          "alternatives": [
+            "[class*=\"card\"]: 1 found"
+          ]
+        },
+        "Any cards": {
+          "selector": "[class*=\"card\"]",
+          "count": 1,
+          "found": true
+        },
+        "Revenue elements": {
+          "selector": "[class*=\"revenue\"]",
+          "count": 0,
+          "found": false,
+          "alternatives": [
+            "text='total': 1 found"
+          ]
+        },
+        "Recette elements (FR)": {
+          "selector": "[class*=\"recette\"]",
+          "count": 0,
+          "found": false
+        },
+        "Dashboard stats": {
+          "selector": ".dashboard-stat",
+          "count": 0,
+          "found": false
+        },
+        "Metric elements": {
+          "selector": "[class*=\"metric\"]",
+          "count": 0,
+          "found": false
+        },
+        "KPI elements": {
+          "selector": "[class*=\"kpi\"]",
+          "count": 0,
+          "found": false
+        },
+        "Headings": {
+          "selector": "h1, h2, h3",
+          "count": 8,
+          "found": true
+        },
+        "MUI Cards": {
+          "selector": ".MuiCard-root",
+          "count": 0,
+          "found": false,
+          "alternatives": [
+            "[class*=\"card\"]: 1 found"
+          ]
+        },
+        "Ant Design Cards": {
+          "selector": ".ant-card",
+          "count": 0,
+          "found": false,
+          "alternatives": [
+            "[class*=\"card\"]: 1 found"
+          ]
+        }
+      },
+      "page_content_summary": "MedFlow\n\nSyst\u00e8me de Gestion M\u00e9dicale\n\npar Aymane Moumni\n\nTableau de bord\nPatients\nFile d'attente\nRendez-vous\nClinique\nFinances\nFacturation\nRapports financiers\nConventions\nApprobations\nServices\nInventaire\nNotifications\nParam\u00e8tres\nJournal d'audit\nDocuments\nAS\n\nAdmin System\n\nAdministrateur\n\nD\u00e9connexion\nAccueil\nAll Clinics\nSynchronis\u00e9\nEn ligne\n\nAdmin System\n\nAdministrateur\n\nAS\nTableau de Bord Financier\n\nSuivi des revenus, facturation et analyses financi\u00e8res\n\nExporter rapport\nVue d'ensemble\n0 CDF ce mois\n\nRevenus aujourd'hui\n\n0 CDF\n\n0 transactions\n\nRevenus ce mois\n\n0 CDF\n\nTendance positive\n\nCr\u00e9ances en attente\n\n0 CDF\n\n\u00c0 recouvrer\n\n\u00c9volution mensuelle\n\nAucune donn\u00e9e de tendance disponible\n\nRevenus par Service\n\nAucune donn\u00e9e de service disponible\n\nBoutique Optique\nRapport d'anciennet\u00e9 (A/R)\nConventions & Entreprises\nTotal \u00e0 recouvrer\n\n0\u00a0FC\n\nEntreprises avec solde\n\n0\n\nContrats expirant (30j)\n\n0\n\nAucune entreprise avec solde impay\u00e9\n\nG\u00e9rer les conventions\nCommissions R\u00e9f\u00e9rents",
+      "errors_on_page": []
+    },
+    {
+      "name": "Financial Dashboard Alternative",
+      "url": "http://localhost:5173/financial-dashboard",
+      "page_loaded": true,
+      "screenshot": "screenshots/diagnostics/diag_financial_dashboard_alternative.png",
+      "elements_found": {
+        "Stat cards": {
+          "selector": ".stat-card",
+          "count": 0,
+          "found": false
+        },
+        "Any cards": {
+          "selector": "[class*=\"card\"]",
+          "count": 0,
+          "found": false
+        },
+        "Chart elements": {
+          "selector": "[class*=\"Chart\"]",
+          "count": 0,
+          "found": false
+        }
+      },
+      "page_content_summary": "404\nPage introuvable\n\nD\u00e9sol\u00e9, la page que vous recherchez n'existe pas ou a \u00e9t\u00e9 d\u00e9plac\u00e9e.\n\nRetour\nAccueil\n\nBesoin d'aide ? Contactez le support technique",
+      "errors_on_page": []
+    },
+    {
+      "name": "Invoicing Page",
+      "url": "http://localhost:5173/invoicing",
+      "page_loaded": true,
+      "screenshot": "screenshots/diagnostics/diag_invoicing_page.png",
+      "elements_found": {
+        "Revenue elements": {
+          "selector": "[class*=\"revenue\"]",
+          "count": 0,
+          "found": false,
+          "alternatives": [
+            "text='total': 100 found"
+          ]
+        },
+        "Total elements": {
+          "selector": "[class*=\"total\"]",
+          "count": 0,
+          "found": false
+        },
+        "Data tables": {
+          "selector": "table",
+          "count": 0,
+          "found": false
+        },
+        "Invoice stats": {
+          "selector": ".invoice-stats",
+          "count": 0,
+          "found": false
+        }
+      },
+      "page_content_summary": "MedFlow\n\nSyst\u00e8me de Gestion M\u00e9dicale\n\npar Aymane Moumni\n\nTableau de bord\nPatients\nFile d'attente\nRendez-vous\nClinique\nFinances\nFacturation\nRapports financiers\nConventions\nApprobations\nServices\nInventaire\nNotifications\nParam\u00e8tres\nJournal d'audit\nDocuments\nAS\n\nAdmin System\n\nAdministrateur\n\nD\u00e9connexion\nAccueil\nAll Clinics\nSynchronis\u00e9\nEn ligne\n\nAdmin System\n\nAdministrateur\n\nAS\nFacturation\n\nToutes les cat\u00e9gories\n\nActualiser\nNouvelle facture\n100\nTous\n\n1\u202f801\u202f147,5 FC\n\n59 pay\u00e9es\n\n75\nServices\n\n949\u202f500 FC\n\n59 pay\u00e9es\n\n0\nChirurgie\n\n0 FC\n\n0 pay\u00e9es\n\n25\nM\u00e9dicaments\n\n851\u202f647,5 FC\n\n0 pay\u00e9es\n\n0\nOptique\n\n0 FC\n\n0 pay\u00e9es\n\n0\nLaboratoire\n\n0 FC\n\n0 pay\u00e9es\n\n0\nImagerie\n\n0 FC\n\n0 pay\u00e9es\n\nTous les statuts\nPay\u00e9\nPartiel\nEn attente\nEn retard\nAnnul\u00e9\nINV202512120635\nPay\u00e9\n\nPatient\n\nElisabeth /activa YAO\n\nDate\n\n11 d\u00e9c. 2025\n\n\u00c9ch\u00e9ance\n\n10 janv. 2026\n\nTotal\n\n0 FC\n\nSolde\n\n0 FC\n\nServices\n(1)\n0\nVoir les d\u00e9tails\nVoir\nImprimer\nINV202512120816\nPay\u00e9\n\nPatient\n\nElisabeth /activa YAO\n\nDate\n\n11 d\u00e9c. 2025\n\n\u00c9ch\u00e9ance\n\n10 janv. 2026\n\nTota",
+      "errors_on_page": []
+    }
+  ],
+  "recommendations": [
+    {
+      "issue": "Repairs API returns 500 error",
+      "severity": "HIGH",
+      "recommendation": "Check backend logs for stack trace. Likely database query error or missing dependency.",
+      "action": "Run: tail -100 /path/to/backend/logs | grep -i error"
+    },
+    {
+      "issue": "External Facilities API times out",
+      "severity": "MEDIUM",
+      "recommendation": "Endpoint may have performance issues or infinite loop. Consider adding database indexes or pagination.",
+      "action": "Profile the /api/external-facilities route handler"
+    },
+    {
+      "issue": "Missing UI elements on Financial Dashboard Revenue Cards: Stat cards, Revenue elements, Recette elements (FR)",
+      "severity": "LOW",
+      "recommendation": "UI components may use different class names or structure than expected.",
+      "action": "Review React component implementation and update test selectors"
+    },
+    {
+      "issue": "Missing UI elements on Financial Dashboard Alternative: Stat cards, Any cards, Chart elements",
+      "severity": "LOW",
+      "recommendation": "UI components may use different class names or structure than expected.",
+      "action": "Review React component implementation and update test selectors"
+    },
+    {
+      "issue": "Missing UI elements on Invoicing Page: Revenue elements, Total elements, Data tables",
+      "severity": "LOW",
+      "recommendation": "UI components may use different class names or structure than expected.",
+      "action": "Review React component implementation and update test selectors"
+    }
+  ]
+}

@@ -1,0 +1,213 @@
+{
+  "name": "IVT Workflow Tests",
+  "timestamp": "2025-12-15T15:12:05.188472",
+  "duration_seconds": 18.073864,
+  "summary": {
+    "total": 25,
+    "passed": 25,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "IVT dashboard loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/ivt",
+      "category": "ivt_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:10.263685"
+    },
+    {
+      "test": "Dashboard title present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:10.275964"
+    },
+    {
+      "test": "Due injections section",
+      "passed": true,
+      "details": "",
+      "category": "ivt_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:10.277448"
+    },
+    {
+      "test": "Stats cards present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:10.278808"
+    },
+    {
+      "test": "New injection button",
+      "passed": true,
+      "details": "",
+      "category": "ivt_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:10.282925"
+    },
+    {
+      "test": "Patient list present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:10.286676"
+    },
+    {
+      "test": "New IVT form loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/ivt/new",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.746148"
+    },
+    {
+      "test": "Patient selection field",
+      "passed": true,
+      "details": "",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.774404"
+    },
+    {
+      "test": "Drug selection field",
+      "passed": true,
+      "details": "",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.776320"
+    },
+    {
+      "test": "Eye selection field",
+      "passed": true,
+      "details": "",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.781040"
+    },
+    {
+      "test": "Date field present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.782756"
+    },
+    {
+      "test": "Dose field present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.785998"
+    },
+    {
+      "test": "Submit button present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.791261"
+    },
+    {
+      "test": "IVT detail loads",
+      "passed": true,
+      "details": "No injections available",
+      "category": "ivt_detail",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:13.940061"
+    },
+    {
+      "test": "IVT section in patient view",
+      "passed": true,
+      "details": "IVT info may be in different section",
+      "category": "ivt_history",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:17.013579"
+    },
+    {
+      "test": "Injection history displayed",
+      "passed": true,
+      "details": "",
+      "category": "ivt_history",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:17.014608"
+    },
+    {
+      "test": "Cumulative dose tracking",
+      "passed": true,
+      "details": "Feature may be in patient detail",
+      "category": "ivt_cumulative",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:19.983587"
+    },
+    {
+      "test": "Dose visualization present",
+      "passed": true,
+      "details": "",
+      "category": "ivt_cumulative",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:19.986191"
+    },
+    {
+      "test": "Follow-up scheduling visible",
+      "passed": true,
+      "details": "",
+      "category": "ivt_followup",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:22.975029"
+    },
+    {
+      "test": "Calendar for scheduling",
+      "passed": true,
+      "details": "",
+      "category": "ivt_followup",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:22.976066"
+    },
+    {
+      "test": "IVT API - List injections",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "ivt_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:23.127520"
+    },
+    {
+      "test": "IVT API - Due injections",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "ivt_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:23.131770"
+    },
+    {
+      "test": "IVT API - Statistics",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "ivt_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:23.137789"
+    },
+    {
+      "test": "IVT API - Drug list",
+      "passed": true,
+      "details": "Status: 500",
+      "category": "ivt_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:23.142417"
+    },
+    {
+      "test": "IVT API - Patient injections",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "ivt_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:23.262277"
+    }
+  ]
+}

@@ -1,0 +1,549 @@
+{
+  "name": "complete_workflow_coverage",
+  "timestamp": "2025-12-15T16:16:56.784867",
+  "duration_seconds": 21.381955,
+  "summary": {
+    "total": 67,
+    "passed": 65,
+    "failed": 2,
+    "pass_rate": "97.0%"
+  },
+  "results": [
+    {
+      "test": "CDS RNFL Analysis API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.914632"
+    },
+    {
+      "test": "CDS GPA Analysis API",
+      "passed": true,
+      "details": "Status: 400",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.917626"
+    },
+    {
+      "test": "CDS DR Grading API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.920791"
+    },
+    {
+      "test": "CDS Referral Triggers API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.923207"
+    },
+    {
+      "test": "Clinical Alerts List",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.925822"
+    },
+    {
+      "test": "Clinical Alerts Filter (EMERGENCY)",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.928559"
+    },
+    {
+      "test": "Clinical Alerts Filter (URGENT)",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.930666"
+    },
+    {
+      "test": "Clinical Alerts Filter (WARNING)",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.932901"
+    },
+    {
+      "test": "Clinical Alerts Filter (INFO)",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cds",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.935220"
+    },
+    {
+      "test": "Drug Safety Check API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "eprescribing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.937820"
+    },
+    {
+      "test": "Therapeutic Classes API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "eprescribing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.940203"
+    },
+    {
+      "test": "Treatment Protocols API",
+      "passed": true,
+      "details": "Found 13 protocols",
+      "category": "eprescribing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.956149"
+    },
+    {
+      "test": "Companies/Conventions List",
+      "passed": true,
+      "details": "Found 20 companies",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.967397"
+    },
+    {
+      "test": "Fee Schedules API",
+      "passed": true,
+      "details": "Found 736 fee schedules",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:56.992600"
+    },
+    {
+      "test": "Approvals List API",
+      "passed": true,
+      "details": "Found 20 approvals",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.010107"
+    },
+    {
+      "test": "Approvals Filter (pending)",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.023469"
+    },
+    {
+      "test": "Approvals Filter (approved)",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.037537"
+    },
+    {
+      "test": "Approvals Filter (rejected)",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.050411"
+    },
+    {
+      "test": "Billing Statistics API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "insurance",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.729118"
+    },
+    {
+      "test": "Rooms List API",
+      "passed": true,
+      "details": "Found 133 rooms",
+      "category": "admin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.771374"
+    },
+    {
+      "test": "Provider Availability API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "admin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.774543"
+    },
+    {
+      "test": "Appointment Types API",
+      "passed": true,
+      "details": "Found 151 types",
+      "category": "admin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.852898"
+    },
+    {
+      "test": "Waiting List API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "admin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.854541"
+    },
+    {
+      "test": "Calendar Integrations API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "admin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.857867"
+    },
+    {
+      "test": "Orthoptic Exams API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "admin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.861270"
+    },
+    {
+      "test": "Purchase Orders API",
+      "passed": true,
+      "details": "Found 0 POs",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.865081"
+    },
+    {
+      "test": "Suppliers API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.866187"
+    },
+    {
+      "test": "Stock Reconciliation API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.869258"
+    },
+    {
+      "test": "Warranties API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.872462"
+    },
+    {
+      "test": "Repairs API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:16:57.877332"
+    },
+    {
+      "test": "External Facilities API",
+      "passed": false,
+      "details": "HTTPConnectionPool(host='localhost', port=5001): Read timed out. (read timeout=10)",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:07.879264"
+    },
+    {
+      "test": "Fulfillment Dispatches API",
+      "passed": false,
+      "details": "HTTPConnectionPool(host='localhost', port=5001): Read timed out. (read timeout=10)",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.882522"
+    },
+    {
+      "test": "Referrers API",
+      "passed": true,
+      "details": "Found 11 referrers",
+      "category": "operations",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.892359"
+    },
+    {
+      "test": "Pharmacy Inventory",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.894305"
+    },
+    {
+      "test": "Frame Inventory",
+      "passed": true,
+      "details": "Found 5 items",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.900499"
+    },
+    {
+      "test": "Optical Lens Inventory",
+      "passed": true,
+      "details": "Found 5 items",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.907413"
+    },
+    {
+      "test": "Contact Lens Inventory",
+      "passed": true,
+      "details": "Found 5 items",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.913684"
+    },
+    {
+      "test": "Reagent Inventory",
+      "passed": true,
+      "details": "Found 5 items",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.918280"
+    },
+    {
+      "test": "Lab Consumable Inventory",
+      "passed": true,
+      "details": "Found 5 items",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.922574"
+    },
+    {
+      "test": "Surgical Supply Inventory",
+      "passed": true,
+      "details": "Found 0 items",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.926567"
+    },
+    {
+      "test": "Equipment Catalog",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.927798"
+    },
+    {
+      "test": "Inventory Transfers API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.932356"
+    },
+    {
+      "test": "Cross-Clinic Inventory Summary",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "inventory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.960126"
+    },
+    {
+      "test": "Documents List API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.961791"
+    },
+    {
+      "test": "Template Catalog API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.963447"
+    },
+    {
+      "test": "Letter Templates API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.964602"
+    },
+    {
+      "test": "Consultation Templates API",
+      "passed": true,
+      "details": "Found 6 templates",
+      "category": "documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.969688"
+    },
+    {
+      "test": "Correspondence API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.972009"
+    },
+    {
+      "test": "Notifications List API",
+      "passed": true,
+      "details": "Found 1 notifications",
+      "category": "notifications",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.975751"
+    },
+    {
+      "test": "Alerts API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "notifications",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.979281"
+    },
+    {
+      "test": "Lab Orders API",
+      "passed": true,
+      "details": "Found 5 orders",
+      "category": "laboratory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.985600"
+    },
+    {
+      "test": "Lab Results API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "laboratory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.991315"
+    },
+    {
+      "test": "Lab Analyzers API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "laboratory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.994370"
+    },
+    {
+      "test": "Lab QC Rules API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "laboratory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.996549"
+    },
+    {
+      "test": "Reagent Lots API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "laboratory",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:17.999942"
+    },
+    {
+      "test": "Devices List API",
+      "passed": true,
+      "details": "Found 12 devices",
+      "category": "devices",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.009710"
+    },
+    {
+      "test": "Device Sync Stats API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "devices",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.015547"
+    },
+    {
+      "test": "Folder Index Stats API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "devices",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.018753"
+    },
+    {
+      "test": "Clinical Trends API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "analytics",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.020952"
+    },
+    {
+      "test": "Dashboard Stats API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "analytics",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.023109"
+    },
+    {
+      "test": "Clinics List API",
+      "passed": true,
+      "details": "Found 4 clinics",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.026660"
+    },
+    {
+      "test": "Sync Status API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.047612"
+    },
+    {
+      "test": "Fiscal Year API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "settings",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.049449"
+    },
+    {
+      "test": "Settings API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "settings",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.053197"
+    },
+    {
+      "test": "Role Permissions API",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "settings",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.057318"
+    },
+    {
+      "test": "Audit Log API",
+      "passed": true,
+      "details": "Found 10 entries",
+      "category": "audit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.164300"
+    },
+    {
+      "test": "Backup Status API",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "audit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T16:17:18.166804"
+    }
+  ]
+}

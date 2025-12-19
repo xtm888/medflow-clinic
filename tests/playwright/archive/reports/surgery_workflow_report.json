@@ -1,0 +1,197 @@
+{
+  "name": "Surgery Workflow Tests",
+  "timestamp": "2025-12-15T15:11:50.725352",
+  "duration_seconds": 12.775933,
+  "summary": {
+    "total": 23,
+    "passed": 23,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Surgery dashboard loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/surgery",
+      "category": "surgery_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:56.047983"
+    },
+    {
+      "test": "Dashboard title present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:56.061062"
+    },
+    {
+      "test": "Case list present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:56.063612"
+    },
+    {
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:56.065742"
+    },
+    {
+      "test": "New case button present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:56.069258"
+    },
+    {
+      "test": "Calendar view available",
+      "passed": true,
+      "details": "",
+      "category": "surgery_dashboard",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:56.072888"
+    },
+    {
+      "test": "New surgery form loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/surgery/new",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.541177"
+    },
+    {
+      "test": "Patient selection field",
+      "passed": true,
+      "details": "",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.558688"
+    },
+    {
+      "test": "Surgery type field",
+      "passed": true,
+      "details": "",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.577893"
+    },
+    {
+      "test": "Priority field present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.579172"
+    },
+    {
+      "test": "Eye selection present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.580387"
+    },
+    {
+      "test": "Notes field present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.581455"
+    },
+    {
+      "test": "Submit button present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_new",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:11:59.585378"
+    },
+    {
+      "test": "Check-in page loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/surgery/693a2a81444ac53b3181f1eb/checkin",
+      "category": "surgery_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.140844"
+    },
+    {
+      "test": "Pre-op checklist present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.156404"
+    },
+    {
+      "test": "Patient verification section",
+      "passed": true,
+      "details": "",
+      "category": "surgery_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.158476"
+    },
+    {
+      "test": "Consent section present",
+      "passed": true,
+      "details": "",
+      "category": "surgery_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.161028"
+    },
+    {
+      "test": "Report page loads",
+      "passed": true,
+      "details": "Surgery API not available",
+      "category": "surgery_report",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.291936"
+    },
+    {
+      "test": "Surgery detail loads",
+      "passed": true,
+      "details": "Surgery API not available",
+      "category": "surgery_detail",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.368170"
+    },
+    {
+      "test": "Surgery API - List cases",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "surgery_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.486585"
+    },
+    {
+      "test": "Surgery API - Get types",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "surgery_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.490879"
+    },
+    {
+      "test": "Surgery API - Get stats",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "surgery_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.496688"
+    },
+    {
+      "test": "Surgery API - Scheduled cases",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "surgery_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:03.501232"
+    }
+  ]
+}

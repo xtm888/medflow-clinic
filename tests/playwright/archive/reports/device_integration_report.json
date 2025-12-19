@@ -1,0 +1,141 @@
+{
+  "name": "device_integration",
+  "timestamp": "2025-12-15T15:14:41.835557",
+  "duration_seconds": 1.125109,
+  "summary": {
+    "total": 16,
+    "passed": 16,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Device list",
+      "passed": true,
+      "details": "Found 12 devices",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:41.954791"
+    },
+    {
+      "test": "Get device by ID",
+      "passed": true,
+      "details": "Device: Archive Server (other)",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.033459"
+    },
+    {
+      "test": "Device type coverage",
+      "passed": true,
+      "details": "Types present: other, biometer, fundus-camera, ultrasound, specular-microscope, oct, iol-master. Missing: autorefractor, tonometer",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.033516"
+    },
+    {
+      "test": "Adapter mapping completeness",
+      "passed": true,
+      "details": "15 device types \u2192 6 unique adapters",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.033525"
+    },
+    {
+      "test": "Folder sync stats",
+      "passed": true,
+      "details": "Stats available: ['filesDiscovered', 'filesProcessed', 'filesFailed', 'patientsMatched', 'activeWatchers']",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.112063"
+    },
+    {
+      "test": "Processor stats",
+      "passed": true,
+      "details": "Stats available: ['totalProcessed', 'dicomSuccess', 'adapterSuccess', 'filenameSuccess', 'ocrSuccess']",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.189329"
+    },
+    {
+      "test": "OCR service status",
+      "passed": true,
+      "details": "OCR status: unknown",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.269279"
+    },
+    {
+      "test": "SMB2 stats",
+      "passed": true,
+      "details": "SMB2 connected: unknown",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.377523"
+    },
+    {
+      "test": "Folder index stats",
+      "passed": true,
+      "details": "Indexed folders: N/A",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.457776"
+    },
+    {
+      "test": "Unmatched folders",
+      "passed": true,
+      "details": "Found 0 unmatched folders",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.536904"
+    },
+    {
+      "test": "OCT data validation",
+      "passed": true,
+      "details": "RNFL: 92\u00b5m (normal), Quality: 85%, Thickness: 285\u00b5m",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.536963"
+    },
+    {
+      "test": "Autorefractor data validation",
+      "passed": true,
+      "details": "OD: -2.5/-0.75x90 (conf: 95%)",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.536971"
+    },
+    {
+      "test": "Tonometry data validation",
+      "passed": true,
+      "details": "IOP: OD 14mmHg, OS 15mmHg (asymmetry: 1mmHg)",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.536974"
+    },
+    {
+      "test": "Biometry data validation",
+      "passed": true,
+      "details": "AL: OD 23.85mm, OS 23.95mm, ACD: 3.1mm",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.536978"
+    },
+    {
+      "test": "Device measurements",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.760049"
+    },
+    {
+      "test": "Device images",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "device_integration",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:14:42.960599"
+    }
+  ]
+}

@@ -1,0 +1,771 @@
+{
+  "timestamp": "2025-12-19T23:36:49.488303",
+  "total_tests": 60,
+  "passed": 58,
+  "failed": 2,
+  "success_rate": "96.7%",
+  "screenshots_taken": 73,
+  "screenshot_paths": [
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/00_login_page.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/00_login_filled.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/home_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/patients_list.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/patient_wizard_step1.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/patient_wizard_step2.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/appointments.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/appointment_modal.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/ophthalmology_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/studiovision_consultation.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/prescriptions.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/pharmacy_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/laboratory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/ivt_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/surgery_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/orthoptic.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/invoicing.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/financial_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/companies.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/approvals.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/services.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/frame_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/optical_lens_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/contact_lens_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/reagent_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/lab_consumable_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/cross_clinic_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/glasses_orders.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/optical_shop.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/repairs.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/device_manager.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/network_discovery.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/imaging.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/settings.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/user_management.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/audit_trail.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/backup_management.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/template_manager.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/analytics_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/visit_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/public_booking.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/display_board.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/external_facilities.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/dispatch.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/consolidated_reports.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/alerts.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/notifications.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/documents.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/stock_reconciliation.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/purchase_orders.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/queue_analytics.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/nurse_vitals.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/ocr_import.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_desktop_1920__dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_desktop_1920__patients.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_desktop_1920__queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_desktop_1366__dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_desktop_1366__patients.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_desktop_1366__queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_tablet_landscape__dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_tablet_landscape__patients.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_tablet_landscape__queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_tablet_portrait__dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_tablet_portrait__patients.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_tablet_portrait__queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_mobile_large__dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_mobile_large__patients.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_mobile_large__queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_mobile_small__dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_mobile_small__patients.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/responsive_mobile_small__queue.png"
+  ],
+  "categories": {
+    "Home": {
+      "passed": 1,
+      "failed": 1
+    },
+    "Dashboard": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Patients": {
+      "passed": 3,
+      "failed": 0
+    },
+    "Queue": {
+      "passed": 2,
+      "failed": 0
+    },
+    "Appointments": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Ophthalmology": {
+      "passed": 1,
+      "failed": 0
+    },
+    "StudioVision": {
+      "passed": 0,
+      "failed": 1
+    },
+    "Prescriptions": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Pharmacy": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Laboratory": {
+      "passed": 1,
+      "failed": 0
+    },
+    "IVT": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Surgery": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Orthoptic": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Invoicing": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Financial": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Companies": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Approvals": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Services": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Frame Inventory": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Optical Lens": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Contact Lens": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Reagent": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Lab Consumable": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Cross-Clinic": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Glasses Orders": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Optical Shop": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Repairs": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Devices": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Discovery": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Imaging": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Settings": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Users": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Audit": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Backups": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Templates": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Analytics": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Visits": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Public Booking": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Display Board": {
+      "passed": 1,
+      "failed": 0
+    },
+    "External": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Dispatch": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Consolidated": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Alerts": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Notifications": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Documents": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Stock": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Purchase Orders": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Queue Analytics": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Nurse Vitals": {
+      "passed": 1,
+      "failed": 0
+    },
+    "OCR Import": {
+      "passed": 1,
+      "failed": 0
+    },
+    "Responsive": {
+      "passed": 6,
+      "failed": 0
+    }
+  },
+  "results": [
+    {
+      "category": "Home",
+      "test": "Dashboard loads with modules",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:08.500312"
+    },
+    {
+      "category": "Home",
+      "test": "Stats cards present",
+      "passed": false,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:08.512145"
+    },
+    {
+      "category": "Dashboard",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:12.161829"
+    },
+    {
+      "category": "Patients",
+      "test": "Search input present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:15.848774"
+    },
+    {
+      "category": "Patients",
+      "test": "Filter button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:15.855701"
+    },
+    {
+      "category": "Patients",
+      "test": "New patient button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:15.857271"
+    },
+    {
+      "category": "Queue",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:25.428331"
+    },
+    {
+      "category": "Queue",
+      "test": "Check-in button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:25.430381"
+    },
+    {
+      "category": "Appointments",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:28.997911"
+    },
+    {
+      "category": "Ophthalmology",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:36.362075"
+    },
+    {
+      "category": "StudioVision",
+      "test": "Tab navigation present",
+      "passed": false,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:39.219385"
+    },
+    {
+      "category": "Prescriptions",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:42.768745"
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:46.405967"
+    },
+    {
+      "category": "Laboratory",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:50.092914"
+    },
+    {
+      "category": "IVT",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:53.655576"
+    },
+    {
+      "category": "Surgery",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:33:57.247505"
+    },
+    {
+      "category": "Orthoptic",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:00.890642"
+    },
+    {
+      "category": "Invoicing",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:04.442866"
+    },
+    {
+      "category": "Financial",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:08.035753"
+    },
+    {
+      "category": "Companies",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:12.035082"
+    },
+    {
+      "category": "Approvals",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:15.558932"
+    },
+    {
+      "category": "Services",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:20.586296"
+    },
+    {
+      "category": "Frame Inventory",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:24.223009"
+    },
+    {
+      "category": "Optical Lens",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:27.880383"
+    },
+    {
+      "category": "Contact Lens",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:31.515059"
+    },
+    {
+      "category": "Reagent",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:35.181852"
+    },
+    {
+      "category": "Lab Consumable",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:38.954782"
+    },
+    {
+      "category": "Cross-Clinic",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:42.586070"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:46.137971"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:49.643810"
+    },
+    {
+      "category": "Repairs",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:53.171872"
+    },
+    {
+      "category": "Devices",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:34:56.740672"
+    },
+    {
+      "category": "Discovery",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:00.330236"
+    },
+    {
+      "category": "Imaging",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:04.258362"
+    },
+    {
+      "category": "Settings",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:08.183387"
+    },
+    {
+      "category": "Users",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:11.899455"
+    },
+    {
+      "category": "Audit",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:15.519000"
+    },
+    {
+      "category": "Backups",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:19.066591"
+    },
+    {
+      "category": "Templates",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:22.737101"
+    },
+    {
+      "category": "Analytics",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:26.379589"
+    },
+    {
+      "category": "Visits",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:29.914006"
+    },
+    {
+      "category": "Public Booking",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:33.036084"
+    },
+    {
+      "category": "Display Board",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:36.974580"
+    },
+    {
+      "category": "External",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:40.532720"
+    },
+    {
+      "category": "Dispatch",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:43.355345"
+    },
+    {
+      "category": "Consolidated",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:46.864709"
+    },
+    {
+      "category": "Alerts",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:50.350194"
+    },
+    {
+      "category": "Notifications",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:53.853639"
+    },
+    {
+      "category": "Documents",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:35:57.452437"
+    },
+    {
+      "category": "Stock",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:00.950311"
+    },
+    {
+      "category": "Purchase Orders",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:04.454618"
+    },
+    {
+      "category": "Queue Analytics",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:07.203778"
+    },
+    {
+      "category": "Nurse Vitals",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:10.683701"
+    },
+    {
+      "category": "OCR Import",
+      "test": "Page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:13.401208"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout at 1920x1080",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:19.255923"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout at 1366x768",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:25.341919"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout at 1024x768",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:31.459437"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout at 768x1024",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:37.534839"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout at 414x896",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:43.622062"
+    },
+    {
+      "category": "Responsive",
+      "test": "Layout at 375x667",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-19T23:36:49.407143"
+    }
+  ]
+}

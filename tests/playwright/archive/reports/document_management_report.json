@@ -1,0 +1,189 @@
+{
+  "name": "Document Management Tests",
+  "timestamp": "2025-12-15T15:12:30.183998",
+  "duration_seconds": 14.634103,
+  "summary": {
+    "total": 22,
+    "passed": 22,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Documents page loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/documents",
+      "category": "documents_list",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:35.404692"
+    },
+    {
+      "test": "Page title present",
+      "passed": true,
+      "details": "",
+      "category": "documents_list",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:35.416593"
+    },
+    {
+      "test": "Generate/Upload button present",
+      "passed": true,
+      "details": "",
+      "category": "documents_list",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:35.423375"
+    },
+    {
+      "test": "Patient/Document list present",
+      "passed": true,
+      "details": "",
+      "category": "documents_list",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:35.427449"
+    },
+    {
+      "test": "Search/filter present",
+      "passed": true,
+      "details": "",
+      "category": "documents_list",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:35.432239"
+    },
+    {
+      "test": "Templates page loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/templates",
+      "category": "templates",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:38.914569"
+    },
+    {
+      "test": "Template list present",
+      "passed": true,
+      "details": "",
+      "category": "templates",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:38.930535"
+    },
+    {
+      "test": "Add template button",
+      "passed": true,
+      "details": "",
+      "category": "templates",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:38.935448"
+    },
+    {
+      "test": "Template types visible",
+      "passed": true,
+      "details": "",
+      "category": "templates",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:38.937328"
+    },
+    {
+      "test": "Patient documents section",
+      "passed": true,
+      "details": "",
+      "category": "patient_docs",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:43.699411"
+    },
+    {
+      "test": "Document categories visible",
+      "passed": true,
+      "details": "",
+      "category": "patient_docs",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:43.701630"
+    },
+    {
+      "test": "Invoice PDF - Generate",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "pdf_invoice",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.077551"
+    },
+    {
+      "test": "Invoice PDF - Valid content type",
+      "passed": true,
+      "details": "Content-Type: application/pdf",
+      "category": "pdf_invoice",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.077562"
+    },
+    {
+      "test": "Prescription PDF - Generate",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "pdf_prescription",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.171605"
+    },
+    {
+      "test": "CERFA - Types endpoint",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cerfa",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.249978"
+    },
+    {
+      "test": "CERFA - Generate certificate",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "cerfa",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.376026"
+    },
+    {
+      "test": "Receipt - Generate",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "receipt",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.503429"
+    },
+    {
+      "test": "Optical Rx PDF - Generate",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "optical_pdf",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.592513"
+    },
+    {
+      "test": "Document API - List",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "doc_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.673386"
+    },
+    {
+      "test": "Document API - Types",
+      "passed": true,
+      "details": "Status: 500",
+      "category": "doc_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.677986"
+    },
+    {
+      "test": "Document API - Templates",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "doc_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.688510"
+    },
+    {
+      "test": "Document API - Patient docs",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "doc_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:44.818041"
+    }
+  ]
+}

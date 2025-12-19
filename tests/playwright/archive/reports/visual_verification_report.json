@@ -1,0 +1,249 @@
+{
+  "timestamp": "2025-12-13T17:49:20.301620",
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0,
+    "total_screenshot_kb": 613.1
+  },
+  "results": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "timestamp": "2025-12-13T17:48:50.937643",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 2,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Dashboard.jpg",
+      "screenshot_size_kb": 47.9,
+      "error": null
+    },
+    {
+      "name": "Patients",
+      "url": "/patients",
+      "timestamp": "2025-12-13T17:48:54.216548",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Patients.jpg",
+      "screenshot_size_kb": 47.8,
+      "error": null
+    },
+    {
+      "name": "Queue",
+      "url": "/queue",
+      "timestamp": "2025-12-13T17:48:56.191621",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Queue.jpg",
+      "screenshot_size_kb": 44.1,
+      "error": null
+    },
+    {
+      "name": "Appointments",
+      "url": "/appointments",
+      "timestamp": "2025-12-13T17:48:58.140675",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 2,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Appointments.jpg",
+      "screenshot_size_kb": 47.7,
+      "error": null
+    },
+    {
+      "name": "Ophthalmology",
+      "url": "/ophthalmology",
+      "timestamp": "2025-12-13T17:49:00.092430",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 2,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Ophthalmology.jpg",
+      "screenshot_size_kb": 40.7,
+      "error": null
+    },
+    {
+      "name": "Prescriptions",
+      "url": "/prescriptions",
+      "timestamp": "2025-12-13T17:49:02.024719",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Prescriptions.jpg",
+      "screenshot_size_kb": 45.7,
+      "error": null
+    },
+    {
+      "name": "Pharmacy",
+      "url": "/pharmacy",
+      "timestamp": "2025-12-13T17:49:03.975472",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 2,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Pharmacy.jpg",
+      "screenshot_size_kb": 46.1,
+      "error": null
+    },
+    {
+      "name": "Laboratory",
+      "url": "/laboratory",
+      "timestamp": "2025-12-13T17:49:05.924555",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Laboratory.jpg",
+      "screenshot_size_kb": 48.5,
+      "error": null
+    },
+    {
+      "name": "Surgery",
+      "url": "/surgery",
+      "timestamp": "2025-12-13T17:49:07.874409",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Surgery.jpg",
+      "screenshot_size_kb": 39.5,
+      "error": null
+    },
+    {
+      "name": "Invoicing",
+      "url": "/invoicing",
+      "timestamp": "2025-12-13T17:49:09.824951",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Invoicing.jpg",
+      "screenshot_size_kb": 43.2,
+      "error": null
+    },
+    {
+      "name": "Financial_Dashboard",
+      "url": "/financial",
+      "timestamp": "2025-12-13T17:49:11.840392",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 2,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Financial_Dashboard.jpg",
+      "screenshot_size_kb": 41.8,
+      "error": null
+    },
+    {
+      "name": "Settings",
+      "url": "/settings",
+      "timestamp": "2025-12-13T17:49:14.474026",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 3,
+        "required_elements_needed": 4,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Settings.jpg",
+      "screenshot_size_kb": 40.0,
+      "error": null
+    },
+    {
+      "name": "Approvals",
+      "url": "/approvals",
+      "timestamp": "2025-12-13T17:49:16.406581",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Approvals.jpg",
+      "screenshot_size_kb": 36.7,
+      "error": null
+    },
+    {
+      "name": "Optical_Shop",
+      "url": "/optical-shop",
+      "timestamp": "2025-12-13T17:49:18.339697",
+      "passed": true,
+      "checks": {
+        "url_correct": true,
+        "not_error_page": true,
+        "required_elements": 1,
+        "required_elements_needed": 3,
+        "expected_text_found": true,
+        "page_title": "MedFlow"
+      },
+      "screenshot": "Optical_Shop.jpg",
+      "screenshot_size_kb": 43.4,
+      "error": null
+    }
+  ]
+}

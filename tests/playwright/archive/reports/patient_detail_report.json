@@ -1,0 +1,197 @@
+{
+  "name": "Patient Detail Tests",
+  "timestamp": "2025-12-15T15:13:31.144255",
+  "duration_seconds": 25.183654,
+  "summary": {
+    "total": 23,
+    "passed": 23,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Patient detail page loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients/693a98ee030937374a24f78a",
+      "category": "patient_detail",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:36.817288"
+    },
+    {
+      "test": "Patient name displayed",
+      "passed": true,
+      "details": "",
+      "category": "patient_detail",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:36.830679"
+    },
+    {
+      "test": "Patient info section present",
+      "passed": true,
+      "details": "",
+      "category": "patient_detail",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:36.833043"
+    },
+    {
+      "test": "Action buttons present",
+      "passed": true,
+      "details": "Consultation: 3, New: 1, Ordonnance: 1",
+      "category": "patient_detail",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:36.838910"
+    },
+    {
+      "test": "Patient tabs present",
+      "passed": true,
+      "details": "Found 8 sections",
+      "category": "patient_tabs",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:39.881350"
+    },
+    {
+      "test": "Expected tabs visible",
+      "passed": true,
+      "details": "Found: Actions Rapides, Documents, Historique, R\u00e9fraction, Pression Intraoculaire, Diagnostics, Impression Rapide, Prochains RDV",
+      "category": "patient_tabs",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:39.881376"
+    },
+    {
+      "test": "History tab clickable",
+      "passed": true,
+      "details": "",
+      "category": "patient_tabs",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:40.897386"
+    },
+    {
+      "test": "Patient edit page loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients/693a98ee030937374a24f78a/edit",
+      "category": "patient_edit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:44.358729"
+    },
+    {
+      "test": "Name fields present",
+      "passed": true,
+      "details": "Found Prenom: True, Nom: True, Inputs: 7",
+      "category": "patient_edit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:45.947725"
+    },
+    {
+      "test": "Phone field present",
+      "passed": true,
+      "details": "",
+      "category": "patient_edit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:45.950282"
+    },
+    {
+      "test": "Save button present",
+      "passed": true,
+      "details": "",
+      "category": "patient_edit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:45.953868"
+    },
+    {
+      "test": "Cancel button present",
+      "passed": true,
+      "details": "",
+      "category": "patient_edit",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:45.956021"
+    },
+    {
+      "test": "Patient history accessible",
+      "passed": true,
+      "details": "URL: http://localhost:5173/visits/693a98ee030937374a24f78a/timeline",
+      "category": "patient_history",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:48.918162"
+    },
+    {
+      "test": "Visit entries displayed",
+      "passed": true,
+      "details": "Found 0 entries",
+      "category": "patient_history",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:48.926526"
+    },
+    {
+      "test": "Documents section visible",
+      "passed": true,
+      "details": "",
+      "category": "patient_documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:53.014328"
+    },
+    {
+      "test": "Upload document button present",
+      "passed": true,
+      "details": "",
+      "category": "patient_documents",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:53.029302"
+    },
+    {
+      "test": "Imaging section visible",
+      "passed": true,
+      "details": "",
+      "category": "patient_imaging",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:55.979405"
+    },
+    {
+      "test": "Device data types visible",
+      "passed": true,
+      "details": "Found: OD, OS, AV sc, AV ac, Rx, Add, Pression, mmHg",
+      "category": "patient_imaging",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:55.997429"
+    },
+    {
+      "test": "Patient API - Get detail",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "patient_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:56.315460"
+    },
+    {
+      "test": "Patient API - Has name fields",
+      "passed": true,
+      "details": "",
+      "category": "patient_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:56.315504"
+    },
+    {
+      "test": "Patient API - Has ID",
+      "passed": true,
+      "details": "",
+      "category": "patient_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:56.315507"
+    },
+    {
+      "test": "Patient API - Get history",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "patient_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:56.319467"
+    },
+    {
+      "test": "Patient API - Get visits",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "patient_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:56.327838"
+    }
+  ]
+}

@@ -1,0 +1,1414 @@
+{
+  "name": "Deep Interaction Test Suite",
+  "timestamp": "2025-12-16T22:29:07.468210",
+  "summary": {
+    "total": 83,
+    "passed": 65,
+    "failed": 18,
+    "pass_rate": "78.3%",
+    "issues_found": 3
+  },
+  "results": [
+    {
+      "category": "Consultation",
+      "test": "Click Compl\u00e8te type tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:46.268249"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Suivi type tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:46.702454"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click R\u00e9fraction type tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:47.136288"
+    },
+    {
+      "category": "Consultation",
+      "test": "Patient search field works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:48.249664"
+    },
+    {
+      "category": "Consultation",
+      "test": "Patient dropdown appears",
+      "passed": true,
+      "details": "Found 21 patients",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:49.756538"
+    },
+    {
+      "category": "Consultation",
+      "test": "Select patient from dropdown",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:50.888813"
+    },
+    {
+      "category": "Consultation",
+      "test": "Verify and start button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:51.000609"
+    },
+    {
+      "category": "Consultation",
+      "test": "Verify button enabled",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:51.002267"
+    },
+    {
+      "category": "Consultation",
+      "test": "Clicked verify to start",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:53.204764"
+    },
+    {
+      "category": "Consultation",
+      "test": "Skip/Continue button visible",
+      "passed": true,
+      "details": "Found: Continuer sans v\u00e9rification",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:53.210340"
+    },
+    {
+      "category": "Consultation",
+      "test": "Skip/Continue button clicked",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:56.480625"
+    },
+    {
+      "category": "Consultation",
+      "test": "Vue Consolid\u00e9e option visible",
+      "passed": false,
+      "details": "Not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:56.483622"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click \u0152il Droit (OD) tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:56.915325"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click \u0152il Gauche (OG) tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:57.430667"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Binoculaire (ODG) tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:57.948627"
+    },
+    {
+      "category": "Consultation",
+      "test": "Visual Acuity dropdowns found",
+      "passed": false,
+      "details": "No dropdowns",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.031629"
+    },
+    {
+      "category": "Consultation",
+      "test": "Navigate to Refrac step",
+      "passed": false,
+      "details": "Refrac step not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.033589"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Myopie diagnosis",
+      "passed": false,
+      "details": "Button not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.122043"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Cataracte diagnosis",
+      "passed": false,
+      "details": "Button not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.127797"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Glaucome diagnosis",
+      "passed": false,
+      "details": "Button not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.129499"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Presbytie diagnosis",
+      "passed": false,
+      "details": "Button not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.135399"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Astigmatisme diagnosis",
+      "passed": false,
+      "details": "Button not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.140955"
+    },
+    {
+      "category": "Consultation",
+      "test": "Diagnosis quick buttons",
+      "passed": false,
+      "details": "Diagnoses likely use search/select UI",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.140959"
+    },
+    {
+      "category": "Consultation",
+      "test": "Navigate to RX step",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:58.838410"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Lunettes tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:25:59.528662"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Traitement M\u00e9dical tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:00.260253"
+    },
+    {
+      "category": "Consultation",
+      "test": "Click Lentilles tab",
+      "passed": false,
+      "details": "Tab not found",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:00.306313"
+    },
+    {
+      "category": "Consultation",
+      "test": "Examen Clinique dropdowns found",
+      "passed": false,
+      "details": "No dropdowns",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:00.307005"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Open modal",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:05.067212"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Modal has patient tabs",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:05.149960"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Switch to Nouveau Patient tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:05.787554"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Switch to Patient Existant tab",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:06.518877"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Patient search works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:07.707100"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Motif label visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:07.793578"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Motif selection works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:08.217554"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Click Normal priority",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:31.373188"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Click VIP priority",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:31.901946"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Click Urgent priority",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:32.418686"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Click Personne \u00c2g\u00e9e priority",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:32.934851"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Click Femme Enceinte priority",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:33.451655"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Submit button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:33.528587"
+    },
+    {
+      "category": "Walk-in",
+      "test": "Submit button enabled",
+      "passed": false,
+      "details": "Button is disabled",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:26:33.530655"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Navigate to detail",
+      "passed": false,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:10.009837"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Form has dropdowns",
+      "passed": true,
+      "details": "Found 5 dropdowns",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:13.094124"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Select patient",
+      "passed": false,
+      "details": "Only placeholder option",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:13.095684"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Select eye (\u0152il)",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:13.558929"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Select indication",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:13.977602"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Select medication",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:14.395654"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Navigate to Step 2",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:16.101389"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Check evaluation item 1",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:16.313056"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Navigate to Step 3",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:18.016993"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Navigate to Step 4",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:19.832381"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Submit button on final step",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:19.885730"
+    },
+    {
+      "category": "Prescription",
+      "test": "Filter by Sans PA",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:24.049436"
+    },
+    {
+      "category": "Prescription",
+      "test": "Filter by PA En cours",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:25.071801"
+    },
+    {
+      "category": "Prescription",
+      "test": "Filter by PA Approuv\u00e9es",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:26.232089"
+    },
+    {
+      "category": "Prescription",
+      "test": "Filter by PA Refus\u00e9es",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:27.231153"
+    },
+    {
+      "category": "Prescription",
+      "test": "Prescription items found",
+      "passed": false,
+      "details": "No prescription items",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:27.291263"
+    },
+    {
+      "category": "Prescription",
+      "test": "New prescription button works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:28.531243"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Filter Toutes",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:33.878184"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Filter Contr\u00f4le Qualit\u00e9",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:34.976155"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Filter Pr\u00eats \u00e0 retirer",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:35.983166"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "New order button works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:37.759016"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "New order form/modal opens",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:37.759042"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "View order details",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:40.593156"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Status badges visible",
+      "passed": false,
+      "details": "Found 0 badges",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:41.702640"
+    },
+    {
+      "category": "Invoice",
+      "test": "Invoices found in list",
+      "passed": true,
+      "details": "Found 200 invoices",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:46.047947"
+    },
+    {
+      "category": "Invoice",
+      "test": "View invoice detail",
+      "passed": true,
+      "details": "View button clicked",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:49.303519"
+    },
+    {
+      "category": "Invoice",
+      "test": "Print button works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:50.439641"
+    },
+    {
+      "category": "Invoice",
+      "test": "Payment button works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:55.179156"
+    },
+    {
+      "category": "Queue",
+      "test": "Analyses link visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:00.496776"
+    },
+    {
+      "category": "Queue",
+      "test": "Analyses link clickable",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:01.745597"
+    },
+    {
+      "category": "Queue",
+      "test": "Affichage link visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:03.178879"
+    },
+    {
+      "category": "Queue",
+      "test": "Affichage link clickable",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:04.414580"
+    },
+    {
+      "category": "Queue",
+      "test": "Appeler Suivant button visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:05.842534"
+    },
+    {
+      "category": "Queue",
+      "test": "Appeler Suivant button clickable",
+      "passed": false,
+      "details": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"Appeler Suivant\\\")\").first\n    - locator resolved to <button disabled class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    56 \u00d7 waiting for element to be visible, enabled and stable\n       - element is not enabled\n     - retrying click action\n       - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n  - element was detached from the DOM, retrying\n    - locator resolved to <button disabled class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    - waiting for element to be visible, enabled and stable\n    - element is not enabled\n  - retrying click action\n    - waiting 500ms\n",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:35.953025"
+    },
+    {
+      "category": "Queue",
+      "test": "Enregistrer arriv\u00e9e button visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:35.955951"
+    },
+    {
+      "category": "Queue",
+      "test": "Enregistrer arriv\u00e9e button clickable",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:37.172566"
+    },
+    {
+      "category": "Queue",
+      "test": "Patient sans RDV button visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:28:37.175031"
+    },
+    {
+      "category": "Queue",
+      "test": "Patient sans RDV button clickable",
+      "passed": false,
+      "details": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"sans RDV\\\"), button:has-text(\\\"Patient sans RDV\\\")\").first\n    - locator resolved to <button class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    53 \u00d7 waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n  - element was detached from the DOM, retrying\n    - locator resolved to <button class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    4 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n      - waiting 500ms\n",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:29:07.287092"
+    },
+    {
+      "category": "Queue",
+      "test": "En attente card visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:29:07.293328"
+    },
+    {
+      "category": "Queue",
+      "test": "En consultation card visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:29:07.295733"
+    },
+    {
+      "category": "Queue",
+      "test": "Vus aujourd'hui card visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:29:07.297874"
+    }
+  ],
+  "issues": [
+    {
+      "category": "Patient Detail",
+      "type": "Navigation",
+      "description": "Could not navigate to patient detail",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:10.009811"
+    },
+    {
+      "category": "IVT Wizard",
+      "type": "Data",
+      "description": "No patients available in dropdown",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:13.095679"
+    },
+    {
+      "category": "Prescription",
+      "type": "Data",
+      "description": "No prescriptions displayed to test actions",
+      "screenshot": null,
+      "timestamp": "2025-12-16T22:27:27.291278"
+    }
+  ],
+  "categories": {
+    "Consultation": {
+      "passed": 17,
+      "failed": 11,
+      "tests": [
+        {
+          "category": "Consultation",
+          "test": "Click Compl\u00e8te type tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:46.268249"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Suivi type tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:46.702454"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click R\u00e9fraction type tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:47.136288"
+        },
+        {
+          "category": "Consultation",
+          "test": "Patient search field works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:48.249664"
+        },
+        {
+          "category": "Consultation",
+          "test": "Patient dropdown appears",
+          "passed": true,
+          "details": "Found 21 patients",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:49.756538"
+        },
+        {
+          "category": "Consultation",
+          "test": "Select patient from dropdown",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:50.888813"
+        },
+        {
+          "category": "Consultation",
+          "test": "Verify and start button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:51.000609"
+        },
+        {
+          "category": "Consultation",
+          "test": "Verify button enabled",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:51.002267"
+        },
+        {
+          "category": "Consultation",
+          "test": "Clicked verify to start",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:53.204764"
+        },
+        {
+          "category": "Consultation",
+          "test": "Skip/Continue button visible",
+          "passed": true,
+          "details": "Found: Continuer sans v\u00e9rification",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:53.210340"
+        },
+        {
+          "category": "Consultation",
+          "test": "Skip/Continue button clicked",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:56.480625"
+        },
+        {
+          "category": "Consultation",
+          "test": "Vue Consolid\u00e9e option visible",
+          "passed": false,
+          "details": "Not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:56.483622"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click \u0152il Droit (OD) tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:56.915325"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click \u0152il Gauche (OG) tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:57.430667"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Binoculaire (ODG) tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:57.948627"
+        },
+        {
+          "category": "Consultation",
+          "test": "Visual Acuity dropdowns found",
+          "passed": false,
+          "details": "No dropdowns",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.031629"
+        },
+        {
+          "category": "Consultation",
+          "test": "Navigate to Refrac step",
+          "passed": false,
+          "details": "Refrac step not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.033589"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Myopie diagnosis",
+          "passed": false,
+          "details": "Button not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.122043"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Cataracte diagnosis",
+          "passed": false,
+          "details": "Button not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.127797"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Glaucome diagnosis",
+          "passed": false,
+          "details": "Button not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.129499"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Presbytie diagnosis",
+          "passed": false,
+          "details": "Button not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.135399"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Astigmatisme diagnosis",
+          "passed": false,
+          "details": "Button not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.140955"
+        },
+        {
+          "category": "Consultation",
+          "test": "Diagnosis quick buttons",
+          "passed": false,
+          "details": "Diagnoses likely use search/select UI",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.140959"
+        },
+        {
+          "category": "Consultation",
+          "test": "Navigate to RX step",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:58.838410"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Lunettes tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:25:59.528662"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Traitement M\u00e9dical tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:00.260253"
+        },
+        {
+          "category": "Consultation",
+          "test": "Click Lentilles tab",
+          "passed": false,
+          "details": "Tab not found",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:00.306313"
+        },
+        {
+          "category": "Consultation",
+          "test": "Examen Clinique dropdowns found",
+          "passed": false,
+          "details": "No dropdowns",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:00.307005"
+        }
+      ]
+    },
+    "Walk-in": {
+      "passed": 13,
+      "failed": 1,
+      "tests": [
+        {
+          "category": "Walk-in",
+          "test": "Open modal",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:05.067212"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Modal has patient tabs",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:05.149960"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Switch to Nouveau Patient tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:05.787554"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Switch to Patient Existant tab",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:06.518877"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Patient search works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:07.707100"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Motif label visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:07.793578"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Motif selection works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:08.217554"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Click Normal priority",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:31.373188"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Click VIP priority",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:31.901946"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Click Urgent priority",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:32.418686"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Click Personne \u00c2g\u00e9e priority",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:32.934851"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Click Femme Enceinte priority",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:33.451655"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Submit button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:33.528587"
+        },
+        {
+          "category": "Walk-in",
+          "test": "Submit button enabled",
+          "passed": false,
+          "details": "Button is disabled",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:26:33.530655"
+        }
+      ]
+    },
+    "Patient Detail": {
+      "passed": 0,
+      "failed": 1,
+      "tests": [
+        {
+          "category": "Patient Detail",
+          "test": "Navigate to detail",
+          "passed": false,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:10.009837"
+        }
+      ]
+    },
+    "IVT Wizard": {
+      "passed": 9,
+      "failed": 1,
+      "tests": [
+        {
+          "category": "IVT Wizard",
+          "test": "Form has dropdowns",
+          "passed": true,
+          "details": "Found 5 dropdowns",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:13.094124"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Select patient",
+          "passed": false,
+          "details": "Only placeholder option",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:13.095684"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Select eye (\u0152il)",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:13.558929"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Select indication",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:13.977602"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Select medication",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:14.395654"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Navigate to Step 2",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:16.101389"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Check evaluation item 1",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:16.313056"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Navigate to Step 3",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:18.016993"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Navigate to Step 4",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:19.832381"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Submit button on final step",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:19.885730"
+        }
+      ]
+    },
+    "Prescription": {
+      "passed": 5,
+      "failed": 1,
+      "tests": [
+        {
+          "category": "Prescription",
+          "test": "Filter by Sans PA",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:24.049436"
+        },
+        {
+          "category": "Prescription",
+          "test": "Filter by PA En cours",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:25.071801"
+        },
+        {
+          "category": "Prescription",
+          "test": "Filter by PA Approuv\u00e9es",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:26.232089"
+        },
+        {
+          "category": "Prescription",
+          "test": "Filter by PA Refus\u00e9es",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:27.231153"
+        },
+        {
+          "category": "Prescription",
+          "test": "Prescription items found",
+          "passed": false,
+          "details": "No prescription items",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:27.291263"
+        },
+        {
+          "category": "Prescription",
+          "test": "New prescription button works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:28.531243"
+        }
+      ]
+    },
+    "Glasses Orders": {
+      "passed": 6,
+      "failed": 1,
+      "tests": [
+        {
+          "category": "Glasses Orders",
+          "test": "Filter Toutes",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:33.878184"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "Filter Contr\u00f4le Qualit\u00e9",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:34.976155"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "Filter Pr\u00eats \u00e0 retirer",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:35.983166"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "New order button works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:37.759016"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "New order form/modal opens",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:37.759042"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "View order details",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:40.593156"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "Status badges visible",
+          "passed": false,
+          "details": "Found 0 badges",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:41.702640"
+        }
+      ]
+    },
+    "Invoice": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Invoice",
+          "test": "Invoices found in list",
+          "passed": true,
+          "details": "Found 200 invoices",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:46.047947"
+        },
+        {
+          "category": "Invoice",
+          "test": "View invoice detail",
+          "passed": true,
+          "details": "View button clicked",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:49.303519"
+        },
+        {
+          "category": "Invoice",
+          "test": "Print button works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:50.439641"
+        },
+        {
+          "category": "Invoice",
+          "test": "Payment button works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:27:55.179156"
+        }
+      ]
+    },
+    "Queue": {
+      "passed": 11,
+      "failed": 2,
+      "tests": [
+        {
+          "category": "Queue",
+          "test": "Analyses link visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:00.496776"
+        },
+        {
+          "category": "Queue",
+          "test": "Analyses link clickable",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:01.745597"
+        },
+        {
+          "category": "Queue",
+          "test": "Affichage link visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:03.178879"
+        },
+        {
+          "category": "Queue",
+          "test": "Affichage link clickable",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:04.414580"
+        },
+        {
+          "category": "Queue",
+          "test": "Appeler Suivant button visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:05.842534"
+        },
+        {
+          "category": "Queue",
+          "test": "Appeler Suivant button clickable",
+          "passed": false,
+          "details": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"Appeler Suivant\\\")\").first\n    - locator resolved to <button disabled class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    56 \u00d7 waiting for element to be visible, enabled and stable\n       - element is not enabled\n     - retrying click action\n       - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n  - element was detached from the DOM, retrying\n    - locator resolved to <button disabled class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not enabled\n    - retrying click action\n      - waiting 100ms\n    - waiting for element to be visible, enabled and stable\n    - element is not enabled\n  - retrying click action\n    - waiting 500ms\n",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:35.953025"
+        },
+        {
+          "category": "Queue",
+          "test": "Enregistrer arriv\u00e9e button visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:35.955951"
+        },
+        {
+          "category": "Queue",
+          "test": "Enregistrer arriv\u00e9e button clickable",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:37.172566"
+        },
+        {
+          "category": "Queue",
+          "test": "Patient sans RDV button visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:28:37.175031"
+        },
+        {
+          "category": "Queue",
+          "test": "Patient sans RDV button clickable",
+          "passed": false,
+          "details": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"button:has-text(\\\"sans RDV\\\"), button:has-text(\\\"Patient sans RDV\\\")\").first\n    - locator resolved to <button class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    53 \u00d7 waiting for element to be visible, enabled and stable\n       - element is visible, enabled and stable\n       - scrolling into view if needed\n       - done scrolling\n       - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n     - retrying click action\n       - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n  - element was detached from the DOM, retrying\n    - locator resolved to <button class=\"btn btn-success flex items-center space-x-2\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n      - waiting 100ms\n    4 \u00d7 waiting for element to be visible, enabled and stable\n      - element is visible, enabled and stable\n      - scrolling into view if needed\n      - done scrolling\n      - <div class=\"fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4\">\u2026</div> intercepts pointer events\n    - retrying click action\n      - waiting 500ms\n",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:29:07.287092"
+        },
+        {
+          "category": "Queue",
+          "test": "En attente card visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:29:07.293328"
+        },
+        {
+          "category": "Queue",
+          "test": "En consultation card visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:29:07.295733"
+        },
+        {
+          "category": "Queue",
+          "test": "Vus aujourd'hui card visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T22:29:07.297874"
+        }
+      ]
+    }
+  }
+}

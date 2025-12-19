@@ -1,0 +1,272 @@
+{
+  "timestamp": "2025-12-15T22:59:27.806208",
+  "tests": [
+    {
+      "name": "Create patient via API",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Created patient ID: 694084c57ef0f0c043739554",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:33.203869"
+    },
+    {
+      "name": "Click Add Patient button",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Button clicked successfully",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:35.797395"
+    },
+    {
+      "name": "Fill patient form fields",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Filled wizard: TestPatienth7av1ob5 Functionalh7av1ob5",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:39.100199"
+    },
+    {
+      "name": "Submit patient form",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Form submitted (checking result)",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:41.201797"
+    },
+    {
+      "name": "Patient search",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Found 20 results for 'Test'",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:43.827602"
+    },
+    {
+      "name": "View patient details",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Patient detail view opened",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:46.926703"
+    },
+    {
+      "name": "Patient detail sections",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Sections found: ['Actions', 'Documents']",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:47.039160"
+    },
+    {
+      "name": "Click Walk-in button",
+      "category": "Queue Workflow",
+      "passed": true,
+      "details": "",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:49.676551"
+    },
+    {
+      "name": "Add walk-in to queue",
+      "category": "Queue Workflow",
+      "passed": true,
+      "details": "Patient added (modal closed: True, toast: True)",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:55.866643"
+    },
+    {
+      "name": "Call next patient",
+      "category": "Queue Workflow",
+      "passed": false,
+      "details": "",
+      "error": "No patients in queue to call",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:57.411348"
+    },
+    {
+      "name": "Change queue status",
+      "category": "Queue Workflow",
+      "passed": false,
+      "details": "",
+      "error": "No queue items or status controls found",
+      "screenshot": "",
+      "timestamp": "2025-12-15T22:59:58.844860"
+    },
+    {
+      "name": "Click New Appointment",
+      "category": "Appointments",
+      "passed": true,
+      "details": "",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:01.434788"
+    },
+    {
+      "name": "Create appointment",
+      "category": "Appointments",
+      "passed": true,
+      "details": "Form submitted (verifying result)",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:03.678387"
+    },
+    {
+      "name": "Calendar navigation",
+      "category": "Appointments",
+      "passed": true,
+      "details": "Navigation buttons functional",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:05.817213"
+    },
+    {
+      "name": "Create prescription (API)",
+      "category": "Prescriptions",
+      "passed": true,
+      "details": "Prescription created for patient 694084c57ef0f0c043739554",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:10.850145"
+    },
+    {
+      "name": "Load prescription list",
+      "category": "Prescriptions",
+      "passed": true,
+      "details": "Found 0 prescriptions",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:12.381080"
+    },
+    {
+      "name": "Apply prescription filter",
+      "category": "Prescriptions",
+      "passed": true,
+      "details": "",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:13.494703"
+    },
+    {
+      "name": "Load invoice list",
+      "category": "Invoicing",
+      "passed": true,
+      "details": "Found 0 invoices",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:15.031023"
+    },
+    {
+      "name": "Open payment modal",
+      "category": "Invoicing",
+      "passed": true,
+      "details": "Payment modal opened and form available",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:18.392737"
+    },
+    {
+      "name": "Admin access to Settings",
+      "category": "RBAC",
+      "passed": true,
+      "details": "Path: /settings",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:20.617717"
+    },
+    {
+      "name": "Admin access to User Management",
+      "category": "RBAC",
+      "passed": true,
+      "details": "Path: /users",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:22.563514"
+    },
+    {
+      "name": "Admin access to Audit Trail",
+      "category": "RBAC",
+      "passed": true,
+      "details": "Path: /audit",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:24.511908"
+    },
+    {
+      "name": "Admin access to Analytics",
+      "category": "RBAC",
+      "passed": true,
+      "details": "Path: /analytics",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:27.811982"
+    },
+    {
+      "name": "Login as receptionist",
+      "category": "RBAC",
+      "passed": true,
+      "details": "",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:30.774245"
+    },
+    {
+      "name": "Receptionist blocked from /settings",
+      "category": "RBAC",
+      "passed": true,
+      "details": "Access correctly restricted",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:32.435987"
+    },
+    {
+      "name": "Receptionist blocked from /users",
+      "category": "RBAC",
+      "passed": true,
+      "details": "Access correctly restricted",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:34.830001"
+    },
+    {
+      "name": "Create patient via API",
+      "category": "Patient CRUD",
+      "passed": true,
+      "details": "Created patient ID: 694085057ef0f0c04373c0fe",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:37.537232"
+    },
+    {
+      "name": "E2E: Add to queue",
+      "category": "E2E Workflow",
+      "passed": false,
+      "details": "",
+      "error": "Queue API returned No response",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:37.542290"
+    },
+    {
+      "name": "Complete patient journey",
+      "category": "E2E Workflow",
+      "passed": false,
+      "details": "Completed 1/4 steps",
+      "error": "",
+      "screenshot": "",
+      "timestamp": "2025-12-15T23:00:52.577473"
+    }
+  ],
+  "summary": {
+    "total": 29,
+    "passed": 25,
+    "failed": 4,
+    "skipped": 0
+  }
+}

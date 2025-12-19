@@ -1,0 +1,154 @@
+{
+  "timestamp": "2025-12-19T23:39:51.931895",
+  "total_tests": 24,
+  "passed": 23,
+  "failed": 1,
+  "success_rate": "95.8%",
+  "screenshots": 20,
+  "results": [
+    {
+      "category": "Patient Wizard",
+      "test": "Step 1 (Photo) visible",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 2 (Personnel) visible",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 3 (Contact) visible",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 4 (Convention) visible",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 5 (Medical) visible",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Appointment Modal",
+      "test": "Patient selector present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Appointment Modal",
+      "test": "Date picker present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Appointment Modal",
+      "test": "Time picker present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Queue",
+      "test": "Check-in modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Pharmacy",
+      "test": "Add medication modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Invoice",
+      "test": "Creation modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Templates",
+      "test": "Creation modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Companies",
+      "test": "Add company modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Devices",
+      "test": "Add device modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "IVT",
+      "test": "New injection page loads",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Surgery",
+      "test": "New case page loads",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Settings",
+      "test": "Settings sections present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Analytics",
+      "test": "Date controls present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Section tabs present",
+      "passed": false,
+      "details": ""
+    },
+    {
+      "category": "UI Components",
+      "test": "Dropdowns work",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Search",
+      "test": "Search input works",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Filters",
+      "test": "Filter panel opens",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Export",
+      "test": "Export button present",
+      "passed": true,
+      "details": ""
+    },
+    {
+      "category": "Visits",
+      "test": "Visit list visible",
+      "passed": true,
+      "details": ""
+    }
+  ]
+}

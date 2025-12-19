@@ -1,0 +1,122 @@
+{
+  "timestamp": "2025-12-15T01:01:20.155976",
+  "summary": {
+    "total": 14,
+    "passed": 14,
+    "failed": 0
+  },
+  "results": [
+    {
+      "name": "Dashboard",
+      "action": "Stats cards present",
+      "passed": true,
+      "details": "12 cards found",
+      "error": null,
+      "timestamp": "2025-12-15T01:00:54.035185"
+    },
+    {
+      "name": "Patients",
+      "action": "Search input works",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:00:57.028553"
+    },
+    {
+      "name": "Patients",
+      "action": "Filter dropdown opens",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:00:57.694417"
+    },
+    {
+      "name": "Patients",
+      "action": "Row click navigates to detail",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients/693a98ee030937374a2",
+      "error": null,
+      "timestamp": "2025-12-15T01:00:58.477946"
+    },
+    {
+      "name": "Queue",
+      "action": "Stats show numeric data",
+      "passed": true,
+      "details": "Found: 7 stat elements",
+      "error": null,
+      "timestamp": "2025-12-15T01:00:59.981220"
+    },
+    {
+      "name": "Appointments",
+      "action": "View mode 'Liste' clickable",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:01.746176"
+    },
+    {
+      "name": "Appointments",
+      "action": "New appointment form opens",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:02.323575"
+    },
+    {
+      "name": "Prescriptions",
+      "action": "Filter tab 'Sans PA' clickable",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:04.433713"
+    },
+    {
+      "name": "Pharmacy",
+      "action": "Search medications",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:06.414782"
+    },
+    {
+      "name": "Laboratory",
+      "action": "Results button clickable",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:08.437726"
+    },
+    {
+      "name": "Laboratory",
+      "action": "Urgent/badge indicators present",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:08.472997"
+    },
+    {
+      "name": "Surgery",
+      "action": "New case form opens",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:10.479678"
+    },
+    {
+      "name": "Settings",
+      "action": "Tab 'Notifications' accessible",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:13.757034"
+    },
+    {
+      "name": "Approvals",
+      "action": "Create request form opens",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T01:01:17.204175"
+    }
+  ]
+}

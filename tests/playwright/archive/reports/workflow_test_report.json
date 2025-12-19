@@ -1,0 +1,154 @@
+{
+  "timestamp": "2025-12-15T16:54:14.211936",
+  "summary": {
+    "total": 18,
+    "passed": 18,
+    "failed": 0
+  },
+  "results": [
+    {
+      "workflow": "Ophthalmology",
+      "step": "Navigate to dashboard",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:53:59.440759"
+    },
+    {
+      "workflow": "Ophthalmology",
+      "step": "Clicked consultation",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:00.574777"
+    },
+    {
+      "workflow": "Ophthalmology",
+      "step": "Patient selection shown",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:00.576290"
+    },
+    {
+      "workflow": "Prescription",
+      "step": "Navigate to list",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:04.646674"
+    },
+    {
+      "workflow": "Prescription",
+      "step": "List loaded",
+      "passed": true,
+      "details": "0 prescriptions",
+      "error": null,
+      "timestamp": "2025-12-15T16:54:04.655447"
+    },
+    {
+      "workflow": "Prescription",
+      "step": "Filter 'Sans PA' works",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:05.208279"
+    },
+    {
+      "workflow": "Queue",
+      "step": "Navigate to queue",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:07.638293"
+    },
+    {
+      "workflow": "Queue",
+      "step": "Stats displayed",
+      "passed": true,
+      "details": "7 stat cards",
+      "error": null,
+      "timestamp": "2025-12-15T16:54:07.647501"
+    },
+    {
+      "workflow": "Queue",
+      "step": "Queue loaded",
+      "passed": true,
+      "details": "0 patients",
+      "error": null,
+      "timestamp": "2025-12-15T16:54:07.649062"
+    },
+    {
+      "workflow": "Patient Detail",
+      "step": "Navigate to patients",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:10.062663"
+    },
+    {
+      "workflow": "Patient Detail",
+      "step": "Opened detail",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:11.677104"
+    },
+    {
+      "workflow": "Patient Detail",
+      "step": "Section 'Actions Rapides'",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:11.679642"
+    },
+    {
+      "workflow": "Patient Detail",
+      "step": "Section 'Documents'",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:11.683179"
+    },
+    {
+      "workflow": "Patient Detail",
+      "step": "Section 'Historique'",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:11.684844"
+    },
+    {
+      "workflow": "Patient Detail",
+      "step": "Quick actions",
+      "passed": true,
+      "details": "6 actions",
+      "error": null,
+      "timestamp": "2025-12-15T16:54:11.687062"
+    },
+    {
+      "workflow": "Invoicing",
+      "step": "Navigate to invoicing",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:14.143047"
+    },
+    {
+      "workflow": "Invoicing",
+      "step": "Invoice list loaded",
+      "passed": true,
+      "details": "0 invoices",
+      "error": null,
+      "timestamp": "2025-12-15T16:54:14.154547"
+    },
+    {
+      "workflow": "Invoicing",
+      "step": "Totals displayed",
+      "passed": true,
+      "details": null,
+      "error": null,
+      "timestamp": "2025-12-15T16:54:14.181937"
+    }
+  ]
+}

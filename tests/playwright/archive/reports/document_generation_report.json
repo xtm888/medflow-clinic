@@ -1,0 +1,69 @@
+{
+  "name": "document_generation",
+  "timestamp": "2025-12-15T01:00:47.828456",
+  "duration_seconds": 1.49828,
+  "summary": {
+    "total": 7,
+    "passed": 7,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Invoice PDF generation",
+      "passed": true,
+      "details": "Status: 200, Content-Type: application/pdf",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:48.181944"
+    },
+    {
+      "test": "Prescription PDF generation",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:48.276107"
+    },
+    {
+      "test": "Patient statement generation",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:48.532252"
+    },
+    {
+      "test": "CERFA document generation",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:48.760248"
+    },
+    {
+      "test": "Document templates available",
+      "passed": true,
+      "details": "Found 26 templates",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:48.844434"
+    },
+    {
+      "test": "Receipt generation",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:49.099307"
+    },
+    {
+      "test": "Optical prescription generation",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "document_generation",
+      "screenshot": null,
+      "timestamp": "2025-12-15T01:00:49.326665"
+    }
+  ]
+}

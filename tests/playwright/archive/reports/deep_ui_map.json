@@ -1,0 +1,508 @@
+{
+  "timestamp": "2025-12-13T16:29:17.593818",
+  "summary": {
+    "screenshots": 83,
+    "pages": 6,
+    "interactions": 76
+  },
+  "pages": {
+    "http://localhost:5173/home": {
+      "name": "Home",
+      "screenshot": "0002_Home_view.jpg",
+      "depth": 0,
+      "elements": [
+        {
+          "type": "button",
+          "text": "Accueil\n7 modules",
+          "screenshot": "0003_Home_button_Accueil_7_modules.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "11\nClinique\n11 modules",
+          "screenshot": "0004_Home_button_11_Clinique_11_modules.jpg",
+          "action": "navigate"
+        }
+      ]
+    },
+    "http://localhost:5173/dashboard": {
+      "name": "dashboard",
+      "screenshot": "0005_dashboard_view.jpg",
+      "depth": 1,
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "screenshot": "0006_dashboard_button_Clinique.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "screenshot": "0007_dashboard_button_Finances.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "screenshot": "0008_dashboard_button_Inventaire.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "screenshot": "0009_dashboard_button_Accueil.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "button",
+          "text": "All Clinics",
+          "screenshot": "0010_dashboard_button_All_Clinics.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "screenshot": "0011_dashboard_button_En_ligne.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Voir toutes les actions (10)",
+          "screenshot": "0012_dashboard_button_Voir_toutes_les_actions.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "screenshot": "0013_dashboard_link_Tableau_de_bord.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "screenshot": "0014_dashboard_link_Patients.jpg",
+          "action": "navigate"
+        }
+      ]
+    },
+    "http://localhost:5173/patients": {
+      "name": "patients",
+      "screenshot": "0015_patients_view.jpg",
+      "depth": 2,
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "screenshot": "0016_patients_button_Clinique.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "screenshot": "0017_patients_button_Finances.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "screenshot": "0018_patients_button_Inventaire.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "screenshot": "0019_patients_button_Accueil.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "button",
+          "text": "Centre Ophtalmologique Matrix",
+          "screenshot": "0020_patients_button_Centre_Ophtalmologique_M.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "screenshot": "0021_patients_button_En_ligne.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "screenshot": "0022_patients_button_Raccourcis.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "screenshot": "0023_patients_link_Tableau_de_bord.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "screenshot": "0024_patients_link_Patients.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "screenshot": "0025_patients_link_File_d_attente.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "screenshot": "0047_patients_link_Rendez-vous.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "screenshot": "0064_patients_link_Notifications.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "screenshot": "0083_patients_link_Param\u00e8tres.jpg",
+          "action": "navigate"
+        }
+      ]
+    },
+    "http://localhost:5173/queue": {
+      "name": "queue",
+      "screenshot": "0026_queue_view.jpg",
+      "depth": 3,
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "screenshot": "0027_queue_button_Clinique.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "screenshot": "0028_queue_button_Finances.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "screenshot": "0029_queue_button_Inventaire.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "screenshot": "0030_queue_button_Accueil.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "button",
+          "text": "Centre Ophtalmologique Matrix",
+          "screenshot": "0031_queue_button_Centre_Ophtalmologique_Matr.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "screenshot": "0032_queue_button_En_ligne.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "screenshot": "0033_queue_button_Raccourcis.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Patient sans RDV",
+          "screenshot": "0034_queue_button_Patient_sans_RDV.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "screenshot": "0035_queue_link_Tableau_de_bord.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "screenshot": "0036_queue_link_Patients.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "screenshot": "0037_queue_link_File_d_attente.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "screenshot": "0038_queue_link_Rendez-vous.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "screenshot": "0039_queue_link_Notifications.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "screenshot": "0040_queue_link_Param\u00e8tres.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "screenshot": "0041_queue_link_Journal_d_audit.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "screenshot": "0042_queue_link_Documents.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Analyses",
+          "screenshot": "0043_queue_link_Analyses.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Affichage",
+          "screenshot": "0044_queue_link_Affichage.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "screenshot": "0045_queue_icon_Accueil_-_Menu_princ.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "screenshot": "0046_queue_icon_Pr\u00e9parer_pour_le_mod.jpg",
+          "action": "state_change"
+        }
+      ]
+    },
+    "http://localhost:5173/appointments": {
+      "name": "appointments",
+      "screenshot": "0048_appointments_view.jpg",
+      "depth": 3,
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "screenshot": "0049_appointments_button_Clinique.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "screenshot": "0050_appointments_button_Finances.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "screenshot": "0051_appointments_button_Inventaire.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "screenshot": "0052_appointments_button_Accueil.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "button",
+          "text": "Centre Ophtalmologique Matrix",
+          "screenshot": "0053_appointments_button_Centre_Ophtalmologiq.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "screenshot": "0054_appointments_button_En_ligne.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Raccourcis",
+          "screenshot": "0055_appointments_button_Raccourcis.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "screenshot": "0056_appointments_link_File_d_attente.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "screenshot": "0057_appointments_link_Rendez-vous.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "screenshot": "0058_appointments_link_Notifications.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "screenshot": "0059_appointments_link_Param\u00e8tres.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "screenshot": "0060_appointments_link_Journal_d_audit.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "screenshot": "0061_appointments_link_Documents.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "screenshot": "0062_appointments_icon_Accueil_-_Menu_princ.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "screenshot": "0063_appointments_icon_Pr\u00e9parer_pour_le_mod.jpg",
+          "action": "state_change"
+        }
+      ]
+    },
+    "http://localhost:5173/notifications": {
+      "name": "notifications",
+      "screenshot": "0065_notifications_view.jpg",
+      "depth": 3,
+      "elements": [
+        {
+          "type": "button",
+          "text": "Clinique",
+          "screenshot": "0066_notifications_button_Clinique.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Finances",
+          "screenshot": "0067_notifications_button_Finances.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Inventaire",
+          "screenshot": "0068_notifications_button_Inventaire.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "Accueil",
+          "screenshot": "0069_notifications_button_Accueil.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "button",
+          "text": "Centre Ophtalmologique Matrix",
+          "screenshot": "0070_notifications_button_Centre_Ophtalmologi.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "button",
+          "text": "En ligne",
+          "screenshot": "0071_notifications_button_En_ligne.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Tableau de bord",
+          "screenshot": "0072_notifications_link_Tableau_de_bord.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Patients",
+          "screenshot": "0073_notifications_link_Patients.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "File d'attente",
+          "screenshot": "0074_notifications_link_File_d_attente.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Rendez-vous",
+          "screenshot": "0075_notifications_link_Rendez-vous.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Notifications",
+          "screenshot": "0076_notifications_link_Notifications.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "link",
+          "text": "Param\u00e8tres",
+          "screenshot": "0077_notifications_link_Param\u00e8tres.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Journal d'audit",
+          "screenshot": "0078_notifications_link_Journal_d_audit.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "link",
+          "text": "Documents",
+          "screenshot": "0079_notifications_link_Documents.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "icon",
+          "text": "Accueil - Menu princ",
+          "screenshot": "0080_notifications_icon_Accueil_-_Menu_princ.jpg",
+          "action": "navigate"
+        },
+        {
+          "type": "icon",
+          "text": "Pr\u00e9parer pour le mod",
+          "screenshot": "0081_notifications_icon_Pr\u00e9parer_pour_le_mod.jpg",
+          "action": "state_change"
+        },
+        {
+          "type": "icon",
+          "text": "Notifications",
+          "screenshot": "0082_notifications_icon_Notifications.jpg",
+          "action": "state_change"
+        }
+      ]
+    }
+  }
+}

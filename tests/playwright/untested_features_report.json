@@ -1,0 +1,2066 @@
+{
+  "name": "Untested Features Test Suite",
+  "timestamp": "2025-12-16T20:46:27.471468",
+  "summary": {
+    "total": 120,
+    "passed": 120,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "category": "Patient Detail",
+      "test": "Navigate to patient detail",
+      "passed": true,
+      "details": "http://localhost:5173/patients/694083027ef0f0c04372c700",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.475271"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Quick actions section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.602238"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Refraction section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.603586"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "IOP section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.604922"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Diagnostics section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.606187"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "History section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.607301"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Documents section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.608452"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Consultation button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.609712"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Appointment button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.611058"
+    },
+    {
+      "category": "Patient Detail",
+      "test": "Print options available",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:30.612340"
+    },
+    {
+      "category": "Patient Edit",
+      "test": "Edit page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:36.617359"
+    },
+    {
+      "category": "Patient Edit",
+      "test": "Edit form present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:38.817292"
+    },
+    {
+      "category": "Patient Edit",
+      "test": "Form fields present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:38.818363"
+    },
+    {
+      "category": "Patient Edit",
+      "test": "Save button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:38.819728"
+    },
+    {
+      "category": "Surgery",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:41.235032"
+    },
+    {
+      "category": "Surgery",
+      "test": "New case page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:43.722109"
+    },
+    {
+      "category": "Surgery",
+      "test": "Patient search present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:43.786769"
+    },
+    {
+      "category": "Surgery",
+      "test": "Procedure selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:43.787775"
+    },
+    {
+      "category": "Surgery",
+      "test": "Eye selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:43.790660"
+    },
+    {
+      "category": "IVT",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:46.203418"
+    },
+    {
+      "category": "IVT",
+      "test": "New injection page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:48.444054"
+    },
+    {
+      "category": "IVT",
+      "test": "Wizard steps present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:48.509716"
+    },
+    {
+      "category": "IVT",
+      "test": "Medication selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:48.511342"
+    },
+    {
+      "category": "IVT",
+      "test": "Eye selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:48.513007"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:50.917087"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Ventes section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:51.013859"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Optical content present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:51.015187"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Commandes section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:51.016423"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Verification page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:53.433358"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "External orders page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:55.915698"
+    },
+    {
+      "category": "Optical Shop",
+      "test": "Performance page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:43:58.400030"
+    },
+    {
+      "category": "Inventory",
+      "test": "Contact Lens Inventory loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:00.911360"
+    },
+    {
+      "category": "Inventory",
+      "test": "Contact Lens Inventory has content area",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:01.060109"
+    },
+    {
+      "category": "Inventory",
+      "test": "Reagent Inventory loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:03.481094"
+    },
+    {
+      "category": "Inventory",
+      "test": "Reagent Inventory has content area",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:03.629435"
+    },
+    {
+      "category": "Inventory",
+      "test": "Lab Consumable Inventory loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:06.047929"
+    },
+    {
+      "category": "Inventory",
+      "test": "Lab Consumable Inventory has content area",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:06.309194"
+    },
+    {
+      "category": "Inventory",
+      "test": "Stock Reconciliation loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:08.726229"
+    },
+    {
+      "category": "Inventory",
+      "test": "Stock Reconciliation has content area",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:08.780102"
+    },
+    {
+      "category": "Repairs",
+      "test": "Repairs list loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:11.194651"
+    },
+    {
+      "category": "Repairs",
+      "test": "New repair page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:13.668346"
+    },
+    {
+      "category": "Warranties",
+      "test": "Warranties list loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:16.152001"
+    },
+    {
+      "category": "Warranties",
+      "test": "New warranty page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:18.624141"
+    },
+    {
+      "category": "Lab",
+      "test": "Lab Configuration loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:21.109036"
+    },
+    {
+      "category": "Lab",
+      "test": "Lab Check-in loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:23.578407"
+    },
+    {
+      "category": "Lab",
+      "test": "Lab Worklist loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:26.047075"
+    },
+    {
+      "category": "Orthoptic",
+      "test": "Orthoptic list loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:28.498799"
+    },
+    {
+      "category": "Orthoptic",
+      "test": "New exam page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:30.984563"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Orders list page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:33.632704"
+    },
+    {
+      "category": "Glasses Orders",
+      "test": "Order detail navigation works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:35.183627"
+    },
+    {
+      "category": "Other",
+      "test": "Purchase Orders loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:37.449314"
+    },
+    {
+      "category": "Other",
+      "test": "Alerts Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:39.715558"
+    },
+    {
+      "category": "Other",
+      "test": "Nurse Vitals loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:41.971398"
+    },
+    {
+      "category": "Other",
+      "test": "Prescription Queue loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:44.231536"
+    },
+    {
+      "category": "Other",
+      "test": "Backups loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:46.491575"
+    },
+    {
+      "category": "Other",
+      "test": "Services loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:48.924027"
+    },
+    {
+      "category": "Other",
+      "test": "Cross-Clinic Inventory loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:56.268207"
+    },
+    {
+      "category": "Other",
+      "test": "External Facilities loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:44:58.587457"
+    },
+    {
+      "category": "Other",
+      "test": "Dispatch Dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:00.866508"
+    },
+    {
+      "category": "Other",
+      "test": "Consolidated Reports loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:03.145611"
+    },
+    {
+      "category": "Other",
+      "test": "Device Status loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:05.418206"
+    },
+    {
+      "category": "Other",
+      "test": "OCR Import loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:07.700282"
+    },
+    {
+      "category": "Workflow",
+      "test": "Patient list loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:10.323887"
+    },
+    {
+      "category": "Workflow",
+      "test": "Patient search works",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:11.527994"
+    },
+    {
+      "category": "Workflow",
+      "test": "Navigate to patient detail",
+      "passed": true,
+      "details": "http://localhost:5173/patients/694083027ef0f0c04372c700",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:16.705830"
+    },
+    {
+      "category": "Workflow",
+      "test": "Navigate to consultation",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:18.847603"
+    },
+    {
+      "category": "Workflow",
+      "test": "Surgery dashboard loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:21.721770"
+    },
+    {
+      "category": "Workflow",
+      "test": "New surgery form opens",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:23.780984"
+    },
+    {
+      "category": "Workflow",
+      "test": "Queue loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:26.348531"
+    },
+    {
+      "category": "Workflow",
+      "test": "Queue structure present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:26.350159"
+    },
+    {
+      "category": "Form",
+      "test": "Patient wizard opens",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:30.316623"
+    },
+    {
+      "category": "Form",
+      "test": "Patient wizard step 2",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:32.009833"
+    },
+    {
+      "category": "Form",
+      "test": "Appointment modal opens",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:35.985658"
+    },
+    {
+      "category": "Form",
+      "test": "Prescriptions page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:38.627956"
+    },
+    {
+      "category": "Form",
+      "test": "New invoice button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:41.277014"
+    },
+    {
+      "category": "Consultation",
+      "test": "Consultation form page loads",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:45.467109"
+    },
+    {
+      "category": "Consultation",
+      "test": "Motif or Patient selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:45.473700"
+    },
+    {
+      "category": "Consultation",
+      "test": "Form elements present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:45.475728"
+    },
+    {
+      "category": "Consultation",
+      "test": "Ophthalmology content present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:45.476635"
+    },
+    {
+      "category": "Consultation",
+      "test": "Eye-related content present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:45.479912"
+    },
+    {
+      "category": "Consultation",
+      "test": "Clinical or action content present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:45.480799"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 1 - Photo visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:49.950680"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step indicator present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:50.028296"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 2 - Personnel visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:51.574920"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 3 - Contact visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:53.693399"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 4 - Convention visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:55.306384"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Step 5 - M\u00e9dical visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:56.906737"
+    },
+    {
+      "category": "Patient Wizard",
+      "test": "Final step buttons present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:56.979516"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Step 1 - Informations de base",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:59.969831"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Patient field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:59.970999"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Medication selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:59.972181"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Eye selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:45:59.973284"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Step 2 - \u00c9valuation pr\u00e9-injection",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:01.510288"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Step 3 - Proc\u00e9dure",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:03.127322"
+    },
+    {
+      "category": "IVT Wizard",
+      "test": "Step 4 - Suivi",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:04.757992"
+    },
+    {
+      "category": "Surgery Form",
+      "test": "Patient search field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:07.795159"
+    },
+    {
+      "category": "Surgery Form",
+      "test": "Type de chirurgie field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:07.796384"
+    },
+    {
+      "category": "Surgery Form",
+      "test": "Eye selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:07.797447"
+    },
+    {
+      "category": "Surgery Form",
+      "test": "Priorit\u00e9 field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:07.798612"
+    },
+    {
+      "category": "Surgery Form",
+      "test": "Notes field present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:07.799399"
+    },
+    {
+      "category": "Surgery Form",
+      "test": "Submit button (Cr\u00e9er le cas) present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:07.800353"
+    },
+    {
+      "category": "Queue Actions",
+      "test": "Patient sans RDV button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:10.804657"
+    },
+    {
+      "category": "Queue Actions",
+      "test": "Enregistrer arriv\u00e9e button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:10.805895"
+    },
+    {
+      "category": "Queue Actions",
+      "test": "Appeler suivant button present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:10.807038"
+    },
+    {
+      "category": "Queue Actions",
+      "test": "Status filter buttons present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:10.808058"
+    },
+    {
+      "category": "Queue Actions",
+      "test": "Walk-in modal opens",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:12.350638"
+    },
+    {
+      "category": "Prescription Actions",
+      "test": "Filter options present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:16.130599"
+    },
+    {
+      "category": "Prescription Actions",
+      "test": "Action buttons available",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:16.134318"
+    },
+    {
+      "category": "Prescription Actions",
+      "test": "Print action present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:16.136094"
+    },
+    {
+      "category": "Cross-Clinic",
+      "test": "Clinic cards visible",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:19.154224"
+    },
+    {
+      "category": "Cross-Clinic",
+      "test": "Total items displayed",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:19.158822"
+    },
+    {
+      "category": "Cross-Clinic",
+      "test": "Stock alerts section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:19.161726"
+    },
+    {
+      "category": "Cross-Clinic",
+      "test": "Transfers section present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:19.164724"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Patient search field",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.889399"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Praticien selection",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.892178"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Date picker present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.893333"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Time selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.895998"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Appointment type selection",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.897718"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Duration/Time selection present",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.900723"
+    },
+    {
+      "category": "Appointment Form",
+      "test": "Form buttons available",
+      "passed": true,
+      "details": "",
+      "screenshot": null,
+      "timestamp": "2025-12-16T20:46:23.912901"
+    }
+  ],
+  "categories": {
+    "Patient Detail": {
+      "passed": 10,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Patient Detail",
+          "test": "Navigate to patient detail",
+          "passed": true,
+          "details": "http://localhost:5173/patients/694083027ef0f0c04372c700",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.475271"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Quick actions section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.602238"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Refraction section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.603586"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "IOP section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.604922"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Diagnostics section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.606187"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "History section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.607301"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Documents section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.608452"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Consultation button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.609712"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Appointment button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.611058"
+        },
+        {
+          "category": "Patient Detail",
+          "test": "Print options available",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:30.612340"
+        }
+      ]
+    },
+    "Patient Edit": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Patient Edit",
+          "test": "Edit page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:36.617359"
+        },
+        {
+          "category": "Patient Edit",
+          "test": "Edit form present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:38.817292"
+        },
+        {
+          "category": "Patient Edit",
+          "test": "Form fields present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:38.818363"
+        },
+        {
+          "category": "Patient Edit",
+          "test": "Save button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:38.819728"
+        }
+      ]
+    },
+    "Surgery": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Surgery",
+          "test": "Dashboard loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:41.235032"
+        },
+        {
+          "category": "Surgery",
+          "test": "New case page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:43.722109"
+        },
+        {
+          "category": "Surgery",
+          "test": "Patient search present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:43.786769"
+        },
+        {
+          "category": "Surgery",
+          "test": "Procedure selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:43.787775"
+        },
+        {
+          "category": "Surgery",
+          "test": "Eye selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:43.790660"
+        }
+      ]
+    },
+    "IVT": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "IVT",
+          "test": "Dashboard loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:46.203418"
+        },
+        {
+          "category": "IVT",
+          "test": "New injection page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:48.444054"
+        },
+        {
+          "category": "IVT",
+          "test": "Wizard steps present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:48.509716"
+        },
+        {
+          "category": "IVT",
+          "test": "Medication selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:48.511342"
+        },
+        {
+          "category": "IVT",
+          "test": "Eye selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:48.513007"
+        }
+      ]
+    },
+    "Optical Shop": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Optical Shop",
+          "test": "Dashboard loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:50.917087"
+        },
+        {
+          "category": "Optical Shop",
+          "test": "Ventes section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:51.013859"
+        },
+        {
+          "category": "Optical Shop",
+          "test": "Optical content present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:51.015187"
+        },
+        {
+          "category": "Optical Shop",
+          "test": "Commandes section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:51.016423"
+        },
+        {
+          "category": "Optical Shop",
+          "test": "Verification page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:53.433358"
+        },
+        {
+          "category": "Optical Shop",
+          "test": "External orders page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:55.915698"
+        },
+        {
+          "category": "Optical Shop",
+          "test": "Performance page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:43:58.400030"
+        }
+      ]
+    },
+    "Inventory": {
+      "passed": 8,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Inventory",
+          "test": "Contact Lens Inventory loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:00.911360"
+        },
+        {
+          "category": "Inventory",
+          "test": "Contact Lens Inventory has content area",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:01.060109"
+        },
+        {
+          "category": "Inventory",
+          "test": "Reagent Inventory loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:03.481094"
+        },
+        {
+          "category": "Inventory",
+          "test": "Reagent Inventory has content area",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:03.629435"
+        },
+        {
+          "category": "Inventory",
+          "test": "Lab Consumable Inventory loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:06.047929"
+        },
+        {
+          "category": "Inventory",
+          "test": "Lab Consumable Inventory has content area",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:06.309194"
+        },
+        {
+          "category": "Inventory",
+          "test": "Stock Reconciliation loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:08.726229"
+        },
+        {
+          "category": "Inventory",
+          "test": "Stock Reconciliation has content area",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:08.780102"
+        }
+      ]
+    },
+    "Repairs": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Repairs",
+          "test": "Repairs list loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:11.194651"
+        },
+        {
+          "category": "Repairs",
+          "test": "New repair page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:13.668346"
+        }
+      ]
+    },
+    "Warranties": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Warranties",
+          "test": "Warranties list loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:16.152001"
+        },
+        {
+          "category": "Warranties",
+          "test": "New warranty page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:18.624141"
+        }
+      ]
+    },
+    "Lab": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Lab",
+          "test": "Lab Configuration loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:21.109036"
+        },
+        {
+          "category": "Lab",
+          "test": "Lab Check-in loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:23.578407"
+        },
+        {
+          "category": "Lab",
+          "test": "Lab Worklist loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:26.047075"
+        }
+      ]
+    },
+    "Orthoptic": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Orthoptic",
+          "test": "Orthoptic list loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:28.498799"
+        },
+        {
+          "category": "Orthoptic",
+          "test": "New exam page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:30.984563"
+        }
+      ]
+    },
+    "Glasses Orders": {
+      "passed": 2,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Glasses Orders",
+          "test": "Orders list page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:33.632704"
+        },
+        {
+          "category": "Glasses Orders",
+          "test": "Order detail navigation works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:35.183627"
+        }
+      ]
+    },
+    "Other": {
+      "passed": 12,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Other",
+          "test": "Purchase Orders loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:37.449314"
+        },
+        {
+          "category": "Other",
+          "test": "Alerts Dashboard loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:39.715558"
+        },
+        {
+          "category": "Other",
+          "test": "Nurse Vitals loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:41.971398"
+        },
+        {
+          "category": "Other",
+          "test": "Prescription Queue loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:44.231536"
+        },
+        {
+          "category": "Other",
+          "test": "Backups loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:46.491575"
+        },
+        {
+          "category": "Other",
+          "test": "Services loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:48.924027"
+        },
+        {
+          "category": "Other",
+          "test": "Cross-Clinic Inventory loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:56.268207"
+        },
+        {
+          "category": "Other",
+          "test": "External Facilities loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:44:58.587457"
+        },
+        {
+          "category": "Other",
+          "test": "Dispatch Dashboard loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:00.866508"
+        },
+        {
+          "category": "Other",
+          "test": "Consolidated Reports loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:03.145611"
+        },
+        {
+          "category": "Other",
+          "test": "Device Status loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:05.418206"
+        },
+        {
+          "category": "Other",
+          "test": "OCR Import loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:07.700282"
+        }
+      ]
+    },
+    "Workflow": {
+      "passed": 8,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Workflow",
+          "test": "Patient list loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:10.323887"
+        },
+        {
+          "category": "Workflow",
+          "test": "Patient search works",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:11.527994"
+        },
+        {
+          "category": "Workflow",
+          "test": "Navigate to patient detail",
+          "passed": true,
+          "details": "http://localhost:5173/patients/694083027ef0f0c04372c700",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:16.705830"
+        },
+        {
+          "category": "Workflow",
+          "test": "Navigate to consultation",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:18.847603"
+        },
+        {
+          "category": "Workflow",
+          "test": "Surgery dashboard loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:21.721770"
+        },
+        {
+          "category": "Workflow",
+          "test": "New surgery form opens",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:23.780984"
+        },
+        {
+          "category": "Workflow",
+          "test": "Queue loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:26.348531"
+        },
+        {
+          "category": "Workflow",
+          "test": "Queue structure present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:26.350159"
+        }
+      ]
+    },
+    "Form": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Form",
+          "test": "Patient wizard opens",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:30.316623"
+        },
+        {
+          "category": "Form",
+          "test": "Patient wizard step 2",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:32.009833"
+        },
+        {
+          "category": "Form",
+          "test": "Appointment modal opens",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:35.985658"
+        },
+        {
+          "category": "Form",
+          "test": "Prescriptions page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:38.627956"
+        },
+        {
+          "category": "Form",
+          "test": "New invoice button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:41.277014"
+        }
+      ]
+    },
+    "Consultation": {
+      "passed": 6,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Consultation",
+          "test": "Consultation form page loads",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:45.467109"
+        },
+        {
+          "category": "Consultation",
+          "test": "Motif or Patient selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:45.473700"
+        },
+        {
+          "category": "Consultation",
+          "test": "Form elements present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:45.475728"
+        },
+        {
+          "category": "Consultation",
+          "test": "Ophthalmology content present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:45.476635"
+        },
+        {
+          "category": "Consultation",
+          "test": "Eye-related content present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:45.479912"
+        },
+        {
+          "category": "Consultation",
+          "test": "Clinical or action content present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:45.480799"
+        }
+      ]
+    },
+    "Patient Wizard": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Patient Wizard",
+          "test": "Step 1 - Photo visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:49.950680"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Step indicator present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:50.028296"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Step 2 - Personnel visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:51.574920"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Step 3 - Contact visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:53.693399"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Step 4 - Convention visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:55.306384"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Step 5 - M\u00e9dical visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:56.906737"
+        },
+        {
+          "category": "Patient Wizard",
+          "test": "Final step buttons present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:56.979516"
+        }
+      ]
+    },
+    "IVT Wizard": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "IVT Wizard",
+          "test": "Step 1 - Informations de base",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:59.969831"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Patient field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:59.970999"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Medication selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:59.972181"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Eye selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:45:59.973284"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Step 2 - \u00c9valuation pr\u00e9-injection",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:01.510288"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Step 3 - Proc\u00e9dure",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:03.127322"
+        },
+        {
+          "category": "IVT Wizard",
+          "test": "Step 4 - Suivi",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:04.757992"
+        }
+      ]
+    },
+    "Surgery Form": {
+      "passed": 6,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Surgery Form",
+          "test": "Patient search field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:07.795159"
+        },
+        {
+          "category": "Surgery Form",
+          "test": "Type de chirurgie field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:07.796384"
+        },
+        {
+          "category": "Surgery Form",
+          "test": "Eye selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:07.797447"
+        },
+        {
+          "category": "Surgery Form",
+          "test": "Priorit\u00e9 field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:07.798612"
+        },
+        {
+          "category": "Surgery Form",
+          "test": "Notes field present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:07.799399"
+        },
+        {
+          "category": "Surgery Form",
+          "test": "Submit button (Cr\u00e9er le cas) present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:07.800353"
+        }
+      ]
+    },
+    "Queue Actions": {
+      "passed": 5,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Queue Actions",
+          "test": "Patient sans RDV button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:10.804657"
+        },
+        {
+          "category": "Queue Actions",
+          "test": "Enregistrer arriv\u00e9e button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:10.805895"
+        },
+        {
+          "category": "Queue Actions",
+          "test": "Appeler suivant button present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:10.807038"
+        },
+        {
+          "category": "Queue Actions",
+          "test": "Status filter buttons present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:10.808058"
+        },
+        {
+          "category": "Queue Actions",
+          "test": "Walk-in modal opens",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:12.350638"
+        }
+      ]
+    },
+    "Prescription Actions": {
+      "passed": 3,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Prescription Actions",
+          "test": "Filter options present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:16.130599"
+        },
+        {
+          "category": "Prescription Actions",
+          "test": "Action buttons available",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:16.134318"
+        },
+        {
+          "category": "Prescription Actions",
+          "test": "Print action present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:16.136094"
+        }
+      ]
+    },
+    "Cross-Clinic": {
+      "passed": 4,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Cross-Clinic",
+          "test": "Clinic cards visible",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:19.154224"
+        },
+        {
+          "category": "Cross-Clinic",
+          "test": "Total items displayed",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:19.158822"
+        },
+        {
+          "category": "Cross-Clinic",
+          "test": "Stock alerts section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:19.161726"
+        },
+        {
+          "category": "Cross-Clinic",
+          "test": "Transfers section present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:19.164724"
+        }
+      ]
+    },
+    "Appointment Form": {
+      "passed": 7,
+      "failed": 0,
+      "tests": [
+        {
+          "category": "Appointment Form",
+          "test": "Patient search field",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.889399"
+        },
+        {
+          "category": "Appointment Form",
+          "test": "Praticien selection",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.892178"
+        },
+        {
+          "category": "Appointment Form",
+          "test": "Date picker present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.893333"
+        },
+        {
+          "category": "Appointment Form",
+          "test": "Time selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.895998"
+        },
+        {
+          "category": "Appointment Form",
+          "test": "Appointment type selection",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.897718"
+        },
+        {
+          "category": "Appointment Form",
+          "test": "Duration/Time selection present",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.900723"
+        },
+        {
+          "category": "Appointment Form",
+          "test": "Form buttons available",
+          "passed": true,
+          "details": "",
+          "screenshot": null,
+          "timestamp": "2025-12-16T20:46:23.912901"
+        }
+      ]
+    }
+  }
+}

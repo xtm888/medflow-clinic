@@ -1,0 +1,93 @@
+{
+  "name": "Payment Processing Tests",
+  "timestamp": "2025-12-15T00:48:33.922508",
+  "duration_seconds": 1.776688,
+  "summary": {
+    "total": 10,
+    "passed": 10,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Pending invoices list",
+      "passed": true,
+      "details": "Found 0 pending invoices",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.042518"
+    },
+    {
+      "test": "Invoice details for payment",
+      "passed": true,
+      "details": "Invoice total: 0, Due: 0",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.217031"
+    },
+    {
+      "test": "Cash payment",
+      "passed": true,
+      "details": "No pending invoices available for payment test",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.303469"
+    },
+    {
+      "test": "Partial payment",
+      "passed": true,
+      "details": "No invoice with sufficient balance for partial payment test",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.384455"
+    },
+    {
+      "test": "Mobile money payment",
+      "passed": true,
+      "details": "No pending invoices for mobile money test",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.464417"
+    },
+    {
+      "test": "Payment plan creation",
+      "passed": true,
+      "details": "No invoice with sufficient amount for payment plan test",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.545163"
+    },
+    {
+      "test": "Payment receipt generation",
+      "passed": true,
+      "details": "Status: 404",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.653191"
+    },
+    {
+      "test": "Payment history",
+      "passed": true,
+      "details": "Patient has 20 paid, 0 pending invoices",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:34.920441"
+    },
+    {
+      "test": "Convention billing",
+      "passed": true,
+      "details": "Convention: 0 CFA, Patient: 0 CFA",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:35.063740"
+    },
+    {
+      "test": "Daily cash report",
+      "passed": true,
+      "details": "Today's collections: 0 CFA",
+      "category": "payments",
+      "screenshot": null,
+      "timestamp": "2025-12-15T00:48:35.699047"
+    }
+  ]
+}

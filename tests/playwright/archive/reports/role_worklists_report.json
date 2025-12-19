@@ -1,0 +1,229 @@
+{
+  "name": "Role Worklists Tests",
+  "timestamp": "2025-12-15T15:12:45.362252",
+  "duration_seconds": 35.795211,
+  "summary": {
+    "total": 27,
+    "passed": 27,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Prescription queue loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/prescription-queue",
+      "category": "rx_queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:50.506616"
+    },
+    {
+      "test": "Queue list present",
+      "passed": true,
+      "details": "",
+      "category": "rx_queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:50.519910"
+    },
+    {
+      "test": "Status filter present",
+      "passed": true,
+      "details": "",
+      "category": "rx_queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:50.523210"
+    },
+    {
+      "test": "Process button present",
+      "passed": true,
+      "details": "",
+      "category": "rx_queue",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:50.527749"
+    },
+    {
+      "test": "Lab worklist loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/lab-worklist",
+      "category": "lab_worklist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:53.983796"
+    },
+    {
+      "test": "Order list present",
+      "passed": true,
+      "details": "",
+      "category": "lab_worklist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:53.996266"
+    },
+    {
+      "test": "Priority indicators",
+      "passed": true,
+      "details": "",
+      "category": "lab_worklist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:54.000266"
+    },
+    {
+      "test": "Enter results button",
+      "passed": true,
+      "details": "",
+      "category": "lab_worklist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:54.003190"
+    },
+    {
+      "test": "Lab check-in loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/lab-checkin",
+      "category": "lab_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:57.443884"
+    },
+    {
+      "test": "Patient search present",
+      "passed": true,
+      "details": "",
+      "category": "lab_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:57.453475"
+    },
+    {
+      "test": "Check-in button present",
+      "passed": true,
+      "details": "",
+      "category": "lab_checkin",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:12:57.458255"
+    },
+    {
+      "test": "Nurse vitals loads",
+      "passed": true,
+      "details": "URL: http://localhost:5173/nurse-vitals",
+      "category": "nurse_vitals",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:00.886545"
+    },
+    {
+      "test": "Patient queue present",
+      "passed": true,
+      "details": "",
+      "category": "nurse_vitals",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:00.916624"
+    },
+    {
+      "test": "Vital signs fields",
+      "passed": true,
+      "details": "",
+      "category": "nurse_vitals",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:00.924949"
+    },
+    {
+      "test": "Doctor login",
+      "passed": true,
+      "details": "",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:01.743232"
+    },
+    {
+      "test": "Doctor can access /patients",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:04.162789"
+    },
+    {
+      "test": "Doctor can access /queue",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:07.029116"
+    },
+    {
+      "test": "Doctor can access /appointments",
+      "passed": true,
+      "details": "URL: http://localhost:5173/appointments",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:09.441262"
+    },
+    {
+      "test": "Doctor can access /prescriptions",
+      "passed": true,
+      "details": "URL: http://localhost:5173/prescriptions",
+      "category": "role_doctor",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:11.856719"
+    },
+    {
+      "test": "Pharmacist login",
+      "passed": true,
+      "details": "",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:12.658384"
+    },
+    {
+      "test": "Pharmacist can access /pharmacy",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:15.058962"
+    },
+    {
+      "test": "Pharmacist can access /prescriptions",
+      "passed": true,
+      "details": "URL: http://localhost:5173/prescriptions",
+      "category": "role_pharmacist",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:17.265036"
+    },
+    {
+      "test": "Lab tech login",
+      "passed": true,
+      "details": "",
+      "category": "role_lab",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:18.113989"
+    },
+    {
+      "test": "Lab tech can access /laboratory",
+      "passed": true,
+      "details": "URL: http://localhost:5173/dashboard",
+      "category": "role_lab",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:20.943178"
+    },
+    {
+      "test": "Worklist API - Pending prescriptions",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "worklist_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:21.147485"
+    },
+    {
+      "test": "Worklist API - Pending lab orders",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "worklist_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:21.153007"
+    },
+    {
+      "test": "Worklist API - Queue stats",
+      "passed": true,
+      "details": "Status: 200",
+      "category": "worklist_api",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:21.157394"
+    }
+  ]
+}

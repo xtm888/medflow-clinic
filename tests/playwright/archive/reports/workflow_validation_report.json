@@ -1,0 +1,67 @@
+{
+  "timestamp": "2025-12-13T18:11:28.335373",
+  "workflows": {
+    "patient_workflow": {
+      "steps": [
+        {
+          "step": "list_load",
+          "status": "pass",
+          "data": {
+            "rows": 20
+          }
+        }
+      ],
+      "status": "completed"
+    },
+    "queue_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "appointment_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "surgery_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "optical_shop_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "glasses_orders_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "invoicing_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "prescription_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "laboratory_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "pharmacy_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "cross_clinic_workflow": {
+      "steps": [],
+      "status": "completed"
+    },
+    "data_consistency": {
+      "steps": [],
+      "status": "completed"
+    }
+  },
+  "issues": [],
+  "summary": {
+    "passed": 34,
+    "failed": 0,
+    "warnings": 0
+  }
+}

@@ -1,0 +1,148 @@
+{
+  "generated": "2025-12-13T16:49:31.485475",
+  "summary": {
+    "total_screenshots": 316,
+    "pages_explored": 17,
+    "modals_captured": 0,
+    "elements_clicked": 299
+  },
+  "pages": {
+    "00": {
+      "screenshot_count": 1,
+      "main_view": null,
+      "buttons": 0,
+      "links": 0,
+      "icons": 0,
+      "tabs": 0
+    },
+    "Home": {
+      "screenshot_count": 3,
+      "main_view": "0002_Home_view.jpg",
+      "buttons": 2,
+      "links": 0,
+      "icons": 0,
+      "tabs": 0
+    },
+    "appointments": {
+      "screenshot_count": 23,
+      "main_view": "0053_appointments_view.jpg",
+      "buttons": 13,
+      "links": 8,
+      "icons": 1,
+      "tabs": 0
+    },
+    "approvals": {
+      "screenshot_count": 24,
+      "main_view": "0291_approvals_view.jpg",
+      "buttons": 9,
+      "links": 12,
+      "icons": 2,
+      "tabs": 0
+    },
+    "audit": {
+      "screenshot_count": 25,
+      "main_view": "0120_audit_view.jpg",
+      "buttons": 17,
+      "links": 7,
+      "icons": 0,
+      "tabs": 0
+    },
+    "companies": {
+      "screenshot_count": 25,
+      "main_view": "0265_companies_view.jpg",
+      "buttons": 10,
+      "links": 13,
+      "icons": 1,
+      "tabs": 0
+    },
+    "dashboard": {
+      "screenshot_count": 21,
+      "main_view": "0005_dashboard_view.jpg",
+      "buttons": 8,
+      "links": 12,
+      "icons": 0,
+      "tabs": 0
+    },
+    "documents": {
+      "screenshot_count": 17,
+      "main_view": "0146_documents_view.jpg",
+      "buttons": 16,
+      "links": 0,
+      "icons": 0,
+      "tabs": 0
+    },
+    "financial": {
+      "screenshot_count": 25,
+      "main_view": "0239_financial_view.jpg",
+      "buttons": 14,
+      "links": 10,
+      "icons": 0,
+      "tabs": 0
+    },
+    "invoicing": {
+      "screenshot_count": 21,
+      "main_view": "0221_invoicing_view.jpg",
+      "buttons": 11,
+      "links": 9,
+      "icons": 0,
+      "tabs": 0
+    },
+    "laboratory": {
+      "screenshot_count": 22,
+      "main_view": "0198_laboratory_view.jpg",
+      "buttons": 14,
+      "links": 7,
+      "icons": 0,
+      "tabs": 0
+    },
+    "notifications": {
+      "screenshot_count": 18,
+      "main_view": "0077_notifications_view.jpg",
+      "buttons": 7,
+      "links": 8,
+      "icons": 2,
+      "tabs": 0
+    },
+    "patients": {
+      "screenshot_count": 22,
+      "main_view": "0016_patients_view.jpg",
+      "buttons": 10,
+      "links": 8,
+      "icons": 3,
+      "tabs": 0
+    },
+    "prescriptions": {
+      "screenshot_count": 23,
+      "main_view": "0175_prescriptions_view.jpg",
+      "buttons": 16,
+      "links": 6,
+      "icons": 0,
+      "tabs": 0
+    },
+    "queue": {
+      "screenshot_count": 22,
+      "main_view": "0030_queue_view.jpg",
+      "buttons": 9,
+      "links": 10,
+      "icons": 2,
+      "tabs": 0
+    },
+    "services": {
+      "screenshot_count": 1,
+      "main_view": "0316_services_view.jpg",
+      "buttons": 0,
+      "links": 0,
+      "icons": 0,
+      "tabs": 0
+    },
+    "settings": {
+      "screenshot_count": 23,
+      "main_view": "0096_settings_view.jpg",
+      "buttons": 16,
+      "links": 6,
+      "icons": 0,
+      "tabs": 0
+    }
+  },
+  "modals": []
+}

@@ -1,0 +1,109 @@
+{
+  "name": "billing_calculations",
+  "timestamp": "2025-12-15T15:13:21.678198",
+  "duration_seconds": 2.136331,
+  "summary": {
+    "total": 12,
+    "passed": 12,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Invoice list",
+      "passed": true,
+      "details": "Found 10 invoices",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:21.872290"
+    },
+    {
+      "test": "Invoice total calculation",
+      "passed": true,
+      "details": "Subtotal: 0 (calc: 0), Total: 0 (calc: 0)",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:21.872458"
+    },
+    {
+      "test": "Convention list",
+      "passed": true,
+      "details": "Found 20 companies",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:21.976413"
+    },
+    {
+      "test": "Convention billing application",
+      "passed": true,
+      "details": "Patient has no convention",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.089562"
+    },
+    {
+      "test": "Package deals",
+      "passed": true,
+      "details": "Found 0 package deals across 20 companies",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.176355"
+    },
+    {
+      "test": "Fee schedule",
+      "passed": true,
+      "details": "Found 736 fee schedules",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.277249"
+    },
+    {
+      "test": "Payment processing",
+      "passed": true,
+      "details": "Status: paid, Paid: 0/0",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.534511"
+    },
+    {
+      "test": "Payment plan creation",
+      "passed": true,
+      "details": "Has payment plan: False",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.763056"
+    },
+    {
+      "test": "Multi-currency support",
+      "passed": true,
+      "details": "Currencies found: USD",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.909021"
+    },
+    {
+      "test": "Annual limit tracking",
+      "passed": true,
+      "details": "0/20 companies have annual limits",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:22.994256"
+    },
+    {
+      "test": "Invoice status workflow",
+      "passed": true,
+      "details": "Statuses: {'paid': 45, 'issued': 5}",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:23.146968"
+    },
+    {
+      "test": "Financial statistics",
+      "passed": true,
+      "details": "Statistics endpoint working",
+      "category": "billing",
+      "screenshot": null,
+      "timestamp": "2025-12-15T15:13:23.814455"
+    }
+  ]
+}

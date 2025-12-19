@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "page": "Glasses Orders",
+      "url": "http://localhost:5173/glasses-orders",
+      "title": "MedFlow - Medical Management System",
+      "has_error": false,
+      "has_data": true,
+      "status": "pass",
+      "content_preview": "MedFlow\n\nSyst\u00e8me de Gestion M\u00e9dicale\n\npar Aymane Moumni\n\nTableau de bord\nPatients\nFile d'attente\nRendez-vous\nClinique\nFinances\nInventaire\nNotifications\nParam\u00e8tres\nJournal d'audit\nDocuments\nAS\n\nAdmin System\n\nAdministrateur\n\nD\u00e9connexion\nAccueil\nAll Clinics\nSynchronis\u00e9\nEn ligne\n\nAdmin System\n\nAdministr"
+    },
+    {
+      "page": "Templates",
+      "url": "http://localhost:5173/templates",
+      "title": "MedFlow - Medical Management System",
+      "has_error": false,
+      "has_data": true,
+      "status": "pass",
+      "content_preview": "MedFlow\n\nSyst\u00e8me de Gestion M\u00e9dicale\n\npar Aymane Moumni\n\nTableau de bord\nPatients\nFile d'attente\nRendez-vous\nClinique\nFinances\nInventaire\nNotifications\nParam\u00e8tres\nJournal d'audit\nDocuments\nAS\n\nAdmin System\n\nAdministrateur\n\nD\u00e9connexion\nAccueil\nAll Clinics\nSynchronis\u00e9\nEn ligne\n\nAdmin System\n\nAdministr"
+    }
+  ]
+}

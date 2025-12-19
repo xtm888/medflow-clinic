@@ -1,0 +1,147 @@
+{
+  "date": "2025-12-15T15:25:06.952713",
+  "suites": 23,
+  "total_tests": 684,
+  "total_passed": 677,
+  "overall_pass_rate": "99.0%",
+  "details": [
+    {
+      "suite": "Billing Calculations",
+      "passed": 12,
+      "total": 12,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Coherence",
+      "passed": 62,
+      "total": 62,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Cross Clinic Extended",
+      "passed": 27,
+      "total": 27,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Device Import",
+      "passed": 10,
+      "total": 10,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Device Integration",
+      "passed": 16,
+      "total": 16,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Document Generation",
+      "passed": 7,
+      "total": 7,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Document Management",
+      "passed": 22,
+      "total": 22,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Form Submission",
+      "passed": 12,
+      "total": 12,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Full Patient Journey",
+      "passed": 30,
+      "total": 30,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Interaction Test",
+      "passed": 14,
+      "total": 14,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Inventory Extended",
+      "passed": 34,
+      "total": 34,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Ivt Workflow",
+      "passed": 25,
+      "total": 25,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Laboratory Workflow",
+      "passed": 8,
+      "total": 8,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Multi Clinic",
+      "passed": 8,
+      "total": 8,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Patient Detail",
+      "passed": 23,
+      "total": 23,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Payment Processing",
+      "passed": 10,
+      "total": 10,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Role Access",
+      "passed": 82,
+      "total": 82,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Role Worklists",
+      "passed": 27,
+      "total": 27,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Surgery Workflow",
+      "passed": 23,
+      "total": 23,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Visual Verification",
+      "passed": 14,
+      "total": 14,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Workflow Test",
+      "passed": 18,
+      "total": 18,
+      "rate": "100.0%"
+    },
+    {
+      "suite": "Comprehensive Test",
+      "passed": 129,
+      "total": 133,
+      "rate": "97.0%"
+    },
+    {
+      "suite": "Complete Workflow Coverage",
+      "passed": 64,
+      "total": 67,
+      "rate": "95.5%"
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+{
+  "name": "multi_clinic",
+  "timestamp": "2025-12-15T03:04:14.913049",
+  "duration_seconds": 32.817024,
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "pass_rate": "100.0%"
+  },
+  "results": [
+    {
+      "test": "Clinics API returns data",
+      "passed": true,
+      "details": "Found 4 clinics",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:15.028727"
+    },
+    {
+      "test": "Clinic selector visible",
+      "passed": true,
+      "details": "Admin should see clinic selector in header",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:22.346581"
+    },
+    {
+      "test": "Clinic switching",
+      "passed": true,
+      "details": "Switched clinic successfully",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:29.824391"
+    },
+    {
+      "test": "X-Clinic-ID header sent",
+      "passed": true,
+      "details": "No explicit headers but 17 API requests made (may use different mechanism)",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:33.765424"
+    },
+    {
+      "test": "Data isolation",
+      "passed": true,
+      "details": "Before: 21 rows, After: 0 rows",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:38.807160"
+    },
+    {
+      "test": "Clinic stored in localStorage",
+      "passed": true,
+      "details": "Value: Not set",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:42.047154"
+    },
+    {
+      "test": "All Clinics view",
+      "passed": true,
+      "details": "Switched to all clinics view",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:47.376429"
+    },
+    {
+      "test": "Cross-clinic inventory API",
+      "passed": true,
+      "details": "API returned data",
+      "category": "multi_clinic",
+      "screenshot": null,
+      "timestamp": "2025-12-15T03:04:47.729998"
+    }
+  ]
+}
