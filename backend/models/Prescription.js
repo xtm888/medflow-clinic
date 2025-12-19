@@ -1091,7 +1091,7 @@ prescriptionSchema.methods.reserveInventory = async function(userId, session = n
     return { success: true, message: 'No medications to reserve' };
   }
 
-  const PharmacyInventory = require('./PharmacyInventory');
+  const { PharmacyInventory } = require('./Inventory');
   const results = [];
 
   for (const medication of this.medications) {
@@ -1182,7 +1182,7 @@ prescriptionSchema.methods.releaseInventoryReservations = async function(session
     return { success: true, message: 'No reservations to release' };
   }
 
-  const PharmacyInventory = require('./PharmacyInventory');
+  const { PharmacyInventory } = require('./Inventory');
   const results = [];
 
   for (const medication of this.medications) {
@@ -1248,7 +1248,7 @@ prescriptionSchema.methods.dispenseMedication = async function(medicationIndex, 
     }
   }
 
-  const PharmacyInventory = require('./PharmacyInventory');
+  const { PharmacyInventory } = require('./Inventory');
 
   try {
     // Use session for transaction support
@@ -1396,7 +1396,7 @@ prescriptionSchema.methods.dispenseMedication = async function(medicationIndex, 
 
 // Compensating rollback for dispensing operations
 prescriptionSchema.methods._executeDispensingRollback = async function(rollbackStack) {
-  const PharmacyInventory = require('./PharmacyInventory');
+  const { PharmacyInventory } = require('./Inventory');
 
   console.log(`[COMPENSATING ROLLBACK] Rolling back ${rollbackStack.length} dispensing operations`);
 

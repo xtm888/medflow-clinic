@@ -393,12 +393,14 @@ inventoryTransferSchema.methods.ship = async function(userId, shippingInfo = {})
     throw new Error('Transfer must be approved before shipping');
   }
 
-  // Get inventory models
-  const PharmacyInventory = require('./PharmacyInventory');
-  const FrameInventory = require('./FrameInventory');
-  const ContactLensInventory = require('./ContactLensInventory');
-  const LabConsumableInventory = require('./LabConsumableInventory');
-  const ReagentInventory = require('./ReagentInventory');
+  // Get inventory models from unified Inventory (using discriminators)
+  const {
+    PharmacyInventory,
+    FrameInventory,
+    ContactLensInventory,
+    LabConsumableInventory,
+    ReagentInventory
+  } = require('./Inventory');
 
   const inventoryModels = {
     PharmacyInventory,
@@ -474,12 +476,14 @@ inventoryTransferSchema.methods.receive = async function(userId, receivedItems) 
     throw new Error('Transfer must be in-transit to receive');
   }
 
-  // Get inventory models
-  const PharmacyInventory = require('./PharmacyInventory');
-  const FrameInventory = require('./FrameInventory');
-  const ContactLensInventory = require('./ContactLensInventory');
-  const LabConsumableInventory = require('./LabConsumableInventory');
-  const ReagentInventory = require('./ReagentInventory');
+  // Get inventory models from unified Inventory (using discriminators)
+  const {
+    PharmacyInventory,
+    FrameInventory,
+    ContactLensInventory,
+    LabConsumableInventory,
+    ReagentInventory
+  } = require('./Inventory');
 
   const inventoryModels = {
     PharmacyInventory,
