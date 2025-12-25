@@ -65,7 +65,7 @@ class CloudSyncService {
     // Watch for local changes
     this.watchLocalChanges();
 
-    console.log('[CloudSync] Initialized for clinic:', this.clinicId);
+    log.info('CloudSync initialized', { clinicId: this.clinicId });
   }
 
   /**
@@ -85,7 +85,7 @@ class CloudSyncService {
       return this.isOnline;
     } catch (error) {
       this.isOnline = false;
-      console.log('[CloudSync] Cloud unreachable:', error.message);
+      log.warn('Cloud unreachable', { error: error.message });
       return false;
     }
   }

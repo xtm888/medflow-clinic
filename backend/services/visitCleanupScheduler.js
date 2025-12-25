@@ -398,7 +398,7 @@ class VisitCleanupScheduler {
    */
   setThresholds(newThresholds) {
     this.thresholds = { ...this.thresholds, ...newThresholds };
-    console.log('[VISIT CLEANUP] Thresholds updated:', this.thresholds);
+    log.info('Thresholds updated', { thresholds: this.thresholds });
   }
 }
 

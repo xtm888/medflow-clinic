@@ -26,6 +26,8 @@ const {
   SurgicalSupplyInventory
 } = require('../models/Inventory');
 const EquipmentCatalog = require('../models/EquipmentCatalog');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('UnifiedInventory');
 
 // Model registry
 const INVENTORY_MODELS = {
@@ -339,7 +341,7 @@ class UnifiedInventoryService {
           typeName: config.displayName
         };
       } catch (error) {
-        console.error(`Error getting low stock for ${type}:`, error.message);
+        log.error('Error getting low stock', { type, error: error.message });
         results[type] = { items: [], count: 0, error: error.message };
       }
     }));
@@ -457,7 +459,7 @@ class UnifiedInventoryService {
           typeName: config.displayName
         };
       } catch (error) {
-        console.error(`Error calculating value for ${type}:`, error.message);
+        log.error('Error calculating value', { type, error: error.message });
         results[type] = { totalValue: 0, itemCount: 0 };
       }
     }));

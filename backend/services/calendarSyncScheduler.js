@@ -122,10 +122,10 @@ class CalendarSyncScheduler {
       const providerResult = results.find(r => r.provider === provider);
 
       if (providerResult?.success) {
-        console.log(
-          `✅ ${provider} sync complete: ${providerResult.stats?.created || 0} created, ` +
-          `${providerResult.stats?.updated || 0} updated`
-        );
+        log.info(`${provider} sync complete`, {
+          created: providerResult.stats?.created || 0,
+          updated: providerResult.stats?.updated || 0
+        });
       } else {
         log.warn(`⚠️ ${provider} sync partial/failed:`, providerResult?.error);
       }

@@ -93,7 +93,7 @@ class EmailService {
         html: htmlContent
       });
 
-      console.log('Appointment confirmation email sent:', info.messageId);
+      log.info('Appointment confirmation email sent', { messageId: info.messageId });
       return true;
     } catch (error) {
       log.error('Failed to send appointment email:', { error: error });

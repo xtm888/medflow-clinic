@@ -253,7 +253,7 @@ class EmailQueueService {
 
       // Log preview URL in development
       if (process.env.NODE_ENV !== 'production') {
-        console.log('📧 Preview:', nodemailer.getTestMessageUrl(info));
+        log.info('Email preview available', { previewUrl: nodemailer.getTestMessageUrl(info) });
       }
 
       return true;

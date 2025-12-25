@@ -354,9 +354,14 @@ class PaymentPlanAutoChargeService {
     const dueDate = new Date(installment.dueDate);
     const amount = installment.amount - (installment.paidAmount || 0);
 
-    console.log(`[AutoCharge Notice] Patient: ${patient.firstName} ${patient.lastName}, ` +
-      `Plan: ${plan.planId}, Installment: ${installment.number}, ` +
-      `Amount: ${amount} CDF, Due: ${dueDate.toLocaleDateString()}`);
+    log.info('AutoCharge notification', {
+      patient: `${patient.firstName} ${patient.lastName}`,
+      planId: plan.planId,
+      installment: installment.number,
+      amount,
+      currency: 'CDF',
+      dueDate: dueDate.toLocaleDateString()
+    });
 
     // TODO: Integrate with actual notification service (email, SMS)
     // This is a placeholder for the notification logic

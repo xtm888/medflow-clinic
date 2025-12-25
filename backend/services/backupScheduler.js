@@ -57,7 +57,7 @@ class BackupScheduler {
     try {
       log.info(`\n${'='.repeat(60)}`);
       log.info(`Starting ${type.toUpperCase()} backup - ${new Date().toISOString()}`);
-      console.log('='.repeat(60));
+      log.info('='.repeat(60));
 
       const result = await backupService.createBackup(type);
 
