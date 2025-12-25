@@ -648,10 +648,17 @@ exports.searchMedications = async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
-    // For each drug, check inventory availability
-    const results = await Promise.all(drugs.map(async (drug) => {
-      const inventoryItem = await PharmacyInventory.findOne({ drug: drug._id }).lean();
+    // OPTIMIZATION: Batch fetch all inventory items in a single query
+    // instead of N+1 individual findOne calls
+    const drugIds = drugs.map(d => d._id);
+    const inventoryItems = await PharmacyInventory.find({ drug: { $in: drugIds } }).lean();
 
+    const inventoryMap = new Map(
+      inventoryItems.map(item => [item.drug.toString(), item])
+    );
+
+    const results = drugs.map(drug => {
+      const inventoryItem = inventoryMap.get(drug._id.toString());
       const available = inventoryItem ? (inventoryItem.inventory?.currentStock - (inventoryItem.inventory?.reserved || 0)) : 0;
       const inStock = available > 0;
 
@@ -675,7 +682,7 @@ exports.searchMedications = async (req, res) => {
         } : null,
         inStock
       };
-    }));
+    });
 
     // Filter by stock if requested
     const filteredResults = inStockOnly
@@ -1261,8 +1268,12 @@ exports.exportInventory = async (req, res) => {
   try {
     const { format = 'csv' } = req.query;
 
+    // Safety limit for exports - 10,000 max to prevent memory issues
+    const EXPORT_LIMIT = 10000;
+
     const inventory = await PharmacyInventory.find({ active: true })
       .select('medication inventory pricing category batches')
+      .limit(EXPORT_LIMIT)
       .lean();
 
     if (format === 'csv') {

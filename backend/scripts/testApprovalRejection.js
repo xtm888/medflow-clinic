@@ -5,6 +5,9 @@
  */
 
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testApprovalRejection.js');
+
 const mongoose = require('mongoose');
 const Invoice = require('../models/Invoice');
 const Approval = require('../models/Approval');

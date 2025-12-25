@@ -8,6 +8,8 @@ const Document = require('../models/Document');
 const Patient = require('../models/Patient');
 const Device = require('../models/Device');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('OCRImport');
 
 // OCR Service URL
 const OCR_SERVICE_URL = process.env.OCR_SERVICE_URL || 'http://localhost:5003';
@@ -28,7 +30,7 @@ exports.getNetworkShares = asyncHandler(async (req, res) => {
       data: response.data.shares
     });
   } catch (error) {
-    console.error('Error fetching network shares:', error.message);
+    logger.error('Error fetching network shares', { error: error.message });
     res.status(503).json({
       success: false,
       error: 'OCR service unavailable'
@@ -62,7 +64,7 @@ exports.scanFolder = asyncHandler(async (req, res) => {
       data: response.data
     });
   } catch (error) {
-    console.error('Error scanning folder:', error.message);
+    logger.error('Error scanning folder', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.detail || 'Failed to scan folder'
@@ -91,16 +93,9 @@ exports.previewPatients = asyncHandler(async (req, res) => {
       timeout: 60000
     });
 
-    // Enrich with existing patient matches
-    const enrichedPatients = await Promise.all(
-      response.data.patients.map(async (p) => {
-        const matches = await findPatientMatches(p.patient_key);
-        return {
-          ...p,
-          existing_matches: matches
-        };
-      })
-    );
+    // OPTIMIZATION: Batch fetch all patient matches in a single query
+    // instead of N+1 individual findPatientMatches calls
+    const enrichedPatients = await batchFindPatientMatches(response.data.patients);
 
     res.json({
       success: true,
@@ -110,7 +105,7 @@ exports.previewPatients = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error previewing patients:', error.message);
+    logger.error('Error previewing patients', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.detail || 'Failed to preview patients'
@@ -173,7 +168,7 @@ exports.startImport = asyncHandler(async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error starting import:', error.message);
+    logger.error('Error starting import', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.detail || 'Failed to start import'
@@ -200,7 +195,7 @@ exports.getImportStatus = asyncHandler(async (req, res) => {
       data: response.data
     });
   } catch (error) {
-    console.error('Error fetching import status:', error.message);
+    logger.error('Error fetching import status', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: 'Failed to fetch import status'
@@ -228,7 +223,7 @@ exports.cancelImport = asyncHandler(async (req, res) => {
       message: 'Import cancellation requested'
     });
   } catch (error) {
-    console.error('Error cancelling import:', error.message);
+    logger.error('Error cancelling import', { error: error.message });
     res.status(500).json({
       success: false,
       error: 'Failed to cancel import'
@@ -332,22 +327,29 @@ exports.getReviewQueue = asyncHandler(async (req, res) => {
     'metadata.source': 'ocr-import'
   });
 
-  // Enrich with suggested patient info
-  const enrichedDocs = await Promise.all(
-    documents.map(async (doc) => {
-      let suggestedPatient = null;
-      if (doc.customFields?.suggestedPatientId) {
-        suggestedPatient = await Patient.findById(
-          doc.customFields.suggestedPatientId,
-          'firstName lastName patientId dateOfBirth'
-        ).lean();
-      }
-      return {
-        ...doc,
-        suggestedPatient
-      };
-    })
+  // OPTIMIZATION: Batch fetch all suggested patients in a single query
+  // instead of N+1 individual findById calls
+  const suggestedPatientIds = documents
+    .map(doc => doc.customFields?.suggestedPatientId)
+    .filter(Boolean);
+
+  const suggestedPatients = suggestedPatientIds.length > 0
+    ? await Patient.find(
+        { _id: { $in: suggestedPatientIds } },
+        'firstName lastName patientId dateOfBirth'
+      ).lean()
+    : [];
+
+  const patientMap = new Map(
+    suggestedPatients.map(p => [p._id.toString(), p])
   );
+
+  const enrichedDocs = documents.map(doc => ({
+    ...doc,
+    suggestedPatient: doc.customFields?.suggestedPatientId
+      ? patientMap.get(doc.customFields.suggestedPatientId.toString()) || null
+      : null
+  }));
 
   res.json({
     success: true,
@@ -512,6 +514,97 @@ async function findPatientMatches(patientKey) {
     .lean();
 
   return matches;
+}
+
+/**
+ * OPTIMIZATION: Batch find patient matches for multiple patient keys in a single query
+ * instead of calling findPatientMatches N times
+ */
+async function batchFindPatientMatches(patients) {
+  if (!patients || patients.length === 0) return [];
+
+  // Build a combined $or query for all patient keys
+  const allConditions = [];
+
+  for (const p of patients) {
+    const parts = (p.patient_key || '').split('_').filter(Boolean);
+    if (parts.length === 0) continue;
+
+    // Add name-based search
+    if (parts.length >= 2) {
+      allConditions.push(
+        {
+          lastName: new RegExp(`^${parts[0]}$`, 'i'),
+          firstName: new RegExp(`^${parts[1]}`, 'i')
+        },
+        {
+          firstName: new RegExp(`^${parts[0]}$`, 'i'),
+          lastName: new RegExp(`^${parts[1]}`, 'i')
+        }
+      );
+    }
+
+    // Add patient ID search
+    for (const part of parts) {
+      if (/^[A-Z0-9]{4,}$/i.test(part)) {
+        allConditions.push({ patientId: new RegExp(part, 'i') });
+      }
+    }
+  }
+
+  if (allConditions.length === 0) {
+    return patients.map(p => ({ ...p, existing_matches: [] }));
+  }
+
+  // Single batch query for all potential matches
+  const allMatches = await Patient.find({
+    isDeleted: { $ne: true },
+    $or: allConditions
+  })
+    .select('firstName lastName patientId dateOfBirth')
+    .lean();
+
+  // Now assign matches to each patient based on their patient_key
+  return patients.map(p => {
+    const parts = (p.patient_key || '').split('_').filter(Boolean);
+    if (parts.length === 0) {
+      return { ...p, existing_matches: [] };
+    }
+
+    // Filter matches relevant to this patient's key
+    const relevantMatches = allMatches.filter(match => {
+      // Check name match (first two parts)
+      if (parts.length >= 2) {
+        const part0Lower = parts[0].toLowerCase();
+        const part1Lower = parts[1].toLowerCase();
+        const lastNameLower = (match.lastName || '').toLowerCase();
+        const firstNameLower = (match.firstName || '').toLowerCase();
+
+        if (
+          (lastNameLower === part0Lower && firstNameLower.startsWith(part1Lower)) ||
+          (firstNameLower === part0Lower && lastNameLower.startsWith(part1Lower))
+        ) {
+          return true;
+        }
+      }
+
+      // Check patient ID match
+      for (const part of parts) {
+        if (/^[A-Z0-9]{4,}$/i.test(part)) {
+          if ((match.patientId || '').toLowerCase().includes(part.toLowerCase())) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
+
+    return {
+      ...p,
+      existing_matches: relevantMatches.slice(0, 5) // Limit to 5 matches per patient
+    };
+  });
 }
 
 /**

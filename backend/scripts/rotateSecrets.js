@@ -15,6 +15,9 @@
 
 const crypto = require('crypto');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('rotateSecrets.js');
+
 console.log('='.repeat(60));
 console.log('MedFlow Secret Rotation Script');
 console.log('='.repeat(60));

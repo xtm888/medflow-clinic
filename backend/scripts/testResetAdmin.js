@@ -1,5 +1,8 @@
-const mongoose = require('mongoose');
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testResetAdmin.js');
+
+const mongoose = require('mongoose');
 
 async function resetAdmin() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');

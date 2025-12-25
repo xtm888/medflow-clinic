@@ -12,6 +12,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('productionReadinessTest.js');
+
 const { PharmacyInventory } = require('../models/Inventory');
 const jwt = require('jsonwebtoken');
 

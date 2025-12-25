@@ -4,6 +4,9 @@ const Patient = require('../models/Patient');
 const User = require('../models/User');
 require('dotenv').config({ path: '../.env' });
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedImagingData.js');
+
 async function seedImagingData() {
   try {
     // Connect to MongoDB

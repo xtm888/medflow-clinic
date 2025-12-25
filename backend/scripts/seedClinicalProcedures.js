@@ -4,6 +4,9 @@ const path = require('path');
 const ClinicalAct = require('../models/ClinicalAct');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedClinicalProcedures.js');
+
 // Generate unique act ID
 function generateActId(name, index) {
   const prefix = 'ACT';

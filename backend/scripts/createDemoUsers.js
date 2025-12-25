@@ -4,6 +4,9 @@ const User = require('../models/User');
 const Counter = require('../models/Counter');
 require('dotenv').config({ path: '../.env' });
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createDemoUsers.js');
+
 const createDemoUsers = async () => {
   try {
     // Connect to MongoDB with replica set

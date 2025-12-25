@@ -5,8 +5,11 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { ReagentInventory } = require('../models/Inventory');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedReagentInventory.js');
+
+const { ReagentInventory } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 
 // Laboratory reagents by category and lab section

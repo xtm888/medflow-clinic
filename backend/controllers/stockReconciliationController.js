@@ -1,5 +1,7 @@
 const StockReconciliation = require('../models/StockReconciliation');
 const { escapeRegex } = require('../utils/sanitize');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('StockReconciliationController');
 
 // Get all reconciliations with filtering
 exports.getReconciliations = async (req, res) => {
@@ -53,7 +55,7 @@ exports.getReconciliations = async (req, res) => {
       pages: Math.ceil(total / parseInt(limit))
     });
   } catch (error) {
-    console.error('Error fetching reconciliations:', error);
+    log.error('Error fetching reconciliations', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -72,7 +74,7 @@ exports.getReconciliation = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error fetching reconciliation:', error);
+    log.error('Error fetching reconciliation', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -90,7 +92,7 @@ exports.createReconciliation = async (req, res) => {
 
     res.status(201).json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error creating reconciliation:', error);
+    log.error('Error creating reconciliation', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -108,7 +110,7 @@ exports.startReconciliation = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error starting reconciliation:', error);
+    log.error('Error starting reconciliation', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -135,7 +137,7 @@ exports.addCount = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error adding count:', error);
+    log.error('Error adding count', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -168,7 +170,7 @@ exports.bulkAddCounts = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error bulk adding counts:', error);
+    log.error('Error bulk adding counts', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -186,7 +188,7 @@ exports.submitForReview = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error submitting for review:', error);
+    log.error('Error submitting for review', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -209,7 +211,7 @@ exports.applyAdjustments = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error applying adjustments:', error);
+    log.error('Error applying adjustments', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -227,7 +229,7 @@ exports.completeReconciliation = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error completing reconciliation:', error);
+    log.error('Error completing reconciliation', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -247,7 +249,7 @@ exports.cancelReconciliation = async (req, res) => {
 
     res.json({ success: true, data: reconciliation });
   } catch (error) {
-    console.error('Error cancelling reconciliation:', error);
+    log.error('Error cancelling reconciliation', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -288,7 +290,7 @@ exports.getVarianceReport = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching variance report:', error);
+    log.error('Error fetching variance report', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -332,7 +334,7 @@ exports.getStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    log.error('Error fetching stats', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };

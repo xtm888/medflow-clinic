@@ -1,5 +1,7 @@
 const RepairTracking = require('../models/RepairTracking');
 const { escapeRegex } = require('../utils/sanitize');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('RepairController');
 
 // Get all repairs with filtering
 exports.getRepairs = async (req, res) => {
@@ -61,7 +63,7 @@ exports.getRepairs = async (req, res) => {
       pages: Math.ceil(total / parseInt(limit))
     });
   } catch (error) {
-    console.error('Error fetching repairs:', error);
+    log.error('Error fetching repairs', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -81,7 +83,7 @@ exports.getRepair = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error fetching repair:', error);
+    log.error('Error fetching repair', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -99,7 +101,7 @@ exports.createRepair = async (req, res) => {
 
     res.status(201).json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error creating repair:', error);
+    log.error('Error creating repair', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -126,7 +128,7 @@ exports.updateRepair = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error updating repair:', error);
+    log.error('Error updating repair', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -146,7 +148,7 @@ exports.updateStatus = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error updating status:', error);
+    log.error('Error updating status', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -166,7 +168,7 @@ exports.addPart = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error adding part:', error);
+    log.error('Error adding part', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -191,7 +193,7 @@ exports.addLabor = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error adding labor:', error);
+    log.error('Error adding labor', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -211,7 +213,7 @@ exports.recordCustomerApproval = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error recording approval:', error);
+    log.error('Error recording approval', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -236,7 +238,7 @@ exports.performQualityCheck = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error performing QC:', error);
+    log.error('Error performing QC', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -270,7 +272,7 @@ exports.completePickup = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error completing pickup:', error);
+    log.error('Error completing pickup', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -296,7 +298,7 @@ exports.cancelRepair = async (req, res) => {
 
     res.json({ success: true, data: repair });
   } catch (error) {
-    console.error('Error cancelling repair:', error);
+    log.error('Error cancelling repair', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -312,7 +314,7 @@ exports.getCustomerRepairs = async (req, res) => {
 
     res.json({ success: true, data: repairs });
   } catch (error) {
-    console.error('Error fetching customer repairs:', error);
+    log.error('Error fetching customer repairs', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -333,7 +335,7 @@ exports.getReadyForPickup = async (req, res) => {
 
     res.json({ success: true, data: repairs });
   } catch (error) {
-    console.error('Error fetching ready repairs:', error);
+    log.error('Error fetching ready repairs', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -405,7 +407,7 @@ exports.getStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    log.error('Error fetching stats', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };

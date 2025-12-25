@@ -13,6 +13,9 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('fixConventionInvoiceAmountDue.js');
 const Invoice = require('../models/Invoice');
 
 const isDryRun = process.argv.includes('--dry-run');

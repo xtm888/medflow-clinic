@@ -643,23 +643,33 @@ exports.getPatientVisits = asyncHandler(async (req, res, next) => {
     return notFound(res, 'Patient');
   }
 
+  // Parse pagination params with safety limits
+  const limit = Math.min(parseInt(req.query.limit) || 100, PAGINATION.MAX_PAGE_SIZE);
+  const page = parseInt(req.query.page) || 1;
+  const skip = (page - 1) * limit;
+
   const Visit = require('../models/Visit');
   const OphthalmologyExam = require('../models/OphthalmologyExam');
   const ConsultationSession = require('../models/ConsultationSession');
 
   // Fetch visits, ophthalmology exams, and consultation sessions in parallel
+  // Apply limits to prevent unbounded queries for patients with long history
   const [visits, ophthalmologyExams, sessions] = await Promise.all([
     Visit.find({ patient: patient._id })
       .populate('primaryProvider', 'firstName lastName')
       .sort({ visitDate: -1 })
+      .limit(limit)
+      .skip(skip)
       .select('visitId visitDate visitType status chiefComplaint diagnoses primaryProvider signatureStatus signedBy signedAt createdAt consultationSession'),
     OphthalmologyExam.find({ patient: patient._id })
       .populate('examiner', 'firstName lastName')
       .sort({ createdAt: -1 })
+      .limit(limit)
       .select('examId examType status iop refraction keratometry currentCorrection visualAcuity assessment examiner createdAt updatedAt'),
     ConsultationSession.find({ patient: patient._id, status: 'completed' })
       .populate('doctor', 'firstName lastName')
       .sort({ createdAt: -1 })
+      .limit(limit)
       .select('sessionId sessionType status stepData doctor createdAt updatedAt completedAt')
   ]);
 
@@ -1110,19 +1120,24 @@ exports.getPatientProviders = asyncHandler(async (req, res, next) => {
   const providers = await User.find({ _id: { $in: allProviderIds } })
     .select('firstName lastName role specialization email');
 
-  // Add visit count for each provider
-  const providersWithStats = await Promise.all(
-    providers.map(async (provider) => {
-      const visitCount = await Visit.countDocuments({
-        patient: patient._id,
-        primaryProvider: provider._id
-      });
-      return {
-        ...provider.toObject(),
-        visitCount
-      };
-    })
+  // OPTIMIZATION: Use aggregation to get all provider visit counts in a single query
+  // instead of N+1 individual countDocuments calls
+  const providerVisitCounts = await Visit.aggregate([
+    { $match: {
+      patient: patient._id,
+      primaryProvider: { $in: providers.map(p => p._id) }
+    }},
+    { $group: { _id: '$primaryProvider', count: { $sum: 1 } }}
+  ]);
+
+  const countMap = new Map(
+    providerVisitCounts.map(p => [p._id.toString(), p.count])
   );
+
+  const providersWithStats = providers.map(provider => ({
+    ...provider.toObject(),
+    visitCount: countMap.get(provider._id.toString()) || 0
+  }));
 
   return success(res, { data: providersWithStats });
 });
@@ -1532,71 +1547,127 @@ exports.mergePatients = asyncHandler(async (req, res, next) => {
     imagingOrders: 0
   };
 
-  // Perform all updates (use try-catch to handle optional collections)
-  const updatePromises = [
-    Visit.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.visits = r.modifiedCount; }),
-    Appointment.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.appointments = r.modifiedCount; }),
-    Prescription.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.prescriptions = r.modifiedCount; }),
-    Invoice.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.invoices = r.modifiedCount; }),
-    Document.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.documents = r.modifiedCount; }),
-    OphthalmologyExam.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.exams = r.modifiedCount; }),
-    ConsultationSession.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-      .then(r => { updateResults.sessions = r.modifiedCount; })
-  ];
+  // CRITICAL: Use transaction to ensure atomic merge - all updates succeed or all fail
+  const { withTransactionRetry } = require('../utils/transactions');
 
-  // Add optional model updates
-  if (GlassesOrder) {
-    updatePromises.push(
-      GlassesOrder.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-        .then(r => { updateResults.glassesOrders = r.modifiedCount; })
-    );
+  try {
+    await withTransactionRetry(async (session) => {
+      // Perform all updates within transaction
+      const visitResult = await Visit.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.visits = visitResult.modifiedCount;
+
+      const appointmentResult = await Appointment.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.appointments = appointmentResult.modifiedCount;
+
+      const prescriptionResult = await Prescription.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.prescriptions = prescriptionResult.modifiedCount;
+
+      const invoiceResult = await Invoice.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.invoices = invoiceResult.modifiedCount;
+
+      const documentResult = await Document.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.documents = documentResult.modifiedCount;
+
+      const examResult = await OphthalmologyExam.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.exams = examResult.modifiedCount;
+
+      const sessionResult = await ConsultationSession.updateMany(
+        { patient: secondaryPatient._id },
+        { patient: primaryPatient._id },
+        { session }
+      );
+      updateResults.sessions = sessionResult.modifiedCount;
+
+      // Optional model updates within same transaction
+      if (GlassesOrder) {
+        const goResult = await GlassesOrder.updateMany(
+          { patient: secondaryPatient._id },
+          { patient: primaryPatient._id },
+          { session }
+        );
+        updateResults.glassesOrders = goResult.modifiedCount;
+      }
+
+      if (LabOrder) {
+        const loResult = await LabOrder.updateMany(
+          { patient: secondaryPatient._id },
+          { patient: primaryPatient._id },
+          { session }
+        );
+        updateResults.labOrders = loResult.modifiedCount;
+      }
+
+      if (ImagingOrder) {
+        const ioResult = await ImagingOrder.updateMany(
+          { patient: secondaryPatient._id },
+          { patient: primaryPatient._id },
+          { session }
+        );
+        updateResults.imagingOrders = ioResult.modifiedCount;
+      }
+
+      // Create audit log within transaction
+      await AuditLog.create([{
+        user: req.user._id || req.user.id,
+        action: 'PATIENT_MERGE',
+        resource: '/api/patients/merge',
+        resourceId: primaryPatient._id,
+        ipAddress: req.ip,
+        metadata: {
+          primaryPatientId: primaryPatient.patientId,
+          secondaryPatientId: secondaryPatient.patientId,
+          recordsUpdated: updateResults
+        }
+      }], { session });
+
+      // Save primary and soft-delete secondary within transaction
+      await primaryPatient.save({ session });
+      secondaryPatient.status = 'inactive';
+      secondaryPatient.notes = secondaryPatient.notes || [];
+      secondaryPatient.notes.push({
+        content: `Merged into patient ${primaryPatient.patientId}`,
+        category: 'system',
+        createdAt: new Date(),
+        createdBy: req.user._id || req.user.id
+      });
+      await secondaryPatient.save({ session });
+    });
+  } catch (txError) {
+    patientLogger.error('Patient merge transaction failed', {
+      primaryPatient: primaryPatient.patientId,
+      secondaryPatient: secondaryPatient.patientId,
+      error: txError.message
+    });
+    return error(res, {
+      statusCode: 500,
+      error: 'Failed to merge patients - transaction rolled back',
+      details: txError.message
+    });
   }
-  if (LabOrder) {
-    updatePromises.push(
-      LabOrder.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-        .then(r => { updateResults.labOrders = r.modifiedCount; })
-    );
-  }
-  if (ImagingOrder) {
-    updatePromises.push(
-      ImagingOrder.updateMany({ patient: secondaryPatient._id }, { patient: primaryPatient._id })
-        .then(r => { updateResults.imagingOrders = r.modifiedCount; })
-    );
-  }
-
-  await Promise.all(updatePromises);
-
-  // Create audit log for the merge operation
-  await AuditLog.create({
-    user: req.user._id || req.user.id,
-    action: 'PATIENT_MERGE',
-    resource: '/api/patients/merge',
-    resourceId: primaryPatient._id,
-    ipAddress: req.ip,
-    metadata: {
-      primaryPatientId: primaryPatient.patientId,
-      secondaryPatientId: secondaryPatient.patientId,
-      recordsUpdated: updateResults
-    }
-  });
-
-  // Save primary and soft-delete secondary
-  await primaryPatient.save();
-  secondaryPatient.status = 'inactive';
-  secondaryPatient.notes = secondaryPatient.notes || [];
-  secondaryPatient.notes.push({
-    content: `Merged into patient ${primaryPatient.patientId}`,
-    category: 'system',
-    createdAt: new Date(),
-    createdBy: req.user._id || req.user.id
-  });
-  await secondaryPatient.save();
 
   patientLogger.info('Patients merged successfully', {
     primaryPatient: primaryPatient.patientId,
@@ -1622,9 +1693,14 @@ exports.exportPatients = asyncHandler(async (req, res, next) => {
   const { format = 'csv', status = 'active' } = req.query;
   const pdfGenerator = require('../services/pdfGenerator');
 
+  // Safety limit for exports - 10,000 max to prevent memory issues
+  const EXPORT_LIMIT = 10000;
+
   const patients = await Patient.find({ status })
     .select('patientId firstName lastName dateOfBirth gender phoneNumber email bloodType insurance.provider createdAt')
-    .sort({ lastName: 1, firstName: 1 });
+    .sort({ lastName: 1, firstName: 1 })
+    .limit(EXPORT_LIMIT)
+    .lean();
 
   if (format === 'pdf') {
     try {

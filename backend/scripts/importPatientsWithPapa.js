@@ -3,6 +3,9 @@ const fs = require('fs');
 const Papa = require('papaparse');
 require('dotenv').config();
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('importPatientsWithPapa.js');
+
 const Clinic = require('../models/Clinic');
 const Patient = require('../models/Patient');
 

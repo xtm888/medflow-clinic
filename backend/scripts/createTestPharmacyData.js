@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createTestPharmacyData.js');
+
 async function createTestData() {
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');
 

@@ -1,6 +1,9 @@
+require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('verifyAdminPassword.js');
+
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
-require('dotenv').config();
 const User = require('../models/User');
 
 async function verifyAdmin() {

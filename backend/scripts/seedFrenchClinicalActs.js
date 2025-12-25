@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedFrenchClinicalActs.js');
+
 // Use existing models
 const ClinicalAct = require('../models/ClinicalAct');
 const AppointmentType = require('../models/AppointmentType');

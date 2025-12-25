@@ -9,6 +9,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import logger from '../../services/logger';
 import { useAuth } from '../../contexts/AuthContext';
 import patientService from '../../services/patientService';
 import FaceVerification from '../../components/biometric/FaceVerification';
@@ -32,6 +33,9 @@ import {
   PreferencesSection
 } from './components';
 
+// Helper to validate MongoDB ObjectId format
+const isValidObjectId = (id) => /^[0-9a-fA-F]{24}$/.test(id);
+
 export default function PatientEdit() {
   const { patientId } = useParams();
   const navigate = useNavigate();
@@ -43,6 +47,7 @@ export default function PatientEdit() {
   const [activeSection, setActiveSection] = useState('personal');
   const [photoPreview, setPhotoPreview] = useState(null);
   const [patient, setPatient] = useState(null);
+  const [loadError, setLoadError] = useState(null);
 
   // Face verification state
   const [showVerification, setShowVerification] = useState(false);
@@ -72,10 +77,25 @@ export default function PatientEdit() {
 
   // Load patient data
   const loadPatient = useCallback(async () => {
+    // Validate patientId format before API call
+    if (!patientId || !isValidObjectId(patientId)) {
+      setLoadError('ID patient invalide');
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
+      setLoadError(null);
       const response = await patientService.getPatient(patientId);
       const patientData = response.data;
+
+      if (!patientData) {
+        setLoadError('Patient non trouvé');
+        setLoading(false);
+        return;
+      }
+
       setPatient(patientData);
 
       // Map patient data to form
@@ -93,8 +113,10 @@ export default function PatientEdit() {
         companySearch.initializeWithCompany(companyData);
       }
     } catch (err) {
-      toast.error('Erreur lors du chargement du patient');
-      console.error('Error loading patient:', err);
+      logger.error('Error loading patient:', err);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Erreur lors du chargement du patient';
+      setLoadError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -103,6 +125,9 @@ export default function PatientEdit() {
   useEffect(() => {
     if (patientId) {
       loadPatient();
+    } else {
+      setLoadError('ID patient manquant');
+      setLoading(false);
     }
   }, [patientId]);
 
@@ -160,7 +185,7 @@ export default function PatientEdit() {
       navigate(`/patients/${patientId}`);
     } catch (err) {
       toast.error('Erreur lors de la mise a jour');
-      console.error('Error updating patient:', err);
+      logger.error('Error updating patient:', err);
     } finally {
       setSaving(false);
     }
@@ -204,6 +229,28 @@ export default function PatientEdit() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto" />
           <p className="mt-4 text-gray-600">Chargement du patient...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <div className="bg-red-100 rounded-full p-4 inline-block mb-4">
+            <svg className="h-12 w-12 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erreur de chargement</h2>
+          <p className="text-gray-600 mb-4">{loadError}</p>
+          <button
+            onClick={() => navigate('/patients')}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            Retour à la liste des patients
+          </button>
         </div>
       </div>
     );

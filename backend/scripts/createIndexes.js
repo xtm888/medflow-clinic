@@ -10,6 +10,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createIndexes.js');
+
 // Index definitions for each collection
 const indexDefinitions = {
   // Patient indexes

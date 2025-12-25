@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createTestInvoice.js');
+
 const Invoice = require('../models/Invoice');
 const Patient = require('../models/Patient');
 const User = require('../models/User');

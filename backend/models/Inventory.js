@@ -283,6 +283,10 @@ BaseInventorySchema.index({
   description: 'text'
 });
 
+// Additional indexes for pharmacy and stock management queries
+BaseInventorySchema.index({ clinic: 1, 'inventory.currentStock': 1 }); // Low stock queries
+BaseInventorySchema.index({ inventoryType: 1, clinic: 1, 'inventory.status': 1 }); // Type-specific queries
+
 // ============================================================================
 // VIRTUALS
 // ============================================================================

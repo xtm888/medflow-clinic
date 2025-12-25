@@ -39,6 +39,7 @@ def log_result(cat, test, passed, details=""):
 def login(page):
     page.goto(f"{BASE_URL}/login")
     page.wait_for_load_state("networkidle")
+    page.wait_for_timeout(500)
     page.locator('#email').fill(TEST_USER)
     page.locator('#password').fill(TEST_PASSWORD)
     page.locator('button[type="submit"]').click()
@@ -46,7 +47,12 @@ def login(page):
         page.wait_for_url("**/home", timeout=15000)
         return True
     except:
-        return False
+        # Try alternative: might redirect to dashboard instead of home
+        try:
+            page.wait_for_url("**/dashboard", timeout=5000)
+            return True
+        except:
+            return False
 
 
 # ============================================================================

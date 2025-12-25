@@ -5,8 +5,11 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { LabConsumableInventory } = require('../models/Inventory');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedLabConsumableInventory.js');
+
+const { LabConsumableInventory } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 
 // Laboratory consumables data

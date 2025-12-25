@@ -6,6 +6,7 @@ const Company = require('../models/Company');
 const Approval = require('../models/Approval');
 const SurgeryCase = require('../models/SurgeryCase');
 const ClinicalAct = require('../models/ClinicalAct');
+const AuditLog = require('../models/AuditLog');
 const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
 const currencyService = require('../services/currencyService');
@@ -15,17 +16,49 @@ const { findPatientByIdOrCode } = require('../utils/patientLookup');
 const { invoice: invoiceLogger } = require('../utils/structuredLogger');
 const { INVOICE, PAGINATION, CANCELLATION } = require('../config/constants');
 
-// Helper function to check if invoice contains surgery items and create surgery cases
-async function createSurgeryCasesIfNeeded(invoice, userId) {
+// Domain services for orchestration
+const { BillingService, SurgeryService } = require('../services/domain');
+
+/**
+ * Helper function to check if invoice contains surgery items and create surgery cases.
+ * REFACTORED: Now delegates to SurgeryService for centralized logic.
+ * @param {Object} invoice - The invoice document
+ * @param {string} userId - The user ID performing the operation
+ * @param {Object} session - Optional MongoDB session for transaction support
+ * @deprecated Use SurgeryService.createCasesIfNeeded directly for new code.
+ */
+async function createSurgeryCasesIfNeeded(invoice, userId, session = null) {
+  return SurgeryService.createCasesIfNeeded(invoice, userId, session);
+}
+
+/**
+ * Helper function to create surgery cases for specific paid items.
+ * REFACTORED: Now delegates to SurgeryService for centralized logic.
+ * @param {Object} invoice - The invoice document
+ * @param {Array} paidItems - Array of paid items
+ * @param {string} userId - The user ID performing the operation
+ * @param {Object} session - Optional MongoDB session for transaction support
+ * @deprecated Use SurgeryService.createCasesForPaidItems directly for new code.
+ */
+async function createSurgeryCasesForPaidItems(invoice, paidItems, userId, session = null) {
+  return SurgeryService.createCasesForPaidItems(invoice, paidItems, userId, session);
+}
+
+// =====================================================
+// LEGACY CODE BELOW - Kept for reference during migration
+// The logic has been moved to SurgeryService
+// =====================================================
+
+/*
+// Original createSurgeryCasesIfNeeded implementation (now in SurgeryService):
+async function _legacy_createSurgeryCasesIfNeeded(invoice, userId) {
   try {
-    // Get all surgery-type clinical acts (category contains 'chirurgie')
     const surgeryActs = await ClinicalAct.find({
       category: { $regex: /chirurgie/i }
     }).select('_id code name category');
 
     const surgeryActCodes = surgeryActs.map(act => act.code?.toLowerCase()).filter(Boolean);
 
-    // Surgery keywords in descriptions
     const surgeryKeywords = [
       'phaco', 'phacoémulsification', 'cataracte', 'cataract',
       'trabéculectomie', 'trabeculectomie', 'trabeculectomy',
@@ -165,17 +198,20 @@ async function createSurgeryCasesIfNeeded(invoice, userId) {
   }
 }
 
-// Helper function to create surgery cases for specific paid items (when item is fully paid)
-async function createSurgeryCasesForPaidItems(invoice, paidItems, userId) {
+// Original createSurgeryCasesForPaidItems implementation (now in SurgeryService):
+// This function is also deprecated - logic moved to SurgeryService.createCasesForPaidItems
+*/
+
+// The following legacy function is kept for emergency rollback but should not be called:
+/*
+async function _legacy_createSurgeryCasesForPaidItems(invoice, paidItems, userId) {
   try {
-    // Get all surgery-type clinical acts
     const surgeryActs = await ClinicalAct.find({
       category: { $regex: /chirurgie/i }
     }).select('_id code name category');
 
     const surgeryActCodes = surgeryActs.map(act => act.code?.toLowerCase()).filter(Boolean);
 
-    // Surgery keywords in descriptions
     const surgeryKeywords = [
       'phaco', 'phacoémulsification', 'cataracte', 'cataract',
       'trabéculectomie', 'trabeculectomie', 'trabeculectomy',
@@ -291,6 +327,7 @@ async function createSurgeryCasesForPaidItems(invoice, paidItems, userId) {
     return [];
   }
 }
+*/
 
 // Helper function to validate invoice items against fee schedule
 async function validateItemsAgainstFeeSchedule(items, options = {}) {
@@ -1130,6 +1167,9 @@ exports.updateInvoice = asyncHandler(async (req, res, next) => {
 // @route   POST /api/invoices/:id/payments
 // @access  Private (Admin, Receptionist)
 exports.addPayment = asyncHandler(async (req, res, next) => {
+  const mongoose = require('mongoose');
+  const { withTransactionRetry } = require('../utils/transactions');
+
   const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
@@ -1152,29 +1192,46 @@ exports.addPayment = asyncHandler(async (req, res, next) => {
     return badRequest(res, `Payment amount (${amountInCDF.toFixed(0)} CDF) exceeds amount due (${invoice.summary.amountDue} CDF)`);
   }
 
-  // Add payment using model method with currency support
-  const paymentResult = await invoice.addPayment(
-    { amount, method, reference, notes, date, currency: paymentCurrency, exchangeRate: rate, itemAllocations },
-    req.user.id
-  );
-
-  // Create surgery cases for newly paid surgery items
+  // CRITICAL: Use transaction to ensure payment + surgery case creation is atomic
+  let paymentResult;
   const surgeryCases = [];
 
-  // Check newly paid items for surgery items
-  if (paymentResult.newlyPaidItems && paymentResult.newlyPaidItems.length > 0) {
-    const newSurgeryCases = await createSurgeryCasesForPaidItems(
-      invoice,
-      paymentResult.newlyPaidItems,
-      req.user.id
-    );
-    surgeryCases.push(...newSurgeryCases);
-  }
+  try {
+    await withTransactionRetry(async (session) => {
+      // Add payment using model method with currency support
+      paymentResult = await invoice.addPayment(
+        { amount, method, reference, notes, date, currency: paymentCurrency, exchangeRate: rate, itemAllocations },
+        req.user.id,
+        session // Pass session to model method
+      );
 
-  // Also check if invoice is now fully paid (legacy behavior for any remaining surgery items)
-  if (invoice.status === 'paid') {
-    const remainingCases = await createSurgeryCasesIfNeeded(invoice, req.user.id);
-    surgeryCases.push(...remainingCases);
+      // Create surgery cases for newly paid surgery items (within transaction)
+      if (paymentResult.newlyPaidItems && paymentResult.newlyPaidItems.length > 0) {
+        const newSurgeryCases = await createSurgeryCasesForPaidItems(
+          invoice,
+          paymentResult.newlyPaidItems,
+          req.user.id,
+          session
+        );
+        surgeryCases.push(...newSurgeryCases);
+      }
+
+      // Also check if invoice is now fully paid (legacy behavior for any remaining surgery items)
+      if (invoice.status === 'paid') {
+        const remainingCases = await createSurgeryCasesIfNeeded(invoice, req.user.id, session);
+        surgeryCases.push(...remainingCases);
+      }
+    });
+  } catch (txError) {
+    invoiceLogger.error('Payment transaction failed', {
+      invoiceId: invoice.invoiceId,
+      error: txError.message
+    });
+    return error(res, {
+      statusCode: 500,
+      error: 'Failed to process payment - transaction rolled back',
+      details: txError.message
+    });
   }
 
   // === SYNC PAYMENT STATUS TO RELATED SERVICES ===
@@ -1313,6 +1370,31 @@ exports.addPayment = asyncHandler(async (req, res, next) => {
     amountDue: invoice.summary?.amountDue
   });
 
+  // AUDIT: Log payment for financial compliance
+  try {
+    await AuditLog.log({
+      user: req.user._id,
+      action: 'PAYMENT_ADD',
+      resource: 'invoice',
+      resourceId: invoice._id,
+      details: {
+        invoiceNumber: invoice.invoiceNumber || invoice.invoiceId,
+        patientId: invoice.patient,
+        amount: paymentResult.payment?.amount,
+        currency: paymentCurrency,
+        method: method,
+        newStatus: invoice.status,
+        totalPaid: invoice.summary?.amountPaid,
+        remainingDue: invoice.summary?.amountDue
+      },
+      ipAddress: req.ip,
+      userAgent: req.get('User-Agent')
+    });
+  } catch (auditErr) {
+    invoiceLogger.error('Failed to create audit log for payment', { error: auditErr.message });
+    // Non-blocking - payment already processed
+  }
+
   return success(res, {
     statusCode: 200,
     message: 'Payment added successfully',
@@ -1342,7 +1424,32 @@ exports.cancelInvoice = asyncHandler(async (req, res, next) => {
   }
 
   try {
+    const beforeStatus = invoice.status;
+    const beforeAmountPaid = invoice.summary?.amountPaid || 0;
+
     await invoice.cancel(req.user.id, reason);
+
+    // AUDIT: Log cancellation for financial compliance
+    try {
+      await AuditLog.log({
+        user: req.user._id,
+        action: 'INVOICE_CANCEL',
+        resource: 'invoice',
+        resourceId: invoice._id,
+        details: {
+          invoiceNumber: invoice.invoiceNumber || invoice.invoiceId,
+          patientId: invoice.patient,
+          reason: reason,
+          previousStatus: beforeStatus,
+          amountPaid: beforeAmountPaid,
+          totalAmount: invoice.summary?.total
+        },
+        ipAddress: req.ip,
+        userAgent: req.get('User-Agent')
+      });
+    } catch (auditErr) {
+      invoiceLogger.error('Failed to create audit log for invoice cancellation', { error: auditErr.message });
+    }
 
     return success(res, {
       statusCode: 200,

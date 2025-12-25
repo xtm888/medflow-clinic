@@ -8,7 +8,11 @@ const User = require('../models/User');
 const defaults = require('../config/defaults');
 require('dotenv').config();
 
+const { requireNonProduction, requireConfirmation } = require('./_guards');
+requireNonProduction('resetAdminPassword.js');
+
 const resetAdminPassword = async () => {
+  await requireConfirmation('This will RESET the admin password. Are you sure?');
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');
     console.log('Connected to MongoDB');

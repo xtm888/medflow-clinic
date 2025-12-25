@@ -7,6 +7,7 @@ import api from '../../services/apiConfig';
 import { CollapsibleSectionGroup } from '../../components/CollapsibleSection';
 import PermissionGate from '../../components/PermissionGate';
 import { useClinic } from '../../contexts/ClinicContext';
+import logger from '../../services/logger';
 
 // Import sections
 import {
@@ -83,7 +84,7 @@ export default function PharmacyDashboard() {
         totalValue: statsData.totalValue || 0
       });
     } catch (err) {
-      console.error('Error fetching stats:', err);
+      logger.error('Error fetching stats:', err);
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,7 @@ export default function PharmacyDashboard() {
       // API may return { success, data: [...], meta } or just array
       setAlerts(response.data?.data || response.data || []);
     } catch (err) {
-      console.error('Error fetching alerts:', err);
+      logger.error('Error fetching alerts:', err);
     }
   };
 
@@ -117,7 +118,7 @@ export default function PharmacyDashboard() {
       fetchStats();
       fetchAlerts();
     } catch (err) {
-      console.error('Error adjusting stock:', err);
+      logger.error('Error adjusting stock:', err);
     }
   };
 

@@ -58,7 +58,7 @@ const PharmacyDetail = () => {
   const fetchMedication = async () => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/pharmacy/inventory/${id}`);
+      const response = await api.get(`/pharmacy/inventory/${id}`);
       setMedication(response.data);
       setLoading(false);
     } catch (err) {
@@ -78,7 +78,7 @@ const PharmacyDetail = () => {
 
   const handleAddBatch = async () => {
     try {
-      await api.post(`/api/pharmacy/inventory/${id}/batch`, batchData);
+      await api.post(`/pharmacy/inventory/${id}/batches`, batchData);
       setBatchDialog(false);
       fetchMedication();
       setBatchData({
@@ -97,7 +97,7 @@ const PharmacyDetail = () => {
 
   const handleDispense = async () => {
     try {
-      await api.post(`/api/pharmacy/inventory/${id}/dispense`, {
+      await api.post(`/pharmacy/inventory/${id}/dispense`, {
         ...dispenseData,
         patient: selectedPatient?._id
       });

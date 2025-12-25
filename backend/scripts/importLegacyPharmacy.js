@@ -16,6 +16,10 @@
  */
 
 const mongoose = require('mongoose');
+
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('importLegacyPharmacy.js');
+
 const { PharmacyInventory } = require('../models/Inventory');
 const fs = require('fs');
 const Papa = require('papaparse');

@@ -1,5 +1,8 @@
-const mongoose = require('mongoose');
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('unlockAdmin.js');
+
+const mongoose = require('mongoose');
 const defaults = require('../config/defaults');
 
 async function unlockAdmin() {

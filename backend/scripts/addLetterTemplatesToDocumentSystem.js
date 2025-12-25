@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const DocumentTemplate = require('../models/DocumentTemplate');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('addLetterTemplatesToDocumentSystem.js');
+
 // Letter templates to add to the existing document generation system
 // These will integrate with the existing documentGenerationController
 const letterTemplates = [

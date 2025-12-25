@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('checkDrugs.js');
+
 const Drug = require('../models/Drug');
 
 async function checkDrugs() {

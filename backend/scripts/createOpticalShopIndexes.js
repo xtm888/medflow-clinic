@@ -4,6 +4,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createOpticalShopIndexes.js');
+
 async function createIndexes() {
   try {
     const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';

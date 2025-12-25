@@ -163,7 +163,8 @@ exports.createOrder = asyncHandler(async (req, res) => {
           category: 'laboratory',
           quantity: 1,
           unitPrice: price,
-          amount: price,
+          subtotal: price,  // Required by Invoice model
+          total: price,     // Required by Invoice model
           code: test.testCode
         });
 
@@ -171,6 +172,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
       }
 
       // Create invoice first with basic amounts
+      // Note: dueDate is auto-set by Invoice pre-save hook (30 days from now)
       invoice = await Invoice.create({
         patient: patientId,
         visit: req.body.visitId,
@@ -182,7 +184,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
           amountDue: totalAmount,
           amountPaid: 0
         },
-        status: 'pending',
+        status: 'draft',  // Valid enum value (not 'pending')
         type: 'laboratory',
         notes: `Analyses de laboratoire - ${processedTests.length} test(s)`,
         createdBy: req.user.id
@@ -217,17 +219,31 @@ exports.createOrder = asyncHandler(async (req, res) => {
     { path: 'billing.invoice', select: 'invoiceNumber total status' }
   ]);
 
-  // Create notification for lab technicians
-  await Notification.create({
-    recipient: 'lab_technician',
-    type: 'task_assigned',
-    title: 'New Lab Order',
-    message: `${processedTests.length} tests ordered`,
-    priority: priority === 'stat' ? 'urgent' : priority === 'urgent' ? 'high' : 'normal',
-    entityType: 'lab_order',
-    entityId: order._id,
-    link: `/laboratory/orders/${order._id}`
-  });
+  // Create notification for lab technicians (find actual users with lab roles)
+  try {
+    const User = require('../../models/User');
+    const labStaff = await User.find({
+      role: { $in: ['lab_technician', 'laboratory', 'lab', 'admin'] },
+      isActive: { $ne: false }
+    }).select('_id').limit(10).lean();
+
+    if (labStaff.length > 0) {
+      const notifications = labStaff.map(user => ({
+        recipient: user._id,
+        type: 'task_assigned',
+        title: 'New Lab Order',
+        message: `${processedTests.length} tests ordered`,
+        priority: priority === 'stat' ? 'urgent' : priority === 'urgent' ? 'high' : 'normal',
+        entityType: 'lab_order',
+        entityId: order._id,
+        link: `/laboratory/orders/${order._id}`
+      }));
+      await Notification.insertMany(notifications, { ordered: false });
+    }
+  } catch (notificationError) {
+    // Don't fail lab order creation if notifications fail
+    console.warn('[LabOrder] Could not create notifications:', notificationError.message);
+  }
 
   res.status(201).json({
     success: true,

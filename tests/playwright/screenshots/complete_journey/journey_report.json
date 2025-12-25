@@ -1,0 +1,411 @@
+{
+  "summary": {
+    "total_steps": 29,
+    "passed": 16,
+    "failed": 13,
+    "pass_rate": "55.2%",
+    "duration": "0:03:18.463376",
+    "start_time": "2025-12-21T00:23:46.787918",
+    "end_time": "2025-12-21T00:27:05.251294"
+  },
+  "patient_data": {
+    "test_patient_name": "E2E_Test_59a505c4 JOURNEY",
+    "patient_id": "694730185c23a99f80706d9c",
+    "appointment_id": "6946f756f1c34567e8e7a42f"
+  },
+  "steps": [
+    {
+      "step": "Login to MedFlow",
+      "phase": "Setup",
+      "passed": true,
+      "details": "Logged in, URL: http://localhost:5173/home",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:56.278891"
+    },
+    {
+      "step": "Home page URL",
+      "phase": "Home",
+      "passed": true,
+      "details": "URL: http://localhost:5173/home",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:56.894575"
+    },
+    {
+      "step": "Navigation menu present",
+      "phase": "Home",
+      "passed": false,
+      "details": "Navigation not found",
+      "ui_verified": false,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:56.899475"
+    },
+    {
+      "step": "Dashboard widgets visible",
+      "phase": "Home",
+      "passed": false,
+      "details": "No widgets found",
+      "ui_verified": false,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:56.904241"
+    },
+    {
+      "step": "User info displayed",
+      "phase": "Home",
+      "passed": true,
+      "details": "User info/avatar found",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:56.905220"
+    },
+    {
+      "step": "Quick actions available",
+      "phase": "Home",
+      "passed": false,
+      "details": "No quick actions",
+      "ui_verified": false,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:56.907163"
+    },
+    {
+      "step": "Home page functional",
+      "phase": "Home",
+      "passed": false,
+      "details": "Home page issues detected",
+      "ui_verified": false,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:57.216674"
+    },
+    {
+      "step": "Navigate to patients page",
+      "phase": "Registration",
+      "passed": true,
+      "details": "URL: http://localhost:5173/patients",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:23:59.474508"
+    },
+    {
+      "step": "Open registration wizard",
+      "phase": "Registration",
+      "passed": true,
+      "details": "Wizard/modal opened",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:01.268128"
+    },
+    {
+      "step": "Skip photo step",
+      "phase": "Registration",
+      "passed": true,
+      "details": "Photo step skipped",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:02.048699"
+    },
+    {
+      "step": "Fill personal information",
+      "phase": "Registration",
+      "passed": true,
+      "details": "Filled 4/4 required fields",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:02.588179"
+    },
+    {
+      "step": "Submit registration",
+      "phase": "Registration",
+      "passed": true,
+      "details": "Submit button clicked",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:11.515726"
+    },
+    {
+      "step": "Verify patient in database",
+      "phase": "Registration",
+      "passed": true,
+      "details": "Found via regex: 694730185c23...",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": true,
+      "timestamp": "2025-12-21T00:24:12.549555"
+    },
+    {
+      "step": "UI shows success",
+      "phase": "Registration",
+      "passed": true,
+      "details": "Success message or redirect detected",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:12.555930"
+    },
+    {
+      "step": "Navigate to appointments",
+      "phase": "Appointment",
+      "passed": true,
+      "details": "URL: http://localhost:5173/appointments",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:14.739550"
+    },
+    {
+      "step": "Open appointment form",
+      "phase": "Appointment",
+      "passed": true,
+      "details": "Appointment form opened",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:24:16.621374"
+    },
+    {
+      "step": "Submit appointment",
+      "phase": "Appointment",
+      "passed": true,
+      "details": "Submit clicked",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:26:06.145161"
+    },
+    {
+      "step": "Verify appointment via API",
+      "phase": "Appointment",
+      "passed": true,
+      "details": "Found 10 appointment(s)",
+      "ui_verified": null,
+      "api_verified": true,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:26:08.313386"
+    },
+    {
+      "step": "Navigate to queue",
+      "phase": "Queue",
+      "passed": true,
+      "details": "URL: http://localhost:5173/queue",
+      "ui_verified": true,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:26:11.283567"
+    },
+    {
+      "step": "Verify queue entry",
+      "phase": "Queue",
+      "passed": false,
+      "details": "Queue/visit entry not found",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": false,
+      "timestamp": "2025-12-21T00:27:04.214581"
+    },
+    {
+      "step": "Phase 4: Nurse Vitals",
+      "phase": "Nurse Vitals",
+      "passed": false,
+      "details": "Error: Page.goto: Target page, context or browser has been closed",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:27:04.216792"
+    },
+    {
+      "step": "Phase 5: StudioVision Consultation",
+      "phase": "StudioVision Consultation",
+      "passed": false,
+      "details": "Error: Page.goto: Target page, context or browser has been closed",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:27:04.218055"
+    },
+    {
+      "step": "Prescriptions auto-created",
+      "phase": "Cascades",
+      "passed": false,
+      "details": "No prescriptions found",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": false,
+      "timestamp": "2025-12-21T00:27:04.232088"
+    },
+    {
+      "step": "Invoice auto-generated",
+      "phase": "Cascades",
+      "passed": false,
+      "details": "No invoices found",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": false,
+      "timestamp": "2025-12-21T00:27:04.241188"
+    },
+    {
+      "step": "Lab orders",
+      "phase": "Cascades",
+      "passed": true,
+      "details": "No lab orders (none ordered)",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": true,
+      "timestamp": "2025-12-21T00:27:04.243543"
+    },
+    {
+      "step": "Phase 6: Cascade Verification",
+      "phase": "Cascade Verification",
+      "passed": false,
+      "details": "Error: Page.goto: Target page, context or browser has been closed",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:27:04.244221"
+    },
+    {
+      "step": "Phase 7: Payment Processing",
+      "phase": "Payment Processing",
+      "passed": false,
+      "details": "Error: Page.goto: Target page, context or browser has been closed",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:27:04.245566"
+    },
+    {
+      "step": "Phase 8: Pharmacy Dispensing",
+      "phase": "Pharmacy Dispensing",
+      "passed": false,
+      "details": "Error: Page.goto: Target page, context or browser has been closed",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:27:04.246662"
+    },
+    {
+      "step": "Phase 9: Follow-up Scheduling",
+      "phase": "Follow-up Scheduling",
+      "passed": false,
+      "details": "Error: Page.goto: Target page, context or browser has been closed",
+      "ui_verified": null,
+      "api_verified": null,
+      "db_verified": null,
+      "timestamp": "2025-12-21T00:27:04.248294"
+    }
+  ],
+  "phases": {
+    "Setup": {
+      "total": 1,
+      "passed": 1,
+      "steps": [
+        "Login to MedFlow"
+      ]
+    },
+    "Home": {
+      "total": 6,
+      "passed": 2,
+      "steps": [
+        "Home page URL",
+        "Navigation menu present",
+        "Dashboard widgets visible",
+        "User info displayed",
+        "Quick actions available",
+        "Home page functional"
+      ]
+    },
+    "Registration": {
+      "total": 7,
+      "passed": 7,
+      "steps": [
+        "Navigate to patients page",
+        "Open registration wizard",
+        "Skip photo step",
+        "Fill personal information",
+        "Submit registration",
+        "Verify patient in database",
+        "UI shows success"
+      ]
+    },
+    "Appointment": {
+      "total": 4,
+      "passed": 4,
+      "steps": [
+        "Navigate to appointments",
+        "Open appointment form",
+        "Submit appointment",
+        "Verify appointment via API"
+      ]
+    },
+    "Queue": {
+      "total": 2,
+      "passed": 1,
+      "steps": [
+        "Navigate to queue",
+        "Verify queue entry"
+      ]
+    },
+    "Nurse Vitals": {
+      "total": 1,
+      "passed": 0,
+      "steps": [
+        "Phase 4: Nurse Vitals"
+      ]
+    },
+    "StudioVision Consultation": {
+      "total": 1,
+      "passed": 0,
+      "steps": [
+        "Phase 5: StudioVision Consultation"
+      ]
+    },
+    "Cascades": {
+      "total": 3,
+      "passed": 1,
+      "steps": [
+        "Prescriptions auto-created",
+        "Invoice auto-generated",
+        "Lab orders"
+      ]
+    },
+    "Cascade Verification": {
+      "total": 1,
+      "passed": 0,
+      "steps": [
+        "Phase 6: Cascade Verification"
+      ]
+    },
+    "Payment Processing": {
+      "total": 1,
+      "passed": 0,
+      "steps": [
+        "Phase 7: Payment Processing"
+      ]
+    },
+    "Pharmacy Dispensing": {
+      "total": 1,
+      "passed": 0,
+      "steps": [
+        "Phase 8: Pharmacy Dispensing"
+      ]
+    },
+    "Follow-up Scheduling": {
+      "total": 1,
+      "passed": 0,
+      "steps": [
+        "Phase 9: Follow-up Scheduling"
+      ]
+    }
+  }
+}

@@ -12,6 +12,9 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('copyFeeSchedulesWithAdjustment.js');
+
 // Clinic configurations
 const CLINIC_ADJUSTMENTS = [
   {

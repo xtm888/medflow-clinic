@@ -41,7 +41,12 @@ export default function PatientAppointments() {
             patient: userResult.user._id
           }).catch(() => ({ data: [] }));
 
-          setAppointments(aptResponse.data || []);
+          // Handle various response formats from offlineWrapper
+          const aptData = aptResponse?.data;
+          const appointments = Array.isArray(aptData)
+            ? aptData
+            : (aptData?.data || aptData?.items || aptData?.appointments || []);
+          setAppointments(Array.isArray(appointments) ? appointments : []);
         }
       } catch (err) {
         toast.error('Échec du chargement des données patient');
@@ -99,7 +104,11 @@ export default function PatientAppointments() {
       const aptResponse = await appointmentService.getAppointments({
         patient: currentPatient._id
       });
-      setAppointments(aptResponse.data || []);
+      const aptData = aptResponse?.data;
+      const refreshedApts = Array.isArray(aptData)
+        ? aptData
+        : (aptData?.data || aptData?.items || aptData?.appointments || []);
+      setAppointments(Array.isArray(refreshedApts) ? refreshedApts : []);
 
     } catch (err) {
       toast.error(err.response?.data?.error || 'Échec de la réservation du rendez-vous');
@@ -127,7 +136,11 @@ export default function PatientAppointments() {
           const aptResponse = await appointmentService.getAppointments({
             patient: currentPatient._id
           });
-          setAppointments(aptResponse.data || []);
+          const aptData = aptResponse?.data;
+          const refreshedApts = Array.isArray(aptData)
+            ? aptData
+            : (aptData?.data || aptData?.items || aptData?.appointments || []);
+          setAppointments(Array.isArray(refreshedApts) ? refreshedApts : []);
 
         } catch (err) {
           toast.error(err.response?.data?.error || 'Échec de l\'annulation du rendez-vous');

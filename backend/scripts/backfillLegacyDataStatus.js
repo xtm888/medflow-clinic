@@ -13,6 +13,9 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('backfillLegacyDataStatus.js');
+
 // Connect to MongoDB
 const connectDB = async () => {
   try {

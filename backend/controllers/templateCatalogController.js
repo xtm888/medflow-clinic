@@ -7,6 +7,9 @@ const CommentTemplate = require('../models/CommentTemplate');
 const DoseTemplate = require('../models/DoseTemplate');
 const LetterTemplate = require('../models/LetterTemplate');
 const EquipmentCatalog = require('../models/EquipmentCatalog');
+const { createContextLogger } = require('../utils/structuredLogger');
+
+const logger = createContextLogger('TemplateCatalog');
 
 // ===== MEDICATION TEMPLATES =====
 
@@ -42,7 +45,7 @@ exports.getMedicationTemplates = async (req, res) => {
       data: medications
     });
   } catch (error) {
-    console.error('Error fetching medication templates:', error);
+    logger.error('Error fetching medication templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -62,7 +65,7 @@ exports.getMedicationCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching medication categories:', error);
+    logger.error('Error fetching medication categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -103,7 +106,7 @@ exports.searchMedications = async (req, res) => {
       data: medications
     });
   } catch (error) {
-    console.error('Error searching medications:', error);
+    logger.error('Error searching medications', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -143,7 +146,7 @@ exports.getExaminationTemplates = async (req, res) => {
       data: examinations
     });
   } catch (error) {
-    console.error('Error fetching examination templates:', error);
+    logger.error('Error fetching examination templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -163,7 +166,7 @@ exports.getExaminationCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching examination categories:', error);
+    logger.error('Error fetching examination categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -211,7 +214,7 @@ exports.getPathologyTemplates = async (req, res) => {
       data: pathologies
     });
   } catch (error) {
-    console.error('Error fetching pathology templates:', error);
+    logger.error('Error fetching pathology templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -231,7 +234,7 @@ exports.getPathologyCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching pathology categories:', error);
+    logger.error('Error fetching pathology categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -258,7 +261,7 @@ exports.getPathologySubcategories = async (req, res) => {
       data: subcategories.filter(s => s).sort() // Filter out null/empty
     });
   } catch (error) {
-    console.error('Error fetching pathology subcategories:', error);
+    logger.error('Error fetching pathology subcategories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -303,7 +306,7 @@ exports.getLaboratoryTemplates = async (req, res) => {
       data: laboratories
     });
   } catch (error) {
-    console.error('Error fetching laboratory templates:', error);
+    logger.error('Error fetching laboratory templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -323,7 +326,7 @@ exports.getLaboratoryCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching laboratory categories:', error);
+    logger.error('Error fetching laboratory categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -349,7 +352,7 @@ exports.getLaboratoryProfiles = async (req, res) => {
       data: profiles
     });
   } catch (error) {
-    console.error('Error fetching laboratory profiles:', error);
+    logger.error('Error fetching laboratory profiles', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -389,7 +392,7 @@ exports.getClinicalTemplates = async (req, res) => {
       data: clinical
     });
   } catch (error) {
-    console.error('Error fetching clinical templates:', error);
+    logger.error('Error fetching clinical templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -409,7 +412,7 @@ exports.getClinicalCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching clinical categories:', error);
+    logger.error('Error fetching clinical categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -449,7 +452,7 @@ exports.getCommentTemplates = async (req, res) => {
       data: comments
     });
   } catch (error) {
-    console.error('Error fetching comment templates:', error);
+    logger.error('Error fetching comment templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -469,7 +472,7 @@ exports.getCommentCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching comment categories:', error);
+    logger.error('Error fetching comment categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -510,7 +513,7 @@ exports.getDoseTemplates = async (req, res) => {
       data: doses
     });
   } catch (error) {
-    console.error('Error fetching dose templates:', error);
+    logger.error('Error fetching dose templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -530,7 +533,7 @@ exports.getDoseForms = async (req, res) => {
       data: forms.sort()
     });
   } catch (error) {
-    console.error('Error fetching dose forms:', error);
+    logger.error('Error fetching dose forms', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -560,7 +563,7 @@ exports.getDoseByForm = async (req, res) => {
       data: dose
     });
   } catch (error) {
-    console.error('Error fetching dose by form:', error);
+    logger.error('Error fetching dose by form', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -600,7 +603,7 @@ exports.getLetterTemplates = async (req, res) => {
       data: letters
     });
   } catch (error) {
-    console.error('Error fetching letter templates:', error);
+    logger.error('Error fetching letter templates', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -620,7 +623,7 @@ exports.getLetterCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching letter categories:', error);
+    logger.error('Error fetching letter categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -647,7 +650,7 @@ exports.getLetterTemplateById = async (req, res) => {
       data: letter
     });
   } catch (error) {
-    console.error('Error fetching letter template:', error);
+    logger.error('Error fetching letter template', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -696,7 +699,7 @@ exports.getEquipmentCatalog = async (req, res) => {
       data: equipment
     });
   } catch (error) {
-    console.error('Error fetching equipment catalog:', error);
+    logger.error('Error fetching equipment catalog', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -716,7 +719,7 @@ exports.getEquipmentCategories = async (req, res) => {
       data: categories.sort()
     });
   } catch (error) {
-    console.error('Error fetching equipment categories:', error);
+    logger.error('Error fetching equipment categories', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -736,7 +739,7 @@ exports.getEquipmentSites = async (req, res) => {
       data: sites.filter(s => s).sort()
     });
   } catch (error) {
-    console.error('Error fetching equipment sites:', error);
+    logger.error('Error fetching equipment sites', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -763,7 +766,7 @@ exports.getEquipmentById = async (req, res) => {
       data: equipment
     });
   } catch (error) {
-    console.error('Error fetching equipment:', error);
+    logger.error('Error fetching equipment', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -816,7 +819,7 @@ exports.getTemplateCatalogStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching template catalog stats:', error);
+    logger.error('Error fetching template catalog stats', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message

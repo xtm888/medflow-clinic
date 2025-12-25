@@ -1,5 +1,7 @@
 const WarrantyTracking = require('../models/WarrantyTracking');
 const { escapeRegex } = require('../utils/sanitize');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('WarrantyController');
 
 // Get all warranties with filtering
 exports.getWarranties = async (req, res) => {
@@ -63,7 +65,7 @@ exports.getWarranties = async (req, res) => {
       pages: Math.ceil(total / parseInt(limit))
     });
   } catch (error) {
-    console.error('Error fetching warranties:', error);
+    log.error('Error fetching warranties', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -82,7 +84,7 @@ exports.getWarranty = async (req, res) => {
 
     res.json({ success: true, data: warranty });
   } catch (error) {
-    console.error('Error fetching warranty:', error);
+    log.error('Error fetching warranty', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -100,7 +102,7 @@ exports.createWarranty = async (req, res) => {
 
     res.status(201).json({ success: true, data: warranty });
   } catch (error) {
-    console.error('Error creating warranty:', error);
+    log.error('Error creating warranty', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -119,7 +121,7 @@ exports.updateWarranty = async (req, res) => {
 
     res.json({ success: true, data: warranty });
   } catch (error) {
-    console.error('Error updating warranty:', error);
+    log.error('Error updating warranty', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -139,7 +141,7 @@ exports.fileClaim = async (req, res) => {
 
     res.json({ success: true, data: { warranty, claim } });
   } catch (error) {
-    console.error('Error filing claim:', error);
+    log.error('Error filing claim', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -166,7 +168,7 @@ exports.approveClaim = async (req, res) => {
 
     res.json({ success: true, data: warranty });
   } catch (error) {
-    console.error('Error approving claim:', error);
+    log.error('Error approving claim', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -200,7 +202,7 @@ exports.rejectClaim = async (req, res) => {
 
     res.json({ success: true, data: warranty });
   } catch (error) {
-    console.error('Error rejecting claim:', error);
+    log.error('Error rejecting claim', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -224,7 +226,7 @@ exports.transferWarranty = async (req, res) => {
 
     res.json({ success: true, data: warranty });
   } catch (error) {
-    console.error('Error transferring warranty:', error);
+    log.error('Error transferring warranty', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -238,7 +240,7 @@ exports.getCustomerWarranties = async (req, res) => {
 
     res.json({ success: true, data: warranties });
   } catch (error) {
-    console.error('Error fetching customer warranties:', error);
+    log.error('Error fetching customer warranties', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -265,7 +267,7 @@ exports.getExpiringWarranties = async (req, res) => {
 
     res.json({ success: true, data: warranties });
   } catch (error) {
-    console.error('Error fetching expiring warranties:', error);
+    log.error('Error fetching expiring warranties', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -327,7 +329,7 @@ exports.getStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    log.error('Error fetching stats', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: error.message });
   }
 };

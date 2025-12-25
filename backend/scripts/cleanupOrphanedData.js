@@ -8,6 +8,9 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
+const { requireNonProduction, requireConfirmation } = require('./_guards');
+requireNonProduction('cleanupOrphanedData.js');
+
 // Import models
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
@@ -177,5 +180,10 @@ Visits               | ${results.visits.found.toString().padStart(5)} | ${result
   }
 }
 
-// Run the cleanup
-cleanupOrphanedData();
+// Run the cleanup with confirmation
+async function main() {
+  await requireConfirmation('This will DELETE orphaned records from the database. Are you sure?');
+  await cleanupOrphanedData();
+}
+
+main();

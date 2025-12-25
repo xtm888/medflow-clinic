@@ -2154,70 +2154,82 @@ exports.clearFailedJobs = asyncHandler(async (req, res, next) => {
 // @route   GET /api/devices/:id/smb2/browse
 // @access  Private
 exports.smb2BrowseFiles = asyncHandler(async (req, res, next) => {
-  const smb2Client = require('../services/smb2ClientService');
-  const { subpath = '' } = req.query;
+  try {
+    const smb2Client = require('../services/smb2ClientService');
+    const { subpath = '' } = req.query;
 
-  const device = await Device.findById(req.params.id);
-  if (!device) {
-    return notFound(res, 'Device');
+    const device = await Device.findById(req.params.id);
+    if (!device) {
+      return notFound(res, 'Device');
+    }
+
+    await smb2Client.init();
+    const listing = await smb2Client.listDirectory(device, subpath);
+
+    return success(res, {
+      ...listing,
+      device: {
+        id: device._id,
+        name: device.name,
+        type: device.type
+      },
+      accessMethod: 'smb2-direct'
+    });
+  } catch (err) {
+    const log = require('../utils/structuredLogger').createContextLogger('DeviceController');
+    log.error('SMB2 operation failed', { operation: 'browse', error: err.message });
+    return error(res, `SMB2 operation failed: ${err.message}`, 500);
   }
-
-  await smb2Client.init();
-  const listing = await smb2Client.listDirectory(device, subpath);
-
-  return success(res, {
-    ...listing,
-    device: {
-      id: device._id,
-      name: device.name,
-      type: device.type
-    },
-    accessMethod: 'smb2-direct'
-  });
 });
 
 // @desc    Read file using SMB2 (no mount required)
 // @route   GET /api/devices/:id/smb2/file/*
 // @access  Private
 exports.smb2ReadFile = asyncHandler(async (req, res, next) => {
-  const smb2Client = require('../services/smb2ClientService');
+  try {
+    const smb2Client = require('../services/smb2ClientService');
 
-  const filepath = req.params[0] || '';
-  const device = await Device.findById(req.params.id);
+    const filepath = req.params[0] || '';
+    const device = await Device.findById(req.params.id);
 
-  if (!device) {
-    return notFound(res, 'Device');
+    if (!device) {
+      return notFound(res, 'Device');
+    }
+
+    await smb2Client.init();
+    const fileInfo = await smb2Client.readFile(device, filepath);
+
+    // Get file extension for content type
+    const ext = path.extname(filepath).toLowerCase();
+    const contentTypes = {
+      '.jpg': 'image/jpeg',
+      '.jpeg': 'image/jpeg',
+      '.png': 'image/png',
+      '.gif': 'image/gif',
+      '.bmp': 'image/bmp',
+      '.tiff': 'image/tiff',
+      '.pdf': 'application/pdf',
+      '.xml': 'application/xml',
+      '.dcm': 'application/dicom',
+      '.dicom': 'application/dicom',
+      '.txt': 'text/plain',
+      '.csv': 'text/csv'
+    };
+
+    const contentType = contentTypes[ext] || 'application/octet-stream';
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Length', fileInfo.size);
+    res.setHeader('X-From-Cache', fileInfo.fromCache ? 'true' : 'false');
+
+    // Stream the file
+    const fs = require('fs');
+    const fileStream = fs.createReadStream(fileInfo.localPath);
+    fileStream.pipe(res);
+  } catch (err) {
+    const log = require('../utils/structuredLogger').createContextLogger('DeviceController');
+    log.error('SMB2 operation failed', { operation: 'read', error: err.message });
+    return error(res, `SMB2 operation failed: ${err.message}`, 500);
   }
-
-  await smb2Client.init();
-  const fileInfo = await smb2Client.readFile(device, filepath);
-
-  // Get file extension for content type
-  const ext = path.extname(filepath).toLowerCase();
-  const contentTypes = {
-    '.jpg': 'image/jpeg',
-    '.jpeg': 'image/jpeg',
-    '.png': 'image/png',
-    '.gif': 'image/gif',
-    '.bmp': 'image/bmp',
-    '.tiff': 'image/tiff',
-    '.pdf': 'application/pdf',
-    '.xml': 'application/xml',
-    '.dcm': 'application/dicom',
-    '.dicom': 'application/dicom',
-    '.txt': 'text/plain',
-    '.csv': 'text/csv'
-  };
-
-  const contentType = contentTypes[ext] || 'application/octet-stream';
-  res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Length', fileInfo.size);
-  res.setHeader('X-From-Cache', fileInfo.fromCache ? 'true' : 'false');
-
-  // Stream the file
-  const fs = require('fs');
-  const fileStream = fs.createReadStream(fileInfo.localPath);
-  fileStream.pipe(res);
 });
 
 // @desc    Test SMB2 connection
@@ -2256,36 +2268,42 @@ exports.smb2TestConnection = asyncHandler(async (req, res, next) => {
 // @route   POST /api/devices/:id/smb2/scan
 // @access  Private
 exports.smb2ScanDevice = asyncHandler(async (req, res, next) => {
-  const smb2Client = require('../services/smb2ClientService');
+  try {
+    const smb2Client = require('../services/smb2ClientService');
 
-  const device = await Device.findById(req.params.id);
-  if (!device) {
-    return notFound(res, 'Device');
-  }
-
-  const {
-    basePath = '',
-    maxDepth = 5,
-    maxFiles = 1000,
-    extensions = null
-  } = req.body;
-
-  await smb2Client.init();
-  const result = await smb2Client.scanDirectoryRecursive(device, basePath, {
-    maxDepth,
-    maxFiles,
-    extensions
-  });
-
-  return success(res, {
-    data: {
-      ...result,
-      device: {
-        id: device._id,
-        name: device.name
-      }
+    const device = await Device.findById(req.params.id);
+    if (!device) {
+      return notFound(res, 'Device');
     }
-  });
+
+    const {
+      basePath = '',
+      maxDepth = 5,
+      maxFiles = 1000,
+      extensions = null
+    } = req.body;
+
+    await smb2Client.init();
+    const result = await smb2Client.scanDirectoryRecursive(device, basePath, {
+      maxDepth,
+      maxFiles,
+      extensions
+    });
+
+    return success(res, {
+      data: {
+        ...result,
+        device: {
+          id: device._id,
+          name: device.name
+        }
+      }
+    });
+  } catch (err) {
+    const log = require('../utils/structuredLogger').createContextLogger('DeviceController');
+    log.error('SMB2 operation failed', { operation: 'scan', error: err.message });
+    return error(res, `SMB2 operation failed: ${err.message}`, 500);
+  }
 });
 
 // @desc    Get SMB2 client statistics

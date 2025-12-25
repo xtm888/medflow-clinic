@@ -3,6 +3,9 @@ const fs = require('fs');
 const csv = require('csv-parser');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('diagnosticImport.js');
+
 const Clinic = require('../models/Clinic');
 const Patient = require('../models/Patient');
 

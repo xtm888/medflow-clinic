@@ -22,6 +22,28 @@ export default defineConfig({
       port: 5173,
       host: 'localhost',
     },
+    proxy: {
+      // Proxy static assets served by backend
+      // Only proxy paths that are clearly asset directories, not frontend routes
+      '/datasets': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      // /imaging/dicom and /imaging/oct are backend static assets
+      // but /imaging alone is a frontend route
+      '/imaging/dicom': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      '/imaging/oct': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+      '/images_ophta': {
+        target: 'http://localhost:5001',
+        changeOrigin: true,
+      },
+    },
   },
   build: {
     rollupOptions: {

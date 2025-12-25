@@ -29,6 +29,9 @@ const mongoose = require('mongoose');
 const { PharmacyInventory, FrameInventory } = require('../models/Inventory');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedTestTransactionalData.js');
+
 // Models
 const Approval = require('../models/Approval');
 const Prescription = require('../models/Prescription');

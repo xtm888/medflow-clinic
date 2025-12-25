@@ -5,9 +5,12 @@
  * to ensure it matches our simulation and produces correct results.
  */
 
-const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testInvoiceControllerLogic.js');
+
+const mongoose = require('mongoose');
 
 const Company = require('../models/Company');
 const Invoice = require('../models/Invoice');

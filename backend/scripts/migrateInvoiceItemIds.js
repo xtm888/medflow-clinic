@@ -17,6 +17,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migrateInvoiceItemIds.js');
+
 const Invoice = require('../models/Invoice');
 
 // Parse command line arguments

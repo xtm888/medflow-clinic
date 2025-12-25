@@ -14,6 +14,9 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('fixStuckVisits.js');
+
 // Load all required models for populate to work
 const Visit = require('../models/Visit');
 const Patient = require('../models/Patient');

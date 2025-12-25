@@ -1,0 +1,130 @@
+{
+  "total": 20,
+  "passed": 20,
+  "failed": 0,
+  "skipped": 0,
+  "tests": [
+    {
+      "name": "Patient Registration Wizard",
+      "status": "PASS",
+      "details": "All steps navigated",
+      "timestamp": "2025-12-21T23:13:22.500449"
+    },
+    {
+      "name": "StudioVision Consultation",
+      "status": "PASS",
+      "details": "Ophthalmology dashboard accessed",
+      "timestamp": "2025-12-21T23:13:27.535211"
+    },
+    {
+      "name": "Invoice Creation",
+      "status": "PASS",
+      "details": "Invoice workflow navigated",
+      "timestamp": "2025-12-21T23:13:33.116700"
+    },
+    {
+      "name": "Appointment Booking",
+      "status": "PASS",
+      "details": "Appointment workflow navigated",
+      "timestamp": "2025-12-21T23:13:38.748197"
+    },
+    {
+      "name": "Queue Check-in",
+      "status": "PASS",
+      "details": "Queue workflow navigated",
+      "timestamp": "2025-12-21T23:13:46.549526"
+    },
+    {
+      "name": "Prescription Creation",
+      "status": "PASS",
+      "details": "Prescription workflow navigated",
+      "timestamp": "2025-12-21T23:13:53.347998"
+    },
+    {
+      "name": "Surgery Workflow",
+      "status": "PASS",
+      "details": "Surgery module navigated",
+      "timestamp": "2025-12-21T23:13:58.863690"
+    },
+    {
+      "name": "IVT Workflow",
+      "status": "PASS",
+      "details": "IVT module navigated",
+      "timestamp": "2025-12-21T23:14:02.518920"
+    },
+    {
+      "name": "Lab Orders Workflow",
+      "status": "PASS",
+      "details": "Laboratory module navigated",
+      "timestamp": "2025-12-21T23:14:06.939927"
+    },
+    {
+      "name": "Orthoptic Exam Workflow",
+      "status": "PASS",
+      "details": "Orthoptic module navigated",
+      "timestamp": "2025-12-21T23:14:10.738634"
+    },
+    {
+      "name": "Imaging Import Workflow",
+      "status": "PASS",
+      "details": "Imaging module navigated",
+      "timestamp": "2025-12-21T23:14:16.026609"
+    },
+    {
+      "name": "Pharmacy Workflow",
+      "status": "PASS",
+      "details": "Pharmacy module navigated",
+      "timestamp": "2025-12-21T23:14:20.260190"
+    },
+    {
+      "name": "Optical Shop Workflow",
+      "status": "PASS",
+      "details": "Optical shop navigated",
+      "timestamp": "2025-12-21T23:14:24.455156"
+    },
+    {
+      "name": "Glasses Orders Workflow",
+      "status": "PASS",
+      "details": "Glasses orders navigated",
+      "timestamp": "2025-12-21T23:14:28.722794"
+    },
+    {
+      "name": "Inventory Transfer Workflow",
+      "status": "PASS",
+      "details": "Cross-clinic inventory navigated",
+      "timestamp": "2025-12-21T23:14:32.391323"
+    },
+    {
+      "name": "Settings Sections",
+      "status": "PASS",
+      "details": "Tested 11 settings sections",
+      "timestamp": "2025-12-21T23:14:38.405689"
+    },
+    {
+      "name": "User Management Workflow",
+      "status": "PASS",
+      "details": "User management navigated",
+      "timestamp": "2025-12-21T23:14:42.957864"
+    },
+    {
+      "name": "Template Management Workflow",
+      "status": "PASS",
+      "details": "Template management navigated",
+      "timestamp": "2025-12-21T23:14:47.050213"
+    },
+    {
+      "name": "Device Manager Workflow",
+      "status": "PASS",
+      "details": "Device manager navigated",
+      "timestamp": "2025-12-21T23:14:52.028712"
+    },
+    {
+      "name": "Network Discovery Workflow",
+      "status": "PASS",
+      "details": "Network discovery navigated",
+      "timestamp": "2025-12-21T23:14:53.730242"
+    }
+  ],
+  "start_time": "2025-12-21T23:12:43.654658",
+  "end_time": "2025-12-21T23:14:53.760909"
+}

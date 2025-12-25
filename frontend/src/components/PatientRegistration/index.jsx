@@ -40,6 +40,7 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
     faceEncoding: null,
     biometricConsent: false,
     duplicateCheckPassed: false,
+    adminPhotoSkip: false,
 
     // Step 1: Personal Info
     firstName: '',
@@ -241,6 +242,11 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
 
   // Validation functions
   const validateStep0 = () => {
+    // Admin can skip photo entirely
+    if (isAdmin && formData.adminPhotoSkip) {
+      return true;
+    }
+
     if (!formData.capturedPhoto) {
       setErrors({ photo: 'La capture de photo est obligatoire' });
       return false;
@@ -436,6 +442,17 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
   const handleRetakePhoto = () => {
     setFormData(prev => ({ ...prev, capturedPhoto: null, duplicateCheckPassed: false }));
     setShowCamera(true);
+  };
+
+  const handleAdminSkipPhoto = () => {
+    if (!isAdmin) return;
+    setFormData(prev => ({
+      ...prev,
+      adminPhotoSkip: true,
+      duplicateCheckPassed: true
+    }));
+    toast.info('Photo ignorée par l\'administrateur');
+    setCurrentStep(1);
   };
 
   // Company handlers
@@ -672,6 +689,7 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
               onCancelDuplicateCheck={handleCancelDuplicateCheck}
               onRetakePhoto={handleRetakePhoto}
               onBiometricConsentChange={(value) => handleChange('biometricConsent', value)}
+              onAdminSkipPhoto={handleAdminSkipPhoto}
             />
           )}
 

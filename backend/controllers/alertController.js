@@ -44,7 +44,8 @@ exports.getAllAlerts = asyncHandler(async (req, res) => {
     .populate('createdBy', 'firstName lastName')
     .sort({ priority: -1, createdAt: -1 })
     .limit(parseInt(limit))
-    .skip(skip);
+    .skip(skip)
+    .lean(); // Performance: return plain JS objects for read-only list
 
   const total = await Alert.countDocuments(query);
 

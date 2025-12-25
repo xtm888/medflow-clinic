@@ -9,6 +9,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createSampleApprovals.js');
+
 const Approval = require('../models/Approval');
 const Patient = require('../models/Patient');
 const Company = require('../models/Company');

@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('checkAllCareVisionData.js');
+
 // Import all relevant models
 const LaboratoryTemplate = require('../models/LaboratoryTemplate');
 const ClinicalAct = require('../models/ClinicalAct');

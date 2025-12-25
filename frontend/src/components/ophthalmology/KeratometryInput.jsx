@@ -56,6 +56,7 @@ import {
 } from 'react-icons/fi';
 
 import { AxisDisplay, getAstigmatismType } from './AxisWheelSelector';
+import KRangeIndicator from './KRangeIndicator';
 
 // Conversion constants
 const DIOPTER_TO_MM = 337.5; // Standard refractive index for cornea
@@ -486,6 +487,19 @@ const KeratometryInput = ({
             disabled={disabled}
           />
         </SimpleGrid>
+
+        {/* K Range Visual Indicator */}
+        {(data.odK1 || data.osK1) && (
+          <KRangeIndicator
+            odK1={data.odK1}
+            odK2={data.odK2}
+            osK1={data.osK1}
+            osK2={data.osK2}
+            displayMode={displayMode}
+            showFittingGuide={true}
+            compact={false}
+          />
+        )}
 
         {/* Asymmetry check */}
         {data.odK1 && data.osK1 && (

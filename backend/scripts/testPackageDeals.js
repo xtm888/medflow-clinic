@@ -7,9 +7,12 @@
  * 3. Applies convention coverage correctly
  */
 
-const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testPackageDeals.js');
+
+const mongoose = require('mongoose');
 
 const Patient = require('../models/Patient');
 const Company = require('../models/Company');

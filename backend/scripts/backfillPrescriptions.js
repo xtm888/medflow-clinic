@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('backfillPrescriptions.js');
+
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');
 
 const Visit = require('../models/Visit');

@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedRolePermissions.js');
+
 const RolePermission = require('../models/RolePermission');
 
 const defaultRolePermissions = [

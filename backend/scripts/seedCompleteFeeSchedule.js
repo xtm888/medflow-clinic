@@ -14,6 +14,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedCompleteFeeSchedule.js');
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
 
 // ========================================

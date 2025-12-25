@@ -69,25 +69,35 @@ export default function CompanyDetail() {
   const canEdit = ['admin', 'manager', 'accountant'].includes(user?.role);
   const canRecordPayment = ['admin', 'accountant', 'manager'].includes(user?.role);
 
-  // Fetch company data
+  // Fetch company data - using Promise.allSettled for graceful partial failures
   const fetchCompanyData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const [companyRes, employeesRes, invoicesRes, approvalsRes, statsRes] = await Promise.all([
-        companyService.getCompany(id),
+      // First, fetch the company data (this is required)
+      const companyRes = await companyService.getCompany(id);
+      if (!companyRes?.data) {
+        setError('Société non trouvée');
+        setLoading(false);
+        return;
+      }
+      setCompany(companyRes.data);
+
+      // Then fetch related data with graceful failure handling
+      const [employeesRes, invoicesRes, approvalsRes, statsRes] = await Promise.allSettled([
         companyService.getCompanyEmployees(id, { limit: 10 }),
         companyService.getCompanyInvoices(id, { limit: 10 }),
         companyService.getCompanyApprovals(id, { limit: 10 }),
         companyService.getCompanyStats(id)
       ]);
 
-      setCompany(companyRes.data);
-      setEmployees(employeesRes.data || []);
-      setInvoices(invoicesRes.data || []);
-      setApprovals(approvalsRes.data || []);
-      setStats(statsRes.data);
+      // Extract data from settled promises, defaulting to empty arrays/null on failure
+      setEmployees(employeesRes.status === 'fulfilled' ? (employeesRes.value?.data || []) : []);
+      // Invoices endpoint returns {data: {invoices: [], summary: {}}} structure
+      setInvoices(invoicesRes.status === 'fulfilled' ? (invoicesRes.value?.data?.invoices || []) : []);
+      setApprovals(approvalsRes.status === 'fulfilled' ? (approvalsRes.value?.data || []) : []);
+      setStats(statsRes.status === 'fulfilled' ? statsRes.value?.data : null);
     } catch (err) {
       console.error('Error fetching company data:', err);
       setError('Erreur lors du chargement des données');

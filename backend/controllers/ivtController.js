@@ -7,6 +7,8 @@ const FeeSchedule = require('../models/FeeSchedule');
 const { Inventory, PharmacyInventory } = require('../models/Inventory');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('IVTController');
 
 // @desc    Validate IVT injection before creation
 // @route   POST /api/ivt/validate
@@ -33,7 +35,7 @@ exports.validateIVTInjection = async (req, res) => {
       data: validation
     });
   } catch (error) {
-    console.error('Error validating IVT injection:', error);
+    log.error('Error validating IVT injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error validating IVT injection',
@@ -133,12 +135,12 @@ exports.createIVTInjection = async (req, res) => {
             lotNumber: ivtInjection.medication.lotNumber
           };
 
-          console.log(`[IVT] Consumed medication from inventory: ${inventoryItem.medication?.genericName}`);
+          log.info('Consumed medication from inventory', { medication: inventoryItem.medication?.genericName });
         } else {
-          console.log(`[IVT] Warning: Medication ${ivtInjection.medication?.name} not found in inventory`);
+          log.warn('Medication not found in inventory', { medication: ivtInjection.medication?.name });
         }
       } catch (invError) {
-        console.error('[IVT] Error consuming medication from inventory:', invError);
+        log.error('Error consuming medication from inventory', { error: invError.message, stack: invError.stack });
         // Continue without failing - log the error but don't block IVT creation
       }
     }
@@ -230,10 +232,10 @@ exports.createIVTInjection = async (req, res) => {
                 null, // exchangeRateUSD
                 { bypassWaitingPeriod: false }
               );
-              console.log(`[IVT] Applied convention billing for company ${patient.convention.company}`);
+              log.info('Applied convention billing', { company: patient.convention.company });
             } catch (conventionError) {
               // Convention billing failed but invoice was created
-              console.warn(`[IVT] Convention billing failed: ${conventionError.message}. Patient will pay full amount.`);
+              log.warn('Convention billing failed, patient will pay full amount', { error: conventionError.message });
               // Invoice remains without convention - patient pays 100%
             }
           }
@@ -242,10 +244,10 @@ exports.createIVTInjection = async (req, res) => {
           ivtInjection.invoice = invoice._id;
           await ivtInjection.save();
 
-          console.log(`[IVT] Auto-created invoice ${invoice.invoiceNumber || invoice._id} for IVT ${ivtInjection.injectionId}`);
+          log.info('Auto-created invoice for IVT', { invoiceNumber: invoice.invoiceNumber || invoice._id, injectionId: ivtInjection.injectionId });
         }
       } catch (invoiceError) {
-        console.error('[IVT] Error auto-generating invoice:', invoiceError);
+        log.error('Error auto-generating invoice', { error: invoiceError.message, stack: invoiceError.stack });
         // Continue without failing - invoice can be created manually
       }
     }
@@ -281,7 +283,7 @@ exports.createIVTInjection = async (req, res) => {
 
     res.status(201).json(response);
   } catch (error) {
-    console.error('Error creating IVT injection:', error);
+    log.error('Error creating IVT injection', { error: error.message, stack: error.stack });
 
     // Handle IVT validation errors specially
     if (error.name === 'IVTValidationError') {
@@ -360,7 +362,7 @@ exports.getIVTInjections = async (req, res) => {
       data: injections
     });
   } catch (error) {
-    console.error('Error fetching IVT injections:', error);
+    log.error('Error fetching IVT injections', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching IVT injections',
@@ -396,7 +398,7 @@ exports.getIVTInjection = async (req, res) => {
       data: injection
     });
   } catch (error) {
-    console.error('Error fetching IVT injection:', error);
+    log.error('Error fetching IVT injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching IVT injection',
@@ -439,7 +441,7 @@ exports.updateIVTInjection = async (req, res) => {
       data: injection
     });
   } catch (error) {
-    console.error('Error updating IVT injection:', error);
+    log.error('Error updating IVT injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error updating IVT injection',
@@ -575,7 +577,7 @@ exports.completeIVTInjection = async (req, res) => {
           await injection.save();
         }
       } catch (followUpError) {
-        console.error('Error scheduling follow-up:', followUpError);
+        log.error('Error scheduling follow-up', { error: followUpError.message, stack: followUpError.stack });
         // Don't fail the completion, just log the error
         // Store warning for response
         injection.followUpWarning = `Follow-up scheduling failed: ${followUpError.message}`;
@@ -609,7 +611,7 @@ exports.completeIVTInjection = async (req, res) => {
       warning: followUpWarning // Include warning if follow-up couldn't be scheduled
     });
   } catch (error) {
-    console.error('Error completing IVT injection:', error);
+    log.error('Error completing IVT injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error completing IVT injection',
@@ -648,7 +650,7 @@ exports.cancelIVTInjection = async (req, res) => {
       data: injection
     });
   } catch (error) {
-    console.error('Error cancelling IVT injection:', error);
+    log.error('Error cancelling IVT injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error cancelling IVT injection',
@@ -684,7 +686,7 @@ exports.recordFollowUp = async (req, res) => {
       data: injection
     });
   } catch (error) {
-    console.error('Error recording follow-up:', error);
+    log.error('Error recording follow-up', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error recording follow-up',
@@ -721,7 +723,7 @@ exports.planNextInjection = async (req, res) => {
       data: injection
     });
   } catch (error) {
-    console.error('Error planning next injection:', error);
+    log.error('Error planning next injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error planning next injection',
@@ -754,7 +756,7 @@ exports.getPatientIVTHistory = async (req, res) => {
       data: injections
     });
   } catch (error) {
-    console.error('Error fetching patient IVT history:', error);
+    log.error('Error fetching patient IVT history', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching patient IVT history',
@@ -793,7 +795,7 @@ exports.getTreatmentHistory = async (req, res) => {
       data: history
     });
   } catch (error) {
-    console.error('Error fetching treatment history:', error);
+    log.error('Error fetching treatment history', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching treatment history',
@@ -817,7 +819,7 @@ exports.getUpcomingInjections = async (req, res) => {
       data: upcoming
     });
   } catch (error) {
-    console.error('Error fetching upcoming injections:', error);
+    log.error('Error fetching upcoming injections', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching upcoming injections',
@@ -839,7 +841,7 @@ exports.getPatientsDue = async (req, res) => {
       data: patientsDue
     });
   } catch (error) {
-    console.error('Error fetching patients due:', error);
+    log.error('Error fetching patients due', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching patients due for injection',
@@ -911,7 +913,7 @@ exports.getIVTStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching IVT stats:', error);
+    log.error('Error fetching IVT stats', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error fetching statistics',
@@ -955,7 +957,7 @@ exports.deleteIVTInjection = async (req, res) => {
       message: 'IVT injection deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting IVT injection:', error);
+    log.error('Error deleting IVT injection', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Server error deleting IVT injection',

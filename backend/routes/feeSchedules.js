@@ -3,6 +3,49 @@ const router = express.Router();
 const { protect } = require('../middleware/auth');
 const FeeSchedule = require('../models/FeeSchedule');
 
+// @route   GET /api/fee-schedules/public
+// @desc    Get public booking services (no auth required)
+// @access  Public
+router.get('/public', async (req, res) => {
+  try {
+    // Only return bookable services (consultations and procedures)
+    const services = await FeeSchedule.find({
+      active: true,
+      category: { $in: ['consultation', 'procedure', 'examination', 'ophthalmology'] },
+      $or: [
+        { effectiveTo: null },
+        { effectiveTo: { $gte: new Date() } }
+      ]
+    })
+      .select('name code category description defaultPrice department estimatedDuration')
+      .sort({ category: 1, name: 1 })
+      .limit(100)
+      .lean();
+
+    res.json({
+      success: true,
+      count: services.length,
+      data: services.map(s => ({
+        id: s._id,
+        name: s.name,
+        code: s.code,
+        category: s.category,
+        description: s.description || '',
+        price: s.defaultPrice || 0,
+        duration: s.estimatedDuration || 30,
+        department: s.department
+      }))
+    });
+  } catch (error) {
+    console.error('Error fetching public services:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching services',
+      error: error.message
+    });
+  }
+});
+
 // @route   GET /api/fee-schedules
 // @desc    Get all active fee schedules with optional filtering
 // @access  Private

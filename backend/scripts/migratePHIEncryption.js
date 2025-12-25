@@ -22,6 +22,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migratePHIEncryption.js');
+
 const { encrypt, isEncrypted, ENCRYPTED_PREFIX } = require('../utils/phiEncryption');
 
 const DRY_RUN = process.env.DRY_RUN === 'true';

@@ -14,6 +14,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedConventions.js');
+
 const Company = require('../models/Company');
 const User = require('../models/User');
 

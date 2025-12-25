@@ -14,6 +14,45 @@ let isConnected = false;
 let errorLogged = false; // Only log first error to reduce spam
 let reconnectLogged = false; // Only log first reconnect attempt
 
+// Circuit breaker state
+const circuitBreaker = {
+  failures: 0,
+  lastFailure: null,
+  isOpen: false,
+  threshold: 5, // Open circuit after 5 consecutive failures
+  cooldownMs: 30000, // Try to close after 30 seconds
+
+  recordFailure() {
+    this.failures++;
+    this.lastFailure = Date.now();
+    if (this.failures >= this.threshold) {
+      this.isOpen = true;
+      console.warn(`[CIRCUIT BREAKER] Redis circuit OPEN after ${this.failures} failures. Will retry in ${this.cooldownMs / 1000}s`);
+    }
+  },
+
+  recordSuccess() {
+    if (this.failures > 0 || this.isOpen) {
+      console.log('[CIRCUIT BREAKER] Redis circuit CLOSED - connection restored');
+    }
+    this.failures = 0;
+    this.lastFailure = null;
+    this.isOpen = false;
+  },
+
+  shouldAllowRequest() {
+    if (!this.isOpen) return true;
+
+    // Check if cooldown has passed
+    const timeSinceFailure = Date.now() - this.lastFailure;
+    if (timeSinceFailure > this.cooldownMs) {
+      console.log('[CIRCUIT BREAKER] Cooldown passed, allowing test request');
+      return true; // Allow one test request
+    }
+    return false;
+  }
+};
+
 // Redis connection configuration
 const redisConfig = {
   url: process.env.REDIS_URL || 'redis://localhost:6379',
@@ -61,6 +100,7 @@ async function initializeRedis() {
       isConnected = true;
       errorLogged = false; // Reset error flag on successful connection
       reconnectLogged = false; // Reset reconnect flag on successful connection
+      circuitBreaker.recordSuccess(); // Reset circuit breaker on successful connection
     });
 
     redisClient.on('reconnecting', () => {
@@ -92,10 +132,28 @@ function getClient() {
 }
 
 /**
- * Check if Redis is connected
+ * Check if Redis is connected and circuit breaker allows requests
  */
 function isRedisConnected() {
-  return isConnected && redisClient?.isOpen;
+  // First check basic connection
+  if (!isConnected || !redisClient?.isOpen) return false;
+
+  // Then check circuit breaker
+  return circuitBreaker.shouldAllowRequest();
+}
+
+/**
+ * Get circuit breaker status for monitoring
+ */
+function getCircuitBreakerStatus() {
+  return {
+    isOpen: circuitBreaker.isOpen,
+    failures: circuitBreaker.failures,
+    lastFailure: circuitBreaker.lastFailure,
+    cooldownRemaining: circuitBreaker.isOpen && circuitBreaker.lastFailure
+      ? Math.max(0, circuitBreaker.cooldownMs - (Date.now() - circuitBreaker.lastFailure))
+      : 0
+  };
 }
 
 /**
@@ -299,9 +357,11 @@ const cache = {
 
     try {
       const data = await redisClient.get(`cache:${key}`);
+      circuitBreaker.recordSuccess(); // Reset failures on success
       return data ? JSON.parse(data) : null;
     } catch (error) {
       console.error('Cache get error:', error.message);
+      circuitBreaker.recordFailure(); // Record failure for circuit breaker
       return null;
     }
   },
@@ -316,9 +376,11 @@ const cache = {
 
     try {
       await redisClient.setEx(`cache:${key}`, ttlSeconds, JSON.stringify(value));
+      circuitBreaker.recordSuccess(); // Reset failures on success
       return true;
     } catch (error) {
       console.error('Cache set error:', error.message);
+      circuitBreaker.recordFailure(); // Record failure for circuit breaker
       return false;
     }
   },
@@ -453,6 +515,7 @@ module.exports = {
   initializeRedis,
   getClient,
   isRedisConnected,
+  getCircuitBreakerStatus,
   closeConnection,
   RedisStore,
   sessionStore,

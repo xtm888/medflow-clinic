@@ -3,6 +3,9 @@
  */
 
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('simulateLowStockAll.js');
+
 const mongoose = require('mongoose');
 const { PharmacyInventory, FrameInventory, ContactLensInventory, ReagentInventory, LabConsumableInventory } = require('../models/Inventory');
 

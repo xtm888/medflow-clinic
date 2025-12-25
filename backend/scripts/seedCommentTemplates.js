@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const CommentTemplate = require('../models/CommentTemplate');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedCommentTemplates.js');
+
 const commentTemplates = [
   // Refraction Comments
   {

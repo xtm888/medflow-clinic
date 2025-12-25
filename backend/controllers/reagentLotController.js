@@ -1,6 +1,8 @@
 const ReagentLot = require('../models/ReagentLot');
 const LabAnalyzer = require('../models/LabAnalyzer');
 const LaboratoryTemplate = require('../models/LaboratoryTemplate');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('ReagentLotController');
 
 /**
  * Reagent Lot Controller
@@ -62,7 +64,7 @@ exports.getReagentLots = async (req, res) => {
       data: lots
     });
   } catch (error) {
-    console.error('Error fetching reagent lots:', error);
+    logger.error('Error fetching reagent lots', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des lots de réactifs',
@@ -97,7 +99,7 @@ exports.getReagentLot = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error fetching reagent lot:', error);
+    logger.error('Error fetching reagent lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération du lot',
@@ -153,7 +155,7 @@ exports.createReagentLot = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error creating reagent lot:', error);
+    logger.error('Error creating reagent lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création du lot',
@@ -204,7 +206,7 @@ exports.updateReagentLot = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error updating reagent lot:', error);
+    logger.error('Error updating reagent lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la mise à jour du lot',
@@ -242,7 +244,7 @@ exports.deleteReagentLot = async (req, res) => {
       message: 'Lot supprimé avec succès'
     });
   } catch (error) {
-    console.error('Error deleting reagent lot:', error);
+    logger.error('Error deleting reagent lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression du lot',
@@ -291,7 +293,7 @@ exports.addValidationResult = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error adding validation result:', error);
+    logger.error('Error adding validation result', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de l\'ajout du résultat',
@@ -342,7 +344,7 @@ exports.completeValidation = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error completing validation:', error);
+    logger.error('Error completing validation', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la validation',
@@ -388,7 +390,7 @@ exports.waiveValidation = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error waiving validation:', error);
+    logger.error('Error waiving validation', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la dispense de validation',
@@ -436,7 +438,7 @@ exports.activateLot = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error activating lot:', error);
+    logger.error('Error activating lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de l\'activation du lot',
@@ -487,7 +489,7 @@ exports.deactivateLot = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error deactivating lot:', error);
+    logger.error('Error deactivating lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la désactivation du lot',
@@ -523,7 +525,7 @@ exports.recordUsage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error recording usage:', error);
+    logger.error('Error recording usage', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de l\'enregistrement de l\'utilisation',
@@ -562,7 +564,7 @@ exports.getReferenceRange = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting reference range:', error);
+    logger.error('Error getting reference range', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des valeurs de référence',
@@ -595,7 +597,7 @@ exports.getActiveLot = async (req, res) => {
       data: lot
     });
   } catch (error) {
-    console.error('Error getting active lot:', error);
+    logger.error('Error getting active lot', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération du lot actif',
@@ -619,7 +621,7 @@ exports.getExpiringSoon = async (req, res) => {
       data: lots
     });
   } catch (error) {
-    console.error('Error getting expiring lots:', error);
+    logger.error('Error getting expiring lots', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des lots expirants',
@@ -642,7 +644,7 @@ exports.getPendingValidation = async (req, res) => {
       data: lots
     });
   } catch (error) {
-    console.error('Error getting pending validation lots:', error);
+    logger.error('Error getting pending validation lots', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des lots en attente',
@@ -709,7 +711,7 @@ exports.getStats = async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('Error getting reagent lot stats:', error);
+    logger.error('Error getting reagent lot stats', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des statistiques',

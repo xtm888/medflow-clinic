@@ -15,6 +15,9 @@
 const { execSync } = require('child_process');
 const path = require('path');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedCongo.js');
+
 async function seedAll() {
   const startTime = Date.now();
 

@@ -5,6 +5,8 @@ const Prescription = require('../models/Prescription');
 const Visit = require('../models/Visit');
 const SurgeryCase = require('../models/SurgeryCase');
 const { apiResponse } = require('../utils/apiResponse');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('FulfillmentDispatchController');
 
 /**
  * Fulfillment Dispatch Controller
@@ -74,7 +76,7 @@ exports.getDispatches = async (req, res) => {
       }
     }));
   } catch (error) {
-    console.error('Error fetching dispatches:', error);
+    log.error('Error fetching dispatches', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -90,7 +92,8 @@ exports.getDispatch = async (req, res) => {
       .populate('externalFacility')
       .populate('dispatch.dispatchedBy', 'firstName lastName')
       .populate('completion.confirmedBy', 'firstName lastName')
-      .populate('createdBy', 'firstName lastName');
+      .populate('createdBy', 'firstName lastName')
+      .lean(); // Performance: return plain JS object for read-only response
 
     if (!dispatch) {
       return res.status(404).json(apiResponse(false, 'Dispatch not found'));
@@ -98,7 +101,7 @@ exports.getDispatch = async (req, res) => {
 
     res.json(apiResponse(true, 'Dispatch retrieved', dispatch));
   } catch (error) {
-    console.error('Error fetching dispatch:', error);
+    log.error('Error fetching dispatch', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -137,7 +140,7 @@ exports.createDispatch = async (req, res) => {
 
     res.status(201).json(apiResponse(true, 'Dispatch created', populated));
   } catch (error) {
-    console.error('Error creating dispatch:', error);
+    log.error('Error creating dispatch', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -159,7 +162,7 @@ exports.updateStatus = async (req, res) => {
 
     res.json(apiResponse(true, 'Status updated', dispatch));
   } catch (error) {
-    console.error('Error updating status:', error);
+    log.error('Error updating status', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -191,7 +194,7 @@ exports.markDispatched = async (req, res) => {
 
     res.json(apiResponse(true, 'Marked as dispatched', dispatch));
   } catch (error) {
-    console.error('Error marking dispatched:', error);
+    log.error('Error marking dispatched', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -223,7 +226,7 @@ exports.recordAcknowledgment = async (req, res) => {
 
     res.json(apiResponse(true, 'Acknowledgment recorded', dispatch));
   } catch (error) {
-    console.error('Error recording acknowledgment:', error);
+    log.error('Error recording acknowledgment', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -262,7 +265,7 @@ exports.confirmCompletion = async (req, res) => {
 
     res.json(apiResponse(true, 'Completion confirmed', dispatch));
   } catch (error) {
-    console.error('Error confirming completion:', error);
+    log.error('Error confirming completion', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -280,7 +283,7 @@ exports.getPending = async (req, res) => {
 
     res.json(apiResponse(true, 'Pending dispatches retrieved', dispatches));
   } catch (error) {
-    console.error('Error fetching pending dispatches:', error);
+    log.error('Error fetching pending dispatches', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -297,7 +300,7 @@ exports.getOverdue = async (req, res) => {
 
     res.json(apiResponse(true, 'Overdue dispatches retrieved', dispatches));
   } catch (error) {
-    console.error('Error fetching overdue dispatches:', error);
+    log.error('Error fetching overdue dispatches', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -316,7 +319,7 @@ exports.getStats = async (req, res) => {
 
     res.json(apiResponse(true, 'Stats retrieved', stats));
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    log.error('Error fetching stats', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -335,7 +338,7 @@ exports.getPatientDispatches = async (req, res) => {
 
     res.json(apiResponse(true, 'Patient dispatches retrieved', dispatches));
   } catch (error) {
-    console.error('Error fetching patient dispatches:', error);
+    log.error('Error fetching patient dispatches', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -363,7 +366,7 @@ exports.addReminder = async (req, res) => {
 
     res.json(apiResponse(true, 'Reminder added', dispatch));
   } catch (error) {
-    console.error('Error adding reminder:', error);
+    log.error('Error adding reminder', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -423,7 +426,7 @@ exports.getDashboard = async (req, res) => {
       recentDispatches
     }));
   } catch (error) {
-    console.error('Error fetching dashboard:', error);
+    log.error('Error fetching dashboard', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -444,7 +447,7 @@ async function updateSourceDispatchStatus(dispatch, status) {
       // Add other source types as needed
     }
   } catch (error) {
-    console.error(`Error updating source dispatch status for ${dispatch.sourceType}:`, error);
+    log.error('Error updating source dispatch status', { sourceType: dispatch.sourceType, error: error.message, stack: error.stack });
   }
 }
 

@@ -7,6 +7,9 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const defaults = require('../config/defaults');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('fix_admin.js');
+
 async function fixPassword() {
   await mongoose.connect(process.env.MONGODB_URI);
   const salt = await bcrypt.genSalt(10);

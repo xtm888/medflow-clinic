@@ -8,6 +8,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedConsultationTemplates.js');
+
 const ConsultationTemplate = require('../models/ConsultationTemplate');
 
 const systemTemplates = [

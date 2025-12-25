@@ -3,6 +3,9 @@ require('dotenv').config();
 const User = require('../models/User');
 const defaults = require('../config/defaults');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('fixAdminPassword.js');
+
 async function fixAdmin() {
   try {
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');

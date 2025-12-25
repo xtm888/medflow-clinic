@@ -1495,7 +1495,8 @@ prescriptionSchema.methods.generateInvoice = async function(userId, session = nu
   const tax = 0; // No tax for medications
   const total = subtotal + tax;
 
-  // Create invoice
+  // Create invoice - starts as DRAFT for pharmacist review before finalization
+  // This allows corrections to pricing, quantities, or item selection before billing patient
   const invoiceData = {
     patient: this.patient,
     prescription: this._id,
@@ -1508,12 +1509,14 @@ prescriptionSchema.methods.generateInvoice = async function(userId, session = nu
       amountPaid: 0
     },
     currency: process.env.BASE_CURRENCY || 'CDF', // Franc Congolais
-    status: 'issued',
+    status: 'draft', // CHANGED: Start as draft for review
+    source: 'pharmacy', // Track invoice origin
+    requiresReview: true, // Flag for pharmacy validation workflow
     dateIssued: new Date(),
     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
     createdBy: userId,
     notes: {
-      internal: `Auto-generated from prescription ${this.prescriptionId}`
+      internal: `Auto-generated from prescription ${this.prescriptionId} - En attente de validation pharmacie`
     }
   };
 

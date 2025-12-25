@@ -1,4 +1,6 @@
 const UnitConversion = require('../models/UnitConversion');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('UnitConversionController');
 
 /**
  * Unit Conversion Controller
@@ -33,7 +35,7 @@ exports.getConversions = async (req, res) => {
       data: conversions
     });
   } catch (error) {
-    console.error('Error fetching unit conversions:', error);
+    logger.error('Error fetching unit conversions', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des conversions',
@@ -63,7 +65,7 @@ exports.getConversion = async (req, res) => {
       data: conversion
     });
   } catch (error) {
-    console.error('Error fetching unit conversion:', error);
+    logger.error('Error fetching unit conversion', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération de la conversion',
@@ -115,7 +117,7 @@ exports.convertValue = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error converting value:', error);
+    logger.error('Error converting value', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la conversion',
@@ -178,7 +180,7 @@ exports.batchConvert = async (req, res) => {
       data: results
     });
   } catch (error) {
-    console.error('Error batch converting:', error);
+    logger.error('Error batch converting', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la conversion par lot',
@@ -213,7 +215,7 @@ exports.getAvailableUnits = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting available units:', error);
+    logger.error('Error getting available units', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des unités',
@@ -250,7 +252,7 @@ exports.createConversion = async (req, res) => {
       data: conversion
     });
   } catch (error) {
-    console.error('Error creating unit conversion:', error);
+    logger.error('Error creating unit conversion', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création de la conversion',
@@ -289,7 +291,7 @@ exports.updateConversion = async (req, res) => {
       data: conversion
     });
   } catch (error) {
-    console.error('Error updating unit conversion:', error);
+    logger.error('Error updating unit conversion', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la mise à jour de la conversion',
@@ -322,7 +324,7 @@ exports.deleteConversion = async (req, res) => {
       message: 'Conversion supprimée'
     });
   } catch (error) {
-    console.error('Error deleting unit conversion:', error);
+    logger.error('Error deleting unit conversion', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression de la conversion',
@@ -343,7 +345,7 @@ exports.seedConversions = async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('Error seeding conversions:', error);
+    logger.error('Error seeding conversions', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors du seeding des conversions',
@@ -363,7 +365,7 @@ exports.getCategories = async (req, res) => {
       data: categories.filter(c => c) // Remove null/undefined
     });
   } catch (error) {
-    console.error('Error getting categories:', error);
+    logger.error('Error getting categories', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des catégories',
@@ -414,7 +416,7 @@ exports.getConversionFactor = async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error getting conversion factor:', error);
+    logger.error('Error getting conversion factor', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération du facteur de conversion',

@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedFlow - Architecture & Data Flow Analysis</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      line-height: 1.6;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+      color: white;
+      padding: 40px;
+      text-align: center;
+    }
+    .header h1 { font-size: 2.5rem; margin-bottom: 10px; }
+    .header p { opacity: 0.9; font-size: 1.1rem; }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
+
+    .section {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+    .section-header {
+      background: #f1f5f9;
+      padding: 20px 30px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .section-header h2 {
+      font-size: 1.4rem;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .section-content { padding: 30px; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .number {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #1e40af 0%, #7c3aed 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-card .label { color: #64748b; font-size: 0.9rem; margin-top: 5px; }
+
+    /* Entity Cards */
+    .entity-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    .entity-card {
+      border: 2px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    .entity-card:hover {
+      border-color: #3b82f6;
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    }
+    .entity-card h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 12px;
+      color: #1e293b;
+    }
+    .entity-card .icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+    .entity-card ul {
+      list-style: none;
+      font-size: 0.9rem;
+      color: #64748b;
+    }
+    .entity-card li {
+      padding: 4px 0;
+      padding-left: 20px;
+      position: relative;
+    }
+    .entity-card li::before {
+      content: "→";
+      position: absolute;
+      left: 0;
+      color: #94a3b8;
+    }
+
+    /* Color coding for entities */
+    .patient .icon { background: #dbeafe; color: #1d4ed8; }
+    .clinical .icon { background: #fce7f3; color: #be185d; }
+    .financial .icon { background: #d1fae5; color: #047857; }
+    .inventory .icon { background: #fef3c7; color: #b45309; }
+    .operational .icon { background: #e0e7ff; color: #4338ca; }
+    .admin .icon { background: #f3e8ff; color: #7c3aed; }
+
+    /* SVG Diagram Styles */
+    .diagram-container {
+      overflow-x: auto;
+      padding: 20px 0;
+    }
+    svg text { font-family: inherit; }
+
+    /* Findings Grid */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+    }
+    @media (max-width: 900px) {
+      .findings-grid { grid-template-columns: 1fr; }
+    }
+
+    .finding-section h3 {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid;
+    }
+    .finding-section.good h3 { border-color: #10b981; color: #047857; }
+    .finding-section.issues h3 { border-color: #f59e0b; color: #b45309; }
+
+    .finding-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      font-size: 0.95rem;
+    }
+    .finding-section.good .finding-item { background: #ecfdf5; }
+    .finding-section.issues .finding-item { background: #fffbeb; }
+
+    .finding-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 0.8rem;
+    }
+    .finding-section.good .finding-icon { background: #10b981; color: white; }
+    .finding-section.issues .finding-icon { background: #f59e0b; color: white; }
+
+    /* Recommendations */
+    .recommendations {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .recommendation {
+      background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .recommendation h4 {
+      color: #1e40af;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .recommendation p { font-size: 0.9rem; color: #475569; }
+    .recommendation code {
+      background: #1e293b;
+      color: #fbbf24;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    /* Flow Legend */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      padding: 20px;
+      background: #f8fafc;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.9rem;
+    }
+    .legend-color {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>MedFlow - Architecture & Data Flow Analysis</h1>
+    <p>Comprehensive analysis of the ophthalmology EMR system data flows and integration points</p>
+  </div>
+
+  <div class="container">
+    <!-- System Overview Stats -->
+    <div class="section">
+      <div class="section-header">
+        <h2>System Overview (From E2E Testing)</h2>
+      </div>
+      <div class="section-content">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="number">125</div>
+            <div class="label">Companies/Conventions</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">115</div>
+            <div class="label">Bookable Services</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">18</div>
+            <div class="label">IVT Injections Tracked</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">83+</div>
+            <div class="label">Database Models</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">77+</div>
+            <div class="label">API Routes</div>
+          </div>
+          <div class="stat-card">
+            <div class="number">6</div>
+            <div class="label">Inventory Types</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Core Entities -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Core Entities & Relationships</h2>
+      </div>
+      <div class="section-content">
+        <div class="entity-grid">
+          <div class="entity-card patient">
+            <h3><span class="icon">👤</span> Patient (Central Entity)</h3>
+            <ul>
+              <li>Personal info, contact, biometrics</li>
+              <li>Convention/insurance linkage</li>
+              <li>Medical history & allergies</li>
+              <li>Face recognition enrollment</li>
+              <li>Links to: Visits, Invoices, Prescriptions</li>
+            </ul>
+          </div>
+
+          <div class="entity-card clinical">
+            <h3><span class="icon">🔬</span> Clinical Modules</h3>
+            <ul>
+              <li>StudioVision (Ophthalmology exams)</li>
+              <li>IVT Dashboard (Intravitreal)</li>
+              <li>Surgery Planning & Tracking</li>
+              <li>Orthoptics Assessment</li>
+              <li>Laboratory Orders & Results</li>
+            </ul>
+          </div>
+
+          <div class="entity-card financial">
+            <h3><span class="icon">💰</span> Financial Flow</h3>
+            <ul>
+              <li>Fee Schedules (115 services)</li>
+              <li>Invoice Generation</li>
+              <li>Convention Split Billing</li>
+              <li>Payment Recording</li>
+              <li>Company Statements</li>
+            </ul>
+          </div>
+
+          <div class="entity-card inventory">
+            <h3><span class="icon">📦</span> Inventory Management</h3>
+            <ul>
+              <li>Pharmacy (medications)</li>
+              <li>Frames & Contact Lenses</li>
+              <li>Optical Lenses</li>
+              <li>Lab Reagents & Consumables</li>
+              <li>Cross-clinic transfers</li>
+            </ul>
+          </div>
+
+          <div class="entity-card operational">
+            <h3><span class="icon">📋</span> Operations</h3>
+            <ul>
+              <li>Appointments & Scheduling</li>
+              <li>Queue Management</li>
+              <li>Dispatch (Glasses Orders)</li>
+              <li>Public Booking Portal</li>
+              <li>Display Board (Waiting Room)</li>
+            </ul>
+          </div>
+
+          <div class="entity-card admin">
+            <h3><span class="icon">⚙️</span> Administration</h3>
+            <ul>
+              <li>User Management & RBAC</li>
+              <li>Multi-clinic Context</li>
+              <li>Device Integration</li>
+              <li>Audit Trail & Logging</li>
+              <li>Backup Management</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Data Flow Diagram -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Primary Patient Journey Data Flow</h2>
+      </div>
+      <div class="section-content">
+        <div class="diagram-container">
+          <svg viewBox="0 0 1200 500" style="width: 100%; min-width: 900px;">
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+              </marker>
+              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="2" dy="2" stdDeviation="3" flood-opacity="0.15"/>
+              </filter>
+            </defs>
+
+            <!-- Background lanes -->
+            <rect x="0" y="0" width="1200" height="100" fill="#f0f9ff" opacity="0.5"/>
+            <rect x="0" y="100" width="1200" height="100" fill="#fef3c7" opacity="0.3"/>
+            <rect x="0" y="200" width="1200" height="100" fill="#fce7f3" opacity="0.3"/>
+            <rect x="0" y="300" width="1200" height="100" fill="#d1fae5" opacity="0.3"/>
+            <rect x="0" y="400" width="1200" height="100" fill="#f3e8ff" opacity="0.3"/>
+
+            <!-- Lane labels -->
+            <text x="10" y="55" font-size="12" fill="#1d4ed8" font-weight="600">PATIENT ENTRY</text>
+            <text x="10" y="155" font-size="12" fill="#b45309" font-weight="600">OPERATIONS</text>
+            <text x="10" y="255" font-size="12" fill="#be185d" font-weight="600">CLINICAL</text>
+            <text x="10" y="355" font-size="12" fill="#047857" font-weight="600">FINANCIAL</text>
+            <text x="10" y="455" font-size="12" fill="#7c3aed" font-weight="600">DATA STORE</text>
+
+            <!-- Patient Entry Flow -->
+            <rect x="120" y="30" width="130" height="50" rx="8" fill="#3b82f6" filter="url(#shadow)"/>
+            <text x="185" y="60" text-anchor="middle" fill="white" font-size="13" font-weight="500">Registration</text>
+            <text x="185" y="73" text-anchor="middle" fill="white" font-size="10" opacity="0.8">6-step wizard</text>
+
+            <rect x="300" y="30" width="100" height="50" rx="8" fill="#3b82f6" filter="url(#shadow)"/>
+            <text x="350" y="55" text-anchor="middle" fill="white" font-size="13" font-weight="500">Face ID</text>
+            <text x="350" y="68" text-anchor="middle" fill="white" font-size="10" opacity="0.8">DeepFace</text>
+
+            <rect x="450" y="30" width="120" height="50" rx="8" fill="#3b82f6" filter="url(#shadow)"/>
+            <text x="510" y="55" text-anchor="middle" fill="white" font-size="13" font-weight="500">Public Booking</text>
+            <text x="510" y="68" text-anchor="middle" fill="white" font-size="10" opacity="0.8">115 services</text>
+
+            <!-- Operations Flow -->
+            <rect x="120" y="125" width="100" height="50" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+            <text x="170" y="155" text-anchor="middle" fill="white" font-size="13" font-weight="500">Check-in</text>
+
+            <rect x="270" y="125" width="100" height="50" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+            <text x="320" y="155" text-anchor="middle" fill="white" font-size="13" font-weight="500">Queue</text>
+
+            <rect x="420" y="125" width="120" height="50" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+            <text x="480" y="155" text-anchor="middle" fill="white" font-size="13" font-weight="500">Appointment</text>
+
+            <rect x="590" y="125" width="100" height="50" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+            <text x="640" y="155" text-anchor="middle" fill="white" font-size="13" font-weight="500">Visit</text>
+
+            <!-- Clinical Flow -->
+            <rect x="270" y="225" width="130" height="50" rx="8" fill="#ec4899" filter="url(#shadow)"/>
+            <text x="335" y="250" text-anchor="middle" fill="white" font-size="13" font-weight="500">StudioVision</text>
+            <text x="335" y="263" text-anchor="middle" fill="white" font-size="10" opacity="0.8">Ophthalmology</text>
+
+            <rect x="430" y="225" width="100" height="50" rx="8" fill="#ec4899" filter="url(#shadow)"/>
+            <text x="480" y="250" text-anchor="middle" fill="white" font-size="13" font-weight="500">IVT</text>
+            <text x="480" y="263" text-anchor="middle" fill="white" font-size="10" opacity="0.8">18 tracked</text>
+
+            <rect x="560" y="225" width="100" height="50" rx="8" fill="#ec4899" filter="url(#shadow)"/>
+            <text x="610" y="250" text-anchor="middle" fill="white" font-size="13" font-weight="500">Surgery</text>
+
+            <rect x="690" y="225" width="100" height="50" rx="8" fill="#ec4899" filter="url(#shadow)"/>
+            <text x="740" y="250" text-anchor="middle" fill="white" font-size="13" font-weight="500">Lab Orders</text>
+
+            <rect x="820" y="225" width="110" height="50" rx="8" fill="#ec4899" filter="url(#shadow)"/>
+            <text x="875" y="250" text-anchor="middle" fill="white" font-size="13" font-weight="500">Prescription</text>
+
+            <!-- Financial Flow -->
+            <rect x="270" y="325" width="130" height="50" rx="8" fill="#10b981" filter="url(#shadow)"/>
+            <text x="335" y="350" text-anchor="middle" fill="white" font-size="13" font-weight="500">Convention</text>
+            <text x="335" y="363" text-anchor="middle" fill="white" font-size="10" opacity="0.8">125 companies</text>
+
+            <rect x="430" y="325" width="130" height="50" rx="8" fill="#10b981" filter="url(#shadow)"/>
+            <text x="495" y="350" text-anchor="middle" fill="white" font-size="13" font-weight="500">Invoice Split</text>
+            <text x="495" y="363" text-anchor="middle" fill="white" font-size="10" opacity="0.8">Company/Patient</text>
+
+            <rect x="590" y="325" width="100" height="50" rx="8" fill="#10b981" filter="url(#shadow)"/>
+            <text x="640" y="355" text-anchor="middle" fill="white" font-size="13" font-weight="500">Payment</text>
+
+            <rect x="720" y="325" width="100" height="50" rx="8" fill="#10b981" filter="url(#shadow)"/>
+            <text x="770" y="355" text-anchor="middle" fill="white" font-size="13" font-weight="500">Pharmacy</text>
+
+            <rect x="850" y="325" width="120" height="50" rx="8" fill="#10b981" filter="url(#shadow)"/>
+            <text x="910" y="350" text-anchor="middle" fill="white" font-size="13" font-weight="500">Optical Shop</text>
+            <text x="910" y="363" text-anchor="middle" fill="white" font-size="10" opacity="0.8">Glasses Orders</text>
+
+            <!-- Data Store -->
+            <rect x="350" y="430" width="100" height="50" rx="8" fill="#7c3aed" filter="url(#shadow)"/>
+            <text x="400" y="455" text-anchor="middle" fill="white" font-size="13" font-weight="500">MongoDB</text>
+            <text x="400" y="468" text-anchor="middle" fill="white" font-size="10" opacity="0.8">83+ models</text>
+
+            <rect x="480" y="430" width="100" height="50" rx="8" fill="#7c3aed" filter="url(#shadow)"/>
+            <text x="530" y="460" text-anchor="middle" fill="white" font-size="13" font-weight="500">Redis</text>
+
+            <rect x="610" y="430" width="130" height="50" rx="8" fill="#7c3aed" filter="url(#shadow)"/>
+            <text x="675" y="455" text-anchor="middle" fill="white" font-size="13" font-weight="500">Audit Logs</text>
+            <text x="675" y="468" text-anchor="middle" fill="white" font-size="10" opacity="0.8">All actions</text>
+
+            <!-- Multi-clinic badge -->
+            <rect x="1000" y="125" width="150" height="80" rx="8" fill="#f8fafc" stroke="#7c3aed" stroke-width="2" stroke-dasharray="5,5"/>
+            <text x="1075" y="155" text-anchor="middle" fill="#7c3aed" font-size="12" font-weight="600">MULTI-CLINIC</text>
+            <text x="1075" y="172" text-anchor="middle" fill="#64748b" font-size="10">X-Clinic-ID Header</text>
+            <text x="1075" y="187" text-anchor="middle" fill="#64748b" font-size="10">Data Isolation</text>
+
+            <!-- Device Integration -->
+            <rect x="1000" y="225" width="150" height="60" rx="8" fill="#f8fafc" stroke="#ec4899" stroke-width="2"/>
+            <text x="1075" y="250" text-anchor="middle" fill="#ec4899" font-size="12" font-weight="600">DEVICE SYNC</text>
+            <text x="1075" y="268" text-anchor="middle" fill="#64748b" font-size="10">OCT, Autorefractor</text>
+            <text x="1075" y="280" text-anchor="middle" fill="#64748b" font-size="10">SMB2 Polling</text>
+
+            <!-- Arrows -->
+            <!-- Patient Entry to Operations -->
+            <path d="M185 80 L170 125" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M250 55 L300 55" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M400 55 L450 55" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M510 80 L480 125" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+
+            <!-- Operations flow -->
+            <path d="M220 150 L270 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M370 150 L420 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M540 150 L590 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+
+            <!-- Operations to Clinical -->
+            <path d="M640 175 L640 200 L335 200 L335 225" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M640 175 L640 200 L480 200 L480 225" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M640 175 L640 200 L610 200 L610 225" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M640 175 L640 200 L740 200 L740 225" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+
+            <!-- Clinical to Prescription -->
+            <path d="M660 250 L690 250" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M790 250 L820 250" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+
+            <!-- Clinical to Financial -->
+            <path d="M335 275 L335 325" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M400 335 L430 350" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M560 350 L590 350" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+
+            <!-- Prescription to Pharmacy -->
+            <path d="M875 275 L770 325" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M875 275 L910 325" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+
+            <!-- To Data Store -->
+            <path d="M400 375 L400 430" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+            <path d="M530 455 L610 455" stroke="#64748b" stroke-width="2" marker-end="url(#arrowhead)" fill="none"/>
+          </svg>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #3b82f6;"></div>
+            <span>Patient Entry</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f59e0b;"></div>
+            <span>Operations</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #ec4899;"></div>
+            <span>Clinical</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #10b981;"></div>
+            <span>Financial</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #7c3aed;"></div>
+            <span>Data Store</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Findings from E2E Testing -->
+    <div class="section">
+      <div class="section-header">
+        <h2>E2E Testing Observations</h2>
+      </div>
+      <div class="section-content">
+        <div class="findings-grid">
+          <div class="finding-section good">
+            <h3><span>✓</span> Working Well</h3>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>Companies & Conventions</strong><br>
+                125 companies loaded with proper hierarchy (Assurance → Employeur structure), coverage percentages, and contract dates.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>Patient Registration Wizard</strong><br>
+                Complete 6-step flow: Personal Info → Photo/Biometrics → Contact → Convention → Medical History → Confirmation.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>StudioVision Consultation</strong><br>
+                Color-coded tabs (Refraction/pink, IOP/green, Diagnostic/yellow) with Monoyer/Parinaud scales, proper OD/OS separation.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>IVT Dashboard</strong><br>
+                18 injections tracked with protocol compliance, upcoming/overdue sections, and complication monitoring.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>Multi-Clinic Inventory</strong><br>
+                6 inventory types (Pharmacy, Frames, Contact Lens, Optical Lens, Reagents, Lab Consumables) with cross-clinic transfer support.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>Public Booking Portal</strong><br>
+                115 services available without authentication, WhatsApp/Email confirmation options.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>Queue Analytics</strong><br>
+                Wait time tracking, service time metrics, and real-time WebSocket updates for display boards.
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">✓</div>
+              <div>
+                <strong>Audit Trail</strong><br>
+                Comprehensive logging of all patient access, financial transactions, and configuration changes.
+              </div>
+            </div>
+          </div>
+
+          <div class="finding-section issues">
+            <h3><span>⚠</span> Issues Found & Fixed</h3>
+
+            <div class="finding-item">
+              <div class="finding-icon">!</div>
+              <div>
+                <strong>API Response Structure Inconsistency</strong><br>
+                <code>getCompanyInvoices</code> returns <code>{data: {invoices: []}}</code> while other endpoints return <code>{data: []}</code>.<br>
+                <em>Fixed: Updated CompanyDetail.jsx to extract .data.invoices</em>
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">!</div>
+              <div>
+                <strong>Public vs Protected Routes Mixed</strong><br>
+                Fee schedules endpoint required auth but was needed for public booking.<br>
+                <em>Fixed: Added /api/fee-schedules/public endpoint</em>
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">!</div>
+              <div>
+                <strong>Date Handling Inconsistent</strong><br>
+                Null/undefined dates caused "Invalid Date" display in ReceptionistView.<br>
+                <em>Fixed: Added isNaN(date.getTime()) validation</em>
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">!</div>
+              <div>
+                <strong>Statistics Without Context</strong><br>
+                100% complication rate misleading with only 1 sample.<br>
+                <em>Fixed: Added sample size context for &lt;10 injections</em>
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">!</div>
+              <div>
+                <strong>Invalid ObjectId Handling</strong><br>
+                Patient edit crashed with invalid MongoDB IDs.<br>
+                <em>Fixed: Client-side ObjectId validation with error UI</em>
+              </div>
+            </div>
+
+            <div class="finding-item">
+              <div class="finding-icon">!</div>
+              <div>
+                <strong>Promise.all Cascading Failures</strong><br>
+                CompanyDetail showed 10+ error toasts when any sub-resource failed.<br>
+                <em>Fixed: Changed to Promise.allSettled for graceful degradation</em>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Recommendations for API Consistency</h2>
+      </div>
+      <div class="section-content">
+        <div class="recommendations">
+          <div class="recommendation">
+            <h4>🔧 Standardize API Response Format</h4>
+            <p>All list endpoints should return <code>{success, data: [], pagination}</code> consistently. Nested structures like <code>{data: {items: []}}</code> create confusion and bugs.</p>
+          </div>
+
+          <div class="recommendation">
+            <h4>🔧 Explicit Public Route Pattern</h4>
+            <p>Use <code>/api/[resource]/public</code> pattern consistently for unauthenticated endpoints instead of mixing auth requirements within the same router.</p>
+          </div>
+
+          <div class="recommendation">
+            <h4>🔧 Defensive Date Handling</h4>
+            <p>Create a shared <code>formatDate()</code> utility with built-in null/invalid checks that returns a fallback string instead of "Invalid Date".</p>
+          </div>
+
+          <div class="recommendation">
+            <h4>🔧 Statistics with Context</h4>
+            <p>All percentage metrics should include sample size. Consider minimum thresholds (e.g., N≥10) before showing percentages, or always show "X% (N=Y)".</p>
+          </div>
+
+          <div class="recommendation">
+            <h4>🔧 Promise.allSettled by Default</h4>
+            <p>When loading optional related data, use <code>Promise.allSettled</code> to prevent cascading failures and improve resilience.</p>
+          </div>
+
+          <div class="recommendation">
+            <h4>🔧 Input Validation at Edge</h4>
+            <p>Validate ObjectIds and other parameters on the frontend before API calls to provide immediate user feedback and reduce unnecessary network requests.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Clinic Data Flow -->
+    <div class="section">
+      <div class="section-header">
+        <h2>Multi-Clinic Data Isolation</h2>
+      </div>
+      <div class="section-content">
+        <div class="diagram-container">
+          <svg viewBox="0 0 900 300" style="width: 100%; max-width: 900px;">
+            <defs>
+              <marker id="arrow2" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#64748b"/>
+              </marker>
+            </defs>
+
+            <!-- Clinics -->
+            <rect x="50" y="30" width="150" height="80" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="125" y="65" text-anchor="middle" font-size="14" font-weight="600" fill="#1e40af">Clinic A</text>
+            <text x="125" y="85" text-anchor="middle" font-size="11" fill="#3b82f6">Gombe Location</text>
+
+            <rect x="250" y="30" width="150" height="80" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="325" y="65" text-anchor="middle" font-size="14" font-weight="600" fill="#1e40af">Clinic B</text>
+            <text x="325" y="85" text-anchor="middle" font-size="11" fill="#3b82f6">Tombalbaye</text>
+
+            <rect x="450" y="30" width="150" height="80" rx="10" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/>
+            <text x="525" y="65" text-anchor="middle" font-size="14" font-weight="600" fill="#1e40af">Clinic C</text>
+            <text x="525" y="85" text-anchor="middle" font-size="11" fill="#3b82f6">Limete</text>
+
+            <!-- API Gateway -->
+            <rect x="200" y="150" width="200" height="60" rx="8" fill="#f59e0b" filter="url(#shadow)"/>
+            <text x="300" y="175" text-anchor="middle" font-size="13" font-weight="600" fill="white">API Gateway</text>
+            <text x="300" y="192" text-anchor="middle" font-size="11" fill="white" opacity="0.9">X-Clinic-ID Header</text>
+
+            <!-- MongoDB -->
+            <rect x="200" y="250" width="200" height="50" rx="8" fill="#7c3aed"/>
+            <text x="300" y="280" text-anchor="middle" font-size="13" font-weight="600" fill="white">MongoDB (clinicId index)</text>
+
+            <!-- Cross-clinic -->
+            <rect x="650" y="100" width="200" height="100" rx="10" fill="#f0fdf4" stroke="#10b981" stroke-width="2"/>
+            <text x="750" y="130" text-anchor="middle" font-size="12" font-weight="600" fill="#047857">Cross-Clinic Features</text>
+            <text x="750" y="150" text-anchor="middle" font-size="11" fill="#059669">• Inventory Transfers</text>
+            <text x="750" y="168" text-anchor="middle" font-size="11" fill="#059669">• Consolidated Reports</text>
+            <text x="750" y="186" text-anchor="middle" font-size="11" fill="#059669">• Patient Sharing</text>
+
+            <!-- Arrows -->
+            <path d="M125 110 L250 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)" fill="none"/>
+            <path d="M325 110 L300 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)" fill="none"/>
+            <path d="M525 110 L350 150" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)" fill="none"/>
+            <path d="M300 210 L300 250" stroke="#64748b" stroke-width="2" marker-end="url(#arrow2)" fill="none"/>
+            <path d="M400 180 L650 150" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" marker-end="url(#arrow2)" fill="none"/>
+          </svg>
+        </div>
+
+        <div style="margin-top: 20px; padding: 20px; background: #f8fafc; border-radius: 8px;">
+          <h4 style="margin-bottom: 10px; color: #334155;">Data Isolation Pattern</h4>
+          <ul style="color: #64748b; font-size: 0.95rem;">
+            <li><strong>Request:</strong> Frontend sends <code>X-Clinic-ID</code> header with every API call</li>
+            <li><strong>Middleware:</strong> Backend extracts clinic context and adds to all database queries</li>
+            <li><strong>Models:</strong> All major collections (Patients, Visits, Invoices, Inventory) have <code>clinicId</code> field with index</li>
+            <li><strong>Cross-clinic:</strong> Special endpoints for inventory transfers and consolidated reporting require multi-clinic permissions</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div style="text-align: center; padding: 40px; color: #64748b;">
+      <p>Generated from E2E Test Analysis • MedFlow v2.0</p>
+      <p style="font-size: 0.9rem; margin-top: 10px;">All 6 identified bugs have been fixed and verified ✓</p>
+    </div>
+  </div>
+</body>
+</html>

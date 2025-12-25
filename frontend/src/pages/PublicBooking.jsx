@@ -28,9 +28,9 @@ export default function PublicBooking() {
   const fetchServices = async () => {
     try {
       setLoadingServices(true);
-      const response = await api.get('/template-catalog', {
-        params: { type: 'procedure', limit: 100 }
-      }).catch(() => ({ data: { data: [] } }));
+      // Use public endpoint that doesn't require authentication
+      const response = await api.get('/fee-schedules/public')
+        .catch(() => ({ data: { data: [] } }));
 
       const serviceData = response.data?.data || response.data || [];
       const transformedServices = serviceData.map(s => ({

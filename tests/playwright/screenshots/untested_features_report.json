@@ -1,0 +1,649 @@
+{
+  "run_date": "2025-12-21T20:05:23.512548",
+  "total": 76,
+  "passed": 69,
+  "failed": 7,
+  "categories": {
+    "patient_portal": {
+      "passed": 15,
+      "failed": 1
+    },
+    "role_views": {
+      "passed": 10,
+      "failed": 2
+    },
+    "surgery_detail": {
+      "passed": 6,
+      "failed": 1
+    },
+    "optical_operations": {
+      "passed": 6,
+      "failed": 0
+    },
+    "patient_edit": {
+      "passed": 0,
+      "failed": 1
+    },
+    "ivt_detail": {
+      "passed": 5,
+      "failed": 1
+    },
+    "glasses_orders": {
+      "passed": 4,
+      "failed": 0
+    },
+    "clinical_components": {
+      "passed": 0,
+      "failed": 1
+    },
+    "inventory_operations": {
+      "passed": 10,
+      "failed": 0
+    },
+    "visit_management": {
+      "passed": 3,
+      "failed": 0
+    },
+    "lab_operations": {
+      "passed": 4,
+      "failed": 0
+    },
+    "template_management": {
+      "passed": 3,
+      "failed": 0
+    },
+    "company_detail": {
+      "passed": 3,
+      "failed": 0
+    }
+  },
+  "tests": [
+    {
+      "category": "patient_portal",
+      "test": "Patient login page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:28.897895"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient portal branding visible",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:28.900601"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient dashboard accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:30.418100"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient dashboard has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:30.420073"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient appointments accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:31.765699"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient appointments has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:31.767334"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient prescriptions accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:33.135322"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient prescriptions has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:33.137004"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient bills accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:34.451686"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient bills has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:34.453172"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient results accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:35.474798"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient results has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:35.476191"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient messages accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:36.490100"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient messages has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:36.491527"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient profile accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:37.801711"
+    },
+    {
+      "category": "patient_portal",
+      "test": "Patient profile has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:37.803176"
+    },
+    {
+      "category": "role_views",
+      "test": "Receptionist View page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:39.661059"
+    },
+    {
+      "category": "role_views",
+      "test": "Receptionist View has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:39.665829"
+    },
+    {
+      "category": "role_views",
+      "test": "Receptionist: Queue section visible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:39.667809"
+    },
+    {
+      "category": "role_views",
+      "test": "Pharmacist View page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:41.566530"
+    },
+    {
+      "category": "role_views",
+      "test": "Pharmacist View has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:41.568572"
+    },
+    {
+      "category": "role_views",
+      "test": "Pharmacist: Prescription section visible",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:41.573189"
+    },
+    {
+      "category": "role_views",
+      "test": "Optician View page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:43.460600"
+    },
+    {
+      "category": "role_views",
+      "test": "Optician View has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:43.466654"
+    },
+    {
+      "category": "role_views",
+      "test": "Optician: Optical section visible",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:43.471010"
+    },
+    {
+      "category": "role_views",
+      "test": "Lab Tech View page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:45.343486"
+    },
+    {
+      "category": "role_views",
+      "test": "Lab Tech View has content",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:45.348437"
+    },
+    {
+      "category": "role_views",
+      "test": "Lab Tech: Lab section visible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:45.351780"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "Found 0 surgery cases",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:47.195447"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "New surgery: Patient selection field",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:49.006096"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "New surgery: Procedure field present",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:49.007988"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "New surgery: Date picker present",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:49.009162"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "Surgeon view page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:50.813589"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "Surgery check-in route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:52.611740"
+    },
+    {
+      "category": "surgery_detail",
+      "test": "Surgery report route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:54.398673"
+    },
+    {
+      "category": "optical_operations",
+      "test": "Optical shop dashboard loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:05:55.977623"
+    },
+    {
+      "category": "optical_operations",
+      "test": "New sale page accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:00.660746"
+    },
+    {
+      "category": "optical_operations",
+      "test": "Sale wizard steps visible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:00.662129"
+    },
+    {
+      "category": "optical_operations",
+      "test": "Technician verification page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:02.487419"
+    },
+    {
+      "category": "optical_operations",
+      "test": "External orders page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:04.304382"
+    },
+    {
+      "category": "optical_operations",
+      "test": "Optician performance page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:06.134949"
+    },
+    {
+      "category": "patient_edit",
+      "test": "Patient edit test skipped (no patients)",
+      "passed": false,
+      "details": "No patients in system",
+      "timestamp": "2025-12-21T20:06:08.879445"
+    },
+    {
+      "category": "ivt_detail",
+      "test": "IVT dashboard shows 0 records",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:12.690943"
+    },
+    {
+      "category": "ivt_detail",
+      "test": "New IVT form loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:14.485934"
+    },
+    {
+      "category": "ivt_detail",
+      "test": "Patient selector present",
+      "passed": false,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:14.487576"
+    },
+    {
+      "category": "ivt_detail",
+      "test": "Medication field present",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:14.489051"
+    },
+    {
+      "category": "ivt_detail",
+      "test": "IVT detail route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:16.281938"
+    },
+    {
+      "category": "ivt_detail",
+      "test": "IVT edit route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:18.072751"
+    },
+    {
+      "category": "glasses_orders",
+      "test": "Glasses orders list loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:19.954679"
+    },
+    {
+      "category": "glasses_orders",
+      "test": "Found 40 order links",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:19.956136"
+    },
+    {
+      "category": "glasses_orders",
+      "test": "Order detail route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:22.872810"
+    },
+    {
+      "category": "glasses_orders",
+      "test": "Order delivery route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:24.661040"
+    },
+    {
+      "category": "clinical_components",
+      "test": "Clinical component tests skipped",
+      "passed": false,
+      "details": "No patients in system",
+      "timestamp": "2025-12-21T20:06:27.416061"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Frame Inventory page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:29.267956"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Contact Lens Inventory page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:31.129248"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Optical Lens Inventory page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:32.989989"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Optical Lens Inventory: Add modal opens",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:34.654950"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Reagent Inventory page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:36.470222"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Reagent Inventory: Add modal opens",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:37.949969"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Lab Consumable Inventory page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:39.787027"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Lab Consumable Inventory: Add modal opens",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:41.272181"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Unified Inventory page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:43.458271"
+    },
+    {
+      "category": "inventory_operations",
+      "test": "Unified Inventory: Add modal opens",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:47.583400"
+    },
+    {
+      "category": "visit_management",
+      "test": "Visit dashboard loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:49.414225"
+    },
+    {
+      "category": "visit_management",
+      "test": "Visit detail route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:51.201111"
+    },
+    {
+      "category": "visit_management",
+      "test": "Visit timeline route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:55.548283"
+    },
+    {
+      "category": "lab_operations",
+      "test": "Lab configuration page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:57.368162"
+    },
+    {
+      "category": "lab_operations",
+      "test": "Lab worklist page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:06:59.162785"
+    },
+    {
+      "category": "lab_operations",
+      "test": "Lab check-in page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:01.116943"
+    },
+    {
+      "category": "lab_operations",
+      "test": "Prescription queue page loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:02.940839"
+    },
+    {
+      "category": "template_management",
+      "test": "Template manager loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:04.785014"
+    },
+    {
+      "category": "template_management",
+      "test": "Template builder route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:06.603307"
+    },
+    {
+      "category": "template_management",
+      "test": "Template preview route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:07.657157"
+    },
+    {
+      "category": "company_detail",
+      "test": "Companies list loads",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:09.935065"
+    },
+    {
+      "category": "company_detail",
+      "test": "Found 0 company links",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:09.939006"
+    },
+    {
+      "category": "company_detail",
+      "test": "Company detail route accessible",
+      "passed": true,
+      "details": "",
+      "timestamp": "2025-12-21T20:07:11.734791"
+    }
+  ],
+  "screenshots": [
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/01_patient_login.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/02_patient_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/03_patient_appointments.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/04_patient_prescriptions.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/05_patient_bills.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/06_patient_results.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/07_patient_messages.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_portal/08_patient_profile.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/role_views/01_receptionist_view.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/role_views/02_pharmacist_view.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/role_views/03_optician_view.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/role_views/04_lab_tech_view.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/surgery_detail/01_surgery_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/surgery_detail/02_new_surgery_case.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/surgery_detail/03_surgeon_view.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/surgery_detail/04_surgery_checkin.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/surgery_detail/05_surgery_report.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/optical_operations/01_optical_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/optical_operations/02_new_sale.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/optical_operations/03_verification.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/optical_operations/04_external_orders.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/optical_operations/05_performance.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/patient_edit/01_patient_edit_no_data.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/ivt_detail/01_ivt_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/ivt_detail/02_ivt_new.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/ivt_detail/03_ivt_detail.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/ivt_detail/04_ivt_edit.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/glasses_orders/01_glasses_orders_list.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/glasses_orders/02_glasses_orders_tabs.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/glasses_orders/03_order_detail.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/glasses_orders/04_order_delivery.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/01_frame_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/02_contact_lens_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/03_optical_lens_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/03_optical_lens_inventory_add_modal.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/04_reagent_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/04_reagent_inventory_add_modal.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/05_lab_consumable_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/05_lab_consumable_inventory_add_modal.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/06_unified_inventory.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/inventory_operations/06_unified_inventory_add_modal.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/visit_management/01_visit_dashboard.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/visit_management/02_visit_detail.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/visit_management/03_visit_timeline.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/lab_operations/01_lab_config.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/lab_operations/02_lab_worklist.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/lab_operations/03_lab_checkin.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/lab_operations/04_prescription_queue.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/template_management/01_template_manager.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/template_management/02_template_builder.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/template_management/03_template_preview.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/company_detail/01_companies_list.png",
+    "/Users/xtm888/magloire/tests/playwright/screenshots/company_detail/02_company_detail.png"
+  ]
+}

@@ -69,7 +69,8 @@ const invoiceSchema = new mongoose.Schema({
 
   dueDate: {
     type: Date,
-    required: true
+    required: true,
+    default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
   },
 
   // Invoice line items
@@ -469,6 +470,27 @@ const invoiceSchema = new mongoose.Schema({
     default: 'draft',
     index: true
   },
+
+  // Invoice source (for workflow tracking)
+  source: {
+    type: String,
+    enum: ['manual', 'visit', 'pharmacy', 'laboratory', 'optical', 'ivt', 'surgery', 'import'],
+    default: 'manual',
+    index: true
+  },
+
+  // Requires review before finalization (for auto-generated invoices)
+  requiresReview: {
+    type: Boolean,
+    default: false
+  },
+
+  // Review tracking
+  reviewedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  reviewedAt: Date,
 
   // Insurance information
   insurance: {
@@ -902,6 +924,12 @@ invoiceSchema.index({ clinic: 1, dateIssued: -1 }); // Clinic-scoped invoice lis
 invoiceSchema.index({ clinic: 1, status: 1 }); // Clinic-scoped status filtering
 invoiceSchema.index({ clinic: 1, patient: 1 }); // Clinic-scoped patient invoices
 invoiceSchema.index({ clinic: 1, 'summary.amountDue': 1 }); // Clinic-scoped outstanding balance
+
+// Additional compound indexes for common query patterns
+invoiceSchema.index({ 'companyBilling.company': 1, status: 1, createdAt: -1 }); // Company invoices by status
+invoiceSchema.index({ patient: 1, createdAt: -1 }); // Patient invoice history by creation date
+invoiceSchema.index({ clinic: 1, status: 1, createdAt: -1 }); // Clinic invoices by status and date
+invoiceSchema.index({ 'payments.date': -1 }); // Payment date queries for financial reports
 
 // Virtual for days overdue
 invoiceSchema.virtual('daysOverdue').get(function() {
@@ -1743,12 +1771,38 @@ invoiceSchema.methods.applyCompanyBilling = async function(companyId, userId, ex
   // ========================================
   // YTD CATEGORY USAGE FOR ANNUAL LIMITS
   // ========================================
+  // Use CompanyUsage cache for fast lookups, fallback to aggregation if cache not populated
   const Invoice = mongoose.model('Invoice');
-  const ytdUsage = await Invoice.getPatientYTDCategoryUsage(
-    this.patient,
-    companyId,
-    new Date().getFullYear()
-  );
+  let ytdUsage;
+
+  try {
+    const CompanyUsage = mongoose.model('CompanyUsage');
+    const usage = await CompanyUsage.findOne({
+      patient: this.patient,
+      company: companyId,
+      fiscalYear: new Date().getFullYear()
+    });
+
+    if (usage) {
+      // Use cached usage (fast path - O(1) lookup)
+      ytdUsage = usage.getCategoryUsageMap();
+    } else {
+      // Fallback to aggregation (slow path - O(n) where n = invoice count)
+      ytdUsage = await Invoice.getPatientYTDCategoryUsage(
+        this.patient,
+        companyId,
+        new Date().getFullYear()
+      );
+    }
+  } catch (usageErr) {
+    // If CompanyUsage model not available, fallback to aggregation
+    console.warn('[Invoice] CompanyUsage lookup failed, using aggregation fallback:', usageErr.message);
+    ytdUsage = await Invoice.getPatientYTDCategoryUsage(
+      this.patient,
+      companyId,
+      new Date().getFullYear()
+    );
+  }
   const annualLimitWarnings = [];
 
   // Determine base coverage percentage
@@ -2430,6 +2484,40 @@ invoiceSchema.post('save', async (doc) => {
           console.error('[Invoice] Error auto-dispensing prescriptions:', err.message);
         }
       });
+    }
+
+    // UPDATE COMPANY USAGE: When convention invoice is finalized, update cached usage
+    // This keeps the CompanyUsage cache in sync for fast annual cap lookups
+    if (doc.isConventionInvoice && doc.companyBilling?.company) {
+      // Track if this is a status change that should trigger usage update
+      const originalStatus = doc._original?.status;
+      const isNewConventionInvoice = doc.wasNew && ['issued', 'paid'].includes(doc.status);
+      const becameFinalized = originalStatus === 'draft' && ['issued', 'paid'].includes(doc.status);
+      const wasCancelled = ['cancelled', 'voided', 'refunded'].includes(doc.status) &&
+                           !['cancelled', 'voided', 'refunded'].includes(originalStatus);
+
+      if (isNewConventionInvoice || becameFinalized) {
+        setImmediate(async () => {
+          try {
+            const CompanyUsage = mongoose.model('CompanyUsage');
+            await CompanyUsage.recordInvoiceUsage(doc);
+            console.log(`[Invoice ${doc.invoiceId}] Updated CompanyUsage cache`);
+          } catch (err) {
+            console.error('[Invoice] Error updating CompanyUsage:', err.message);
+            // Non-blocking - cache will be rebuilt on next access if needed
+          }
+        });
+      } else if (wasCancelled) {
+        setImmediate(async () => {
+          try {
+            const CompanyUsage = mongoose.model('CompanyUsage');
+            await CompanyUsage.reverseInvoiceUsage(doc, doc.updatedBy || doc.createdBy, `Invoice ${doc.status}`);
+            console.log(`[Invoice ${doc.invoiceId}] Reversed CompanyUsage for ${doc.status}`);
+          } catch (err) {
+            console.error('[Invoice] Error reversing CompanyUsage:', err.message);
+          }
+        });
+      }
     }
   } catch (err) {
     console.error('Error in invoice post-save hook:', err);

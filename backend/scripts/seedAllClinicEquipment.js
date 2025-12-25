@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const EquipmentCatalog = require('../models/EquipmentCatalog');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedAllClinicEquipment.js');
+
 mongoose.connect(process.env.MONGODB_URI);
 
 // ALL equipment from clinic PDF - INCLUDING LAB EQUIPMENT

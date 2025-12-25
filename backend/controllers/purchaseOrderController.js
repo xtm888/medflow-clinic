@@ -1,5 +1,7 @@
 const PurchaseOrder = require('../models/PurchaseOrder');
 const { escapeRegex } = require('../utils/sanitize');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('PurchaseOrderController');
 
 // Get all purchase orders with filtering and pagination
 exports.getPurchaseOrders = async (req, res) => {
@@ -67,7 +69,7 @@ exports.getPurchaseOrders = async (req, res) => {
       pages: Math.ceil(total / parseInt(limit))
     });
   } catch (error) {
-    console.error('Error fetching purchase orders:', error);
+    logger.error('Error fetching purchase orders', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -86,7 +88,7 @@ exports.getPurchaseOrder = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error fetching purchase order:', error);
+    logger.error('Error fetching purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -104,7 +106,7 @@ exports.createPurchaseOrder = async (req, res) => {
 
     res.status(201).json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error creating purchase order:', error);
+    logger.error('Error creating purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -130,7 +132,7 @@ exports.updatePurchaseOrder = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error updating purchase order:', error);
+    logger.error('Error updating purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -148,7 +150,7 @@ exports.submitForApproval = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error submitting for approval:', error);
+    logger.error('Error submitting for approval', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -166,7 +168,7 @@ exports.approvePurchaseOrder = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error approving purchase order:', error);
+    logger.error('Error approving purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -188,7 +190,7 @@ exports.rejectPurchaseOrder = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error rejecting purchase order:', error);
+    logger.error('Error rejecting purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -206,7 +208,7 @@ exports.markAsSent = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error marking as sent:', error);
+    logger.error('Error marking as sent', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -230,7 +232,7 @@ exports.receiveItems = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error receiving items:', error);
+    logger.error('Error receiving items', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -248,7 +250,7 @@ exports.closePurchaseOrder = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error closing purchase order:', error);
+    logger.error('Error closing purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -270,7 +272,7 @@ exports.cancelPurchaseOrder = async (req, res) => {
 
     res.json({ success: true, data: purchaseOrder });
   } catch (error) {
-    console.error('Error cancelling purchase order:', error);
+    logger.error('Error cancelling purchase order', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -291,7 +293,7 @@ exports.getPendingApprovals = async (req, res) => {
 
     res.json({ success: true, data: pendingOrders });
   } catch (error) {
-    console.error('Error fetching pending approvals:', error);
+    logger.error('Error fetching pending approvals', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -329,7 +331,7 @@ exports.getStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    logger.error('Error fetching stats', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -13,6 +13,9 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migrateFeeSchedulesToTemplates.js');
+
 const DRY_RUN = process.env.DRY_RUN === 'true';
 
 async function migrate() {

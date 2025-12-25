@@ -1,6 +1,8 @@
 const ConsultationSession = require('../models/ConsultationSession');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { buildClinicQuery } = require('../middleware/clinicAuth');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('ConsultationSession');
 
 /**
  * Get active session for patient
@@ -18,7 +20,7 @@ exports.getActiveSession = async (req, res) => {
       data: session
     });
   } catch (error) {
-    console.error('Error getting active session:', error);
+    logger.error('Error getting active session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving active session',
@@ -44,7 +46,7 @@ exports.getRecentSessions = async (req, res) => {
       data: sessions
     });
   } catch (error) {
-    console.error('Error getting recent sessions:', error);
+    logger.error('Error getting recent sessions', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving recent sessions',
@@ -75,7 +77,7 @@ exports.getSessionById = async (req, res) => {
       data: session
     });
   } catch (error) {
-    console.error('Error getting session:', error);
+    logger.error('Error getting session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving consultation session',
@@ -146,7 +148,7 @@ exports.createSession = async (req, res) => {
       data: session
     });
   } catch (error) {
-    console.error('Error creating session:', error);
+    logger.error('Error creating session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error creating consultation session',
@@ -201,7 +203,7 @@ exports.updateSession = async (req, res) => {
       data: session
     });
   } catch (error) {
-    console.error('Error updating session:', error);
+    logger.error('Error updating session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error updating consultation session',
@@ -238,7 +240,7 @@ exports.completeSession = async (req, res) => {
       // overriding session.status with invalid enum values from frontend data
       const { status, ...safeData } = req.body;
       if (status && status !== 'active') {
-        console.warn(`[COMPLETE SESSION] Ignoring status="${status}" from frontend to prevent validation errors`);
+        logger.warn('Ignoring invalid status from frontend to prevent validation errors', { status });
       }
       Object.assign(session, safeData);
       await session.save();
@@ -255,7 +257,7 @@ exports.completeSession = async (req, res) => {
       data: session
     });
   } catch (error) {
-    console.error('Error completing session:', error);
+    logger.error('Error completing session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error completing consultation session',
@@ -293,7 +295,7 @@ exports.abandonSession = async (req, res) => {
       message: 'Consultation session abandoned'
     });
   } catch (error) {
-    console.error('Error abandoning session:', error);
+    logger.error('Error abandoning session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error abandoning consultation session',
@@ -331,7 +333,7 @@ exports.deleteSession = async (req, res) => {
       message: 'Consultation session deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting session:', error);
+    logger.error('Error deleting session', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error deleting consultation session',

@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('listCollections.js');
+
 async function listCollections() {
   try {
     console.log('Connecting to MongoDB...');

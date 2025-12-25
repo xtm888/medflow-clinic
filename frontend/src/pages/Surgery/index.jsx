@@ -7,6 +7,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { CollapsibleSectionGroup } from '../../components/CollapsibleSection';
 import surgeryService from '../../services/surgeryService';
+import logger from '../../services/logger';
 
 // Import sections
 import SurgeryQueueSection from './sections/SurgeryQueueSection';
@@ -44,7 +45,7 @@ export default function SurgeryDashboard() {
       const response = await surgeryService.getDashboardStats();
       setStats(response.data);
     } catch (err) {
-      console.error('Error fetching surgery stats:', err);
+      logger.error('Error fetching surgery stats:', err);
       setError('Erreur lors du chargement des statistiques');
     } finally {
       setLoading(false);

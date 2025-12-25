@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-12-19T23:36:49.488303",
+  "timestamp": "2025-12-21T22:58:40.890873",
   "total_tests": 60,
-  "passed": 58,
-  "failed": 2,
-  "success_rate": "96.7%",
+  "passed": 60,
+  "failed": 0,
+  "success_rate": "100.0%",
   "screenshots_taken": 73,
   "screenshot_paths": [
     "/Users/xtm888/magloire/tests/playwright/screenshots/comprehensive/00_login_page.png",
@@ -82,8 +82,8 @@
   ],
   "categories": {
     "Home": {
-      "passed": 1,
-      "failed": 1
+      "passed": 2,
+      "failed": 0
     },
     "Dashboard": {
       "passed": 1,
@@ -106,8 +106,8 @@
       "failed": 0
     },
     "StudioVision": {
-      "passed": 0,
-      "failed": 1
+      "passed": 1,
+      "failed": 0
     },
     "Prescriptions": {
       "passed": 1,
@@ -293,15 +293,15 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:08.500312"
+      "timestamp": "2025-12-21T22:54:57.984973"
     },
     {
       "category": "Home",
-      "test": "Stats cards present",
-      "passed": false,
+      "test": "Module tiles present",
+      "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:08.512145"
+      "timestamp": "2025-12-21T22:54:57.988029"
     },
     {
       "category": "Dashboard",
@@ -309,7 +309,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:12.161829"
+      "timestamp": "2025-12-21T22:55:01.552244"
     },
     {
       "category": "Patients",
@@ -317,7 +317,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:15.848774"
+      "timestamp": "2025-12-21T22:55:05.090175"
     },
     {
       "category": "Patients",
@@ -325,7 +325,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:15.855701"
+      "timestamp": "2025-12-21T22:55:05.092102"
     },
     {
       "category": "Patients",
@@ -333,7 +333,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:15.857271"
+      "timestamp": "2025-12-21T22:55:05.093490"
     },
     {
       "category": "Queue",
@@ -341,7 +341,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:25.428331"
+      "timestamp": "2025-12-21T22:55:14.535265"
     },
     {
       "category": "Queue",
@@ -349,7 +349,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:25.430381"
+      "timestamp": "2025-12-21T22:55:14.537064"
     },
     {
       "category": "Appointments",
@@ -357,7 +357,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:28.997911"
+      "timestamp": "2025-12-21T22:55:18.307143"
     },
     {
       "category": "Ophthalmology",
@@ -365,15 +365,15 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:36.362075"
+      "timestamp": "2025-12-21T22:55:25.861337"
     },
     {
       "category": "StudioVision",
-      "test": "Tab navigation present",
-      "passed": false,
+      "test": "New consultation page loads",
+      "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:39.219385"
+      "timestamp": "2025-12-21T22:55:30.362923"
     },
     {
       "category": "Prescriptions",
@@ -381,7 +381,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:42.768745"
+      "timestamp": "2025-12-21T22:55:34.011046"
     },
     {
       "category": "Pharmacy",
@@ -389,7 +389,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:46.405967"
+      "timestamp": "2025-12-21T22:55:37.483453"
     },
     {
       "category": "Laboratory",
@@ -397,7 +397,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:50.092914"
+      "timestamp": "2025-12-21T22:55:41.021815"
     },
     {
       "category": "IVT",
@@ -405,7 +405,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:53.655576"
+      "timestamp": "2025-12-21T22:55:44.518310"
     },
     {
       "category": "Surgery",
@@ -413,7 +413,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:33:57.247505"
+      "timestamp": "2025-12-21T22:55:48.061330"
     },
     {
       "category": "Orthoptic",
@@ -421,7 +421,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:00.890642"
+      "timestamp": "2025-12-21T22:55:51.605200"
     },
     {
       "category": "Invoicing",
@@ -429,7 +429,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:04.442866"
+      "timestamp": "2025-12-21T22:55:56.216081"
     },
     {
       "category": "Financial",
@@ -437,7 +437,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:08.035753"
+      "timestamp": "2025-12-21T22:55:59.761609"
     },
     {
       "category": "Companies",
@@ -445,7 +445,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:12.035082"
+      "timestamp": "2025-12-21T22:56:03.694014"
     },
     {
       "category": "Approvals",
@@ -453,7 +453,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:15.558932"
+      "timestamp": "2025-12-21T22:56:07.172617"
     },
     {
       "category": "Services",
@@ -461,7 +461,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:20.586296"
+      "timestamp": "2025-12-21T22:56:12.184918"
     },
     {
       "category": "Frame Inventory",
@@ -469,7 +469,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:24.223009"
+      "timestamp": "2025-12-21T22:56:15.714671"
     },
     {
       "category": "Optical Lens",
@@ -477,7 +477,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:27.880383"
+      "timestamp": "2025-12-21T22:56:19.278530"
     },
     {
       "category": "Contact Lens",
@@ -485,7 +485,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:31.515059"
+      "timestamp": "2025-12-21T22:56:22.801776"
     },
     {
       "category": "Reagent",
@@ -493,7 +493,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:35.181852"
+      "timestamp": "2025-12-21T22:56:26.270900"
     },
     {
       "category": "Lab Consumable",
@@ -501,7 +501,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:38.954782"
+      "timestamp": "2025-12-21T22:56:29.731295"
     },
     {
       "category": "Cross-Clinic",
@@ -509,7 +509,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:42.586070"
+      "timestamp": "2025-12-21T22:56:33.217793"
     },
     {
       "category": "Glasses Orders",
@@ -517,7 +517,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:46.137971"
+      "timestamp": "2025-12-21T22:56:36.748265"
     },
     {
       "category": "Optical Shop",
@@ -525,7 +525,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:49.643810"
+      "timestamp": "2025-12-21T22:56:40.237881"
     },
     {
       "category": "Repairs",
@@ -533,7 +533,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:53.171872"
+      "timestamp": "2025-12-21T22:56:43.734110"
     },
     {
       "category": "Devices",
@@ -541,7 +541,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:34:56.740672"
+      "timestamp": "2025-12-21T22:56:47.252605"
     },
     {
       "category": "Discovery",
@@ -549,7 +549,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:00.330236"
+      "timestamp": "2025-12-21T22:56:50.727648"
     },
     {
       "category": "Imaging",
@@ -557,7 +557,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:04.258362"
+      "timestamp": "2025-12-21T22:56:54.357240"
     },
     {
       "category": "Settings",
@@ -565,7 +565,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:08.183387"
+      "timestamp": "2025-12-21T22:56:57.848352"
     },
     {
       "category": "Users",
@@ -573,7 +573,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:11.899455"
+      "timestamp": "2025-12-21T22:57:01.351056"
     },
     {
       "category": "Audit",
@@ -581,7 +581,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:15.519000"
+      "timestamp": "2025-12-21T22:57:04.921970"
     },
     {
       "category": "Backups",
@@ -589,7 +589,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:19.066591"
+      "timestamp": "2025-12-21T22:57:08.398601"
     },
     {
       "category": "Templates",
@@ -597,7 +597,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:22.737101"
+      "timestamp": "2025-12-21T22:57:11.924470"
     },
     {
       "category": "Analytics",
@@ -605,7 +605,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:26.379589"
+      "timestamp": "2025-12-21T22:57:15.309925"
     },
     {
       "category": "Visits",
@@ -613,7 +613,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:29.914006"
+      "timestamp": "2025-12-21T22:57:18.828528"
     },
     {
       "category": "Public Booking",
@@ -621,7 +621,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:33.036084"
+      "timestamp": "2025-12-21T22:57:21.922054"
     },
     {
       "category": "Display Board",
@@ -629,7 +629,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:36.974580"
+      "timestamp": "2025-12-21T22:57:25.852692"
     },
     {
       "category": "External",
@@ -637,7 +637,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:40.532720"
+      "timestamp": "2025-12-21T22:57:29.352228"
     },
     {
       "category": "Dispatch",
@@ -645,7 +645,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:43.355345"
+      "timestamp": "2025-12-21T22:57:32.937322"
     },
     {
       "category": "Consolidated",
@@ -653,7 +653,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:46.864709"
+      "timestamp": "2025-12-21T22:57:36.439565"
     },
     {
       "category": "Alerts",
@@ -661,7 +661,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:50.350194"
+      "timestamp": "2025-12-21T22:57:39.930024"
     },
     {
       "category": "Notifications",
@@ -669,7 +669,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:53.853639"
+      "timestamp": "2025-12-21T22:57:43.482184"
     },
     {
       "category": "Documents",
@@ -677,7 +677,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:35:57.452437"
+      "timestamp": "2025-12-21T22:57:47.090097"
     },
     {
       "category": "Stock",
@@ -685,7 +685,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:00.950311"
+      "timestamp": "2025-12-21T22:57:50.600280"
     },
     {
       "category": "Purchase Orders",
@@ -693,7 +693,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:04.454618"
+      "timestamp": "2025-12-21T22:57:54.058895"
     },
     {
       "category": "Queue Analytics",
@@ -701,7 +701,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:07.203778"
+      "timestamp": "2025-12-21T22:57:57.535908"
     },
     {
       "category": "Nurse Vitals",
@@ -709,7 +709,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:10.683701"
+      "timestamp": "2025-12-21T22:58:00.998526"
     },
     {
       "category": "OCR Import",
@@ -717,7 +717,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:13.401208"
+      "timestamp": "2025-12-21T22:58:04.484945"
     },
     {
       "category": "Responsive",
@@ -725,7 +725,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:19.255923"
+      "timestamp": "2025-12-21T22:58:10.664157"
     },
     {
       "category": "Responsive",
@@ -733,7 +733,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:25.341919"
+      "timestamp": "2025-12-21T22:58:16.707252"
     },
     {
       "category": "Responsive",
@@ -741,7 +741,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:31.459437"
+      "timestamp": "2025-12-21T22:58:22.801618"
     },
     {
       "category": "Responsive",
@@ -749,7 +749,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:37.534839"
+      "timestamp": "2025-12-21T22:58:28.869343"
     },
     {
       "category": "Responsive",
@@ -757,7 +757,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:43.622062"
+      "timestamp": "2025-12-21T22:58:34.844790"
     },
     {
       "category": "Responsive",
@@ -765,7 +765,7 @@
       "passed": true,
       "details": "",
       "screenshot": null,
-      "timestamp": "2025-12-19T23:36:49.407143"
+      "timestamp": "2025-12-21T22:58:40.846320"
     }
   ]
 }

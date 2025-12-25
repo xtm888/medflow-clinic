@@ -1,0 +1,55 @@
+{
+  "results": [
+    {
+      "test": "Wizard: Open modal",
+      "status": "PASS",
+      "message": "New patient button clicked"
+    },
+    {
+      "test": "Step 1: Skip photo",
+      "status": "PASS",
+      "message": "Photo step skipped"
+    },
+    {
+      "test": "Step 2: Date of birth",
+      "status": "PASS",
+      "message": "1985-03-15"
+    },
+    {
+      "test": "Step 2: Next clicked",
+      "status": "PASS",
+      "message": "Moving to Step 3"
+    },
+    {
+      "test": "Step 3: Next clicked",
+      "status": "PASS",
+      "message": "Moving to Step 4"
+    },
+    {
+      "test": "Step 4: Convention type",
+      "status": "PASS",
+      "message": "Convention step passed (default)"
+    },
+    {
+      "test": "Step 4: Next clicked",
+      "status": "PASS",
+      "message": "Moving to Step 5"
+    },
+    {
+      "test": "Step 5: Submit",
+      "status": "FAIL",
+      "message": "Submit button not found"
+    },
+    {
+      "test": "Patient creation",
+      "status": "PASS",
+      "message": "Success message shown"
+    }
+  ],
+  "findings": [
+    {
+      "category": "PATIENT_WIZARD",
+      "description": "Complete 5-step wizard works!"
+    }
+  ]
+}

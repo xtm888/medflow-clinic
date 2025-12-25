@@ -1,6 +1,9 @@
 const fs = require('fs');
 const csv = require('csv-parser');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('count_csv_rows.js');
+
 let count = 0;
 let withNumFiche = 0;
 let emptyNumFiche = 0;

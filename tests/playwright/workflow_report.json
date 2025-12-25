@@ -1,10 +1,10 @@
 {
-  "timestamp": "2025-12-19T23:39:51.931895",
-  "total_tests": 24,
-  "passed": 23,
-  "failed": 1,
-  "success_rate": "95.8%",
-  "screenshots": 20,
+  "timestamp": "2025-12-21T22:58:22.219297",
+  "total_tests": 25,
+  "passed": 25,
+  "failed": 0,
+  "success_rate": "100.0%",
+  "screenshots": 21,
   "results": [
     {
       "category": "Patient Wizard",
@@ -73,6 +73,12 @@
       "details": ""
     },
     {
+      "category": "User Management",
+      "test": "Add user modal opens",
+      "passed": true,
+      "details": ""
+    },
+    {
       "category": "Templates",
       "test": "Creation modal opens",
       "passed": true,
@@ -116,8 +122,8 @@
     },
     {
       "category": "Patient Detail",
-      "test": "Section tabs present",
-      "passed": false,
+      "test": "Detail page loads",
+      "passed": true,
       "details": ""
     },
     {

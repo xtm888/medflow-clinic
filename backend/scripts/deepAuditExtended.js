@@ -16,6 +16,9 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('deepAuditExtended.js');
+
 const Company = require('../models/Company');
 
 // ============================================

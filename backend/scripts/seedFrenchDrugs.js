@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedFrenchDrugs.js');
+
 // Drug model
 const drugSchema = new mongoose.Schema({
   name: { type: String, required: true },

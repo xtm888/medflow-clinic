@@ -43,7 +43,7 @@ const NotificationSchema = new mongoose.Schema({
   // Associated entity
   entityType: {
     type: String,
-    enum: ['appointment', 'prescription', 'invoice', 'patient', 'message', 'task', 'system']
+    enum: ['appointment', 'prescription', 'invoice', 'patient', 'message', 'task', 'system', 'lab_order', 'surgery']
   },
   entityId: {
     type: mongoose.Schema.Types.ObjectId

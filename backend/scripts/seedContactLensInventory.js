@@ -5,8 +5,11 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { ContactLensInventory } = require('../models/Inventory');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedContactLensInventory.js');
+
+const { ContactLensInventory } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 
 // Popular contact lens brands and product lines

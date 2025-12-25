@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Save, Printer, X, Check, AlertTriangle, Loader2 } from 'lucide-react';
+import { Save, Printer, X, Check, AlertTriangle, Loader2, User, Camera, Briefcase, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -41,6 +41,8 @@ import ContactLensFitting from '../../components/contactLens/ContactLensFitting'
 import OrthoptieQuickPanel from '../../components/consultation/OrthoptieQuickPanel';
 import QuickActionsBar from '../../components/consultation/QuickActionsBar';
 import DeviceDataBanner from '../../components/consultation/DeviceDataBanner';
+import EyeSchemaModal from '../../components/ophthalmology/EyeSchemaModal';
+import CriticalAlertBanner from '../../components/patient/CriticalAlertBanner';
 
 // Renouvellement Buttons
 import { RefractionRenouvellementButtons, PathologyRenouvellementButton } from '../../components/consultation/RenouvellementButtons';
@@ -55,6 +57,7 @@ import documentService from '../../services/documentService';
 import { usePreviousExamData } from '../../hooks/usePreviousExamData';
 import { useDeviceSync } from '../../hooks/useDeviceSync';
 import { useClinic } from '../../contexts/ClinicContext';
+import logger from '../../services/logger';
 
 // Initial data structure
 const initialConsultationData = {
@@ -161,6 +164,7 @@ export default function StudioVisionConsultation() {
   const [copyingOD, setCopyingOD] = useState(false);
   const [loadingLastVisit, setLoadingLastVisit] = useState(false);
   const [showDeviceBanner, setShowDeviceBanner] = useState(true);
+  const [showSchemaModal, setShowSchemaModal] = useState(false);
 
   // Previous exam data hook
   const {
@@ -205,7 +209,7 @@ export default function StudioVisionConsultation() {
           const history = historyResponse?.data || historyResponse || [];
           setConsultationHistory(Array.isArray(history) ? history : []);
         } catch {
-          console.log('No previous consultations found');
+          logger.debug('No previous consultations found');
         }
 
         // If visitId provided, load existing visit data
@@ -220,13 +224,13 @@ export default function StudioVisionConsultation() {
               }));
             }
           } catch {
-            console.log('Could not load visit data, starting fresh');
+            logger.debug('Could not load visit data, starting fresh');
           }
         }
 
         setLoading(false);
       } catch (err) {
-        console.error('Failed to load patient:', err);
+        logger.error('Failed to load patient:', err);
         setError('Impossible de charger les données du patient');
         setLoading(false);
       }
@@ -264,7 +268,7 @@ export default function StudioVisionConsultation() {
 
       return true;
     } catch (err) {
-      console.error('Failed to save:', err);
+      logger.error('Failed to save:', err);
       setSaving(false);
       return false;
     }
@@ -369,13 +373,13 @@ export default function StudioVisionConsultation() {
       }[optionId] || 'Document';
 
       // For now, use browser print with a type indicator
-      console.log(`Printing: ${printType}`);
+      logger.debug(`Printing: ${printType}`);
 
       // Navigate to print-preview route if available, otherwise use window.print
       // Future: implement PDF generation via backend API
       window.print();
     } catch (err) {
-      console.error('Print failed:', err);
+      logger.error('Print failed:', err);
     }
   }, []);
 
@@ -439,10 +443,10 @@ export default function StudioVisionConsultation() {
           }));
           break;
         default:
-          console.log('Device type not handled:', importedData.deviceType);
+          logger.debug('Device type not handled:', importedData.deviceType);
       }
     } catch (err) {
-      console.error('Failed to apply device measurement:', err);
+      logger.error('Failed to apply device measurement:', err);
     }
   }, [importMeasurement, updateSection]);
 
@@ -480,7 +484,7 @@ export default function StudioVisionConsultation() {
 
       dismissDeviceNotification();
     } catch (err) {
-      console.error('Failed to apply all device measurements:', err);
+      logger.error('Failed to apply all device measurements:', err);
     }
   }, [importAllMeasurements, updateSection, dismissDeviceNotification]);
 
@@ -569,7 +573,7 @@ export default function StudioVisionConsultation() {
             patient={patient}
             data={data}
             consultationHistory={consultationHistory}
-            onSelectConsultation={(c) => console.log('Selected:', c)}
+            onSelectConsultation={(c) => logger.debug('Selected consultation:', c)}
             onNewConsultation={() => setActiveTab('refraction')}
             healthcareOptions={data.healthcareOptions}
             onHealthcareOptionsChange={(opts) => updateSection('healthcareOptions', opts)}
@@ -740,14 +744,66 @@ export default function StudioVisionConsultation() {
         <div className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-4">
-              <h1 className="text-xl font-bold">
-                {patient?.lastName?.toUpperCase()} {patient?.firstName}
-              </h1>
+              {/* Patient Photo */}
+              <div className="relative">
+                {(patient?.photoUrl || patient?.photo) ? (
+                  <img
+                    src={patient.photoUrl || patient.photo}
+                    alt={`${patient.firstName} ${patient.lastName}`}
+                    className="w-10 h-10 rounded-full object-cover border-2 border-white/50 cursor-pointer hover:border-white transition"
+                    onClick={() => window.open(patient.photoUrl || patient.photo, '_blank')}
+                    title="Cliquer pour agrandir"
+                  />
+                ) : (
+                  <div
+                    className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center cursor-pointer hover:bg-white/30 transition"
+                    title="Aucune photo - Cliquer pour capturer"
+                  >
+                    <Camera className="w-5 h-5 text-white/70" />
+                  </div>
+                )}
+              </div>
+
+              {/* Patient Name */}
+              <div>
+                <h1 className="text-xl font-bold">
+                  {patient?.lastName?.toUpperCase()} {patient?.firstName}
+                </h1>
+                {/* Profession Badge - check both occupation and profession fields */}
+                {(patient?.occupation || patient?.profession) && (
+                  <div className="flex items-center gap-1 text-xs text-white/80">
+                    <Briefcase className="w-3 h-3" />
+                    <span>{patient.occupation || patient.profession}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Age Badge */}
               {patient?.dateOfBirth && (
                 <span className="px-2 py-0.5 bg-yellow-400 text-yellow-900 text-sm font-bold rounded">
                   {Math.floor((new Date() - new Date(patient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000))} Ans
                 </span>
               )}
+
+              {/* Referring Doctor */}
+              {patient?.referringDoctor && (
+                <div className="flex items-center gap-1 text-sm text-white/80 bg-white/10 px-2 py-0.5 rounded">
+                  <UserCheck className="w-3.5 h-3.5" />
+                  <span>{patient.referringDoctor.startsWith('Dr') ? patient.referringDoctor : `Dr ${patient.referringDoctor}`}</span>
+                </div>
+              )}
+
+              {/* Critical Alerts - Compact View */}
+              {(patient?.alerts?.length > 0 || patient?.allergies?.length > 0 || patient?.importantNotes) && (
+                <CriticalAlertBanner
+                  alerts={patient.alerts || []}
+                  allergies={patient.allergies || []}
+                  importantNotes={patient.importantNotes}
+                  canEdit={false}
+                  compact={true}
+                />
+              )}
+
               <span className="text-sm opacity-80">
                 Fiche: {patient?.fileNumber || patientId?.slice(-8)}
               </span>
@@ -819,6 +875,7 @@ export default function StudioVisionConsultation() {
           loadingLastVisit={loadingLastVisit}
           onPrint={handlePrint}
           onAddDiagnosis={handleAddDiagnosis}
+          onOpenSchema={() => setShowSchemaModal(true)}
           onTimerUpdate={handleTimerUpdate}
           initialTimerSeconds={data.consultationDuration || 0}
           autoStartTimer={true}
@@ -831,6 +888,19 @@ export default function StudioVisionConsultation() {
           {renderTabContent()}
         </div>
       </main>
+
+      {/* Eye Schema Modal */}
+      <EyeSchemaModal
+        isOpen={showSchemaModal}
+        onClose={() => setShowSchemaModal(false)}
+        patientName={patient ? `${patient.firstName} ${patient.lastName}` : ''}
+        initialEye="OD"
+        onSave={(schemaData) => {
+          // Update exam data with schema
+          updateField('schemas', [...(data.schemas || []), schemaData]);
+          logger.debug('Schema saved:', schemaData);
+        }}
+      />
     </div>
   );
 }

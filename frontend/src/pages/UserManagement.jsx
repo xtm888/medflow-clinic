@@ -67,9 +67,12 @@ const UserManagement = () => {
     try {
       setLoading(true);
       const response = await api.get('/users');
-      setUsers(response.data.data || response.data || []);
+      // Ensure we always get an array - handle various API response formats
+      const usersData = response.data?.data || response.data?.users || response.data;
+      setUsers(Array.isArray(usersData) ? usersData : []);
     } catch (err) {
       setError('Failed to load users');
+      setUsers([]); // Ensure users is always an array even on error
       console.error('Error fetching users:', err);
     } finally {
       setLoading(false);
@@ -158,7 +161,8 @@ const UserManagement = () => {
     });
   };
 
-  const filteredUsers = users.filter(user => {
+  // Safety check: ensure users is always an array before filtering
+  const filteredUsers = (Array.isArray(users) ? users : []).filter(user => {
     const matchesSearch =
       user.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -193,7 +197,7 @@ const UserManagement = () => {
           <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
           </svg>
-          Add User
+          Ajouter un utilisateur
         </button>
       </div>
 
@@ -207,38 +211,38 @@ const UserManagement = () => {
       <div className="bg-white shadow rounded-lg mb-6 p-4">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rechercher</label>
             <input
               type="text"
-              placeholder="Search by name or email..."
+              placeholder="Rechercher par nom ou email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Rôle</label>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Roles</option>
+              <option value="all">Tous les rôles</option>
               {roles.map(role => (
                 <option key={role.value} value={role.value}>{role.label}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Statut</label>
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
               className="w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
             >
-              <option value="all">All Status</option>
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
+              <option value="all">Tous les statuts</option>
+              <option value="active">Actif</option>
+              <option value="inactive">Inactif</option>
             </select>
           </div>
           <div className="flex items-end">
@@ -255,19 +259,19 @@ const UserManagement = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                User
+                Utilisateur
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Role
+                Rôle
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Department
+                Département
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                Statut
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Last Login
+                Dernière connexion
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -306,30 +310,30 @@ const UserManagement = () => {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                   }`}>
-                    {user.isActive ? 'Active' : 'Inactive'}
+                    {user.isActive ? 'Actif' : 'Inactif'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
+                  {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Jamais'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => handleEdit(user)}
                     className="text-blue-600 hover:text-blue-900 mr-3"
                   >
-                    Edit
+                    Modifier
                   </button>
                   <button
                     onClick={() => handleToggleStatus(user._id, user.isActive)}
                     className={`${user.isActive ? 'text-red-600 hover:text-red-900' : 'text-green-600 hover:text-green-900'} mr-3`}
                   >
-                    {user.isActive ? 'Deactivate' : 'Activate'}
+                    {user.isActive ? 'Désactiver' : 'Activer'}
                   </button>
                   <button
                     onClick={() => handleResetPassword(user._id)}
                     className="text-gray-600 hover:text-gray-900"
                   >
-                    Reset Password
+                    Réinitialiser mot de passe
                   </button>
                 </td>
               </tr>
@@ -339,7 +343,7 @@ const UserManagement = () => {
 
         {filteredUsers.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-gray-500">No users found</p>
+            <p className="text-gray-500">Aucun utilisateur trouvé</p>
           </div>
         )}
       </div>
@@ -356,13 +360,13 @@ const UserManagement = () => {
               <form onSubmit={handleSubmit}>
                 <div className="mb-4">
                   <h3 className="text-lg font-medium text-gray-900">
-                    {editingUser ? 'Edit User' : 'Add New User'}
+                    {editingUser ? 'Modifier l\'utilisateur' : 'Ajouter un utilisateur'}
                   </h3>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">First Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Prénom</label>
                     <input
                       type="text"
                       name="firstName"
@@ -373,7 +377,7 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                    <label className="block text-sm font-medium text-gray-700">Nom</label>
                     <input
                       type="text"
                       name="lastName"
@@ -395,7 +399,7 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Phone</label>
+                    <label className="block text-sm font-medium text-gray-700">Téléphone</label>
                     <input
                       type="tel"
                       name="phone"
@@ -405,7 +409,7 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Role</label>
+                    <label className="block text-sm font-medium text-gray-700">Rôle</label>
                     <select
                       name="role"
                       value={formData.role}
@@ -419,14 +423,14 @@ const UserManagement = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Department</label>
+                    <label className="block text-sm font-medium text-gray-700">Département</label>
                     <select
                       name="department"
                       value={formData.department}
                       onChange={handleInputChange}
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     >
-                      <option value="">Select Department</option>
+                      <option value="">Sélectionner un département</option>
                       {departments.map(dept => (
                         <option key={dept} value={dept}>{dept}</option>
                       ))}
@@ -443,7 +447,7 @@ const UserManagement = () => {
                       onChange={handleInputChange}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Active User</span>
+                    <span className="ml-2 text-sm text-gray-700">Utilisateur actif</span>
                   </label>
                 </div>
 
@@ -477,13 +481,13 @@ const UserManagement = () => {
                     onClick={closeModal}
                     className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    Cancel
+                    Annuler
                   </button>
                   <button
                     type="submit"
                     className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                   >
-                    {editingUser ? 'Update User' : 'Create User'}
+                    {editingUser ? 'Enregistrer' : 'Créer l\'utilisateur'}
                   </button>
                 </div>
               </form>

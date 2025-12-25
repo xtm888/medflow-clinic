@@ -19,6 +19,9 @@
  *   node scripts/migrateLegacyPatients.js --status  # Show migration status
  */
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migrateLegacyPatients.js');
+
 require('dotenv').config();
 const mongoose = require('mongoose');
 const path = require('path');

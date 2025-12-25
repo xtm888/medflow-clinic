@@ -4,6 +4,8 @@ const Patient = require('../models/Patient');
 const FeeSchedule = require('../models/FeeSchedule');
 const Invoice = require('../models/Invoice');
 const currencyService = require('../services/currencyService');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ApprovalController');
 
 /**
  * Helper: Update pending invoices when approval status changes
@@ -21,13 +23,13 @@ async function updatePendingInvoicesForApproval(approval, isApproved) {
     });
 
     if (invoices.length === 0) {
-      console.log(`[Approval] No pending invoices to update for ${approval.approvalId}`);
+      log.info('No pending invoices to update for approval', { approvalId: approval.approvalId });
       return { updated: 0 };
     }
 
     const company = await Company.findById(approval.company);
     if (!company) {
-      console.log(`[Approval] Company not found for ${approval.approvalId}`);
+      log.warn('Company not found for approval', { approvalId: approval.approvalId });
       return { updated: 0, error: 'Company not found' };
     }
 
@@ -96,13 +98,13 @@ async function updatePendingInvoicesForApproval(approval, isApproved) {
           }
         );
         updatedCount++;
-        console.log(`[Approval] Updated invoice ${invoice.invoiceNumber} - Company: ${totalCompanyShare}, Patient: ${totalPatientShare}`);
+        log.info('Updated invoice for approval', { invoiceNumber: invoice.invoiceNumber, companyShare: totalCompanyShare, patientShare: totalPatientShare });
       }
     }
 
     return { updated: updatedCount };
   } catch (error) {
-    console.error('[Approval] Error updating invoices:', error);
+    log.error('Error updating invoices for approval', { error: error.message, stack: error.stack });
     return { updated: 0, error: error.message };
   }
 }
@@ -139,7 +141,7 @@ exports.getApprovals = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching approvals:', error);
+    log.error('Error fetching approvals', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -165,7 +167,7 @@ exports.getApproval = async (req, res) => {
 
     res.json({ success: true, data: approval });
   } catch (error) {
-    console.error('Error fetching approval:', error);
+    log.error('Error fetching approval', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -269,7 +271,7 @@ exports.createApproval = async (req, res) => {
 
     res.status(201).json({ success: true, data: approval });
   } catch (error) {
-    console.error('Error creating approval:', error);
+    log.error('Error creating approval', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -330,7 +332,7 @@ exports.approveRequest = async (req, res) => {
       invoicesUpdated: invoiceUpdateResult.updated
     });
   } catch (error) {
-    console.error('Error approving request:', error);
+    log.error('Error approving request', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -386,7 +388,7 @@ exports.rejectRequest = async (req, res) => {
       invoicesUpdated: invoiceUpdateResult.updated
     });
   } catch (error) {
-    console.error('Error rejecting request:', error);
+    log.error('Error rejecting request', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -427,7 +429,7 @@ exports.useApproval = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error using approval:', error);
+    log.error('Error using approval', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -462,7 +464,7 @@ exports.cancelApproval = async (req, res) => {
       data: approval
     });
   } catch (error) {
-    console.error('Error cancelling approval:', error);
+    log.error('Error cancelling approval', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -488,7 +490,7 @@ exports.checkApproval = async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('Error checking approval:', error);
+    log.error('Error checking approval', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -506,7 +508,7 @@ exports.getPendingForCompany = async (req, res) => {
       count: approvals.length
     });
   } catch (error) {
-    console.error('Error fetching pending approvals:', error);
+    log.error('Error fetching pending approvals', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -528,7 +530,7 @@ exports.getPatientApprovals = async (req, res) => {
       count: approvals.length
     });
   } catch (error) {
-    console.error('Error fetching patient approvals:', error);
+    log.error('Error fetching patient approvals', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -739,7 +741,7 @@ exports.checkApprovalRequirements = async (req, res) => {
       requirements: results
     });
   } catch (error) {
-    console.error('Error checking approval requirements:', error);
+    log.error('Error checking approval requirements', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -758,7 +760,7 @@ exports.getExpiringApprovals = async (req, res) => {
       count: approvals.length
     });
   } catch (error) {
-    console.error('Error fetching expiring approvals:', error);
+    log.error('Error fetching expiring approvals', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -794,7 +796,7 @@ exports.attachDocument = async (req, res) => {
       data: approval.documents
     });
   } catch (error) {
-    console.error('Error attaching document:', error);
+    log.error('Error attaching document', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, message: error.message });
   }
 };

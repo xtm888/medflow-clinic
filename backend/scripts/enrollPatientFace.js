@@ -8,6 +8,9 @@ const axios = require('axios');
 const fs = require('fs').promises;
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('enrollPatientFace.js');
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
 const FACE_SERVICE_URL = process.env.FACE_SERVICE_URL || 'http://127.0.0.1:5002';
 

@@ -356,47 +356,179 @@ export default function SubjectiveRefractionStep({ data, onChange }) {
       </div>
 
       {/* Binocular Balance */}
-      <div className="mt-6 p-4 bg-yellow-50 rounded-lg">
-        <h3 className="font-semibold mb-3">Équilibrage Binoculaire</h3>
-        <div className="flex items-center gap-4">
-          <label className="text-sm">Œil Dominant:</label>
-          <select
-            value={data.subjective?.binocular.dominantEye}
-            onChange={(e) => onChange(prev => ({
-              ...prev,
-              subjective: {
-                ...prev.subjective,
-                binocular: {
-                  ...prev.subjective.binocular,
-                  dominantEye: e.target.value
-                }
-              }
-            }))}
-            className="px-3 py-1 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="OD">Œil Droit</option>
-            <option value="OS">Œil Gauche</option>
-          </select>
-          <button
-            onClick={() => onChange(prev => ({
-              ...prev,
-              subjective: {
-                ...prev.subjective,
-                binocular: {
-                  ...prev.subjective.binocular,
-                  balanced: true
-                }
-              }
-            }))}
-            className={`px-3 py-1 rounded ${
-              data.subjective?.binocular.balanced
-                ? 'bg-green-600 text-white'
-                : 'bg-gray-200 hover:bg-gray-300'
-            }`}
-          >
-            {data.subjective?.binocular.balanced ? 'Équilibré' : 'Équilibrer'}
-          </button>
+      <div className="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+        <h3 className="font-semibold mb-4 text-yellow-800 flex items-center gap-2">
+          <Eye className="w-5 h-5" />
+          Équilibrage Binoculaire
+        </h3>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Left column: Method and Dominant Eye */}
+          <div className="space-y-3">
+            {/* Balance Method */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Méthode d'équilibrage
+              </label>
+              <select
+                value={data.subjective?.binocular?.method || ''}
+                onChange={(e) => onChange(prev => ({
+                  ...prev,
+                  subjective: {
+                    ...prev.subjective,
+                    binocular: {
+                      ...prev.subjective.binocular,
+                      method: e.target.value
+                    }
+                  }
+                }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="">Sélectionner une méthode</option>
+                <option value="humphriss">Humphriss (voilage alterné)</option>
+                <option value="fogging">Brouillard binoculaire</option>
+                <option value="prism_dissociation">Dissociation par prismes</option>
+                <option value="septum">Septum central</option>
+                <option value="polaroid">Filtres polarisés</option>
+                <option value="other">Autre</option>
+              </select>
+            </div>
+
+            {/* Dominant Eye */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Œil Dominant
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onChange(prev => ({
+                    ...prev,
+                    subjective: {
+                      ...prev.subjective,
+                      binocular: { ...prev.subjective.binocular, dominantEye: 'OD' }
+                    }
+                  }))}
+                  className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
+                    data.subjective?.binocular?.dominantEye === 'OD'
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  OD (Droit)
+                </button>
+                <button
+                  onClick={() => onChange(prev => ({
+                    ...prev,
+                    subjective: {
+                      ...prev.subjective,
+                      binocular: { ...prev.subjective.binocular, dominantEye: 'OS' }
+                    }
+                  }))}
+                  className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
+                    data.subjective?.binocular?.dominantEye === 'OS'
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  OS (Gauche)
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right column: Balance Status and Notes */}
+          <div className="space-y-3">
+            {/* Balance Achieved */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Équilibre atteint
+              </label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => onChange(prev => ({
+                    ...prev,
+                    subjective: {
+                      ...prev.subjective,
+                      binocular: { ...prev.subjective.binocular, balanced: true }
+                    }
+                  }))}
+                  className={`flex-1 px-3 py-2 rounded-lg border transition-colors flex items-center justify-center gap-2 ${
+                    data.subjective?.binocular?.balanced === true
+                      ? 'bg-green-600 text-white border-green-600'
+                      : 'bg-white border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  <Check className="w-4 h-4" />
+                  Oui
+                </button>
+                <button
+                  onClick={() => onChange(prev => ({
+                    ...prev,
+                    subjective: {
+                      ...prev.subjective,
+                      binocular: { ...prev.subjective.binocular, balanced: false }
+                    }
+                  }))}
+                  className={`flex-1 px-3 py-2 rounded-lg border transition-colors ${
+                    data.subjective?.binocular?.balanced === false
+                      ? 'bg-red-600 text-white border-red-600'
+                      : 'bg-white border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  Non
+                </button>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Notes
+              </label>
+              <textarea
+                value={data.subjective?.binocular?.notes || ''}
+                onChange={(e) => onChange(prev => ({
+                  ...prev,
+                  subjective: {
+                    ...prev.subjective,
+                    binocular: { ...prev.subjective.binocular, notes: e.target.value }
+                  }
+                }))}
+                placeholder="Observations sur l'équilibrage..."
+                rows={2}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              />
+            </div>
+          </div>
         </div>
+
+        {/* Status Summary */}
+        {data.subjective?.binocular?.balanced !== undefined && (
+          <div className={`mt-4 p-3 rounded-lg flex items-center gap-2 ${
+            data.subjective.binocular.balanced
+              ? 'bg-green-100 text-green-800'
+              : 'bg-red-100 text-red-800'
+          }`}>
+            {data.subjective.binocular.balanced ? (
+              <>
+                <Check className="w-5 h-5" />
+                <span className="font-medium">
+                  Équilibre binoculaire atteint
+                  {data.subjective.binocular.method && ` (${
+                    data.subjective.binocular.method === 'humphriss' ? 'Humphriss' :
+                    data.subjective.binocular.method === 'fogging' ? 'Brouillard' :
+                    data.subjective.binocular.method === 'prism_dissociation' ? 'Prismes' :
+                    data.subjective.binocular.method === 'septum' ? 'Septum' :
+                    data.subjective.binocular.method === 'polaroid' ? 'Polarisé' :
+                    data.subjective.binocular.method
+                  })`}
+                </span>
+              </>
+            ) : (
+              <span className="font-medium">Équilibre non atteint - vérifier la prescription</span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

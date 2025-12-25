@@ -1,3 +1,7 @@
+require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('verifyAdmin.js');
+
 const mongoose = require('mongoose');
 const User = require('../models/User');
 

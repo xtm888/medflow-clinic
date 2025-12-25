@@ -4,6 +4,9 @@ const Appointment = require('../models/Appointment');
 const Counter = require('../models/Counter');
 const User = require('../models/User');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createTestPatients.js');
+
 async function createTestData() {
   try {
     await mongoose.connect('mongodb://127.0.0.1:27017/medflow');

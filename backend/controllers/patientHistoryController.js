@@ -5,6 +5,8 @@ const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Appointment = require('../models/Appointment');
 const AuditLog = require('../models/AuditLog');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('PatientHistory');
 
 /**
  * Get complete patient profile with all history
@@ -142,7 +144,7 @@ exports.getCompleteProfile = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching complete patient profile:', error);
+    logger.error('Error fetching complete patient profile', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -206,7 +208,7 @@ exports.getMedicalIssues = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching medical issues:', error);
+    logger.error('Error fetching medical issues', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -252,7 +254,7 @@ exports.updateMedicalIssue = async (req, res) => {
       data: condition
     });
   } catch (error) {
-    console.error('Error updating medical issue:', error);
+    logger.error('Error updating medical issue', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -285,7 +287,7 @@ exports.getProviders = async (req, res) => {
       data: providers
     });
   } catch (error) {
-    console.error('Error fetching patient providers:', error);
+    logger.error('Error fetching patient providers', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message
@@ -324,7 +326,7 @@ exports.getAuditTrail = async (req, res) => {
       data: auditLogs
     });
   } catch (error) {
-    console.error('Error fetching audit trail:', error);
+    logger.error('Error fetching audit trail', { error: error.message });
     res.status(500).json({
       success: false,
       error: error.message

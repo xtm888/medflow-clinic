@@ -13,6 +13,9 @@ const mongoose = require('mongoose');
 const { PharmacyInventory, FrameInventory, ContactLensInventory, ReagentInventory, LabConsumableInventory } = require('../models/Inventory');
 require('dotenv').config();
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migrateInventoryClinic.js');
+
 const Clinic = require('../models/Clinic');
 
 const isDryRun = process.argv.includes('--dry-run');

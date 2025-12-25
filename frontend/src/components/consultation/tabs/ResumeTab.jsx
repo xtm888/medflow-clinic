@@ -25,10 +25,16 @@ import {
   History,
   Image,
   Volume2,
-  Eye
+  Eye,
+  Briefcase,
+  UserCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+// Import the rich visit history table
+import VisitHistoryTable from '../VisitHistoryTable';
+import CriticalAlertBanner from '../../patient/CriticalAlertBanner';
 
 // Color-coded section component
 function SummarySection({ title, color, children, className = '' }) {
@@ -94,10 +100,10 @@ function PatientDemographicsPanel({ patient }) {
               : patient.address}
           </p>
         )}
-        {patient?.phone && (
+        {(patient?.phoneNumber || patient?.phone) && (
           <p className="flex items-center gap-1 text-gray-600">
             <Phone className="h-3 w-3" />
-            Tél 1: {patient.phone}
+            Tél 1: {patient.phoneNumber || patient.phone}
           </p>
         )}
         {patient?.phone2 && (
@@ -111,9 +117,10 @@ function PatientDemographicsPanel({ patient }) {
             N° SS: {patient.socialSecurityNumber}
           </p>
         )}
-        {patient?.profession && (
-          <p className="text-gray-600">
-            Profes: {patient.profession}
+        {(patient?.occupation || patient?.profession) && (
+          <p className="flex items-center gap-1 text-gray-600">
+            <Briefcase className="h-3 w-3 text-gray-400" />
+            <span className="font-medium">Profession:</span> {patient.occupation || patient.profession}
           </p>
         )}
       </div>
@@ -160,9 +167,12 @@ function PatientDemographicsPanel({ patient }) {
           </div>
         )}
         {patient?.referringDoctor && (
-          <div className="text-sm">
-            <span className="font-semibold text-gray-700">- Corresp 1: </span>
-            <span className="text-gray-600">Dr {patient.referringDoctor}</span>
+          <div className="text-sm flex items-center gap-1">
+            <UserCheck className="h-3 w-3 text-blue-500" />
+            <span className="font-semibold text-gray-700">Médecin Référent:</span>
+            <span className="text-blue-600 font-medium">
+              {patient.referringDoctor.startsWith('Dr') ? patient.referringDoctor : `Dr ${patient.referringDoctor}`}
+            </span>
           </div>
         )}
       </div>
@@ -175,83 +185,48 @@ function PatientDemographicsPanel({ patient }) {
         </div>
       )}
 
-      {/* Important Notes (highlighted) */}
-      {patient?.importantNotes && (
-        <div className="bg-red-50 border border-red-300 rounded p-2">
-          <div className="text-sm font-bold text-red-700 flex items-center gap-1">
-            <AlertCircle className="h-4 w-4" />
-            Important:
-          </div>
-          <p className="text-sm text-red-600 font-medium">{patient.importantNotes}</p>
+      {/* Critical Alerts Banner */}
+      {(patient?.alerts?.length > 0 || patient?.allergies?.length > 0 || patient?.importantNotes) && (
+        <div className="border-t border-gray-200 pt-3">
+          <CriticalAlertBanner
+            alerts={patient.alerts || []}
+            allergies={patient.allergies || []}
+            importantNotes={patient.importantNotes}
+            canEdit={false}
+            showAllCategories={true}
+          />
         </div>
       )}
     </div>
   );
 }
 
-// Consultation history panel (right side)
-function ConsultationHistoryPanel({ consultations = [], onSelectConsultation }) {
+// Quick action buttons for history panel
+function HistoryActionButtons({ onSchemaClick, onViewClick }) {
   return (
-    <div className="bg-white border border-gray-300 rounded-lg overflow-hidden">
-      {/* History Table */}
-      <table className="w-full text-sm">
-        <thead className="bg-gray-100 border-b border-gray-300">
-          <tr>
-            <th className="px-2 py-1.5 text-left font-medium text-gray-700">Date</th>
-            <th className="px-2 py-1.5 text-left font-medium text-gray-700">Dominante</th>
-            <th className="px-2 py-1.5 text-left font-medium text-gray-700">Dr</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-200">
-          {consultations.length === 0 ? (
-            <tr>
-              <td colSpan={3} className="px-2 py-4 text-center text-gray-500">
-                Aucune consultation précédente
-              </td>
-            </tr>
-          ) : (
-            consultations.slice(0, 10).map((consultation, idx) => (
-              <tr
-                key={consultation._id || idx}
-                className="hover:bg-blue-50 cursor-pointer transition-colors"
-                onClick={() => onSelectConsultation?.(consultation)}
-              >
-                <td className="px-2 py-1.5 text-gray-900">
-                  {consultation.date
-                    ? format(new Date(consultation.date), 'dd/MM/yyyy')
-                    : '-'}
-                </td>
-                <td className="px-2 py-1.5 text-gray-700">
-                  {consultation.dominante || consultation.chiefComplaint || '-'}
-                </td>
-                <td className="px-2 py-1.5 text-gray-600">
-                  {consultation.doctor || '-'}
-                </td>
-              </tr>
-            ))
-          )}
-        </tbody>
-      </table>
-
-      {/* Action Buttons */}
-      <div className="border-t border-gray-300 bg-gray-50 px-2 py-2 flex flex-wrap gap-1">
-        <button className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1">
-          <Image className="h-3 w-3" />
-          Schéma
-        </button>
-        <button className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1">
-          <Volume2 className="h-3 w-3" />
-          Lettre/Son
-        </button>
-        <button className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1">
-          <Eye className="h-3 w-3" />
-          Visualiser
-        </button>
-        <button className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1">
-          <FileText className="h-3 w-3" />
-          Numérisation
-        </button>
-      </div>
+    <div className="border-t border-gray-300 bg-gray-50 px-2 py-2 flex flex-wrap gap-1">
+      <button
+        onClick={onSchemaClick}
+        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
+      >
+        <Image className="h-3 w-3" />
+        Schéma
+      </button>
+      <button className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1">
+        <Volume2 className="h-3 w-3" />
+        Lettre/Son
+      </button>
+      <button
+        onClick={onViewClick}
+        className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1"
+      >
+        <Eye className="h-3 w-3" />
+        Visualiser
+      </button>
+      <button className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100 flex items-center gap-1">
+        <FileText className="h-3 w-3" />
+        Numérisation
+      </button>
     </div>
   );
 }
@@ -421,11 +396,20 @@ export default function ResumeTab({
             Nouvelle consultation
           </button>
 
-          {/* History */}
-          <ConsultationHistoryPanel
-            consultations={consultationHistory}
-            onSelectConsultation={onSelectConsultation}
-          />
+          {/* Rich Visit History Table */}
+          <div className="space-y-0">
+            <VisitHistoryTable
+              visits={consultationHistory}
+              onSelectVisit={onSelectConsultation}
+              onViewImages={(visit) => console.log('View images for:', visit._id)}
+              onViewDocuments={(visit) => console.log('View documents for:', visit._id)}
+              maxRows={10}
+            />
+            <HistoryActionButtons
+              onSchemaClick={() => console.log('Open schema tool')}
+              onViewClick={() => console.log('View selected consultation')}
+            />
+          </div>
         </div>
       </div>
 

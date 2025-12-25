@@ -4,6 +4,9 @@ const { OpticalLensInventory } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedOpticalLensInventory.js');
+
 // Optical lens brands and product lines
 const LENS_BRANDS = [
   {

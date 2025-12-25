@@ -780,6 +780,11 @@ visitSchema.index({ clinic: 1, status: 1 }); // Clinic-scoped status filtering
 visitSchema.index({ clinic: 1, patient: 1 }); // Clinic-scoped patient visits
 visitSchema.index({ clinic: 1, primaryProvider: 1, visitDate: -1 }); // Clinic-scoped provider visits
 
+// Additional compound indexes for common query patterns
+visitSchema.index({ patient: 1, primaryProvider: 1 }); // Patient-provider visit history
+visitSchema.index({ clinic: 1, visitDate: -1, status: 1 }); // Clinic visit list with status filter
+visitSchema.index({ clinic: 1, status: 1, createdAt: -1 }); // Recent visits by status per clinic
+
 // CRITICAL: Validate dates to prevent future dates where inappropriate
 visitSchema.pre('save', function(next) {
   const now = new Date();
@@ -1074,14 +1079,26 @@ visitSchema.methods.completeVisit = async function(userId) {
   let useTransaction = false;
 
   try {
-    session = await mongoose.startSession();
-    await session.startTransaction();
-    useTransaction = true;
-    console.log('[VISIT COMPLETION] Using MongoDB transaction for data consistency');
+    // Check if we're connected to a replica set BEFORE attempting transactions
+    const client = mongoose.connection.getClient();
+    const topology = client?.topology;
+    const isReplicaSet = topology && (
+      topology.s?.description?.type === 'ReplicaSetWithPrimary' ||
+      topology.s?.description?.type === 'ReplicaSetNoPrimary'
+    );
+
+    if (isReplicaSet) {
+      session = await mongoose.startSession();
+      await session.startTransaction();
+      useTransaction = true;
+      console.log('[VISIT COMPLETION] Using MongoDB transaction for data consistency');
+    } else {
+      console.log('[VISIT COMPLETION] Standalone MongoDB detected, proceeding without transaction support');
+    }
   } catch (transactionError) {
-    console.warn('[VISIT COMPLETION] Transactions not available (standalone mode), proceeding without transaction');
+    console.warn('[VISIT COMPLETION] Transactions not available, proceeding without transaction:', transactionError.message);
     if (session) {
-      session.endSession();
+      try { session.endSession(); } catch (e) { /* ignore session cleanup errors */ }
       session = null;
     }
   }
@@ -1099,6 +1116,7 @@ visitSchema.methods.completeVisit = async function(userId) {
       console.log(`[VISIT COMPLETION] Found ${this.plan.medications.length} medications in plan - creating Prescription records`);
 
       // Group all medications into a single prescription
+      // If no inventory link is provided, mark as external item to allow dispensing elsewhere
       const medicationsForPrescription = this.plan.medications.map(med => ({
         name: med.medication || med.name,
         genericName: med.medication || med.name,
@@ -1108,7 +1126,9 @@ visitSchema.methods.completeVisit = async function(userId) {
         route: med.route,
         instructions: med.instructions,
         quantity: med.quantity || 1,
-        unit: med.unit || 'unit'
+        unit: med.unit || 'unit',
+        medication: med.inventoryId || null,  // Link to PharmacyInventory if provided
+        isExternalItem: !med.inventoryId      // Mark as external if no inventory link
       }));
 
       try {
@@ -1318,9 +1338,9 @@ visitSchema.methods.completeVisit = async function(userId) {
 
     throw error;
   } finally {
-    // Clean up session if created
+    // Clean up session if created (safely - ignore cleanup errors)
     if (session) {
-      session.endSession();
+      try { session.endSession(); } catch (e) { /* ignore session cleanup errors */ }
     }
   }
 };

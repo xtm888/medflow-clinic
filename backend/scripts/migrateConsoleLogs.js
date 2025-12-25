@@ -29,6 +29,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('migrateConsoleLogs.js');
+
 // Files/directories to skip
 const SKIP_PATTERNS = [
   'node_modules',

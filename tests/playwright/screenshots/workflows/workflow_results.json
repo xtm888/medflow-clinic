@@ -1,0 +1,69 @@
+{
+  "total": 9,
+  "passed": 9,
+  "failed": 0,
+  "tests": [
+    {
+      "name": "Patient Creation",
+      "status": "PASS",
+      "details": "Created & verified: PAT2025000009 - TEST_BE02F771 WORKFLOW_PATIENT",
+      "timestamp": "2025-12-20T22:26:54.802563"
+    },
+    {
+      "name": "Queue State Transitions",
+      "status": "PASS",
+      "details": "Transitions verified: checked-in \u2192 in-progress \u2192 completed",
+      "timestamp": "2025-12-20T22:26:55.883040"
+    },
+    {
+      "name": "Consultation Workflow",
+      "status": "PASS",
+      "details": "Visit 6947149f... created with clinical data",
+      "timestamp": "2025-12-20T22:26:55.951958"
+    },
+    {
+      "name": "Invoice Generation",
+      "status": "PASS",
+      "details": "Invoice generated and verified",
+      "timestamp": "2025-12-20T22:26:55.965564"
+    },
+    {
+      "name": "Payment Workflow",
+      "status": "PASS",
+      "details": "Payment 5000 CDF recorded, balance: 0",
+      "timestamp": "2025-12-20T22:26:55.989207"
+    },
+    {
+      "name": "Clinical Data Persistence",
+      "status": "PASS",
+      "details": "Visit created with clinical data: 1 fields verified - Dx \u2713",
+      "timestamp": "2025-12-20T22:26:56.013425"
+    },
+    {
+      "name": "Prescription Creation",
+      "status": "PASS",
+      "details": "Prescription (optical) created and verified",
+      "timestamp": "2025-12-20T22:26:56.044187"
+    },
+    {
+      "name": "Inventory Dispensing",
+      "status": "PASS",
+      "details": "No items with stock to dispense",
+      "timestamp": "2025-12-20T22:26:56.050830"
+    },
+    {
+      "name": "Multi-Clinic Isolation",
+      "status": "PASS",
+      "details": "Clinic filtering verified: A=0, B=0, All=0",
+      "timestamp": "2025-12-20T22:26:56.072385"
+    }
+  ],
+  "workflow_data": {
+    "test_patient_id": "6947149ea12eb469e720e0c6",
+    "test_patient_code": "PAT2025000009",
+    "test_appointment_id": "69470f1b9ce0386499f07fe7",
+    "test_visit_id": "6947149fa12eb469e720e1a7",
+    "test_invoice_id": "6947149fa12eb469e720e1e8",
+    "test_prescription_id": "694714a0a12eb469e720e2b4"
+  }
+}

@@ -4,6 +4,9 @@
  */
 
 const centralClient = require('../services/centralServerClient');
+const { createContextLogger } = require('../utils/structuredLogger');
+
+const logger = createContextLogger('CentralData');
 
 /**
  * Check if central server is available
@@ -36,7 +39,7 @@ exports.getDashboard = async (req, res) => {
     const result = await centralClient.getDashboard();
     res.json(result);
   } catch (error) {
-    console.error('Central dashboard error:', error.message);
+    logger.error('Central dashboard error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch dashboard from central server'
@@ -54,7 +57,7 @@ exports.searchPatients = async (req, res) => {
     const result = await centralClient.searchPatients(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central patient search error:', error.message);
+    logger.error('Central patient search error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to search patients across clinics'
@@ -70,7 +73,7 @@ exports.getPatientHistory = async (req, res) => {
     const result = await centralClient.getPatientHistory(req.params.id);
     res.json(result);
   } catch (error) {
-    console.error('Central patient history error:', error.message);
+    logger.error('Central patient history error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch patient history'
@@ -86,7 +89,7 @@ exports.getFullPatient = async (req, res) => {
     const result = await centralClient.getFullPatient(req.params.id);
     res.json(result);
   } catch (error) {
-    console.error('Central full patient error:', error.message);
+    logger.error('Central full patient error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch full patient details'
@@ -102,7 +105,7 @@ exports.getPatientAllClinics = async (req, res) => {
     const result = await centralClient.getPatientAllClinics(req.params.id);
     res.json(result);
   } catch (error) {
-    console.error('Central patient all clinics error:', error.message);
+    logger.error('Central patient all clinics error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch patient records from all clinics'
@@ -118,7 +121,7 @@ exports.checkPatientExists = async (req, res) => {
     const result = await centralClient.checkPatientExists(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central patient exists check error:', error.message);
+    logger.error('Central patient exists check error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to check patient existence'
@@ -136,7 +139,7 @@ exports.getConsolidatedInventory = async (req, res) => {
     const result = await centralClient.getConsolidatedInventory(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central inventory error:', error.message);
+    logger.error('Central inventory error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch consolidated inventory'
@@ -152,7 +155,7 @@ exports.getInventorySummary = async (req, res) => {
     const result = await centralClient.getInventorySummary();
     res.json(result);
   } catch (error) {
-    console.error('Central inventory summary error:', error.message);
+    logger.error('Central inventory summary error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch inventory summary'
@@ -168,7 +171,7 @@ exports.getInventoryAlerts = async (req, res) => {
     const result = await centralClient.getInventoryAlerts();
     res.json(result);
   } catch (error) {
-    console.error('Central inventory alerts error:', error.message);
+    logger.error('Central inventory alerts error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch inventory alerts'
@@ -184,7 +187,7 @@ exports.getTransferRecommendations = async (req, res) => {
     const result = await centralClient.getTransferRecommendations();
     res.json(result);
   } catch (error) {
-    console.error('Central transfer recommendations error:', error.message);
+    logger.error('Central transfer recommendations error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch transfer recommendations'
@@ -200,7 +203,7 @@ exports.getInventoryCategories = async (req, res) => {
     const result = await centralClient.getInventoryCategories();
     res.json(result);
   } catch (error) {
-    console.error('Central inventory categories error:', error.message);
+    logger.error('Central inventory categories error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch inventory categories'
@@ -216,7 +219,7 @@ exports.getExpiringItems = async (req, res) => {
     const result = await centralClient.getExpiringItems();
     res.json(result);
   } catch (error) {
-    console.error('Central expiring items error:', error.message);
+    logger.error('Central expiring items error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch expiring items'
@@ -232,7 +235,7 @@ exports.getProductStock = async (req, res) => {
     const result = await centralClient.getProductStock(req.params.sku);
     res.json(result);
   } catch (error) {
-    console.error('Central product stock error:', error.message);
+    logger.error('Central product stock error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch product stock'
@@ -250,7 +253,7 @@ exports.getFinancialDashboard = async (req, res) => {
     const result = await centralClient.getFinancialDashboard();
     res.json(result);
   } catch (error) {
-    console.error('Central financial dashboard error:', error.message);
+    logger.error('Central financial dashboard error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch financial dashboard'
@@ -266,7 +269,7 @@ exports.getConsolidatedRevenue = async (req, res) => {
     const result = await centralClient.getConsolidatedRevenue(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central revenue error:', error.message);
+    logger.error('Central revenue error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch consolidated revenue'
@@ -282,7 +285,7 @@ exports.getClinicComparison = async (req, res) => {
     const result = await centralClient.getClinicComparison(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central clinic comparison error:', error.message);
+    logger.error('Central clinic comparison error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch clinic comparison'
@@ -298,7 +301,7 @@ exports.getRevenueByCategory = async (req, res) => {
     const result = await centralClient.getRevenueByCategory(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central revenue by category error:', error.message);
+    logger.error('Central revenue by category error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch revenue by category'
@@ -314,7 +317,7 @@ exports.getPaymentMethodDistribution = async (req, res) => {
     const result = await centralClient.getPaymentMethodDistribution(req.query);
     res.json(result);
   } catch (error) {
-    console.error('Central payment methods error:', error.message);
+    logger.error('Central payment methods error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch payment method distribution'
@@ -330,7 +333,7 @@ exports.getOutstanding = async (req, res) => {
     const result = await centralClient.getOutstanding();
     res.json(result);
   } catch (error) {
-    console.error('Central outstanding error:', error.message);
+    logger.error('Central outstanding error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch outstanding payments'
@@ -348,7 +351,7 @@ exports.getClinics = async (req, res) => {
     const result = await centralClient.getClinics();
     res.json(result);
   } catch (error) {
-    console.error('Central clinics error:', error.message);
+    logger.error('Central clinics error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch clinics'
@@ -364,7 +367,7 @@ exports.getClinic = async (req, res) => {
     const result = await centralClient.getClinic(req.params.clinicId);
     res.json(result);
   } catch (error) {
-    console.error('Central clinic error:', error.message);
+    logger.error('Central clinic error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch clinic'
@@ -382,7 +385,7 @@ exports.getSyncStatus = async (req, res) => {
     const result = await centralClient.getSyncStatus();
     res.json(result);
   } catch (error) {
-    console.error('Central sync status error:', error.message);
+    logger.error('Central sync status error', { error: error.message });
     res.status(error.response?.status || 500).json({
       success: false,
       error: error.response?.data?.error || 'Failed to fetch sync status'

@@ -10,6 +10,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProductionStrict, requireConfirmation } = require('./_guards');
+requireNonProductionStrict('rollbackMigration.js');
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
 
 async function rollback() {

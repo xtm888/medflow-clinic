@@ -15,6 +15,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migratePatientConvention.js');
+
 const Patient = require('../models/Patient');
 
 const BATCH_SIZE = 100;

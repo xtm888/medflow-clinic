@@ -1,5 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedDoseTemplatesComplete.js');
+
 const DoseTemplate = require('../models/DoseTemplate');
 
 const doseTemplates = [

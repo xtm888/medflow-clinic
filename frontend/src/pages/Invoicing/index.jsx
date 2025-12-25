@@ -10,11 +10,13 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useClinic } from '../../contexts/ClinicContext';
 import { useBillingUpdates } from '../../hooks/useWebSocket';
 import ConfirmationModal from '../../components/ConfirmationModal';
+import PatientSelectorModal from '../../components/PatientSelectorModal';
 import InvoiceHeader from './InvoiceHeader';
 import InvoiceFilters from './InvoiceFilters';
 import InvoiceList from './InvoiceList';
 import InvoiceDetail from './InvoiceDetail';
 import PaymentModal from './PaymentModal';
+import logger from '../../services/logger';
 
 // ==================== CATEGORY CONFIGURATION ====================
 const INVOICE_CATEGORIES = {
@@ -215,6 +217,7 @@ export default function Invoicing() {
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showInvoiceModal, setShowInvoiceModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showPatientSelector, setShowPatientSelector] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState(null);
   const [processingPayment, setProcessingPayment] = useState(false);
 
@@ -293,7 +296,7 @@ export default function Invoicing() {
       setInvoices(transformedInvoices);
       setPatients(transformedPatients);
     } catch (err) {
-      console.error('Error fetching data:', err);
+      logger.error('Error fetching data:', err);
       setError('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
@@ -306,7 +309,7 @@ export default function Invoicing() {
   // Refresh data when billing update received
   useEffect(() => {
     if (billingUpdate) {
-      console.log('[Invoicing] Billing update received:', billingUpdate.type);
+      logger.debug('[Invoicing] Billing update received:', billingUpdate.type);
       if (billingUpdate.type === 'created') {
         toast.info(`Nouvelle facture créée: ${billingUpdate.invoiceId || 'N/A'}`);
       } else if (billingUpdate.type === 'updated') {
@@ -500,7 +503,7 @@ export default function Invoicing() {
       handleClosePaymentModal();
       fetchData();
     } catch (err) {
-      console.error('Error processing payment:', err);
+      logger.error('Error processing payment:', err);
       toast.error(err.response?.data?.message || 'Erreur lors du paiement');
     } finally {
       setProcessingPayment(false);
@@ -512,7 +515,18 @@ export default function Invoicing() {
   };
 
   const handleCreateNewInvoice = () => {
-    toast.info('Fonction de création de facture - à implémenter');
+    setShowPatientSelector(true);
+  };
+
+  const handlePatientSelected = (patient) => {
+    // Navigate to invoice creation with selected patient
+    const patientId = patient._id || patient.id;
+    const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+    toast.success(`Patient sélectionné: ${patientName}`);
+    // TODO: Navigate to invoice creation form or open creation modal
+    // For now, we'll add the patient to URL params for future implementation
+    setSearchParams({ action: 'create', patientId });
+    setShowPatientSelector(false);
   };
 
   // ==================== RENDER ====================
@@ -609,6 +623,14 @@ export default function Invoicing() {
         title={confirmModal.title}
         message={confirmModal.message}
         type={confirmModal.type}
+      />
+
+      {/* Patient Selector Modal for New Invoice */}
+      <PatientSelectorModal
+        isOpen={showPatientSelector}
+        onClose={() => setShowPatientSelector(false)}
+        onSelectPatient={handlePatientSelected}
+        title="Sélectionner un patient pour la facture"
       />
     </div>
   );

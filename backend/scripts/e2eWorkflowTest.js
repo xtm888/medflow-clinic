@@ -17,6 +17,10 @@
  */
 
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('e2eWorkflowTest.js');
+
 const { PharmacyInventory, FrameInventory } = require('../models/Inventory');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });

@@ -150,12 +150,52 @@ exports.deleteClinic = asyncHandler(async (req, res) => {
     });
   }
 
+  // CASCADE SAFETY: Check for related data before deletion
+  const Patient = require('../models/Patient');
+  const Visit = require('../models/Visit');
+  const Invoice = require('../models/Invoice');
+  const Appointment = require('../models/Appointment');
+
   // Check if any users are assigned to this clinic
   const usersCount = await User.countDocuments({ clinics: clinic._id });
   if (usersCount > 0) {
     return res.status(400).json({
       success: false,
       error: `Cannot delete clinic with ${usersCount} assigned users`
+    });
+  }
+
+  // Check for patients registered at this clinic
+  const patientsCount = await Patient.countDocuments({ clinic: clinic._id, isDeleted: { $ne: true } });
+  if (patientsCount > 0) {
+    return res.status(400).json({
+      success: false,
+      error: `Cannot delete clinic with ${patientsCount} registered patients. Transfer or delete patients first.`
+    });
+  }
+
+  // Check for unpaid invoices at this clinic
+  const unpaidInvoices = await Invoice.countDocuments({
+    clinic: clinic._id,
+    status: { $nin: ['paid', 'cancelled'] }
+  });
+  if (unpaidInvoices > 0) {
+    return res.status(400).json({
+      success: false,
+      error: `Cannot delete clinic with ${unpaidInvoices} unpaid invoices. Resolve invoices first.`
+    });
+  }
+
+  // Check for future appointments at this clinic
+  const futureAppointments = await Appointment.countDocuments({
+    clinic: clinic._id,
+    scheduledDate: { $gt: new Date() },
+    status: { $nin: ['cancelled', 'completed'] }
+  });
+  if (futureAppointments > 0) {
+    return res.status(400).json({
+      success: false,
+      error: `Cannot delete clinic with ${futureAppointments} future appointments. Cancel appointments first.`
     });
   }
 

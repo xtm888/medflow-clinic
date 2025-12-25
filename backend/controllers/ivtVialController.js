@@ -1,4 +1,6 @@
 const IVTVial = require('../models/IVTVial');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('IVTVialController');
 
 // Get all vials with filtering
 exports.getVials = async (req, res) => {
@@ -47,7 +49,7 @@ exports.getVials = async (req, res) => {
       pages: Math.ceil(total / parseInt(limit))
     });
   } catch (error) {
-    console.error('Error fetching vials:', error);
+    logger.error('Error fetching vials', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -67,7 +69,7 @@ exports.getVial = async (req, res) => {
 
     res.json({ success: true, data: vial });
   } catch (error) {
-    console.error('Error fetching vial:', error);
+    logger.error('Error fetching vial', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -85,7 +87,7 @@ exports.createVial = async (req, res) => {
 
     res.status(201).json({ success: true, data: vial });
   } catch (error) {
-    console.error('Error creating vial:', error);
+    logger.error('Error creating vial', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -103,7 +105,7 @@ exports.openVial = async (req, res) => {
 
     res.json({ success: true, data: vial });
   } catch (error) {
-    console.error('Error opening vial:', error);
+    logger.error('Error opening vial', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -129,7 +131,7 @@ exports.recordDose = async (req, res) => {
 
     res.json({ success: true, data: vial });
   } catch (error) {
-    console.error('Error recording dose:', error);
+    logger.error('Error recording dose', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -154,7 +156,7 @@ exports.recordTemperature = async (req, res) => {
 
     res.json({ success: true, data: vial });
   } catch (error) {
-    console.error('Error recording temperature:', error);
+    logger.error('Error recording temperature', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -179,7 +181,7 @@ exports.disposeVial = async (req, res) => {
 
     res.json({ success: true, data: vial });
   } catch (error) {
-    console.error('Error disposing vial:', error);
+    logger.error('Error disposing vial', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -210,7 +212,7 @@ exports.getUsableVials = async (req, res) => {
 
     res.json({ success: true, data: usableVials });
   } catch (error) {
-    console.error('Error fetching usable vials:', error);
+    logger.error('Error fetching usable vials', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -237,7 +239,7 @@ exports.getExpiringVials = async (req, res) => {
 
     res.json({ success: true, data: expiringVials });
   } catch (error) {
-    console.error('Error fetching expiring vials:', error);
+    logger.error('Error fetching expiring vials', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -283,7 +285,7 @@ exports.getTemperatureExcursions = async (req, res) => {
 
     res.json({ success: true, data: excursions });
   } catch (error) {
-    console.error('Error fetching temperature excursions:', error);
+    logger.error('Error fetching temperature excursions', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };
@@ -338,7 +340,7 @@ exports.getStats = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error fetching stats:', error);
+    logger.error('Error fetching stats', { error: error.message });
     res.status(500).json({ success: false, error: error.message });
   }
 };

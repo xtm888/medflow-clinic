@@ -18,6 +18,7 @@ import DocumentGenerator from '../../components/documents/DocumentGenerator';
 import { ClinicalSummaryPanel } from '../../components/panels';
 import ConfirmationModal from '../../components/ConfirmationModal';
 import { getRejectedAwaitingReschedule, rescheduleAfterRejection } from '../../services/labOrderService';
+import logger from '../../services/logger';
 
 // Import new components
 import QueueHeader from './QueueHeader';
@@ -109,7 +110,7 @@ export default function Queue() {
       const response = await api.get('/rooms/available');
       setAvailableRooms(response.data?.data || response.data || []);
     } catch (error) {
-      console.error('Failed to fetch rooms:', error);
+      logger.error('Failed to fetch rooms:', error);
     } finally {
       setLoadingRooms(false);
     }
@@ -124,7 +125,7 @@ export default function Queue() {
       const appointments = response.data?.data || response.data || [];
       setTodaysAppointments(appointments);
     } catch (error) {
-      console.error('Failed to fetch appointments:', error);
+      logger.error('Failed to fetch appointments:', error);
       setTodaysAppointments([]);
     } finally {
       setLoadingAppointments(false);
@@ -138,7 +139,7 @@ export default function Queue() {
       const response = await getRejectedAwaitingReschedule();
       setRejectedLabOrders(response.data || []);
     } catch (error) {
-      console.error('Failed to fetch rejected lab orders:', error);
+      logger.error('Failed to fetch rejected lab orders:', error);
       setRejectedLabOrders([]);
     } finally {
       setLoadingRejectedLabs(false);
@@ -166,7 +167,7 @@ export default function Queue() {
       setRescheduleNotes('');
       fetchRejectedLabOrders();
     } catch (error) {
-      console.error('Failed to reschedule lab order:', error);
+      logger.error('Failed to reschedule lab order:', error);
       toast.error(error.response?.data?.message || 'Erreur lors de la reprogrammation');
     } finally {
       setRescheduling(false);
@@ -204,13 +205,13 @@ export default function Queue() {
   useEffect(() => {
     if (wsConnected && wsService) {
       wsService.send('subscribe:queue', {});
-      console.log('Subscribed to queue updates via WebSocket');
+      logger.debug('Subscribed to queue updates via WebSocket');
     }
   }, [wsConnected, wsService]);
 
   // Handle real-time queue updates
   useQueueUpdates((data) => {
-    console.log('Queue update received:', data?.type);
+    logger.debug('Queue update received:', data?.type);
 
     if (data?.type === 'patient_checked_in' || data?.type === 'patient_completed') {
       dispatch(fetchQueueStats());
@@ -224,7 +225,7 @@ export default function Queue() {
 
       if (enableAudio && data.announcement.audioUrl) {
         const audio = new Audio(data.announcement.audioUrl);
-        audio.play().catch(e => console.log('Audio play blocked:', e));
+        audio.play().catch(e => logger.debug('Audio play blocked:', e));
       }
     }
 
@@ -317,7 +318,7 @@ export default function Queue() {
             roomNumber: checkInForm.room
           });
         } catch (roomErr) {
-          console.error('Failed to assign room:', roomErr);
+          logger.error('Failed to assign room:', roomErr);
         }
       }
 
@@ -788,7 +789,7 @@ export default function Queue() {
                   roomNumber: data.room
                 });
               } catch (roomErr) {
-                console.error('Failed to assign room:', roomErr);
+                logger.error('Failed to assign room:', roomErr);
               }
             }
 

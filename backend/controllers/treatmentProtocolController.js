@@ -2,6 +2,8 @@ const TreatmentProtocol = require('../models/TreatmentProtocol');
 // Import Drug model to ensure it's registered for population
 require('../models/Drug');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('TreatmentProtocolController');
 
 /**
  * Get user's treatment protocols (personal + system-wide)
@@ -37,7 +39,7 @@ exports.getTreatmentProtocols = async (req, res) => {
       data: filteredProtocols
     });
   } catch (error) {
-    console.error('Error getting treatment protocols:', error);
+    logger.error('Error getting treatment protocols', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving treatment protocols',
@@ -61,7 +63,7 @@ exports.getPopularProtocols = async (req, res) => {
       data: protocols
     });
   } catch (error) {
-    console.error('Error getting popular protocols:', error);
+    logger.error('Error getting popular protocols', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving popular protocols',
@@ -90,7 +92,7 @@ exports.getFavoriteProtocols = async (req, res) => {
       data: protocols
     });
   } catch (error) {
-    console.error('Error getting favorite protocols:', error);
+    logger.error('Error getting favorite protocols', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving favorite protocols',
@@ -128,7 +130,7 @@ exports.getTreatmentProtocolById = async (req, res) => {
       data: protocol
     });
   } catch (error) {
-    console.error('Error getting treatment protocol:', error);
+    logger.error('Error getting treatment protocol', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving treatment protocol',
@@ -165,7 +167,7 @@ exports.createTreatmentProtocol = async (req, res) => {
       data: protocol
     });
   } catch (error) {
-    console.error('Error creating treatment protocol:', error);
+    logger.error('Error creating treatment protocol', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error creating treatment protocol',
@@ -226,7 +228,7 @@ exports.updateTreatmentProtocol = async (req, res) => {
       data: protocol
     });
   } catch (error) {
-    console.error('Error updating treatment protocol:', error);
+    logger.error('Error updating treatment protocol', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error updating treatment protocol',
@@ -266,7 +268,7 @@ exports.deleteTreatmentProtocol = async (req, res) => {
       message: 'Treatment protocol deleted successfully'
     });
   } catch (error) {
-    console.error('Error deleting treatment protocol:', error);
+    logger.error('Error deleting treatment protocol', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error deleting treatment protocol',
@@ -300,7 +302,7 @@ exports.incrementUsage = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error incrementing usage:', error);
+    logger.error('Error incrementing usage', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error updating usage count',
@@ -344,7 +346,7 @@ exports.toggleFavorite = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error toggling favorite:', error);
+    logger.error('Error toggling favorite', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error updating favorite status',
@@ -399,7 +401,7 @@ exports.applyProtocol = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error applying protocol:', error);
+    logger.error('Error applying protocol', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error applying treatment protocol',
@@ -456,7 +458,7 @@ exports.getProtocolsByCategory = async (req, res) => {
       grouped
     });
   } catch (error) {
-    console.error('Error getting protocols by category:', error);
+    logger.error('Error getting protocols by category', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving protocols by category',
@@ -531,7 +533,7 @@ exports.getCategories = async (req, res) => {
       data: enrichedCategories
     });
   } catch (error) {
-    console.error('Error getting categories:', error);
+    logger.error('Error getting categories', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving protocol categories',
@@ -571,7 +573,7 @@ exports.getProtocolsForDiagnosis = async (req, res) => {
       data: protocols
     });
   } catch (error) {
-    console.error('Error getting protocols for diagnosis:', error);
+    logger.error('Error getting protocols for diagnosis', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error retrieving protocols for diagnosis',
@@ -623,7 +625,7 @@ exports.duplicateProtocol = async (req, res) => {
       data: newProtocol
     });
   } catch (error) {
-    console.error('Error duplicating protocol:', error);
+    logger.error('Error duplicating protocol', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Error duplicating protocol',

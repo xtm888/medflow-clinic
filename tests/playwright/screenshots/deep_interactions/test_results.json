@@ -1,0 +1,878 @@
+{
+  "total": 145,
+  "passed": 144,
+  "failed": 0,
+  "skipped": 1,
+  "tests": [
+    {
+      "name": "Patient search",
+      "status": "PASS",
+      "details": "Search input works",
+      "timestamp": "2025-12-21T22:57:02.933747"
+    },
+    {
+      "name": "Patient filter dropdown",
+      "status": "PASS",
+      "details": "Filter opens",
+      "timestamp": "2025-12-21T22:57:03.689518"
+    },
+    {
+      "name": "Patient row click",
+      "status": "PASS",
+      "details": "Navigated to detail via Eye button",
+      "timestamp": "2025-12-21T22:57:04.097069"
+    },
+    {
+      "name": "Patient pagination",
+      "status": "PASS",
+      "details": "Next page works",
+      "timestamp": "2025-12-21T22:57:06.298691"
+    },
+    {
+      "name": "Patient selection",
+      "status": "PASS",
+      "details": "Selection works",
+      "timestamp": "2025-12-21T22:57:07.695794"
+    },
+    {
+      "name": "Invoice category Services",
+      "status": "PASS",
+      "details": "Filter applied",
+      "timestamp": "2025-12-21T22:57:10.659913"
+    },
+    {
+      "name": "Invoice category Chirurgie",
+      "status": "PASS",
+      "details": "Filter applied",
+      "timestamp": "2025-12-21T22:57:11.099040"
+    },
+    {
+      "name": "Invoice category M\u00e9dicaments",
+      "status": "PASS",
+      "details": "Filter applied",
+      "timestamp": "2025-12-21T22:57:11.546319"
+    },
+    {
+      "name": "Invoice search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:57:12.776094"
+    },
+    {
+      "name": "Invoice status filter",
+      "status": "PASS",
+      "details": "Dropdown opens",
+      "timestamp": "2025-12-21T22:57:13.414253"
+    },
+    {
+      "name": "Invoice patient selection",
+      "status": "PASS",
+      "details": "Patient selected",
+      "timestamp": "2025-12-21T22:57:16.203148"
+    },
+    {
+      "name": "Invoice creation modal",
+      "status": "PASS",
+      "details": "Modal works",
+      "timestamp": "2025-12-21T22:57:16.242536"
+    },
+    {
+      "name": "Appointment Liste view",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:18.540031"
+    },
+    {
+      "name": "Appointment Semaine view",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:18.991141"
+    },
+    {
+      "name": "Appointment Mois view",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:19.437802"
+    },
+    {
+      "name": "Appointment Agenda view",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:19.905237"
+    },
+    {
+      "name": "Availability view",
+      "status": "PASS",
+      "details": "Opens availability",
+      "timestamp": "2025-12-21T22:57:20.431448"
+    },
+    {
+      "name": "Appointment status filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:57:22.593114"
+    },
+    {
+      "name": "Appointment date selection",
+      "status": "PASS",
+      "details": "Date input works",
+      "timestamp": "2025-12-21T22:57:23.407543"
+    },
+    {
+      "name": "Appointment modal",
+      "status": "PASS",
+      "details": "Modal works",
+      "timestamp": "2025-12-21T22:57:23.832855"
+    },
+    {
+      "name": "Queue analyses",
+      "status": "PASS",
+      "details": "Link works",
+      "timestamp": "2025-12-21T22:57:26.092517"
+    },
+    {
+      "name": "Queue display settings",
+      "status": "PASS",
+      "details": "Link found",
+      "timestamp": "2025-12-21T22:57:27.796311"
+    },
+    {
+      "name": "Queue sort dropdown",
+      "status": "PASS",
+      "details": "Dropdown works",
+      "timestamp": "2025-12-21T22:57:28.215247"
+    },
+    {
+      "name": "Queue walk-in modal",
+      "status": "PASS",
+      "details": "Modal works",
+      "timestamp": "2025-12-21T22:57:28.693016"
+    },
+    {
+      "name": "Queue check-in modal",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:57:29.520287"
+    },
+    {
+      "name": "Queue view appointments",
+      "status": "PASS",
+      "details": "Link works",
+      "timestamp": "2025-12-21T22:57:30.419078"
+    },
+    {
+      "name": "Prescription tab Toutes",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:32.661585"
+    },
+    {
+      "name": "Prescription tab Sans PA",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:33.080372"
+    },
+    {
+      "name": "Prescription tab PA En cours",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:33.540892"
+    },
+    {
+      "name": "Prescription tab PA Approuv\u00e9es",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:33.938527"
+    },
+    {
+      "name": "Prescription tab PA Refus\u00e9es",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:34.333732"
+    },
+    {
+      "name": "Prescription modal",
+      "status": "PASS",
+      "details": "Modal works",
+      "timestamp": "2025-12-21T22:57:35.164265"
+    },
+    {
+      "name": "Go to patients link",
+      "status": "PASS",
+      "details": "Navigation works",
+      "timestamp": "2025-12-21T22:57:35.517094"
+    },
+    {
+      "name": "StudioVision access",
+      "status": "PASS",
+      "details": "Page accessible",
+      "timestamp": "2025-12-21T22:57:38.358341"
+    },
+    {
+      "name": "StudioVision R\u00e9sum\u00e9 tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:41.564300"
+    },
+    {
+      "name": "StudioVision R\u00e9fraction tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:41.993981"
+    },
+    {
+      "name": "StudioVision Lentilles tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:42.441254"
+    },
+    {
+      "name": "StudioVision Pathologies tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:42.906113"
+    },
+    {
+      "name": "StudioVision Orthoptie tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:43.329195"
+    },
+    {
+      "name": "StudioVision Examen tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:43.785993"
+    },
+    {
+      "name": "StudioVision Traitement tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:44.257210"
+    },
+    {
+      "name": "StudioVision R\u00e8glement tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:57:44.664143"
+    },
+    {
+      "name": "StudioVision Save button",
+      "status": "PASS",
+      "details": "Button visible",
+      "timestamp": "2025-12-21T22:57:44.738899"
+    },
+    {
+      "name": "StudioVision Print button",
+      "status": "PASS",
+      "details": "Button visible",
+      "timestamp": "2025-12-21T22:57:44.740574"
+    },
+    {
+      "name": "StudioVision Complete button",
+      "status": "PASS",
+      "details": "Button visible",
+      "timestamp": "2025-12-21T22:57:44.741820"
+    },
+    {
+      "name": "StudioVision Copy OD to OG",
+      "status": "PASS",
+      "details": "Button visible",
+      "timestamp": "2025-12-21T22:57:44.743567"
+    },
+    {
+      "name": "StudioVision patient search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:57:46.924348"
+    },
+    {
+      "name": "Surgery status filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:57:49.138722"
+    },
+    {
+      "name": "Surgery surgeon view",
+      "status": "PASS",
+      "details": "View works",
+      "timestamp": "2025-12-21T22:57:49.579036"
+    },
+    {
+      "name": "Surgery date navigation",
+      "status": "PASS",
+      "details": "Nav works",
+      "timestamp": "2025-12-21T22:57:51.754849"
+    },
+    {
+      "name": "Surgery new case modal",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:57:52.173010"
+    },
+    {
+      "name": "IVT eye filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:57:54.739262"
+    },
+    {
+      "name": "IVT indication filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:57:55.139462"
+    },
+    {
+      "name": "IVT status filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:57:55.543167"
+    },
+    {
+      "name": "IVT new injection modal",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:57:55.967807"
+    },
+    {
+      "name": "Lab configuration",
+      "status": "PASS",
+      "details": "Button exists",
+      "timestamp": "2025-12-21T22:57:58.145615"
+    },
+    {
+      "name": "Lab export",
+      "status": "PASS",
+      "details": "Button exists",
+      "timestamp": "2025-12-21T22:57:58.228371"
+    },
+    {
+      "name": "Lab new order modal",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:57:58.754457"
+    },
+    {
+      "name": "Lab tab Demandes en Attente",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:01.196414"
+    },
+    {
+      "name": "Lab tab Catalogue",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:01.618992"
+    },
+    {
+      "name": "Lab tab Examens Termin\u00e9s",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:02.022866"
+    },
+    {
+      "name": "Lab tab \u00c9chantillons",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:02.403090"
+    },
+    {
+      "name": "Imaging Fundus filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:04.750699"
+    },
+    {
+      "name": "Imaging OCT filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:05.188054"
+    },
+    {
+      "name": "Imaging Visual field filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:05.596779"
+    },
+    {
+      "name": "Imaging OD/OS filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:05.986389"
+    },
+    {
+      "name": "Imaging compare",
+      "status": "PASS",
+      "details": "Compare works",
+      "timestamp": "2025-12-21T22:58:06.380277"
+    },
+    {
+      "name": "Imaging demo toggle",
+      "status": "PASS",
+      "details": "Toggle works",
+      "timestamp": "2025-12-21T22:58:06.779191"
+    },
+    {
+      "name": "Imaging image click",
+      "status": "PASS",
+      "details": "Image opens",
+      "timestamp": "2025-12-21T22:58:10.112284"
+    },
+    {
+      "name": "Orthoptic new exam",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:58:12.319393"
+    },
+    {
+      "name": "Pharmacy low stock section",
+      "status": "PASS",
+      "details": "Section expands",
+      "timestamp": "2025-12-21T22:58:14.657308"
+    },
+    {
+      "name": "Pharmacy category filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:15.056581"
+    },
+    {
+      "name": "Pharmacy status filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:15.450379"
+    },
+    {
+      "name": "Pharmacy add medication",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:58:15.876777"
+    },
+    {
+      "name": "Pharmacy edit medication",
+      "status": "PASS",
+      "details": "Edit works",
+      "timestamp": "2025-12-21T22:58:20.021036"
+    },
+    {
+      "name": "Frame category filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:22.560157"
+    },
+    {
+      "name": "Frame brand filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:22.975516"
+    },
+    {
+      "name": "Frame search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:58:23.424173"
+    },
+    {
+      "name": "Frame add new",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:58:23.910002"
+    },
+    {
+      "name": "Frame pagination",
+      "status": "PASS",
+      "details": "Pagination works",
+      "timestamp": "2025-12-21T22:58:24.696108"
+    },
+    {
+      "name": "Optical shop patient search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:58:26.853988"
+    },
+    {
+      "name": "Optical shop V\u00e9rification",
+      "status": "PASS",
+      "details": "Action works",
+      "timestamp": "2025-12-21T22:58:27.314974"
+    },
+    {
+      "name": "Optical shop Commandes Externes",
+      "status": "PASS",
+      "details": "Action works",
+      "timestamp": "2025-12-21T22:58:29.440937"
+    },
+    {
+      "name": "Optical shop Performance",
+      "status": "PASS",
+      "details": "Action works",
+      "timestamp": "2025-12-21T22:58:31.580983"
+    },
+    {
+      "name": "Optical shop Toutes les commandes",
+      "status": "PASS",
+      "details": "Action works",
+      "timestamp": "2025-12-21T22:58:33.699793"
+    },
+    {
+      "name": "Glasses orders Toutes tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:37.587519"
+    },
+    {
+      "name": "Glasses orders Contr\u00f4le Qualit\u00e9 tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:38.011341"
+    },
+    {
+      "name": "Glasses orders Pr\u00eats \u00e0 retirer tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:58:38.414575"
+    },
+    {
+      "name": "Glasses status filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:39.152137"
+    },
+    {
+      "name": "Glasses new order",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:58:39.553735"
+    },
+    {
+      "name": "Cross-clinic card click",
+      "status": "PASS",
+      "details": "Card clickable",
+      "timestamp": "2025-12-21T22:58:41.722211"
+    },
+    {
+      "name": "Cross-clinic type filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:58:42.130978"
+    },
+    {
+      "name": "Cross-clinic refresh",
+      "status": "PASS",
+      "details": "Refresh works",
+      "timestamp": "2025-12-21T22:58:42.519704"
+    },
+    {
+      "name": "Settings Profil",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:45.034352"
+    },
+    {
+      "name": "Settings Notifications",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:47.427163"
+    },
+    {
+      "name": "Settings Calendrier",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:49.863374"
+    },
+    {
+      "name": "Settings S\u00e9curit\u00e9",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:52.308481"
+    },
+    {
+      "name": "Settings Facturation",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:54.740115"
+    },
+    {
+      "name": "Settings Tarifs",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:57.150629"
+    },
+    {
+      "name": "Settings R\u00e9f\u00e9rents",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:58:59.566100"
+    },
+    {
+      "name": "Settings Clinique",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:59:01.994850"
+    },
+    {
+      "name": "Settings Permissions",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:59:04.431345"
+    },
+    {
+      "name": "Settings Twilio",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:59:06.843477"
+    },
+    {
+      "name": "Settings LIS/HL7",
+      "status": "PASS",
+      "details": "Section works",
+      "timestamp": "2025-12-21T22:59:09.246730"
+    },
+    {
+      "name": "Settings save button",
+      "status": "PASS",
+      "details": "Button exists",
+      "timestamp": "2025-12-21T22:59:11.597365"
+    },
+    {
+      "name": "User search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:59:13.759806"
+    },
+    {
+      "name": "User role filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:59:14.179456"
+    },
+    {
+      "name": "User add modal",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:59:14.607251"
+    },
+    {
+      "name": "User edit",
+      "status": "PASS",
+      "details": "Edit works",
+      "timestamp": "2025-12-21T22:59:15.343266"
+    },
+    {
+      "name": "Audit Activit\u00e9 Employ\u00e9s tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:59:18.076770"
+    },
+    {
+      "name": "Audit Tous les \u00e9v\u00e9nements tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:59:18.632806"
+    },
+    {
+      "name": "Audit Activit\u00e9s suspectes tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:59:19.179981"
+    },
+    {
+      "name": "Audit S\u00e9curit\u00e9 tab",
+      "status": "PASS",
+      "details": "Tab works",
+      "timestamp": "2025-12-21T22:59:19.642790"
+    },
+    {
+      "name": "Audit search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:59:20.080593"
+    },
+    {
+      "name": "Audit action filter",
+      "status": "PASS",
+      "details": "Filter works",
+      "timestamp": "2025-12-21T22:59:20.569018"
+    },
+    {
+      "name": "Audit export",
+      "status": "PASS",
+      "details": "Export available",
+      "timestamp": "2025-12-21T22:59:20.661131"
+    },
+    {
+      "name": "Documents patient search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:59:24.345290"
+    },
+    {
+      "name": "Documents patient selection",
+      "status": "SKIP",
+      "details": "No patient buttons found",
+      "timestamp": "2025-12-21T22:59:25.155188"
+    },
+    {
+      "name": "Approvals new request",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:59:27.350898"
+    },
+    {
+      "name": "Approvals filters",
+      "status": "PASS",
+      "details": "Filters work",
+      "timestamp": "2025-12-21T22:59:28.097775"
+    },
+    {
+      "name": "Companies search",
+      "status": "PASS",
+      "details": "Search works",
+      "timestamp": "2025-12-21T22:59:32.954065"
+    },
+    {
+      "name": "Companies row click",
+      "status": "PASS",
+      "details": "Row clicked",
+      "timestamp": "2025-12-21T22:59:34.735057"
+    },
+    {
+      "name": "Financial export",
+      "status": "PASS",
+      "details": "Export works",
+      "timestamp": "2025-12-21T22:59:36.950192"
+    },
+    {
+      "name": "Financial Boutique Optique section",
+      "status": "PASS",
+      "details": "Section expands",
+      "timestamp": "2025-12-21T22:59:37.394494"
+    },
+    {
+      "name": "Financial Rapport d'anciennet\u00e9 section",
+      "status": "PASS",
+      "details": "Section expands",
+      "timestamp": "2025-12-21T22:59:37.818177"
+    },
+    {
+      "name": "Financial Conventions section",
+      "status": "PASS",
+      "details": "Section expands",
+      "timestamp": "2025-12-21T22:59:38.240648"
+    },
+    {
+      "name": "Financial Commissions section",
+      "status": "PASS",
+      "details": "Section expands",
+      "timestamp": "2025-12-21T22:59:38.658256"
+    },
+    {
+      "name": "Templates new",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:59:40.870517"
+    },
+    {
+      "name": "Templates import",
+      "status": "PASS",
+      "details": "Import works",
+      "timestamp": "2025-12-21T22:59:41.598075"
+    },
+    {
+      "name": "Device add",
+      "status": "PASS",
+      "details": "Modal opens",
+      "timestamp": "2025-12-21T22:59:43.837294"
+    },
+    {
+      "name": "Network discovery start",
+      "status": "PASS",
+      "details": "Discovery button exists",
+      "timestamp": "2025-12-21T22:59:46.542055"
+    },
+    {
+      "name": "Page Dispatch",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:48.306667"
+    },
+    {
+      "name": "Page Consolidated Reports",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:50.075766"
+    },
+    {
+      "name": "Page Alerts",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:51.840596"
+    },
+    {
+      "name": "Page Notifications",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:53.651406"
+    },
+    {
+      "name": "Page Stock Reconciliation",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:55.510349"
+    },
+    {
+      "name": "Page Purchase Orders",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:57.291673"
+    },
+    {
+      "name": "Page Queue Analytics",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T22:59:59.081298"
+    },
+    {
+      "name": "Page Nurse Vitals",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:00.860961"
+    },
+    {
+      "name": "Page OCR Import",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:02.651033"
+    },
+    {
+      "name": "Page Public Booking",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:03.975687"
+    },
+    {
+      "name": "Page Display Board",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:05.359841"
+    },
+    {
+      "name": "Page External Facilities",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:07.165993"
+    },
+    {
+      "name": "Page Repairs",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:08.953257"
+    },
+    {
+      "name": "Page Visits",
+      "status": "PASS",
+      "details": "Page loads",
+      "timestamp": "2025-12-21T23:00:10.725400"
+    }
+  ]
+}

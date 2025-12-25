@@ -4,6 +4,7 @@ import { format, subDays } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import logger from '../services/logger';
 import {
   Shield,
   AlertTriangle,
@@ -184,7 +185,7 @@ export default function AuditTrail() {
       });
       setEmployees(response?.data || []);
     } catch (error) {
-      console.error('Error loading employees:', error);
+      logger.error('Error loading employees:', error);
       // Don't show toast for 404 - means no audit data yet
       if (error.response?.status !== 404) {
         toast.error('Erreur lors du chargement des activités');
@@ -203,7 +204,7 @@ export default function AuditTrail() {
       setEmployeeDaily(response?.data);
       setExpandedEmployee(userId);
     } catch (error) {
-      console.error('Error loading employee daily:', error);
+      logger.error('Error loading employee daily:', error);
     }
   };
 
@@ -216,7 +217,7 @@ export default function AuditTrail() {
       });
       setPatientAccessLogs(normalizeToArray(response));
     } catch (error) {
-      console.error('Error loading patient access logs:', error);
+      logger.error('Error loading patient access logs:', error);
       toast.error('Erreur lors du chargement des accès patient');
     } finally {
       setPatientAccessLoading(false);
@@ -234,7 +235,7 @@ export default function AuditTrail() {
       setComplianceReport(response?.data);
       toast.success(`Rapport ${complianceType.toUpperCase()} généré avec succès`);
     } catch (error) {
-      console.error('Error generating compliance report:', error);
+      logger.error('Error generating compliance report:', error);
       toast.error('Erreur lors de la génération du rapport');
     } finally {
       setComplianceLoading(false);
@@ -261,7 +262,7 @@ export default function AuditTrail() {
 
       toast.success('Rapport exporté avec succès');
     } catch (error) {
-      console.error('Error exporting compliance report:', error);
+      logger.error('Error exporting compliance report:', error);
       toast.error('Erreur lors de l\'export du rapport');
     }
   };
@@ -301,7 +302,7 @@ export default function AuditTrail() {
       setTotalCount(response?.total || 0);
     } catch (error) {
       toast.error('Échec du chargement des logs d\'audit');
-      console.error('Error loading logs:', error);
+      logger.error('Error loading logs:', error);
     } finally {
       setLoading(false);
     }
@@ -313,7 +314,7 @@ export default function AuditTrail() {
       const response = await auditService.getStats(statsPeriod);
       setStats(response?.data || null);
     } catch (error) {
-      console.error('Error loading stats:', error);
+      logger.error('Error loading stats:', error);
     } finally {
       setStatsLoading(false);
     }
@@ -324,7 +325,7 @@ export default function AuditTrail() {
       const response = await auditService.getActionTypes();
       setActionTypes(response?.data || []);
     } catch (error) {
-      console.error('Error loading action types:', error);
+      logger.error('Error loading action types:', error);
     }
   };
 

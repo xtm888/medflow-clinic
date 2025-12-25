@@ -11,6 +11,7 @@ export const rolePermissions = {
       'inventory',
       'procurement',
       'finance',
+      'operations',
       'notifications',
       'settings',
       'admin',
@@ -116,6 +117,7 @@ export const rolePermissions = {
   receptionist: {
     menuItems: [
       'dashboard',
+      'receptionist-view',
       'patients',
       'queue',
       'appointments',
@@ -137,6 +139,7 @@ export const rolePermissions = {
   pharmacist: {
     menuItems: [
       'dashboard',
+      'pharmacist-view',
       'patients',
       'prescription-queue',
       'clinical',
@@ -156,10 +159,11 @@ export const rolePermissions = {
   lab_technician: {
     menuItems: [
       'dashboard',
+      'lab-tech-view',
       'patients',
       'queue',
       'lab-worklist',
-      'lab-orders',
+      'lab-checkin',
       'clinical',
       'inventory',
       'notifications'
@@ -201,6 +205,7 @@ export const rolePermissions = {
       'clinical',
       'inventory',
       'finance',
+      'operations',
       'notifications'
     ],
     permissions: [
@@ -215,10 +220,12 @@ export const rolePermissions = {
   optician: {
     menuItems: [
       'dashboard',
+      'optician-view',
       'patients',
       'queue',
       'optical-shop',
       'inventory',
+      'operations',
       'notifications'
     ],
     permissions: [
@@ -443,7 +450,11 @@ export const menuConfigurations = {
     description: 'Modules cliniques',
     subItems: [
       { label: 'Ordonnances', path: '/prescriptions', icon: 'FileText', roles: ['admin', 'doctor', 'ophthalmologist', 'pharmacist', 'nurse', 'optometrist'] },
+      { label: 'File Ordonnances', path: '/prescription-queue', icon: 'ListChecks', roles: ['admin', 'pharmacist'] },
       { label: 'Laboratoire', path: '/laboratory', icon: 'FlaskConical', roles: ['admin', 'doctor', 'ophthalmologist', 'lab_technician', 'nurse'] },
+      { label: 'Accueil Labo', path: '/lab-checkin', icon: 'ClipboardCheck', roles: ['admin', 'lab_technician', 'nurse'] },
+      { label: 'Liste de Travail Labo', path: '/lab-worklist', icon: 'ListTodo', roles: ['admin', 'lab_technician'] },
+      { label: 'Saisie Signes Vitaux', path: '/nurse-vitals', icon: 'Activity', roles: ['admin', 'nurse', 'doctor', 'ophthalmologist'] },
       { label: 'Imagerie', path: '/imaging', icon: 'Image', roles: ['admin', 'doctor', 'ophthalmologist', 'radiologist', 'technician', 'imaging_tech'] },
       { label: 'Pharmacie', path: '/pharmacy', icon: 'Pill', roles: ['admin', 'pharmacist', 'doctor', 'ophthalmologist'] },
       { label: 'Ophtalmologie', path: '/ophthalmology', icon: 'Eye', roles: ['admin', 'doctor', 'ophthalmologist', 'optometrist', 'nurse'] },
@@ -666,5 +677,81 @@ export const menuConfigurations = {
     path: '/backups',
     icon: 'Database',
     description: 'Sauvegardes et restauration du système'
+  },
+  // Operations menu for cross-clinic features
+  operations: {
+    label: 'Opérations',
+    path: null,
+    icon: 'Building2',
+    description: 'Gestion multi-cliniques',
+    subItems: [
+      { label: 'Tableau Multi-Cliniques', path: '/cross-clinic-dashboard', icon: 'LayoutGrid', roles: ['admin', 'manager'] },
+      { label: 'Inventaire Consolidé', path: '/cross-clinic-inventory', icon: 'Package', roles: ['admin', 'manager'] },
+      { label: 'Établissements Externes', path: '/external-facilities', icon: 'Building', roles: ['admin', 'manager'] },
+      { label: 'Dispatch', path: '/dispatch-dashboard', icon: 'Truck', roles: ['admin', 'manager', 'optician', 'technician'] },
+      { label: 'Rapports Consolidés', path: '/consolidated-reports', icon: 'BarChart3', roles: ['admin', 'manager', 'accountant'] }
+    ]
+  },
+  'cross-clinic-dashboard': {
+    label: 'Tableau Multi-Cliniques',
+    path: '/cross-clinic-dashboard',
+    icon: 'LayoutGrid',
+    description: 'Vue d\'ensemble de toutes les cliniques'
+  },
+  'cross-clinic-inventory': {
+    label: 'Inventaire Consolidé',
+    path: '/cross-clinic-inventory',
+    icon: 'Package',
+    description: 'Inventaire multi-sites consolidé'
+  },
+  'external-facilities': {
+    label: 'Établissements Externes',
+    path: '/external-facilities',
+    icon: 'Building',
+    description: 'Gestion des partenaires et laboratoires externes'
+  },
+  'dispatch-dashboard': {
+    label: 'Dispatch',
+    path: '/dispatch-dashboard',
+    icon: 'Truck',
+    description: 'Suivi des expéditions et commandes externes'
+  },
+  'consolidated-reports': {
+    label: 'Rapports Consolidés',
+    path: '/consolidated-reports',
+    icon: 'BarChart3',
+    description: 'Rapports financiers et opérationnels multi-sites'
+  },
+  // Lab workflow pages
+  'lab-checkin': {
+    label: 'Accueil Labo',
+    path: '/lab-checkin',
+    icon: 'ClipboardCheck',
+    description: 'Réception et enregistrement des prélèvements'
+  },
+  // Role-specific workspace views
+  'receptionist-view': {
+    label: 'Espace Réception',
+    path: '/receptionist',
+    icon: 'UserCircle',
+    description: 'Vue optimisée pour la réception'
+  },
+  'pharmacist-view': {
+    label: 'Espace Pharmacie',
+    path: '/pharmacist-view',
+    icon: 'Pill',
+    description: 'Vue optimisée pour le pharmacien'
+  },
+  'optician-view': {
+    label: 'Espace Opticien',
+    path: '/optician-view',
+    icon: 'Glasses',
+    description: 'Vue optimisée pour l\'opticien'
+  },
+  'lab-tech-view': {
+    label: 'Espace Laboratoire',
+    path: '/lab-tech-view',
+    icon: 'FlaskConical',
+    description: 'Vue optimisée pour le technicien de laboratoire'
   }
 };

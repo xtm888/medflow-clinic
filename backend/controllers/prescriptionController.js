@@ -152,7 +152,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
         const medName = med.genericName || med.name;
         return drugSafetyService.checkInteractionsWithExternalAPI(medName, currentMeds)
           .catch(err => {
-            console.warn(`External API check failed for ${medName}:`, err.message);
+            prescriptionLogger.warn('External API check failed', { medication: medName, error: err.message });
             return null; // Return null on error so Promise.all doesn't reject
           });
       });
@@ -179,7 +179,7 @@ exports.createPrescription = asyncHandler(async (req, res, next) => {
         }
       });
     } catch (externalError) {
-      console.warn('External API check failed, using local data only:', externalError.message);
+      prescriptionLogger.warn('External API check failed, using local data only', { error: externalError.message });
     }
 
     // Add warnings from safety check
@@ -1861,7 +1861,7 @@ exports.checkDrugInteractions = asyncHandler(async (req, res) => {
       }
     }
   } catch (externalError) {
-    console.warn('External API drug interaction check failed:', externalError.message);
+    prescriptionLogger.warn('External API drug interaction check failed', { error: externalError.message });
   }
 
   // Combine all interactions
@@ -1935,7 +1935,7 @@ exports.runSafetyCheck = asyncHandler(async (req, res) => {
       }
     }
   } catch (externalError) {
-    console.warn('External API safety check failed:', externalError.message);
+    prescriptionLogger.warn('External API safety check failed', { error: externalError.message });
   }
 
   // Merge external interactions into results
@@ -2059,7 +2059,7 @@ exports.validatePrescription = asyncHandler(async (req, res) => {
               }
             }
           } catch (externalError) {
-            console.warn('External API validation check failed:', externalError.message);
+            prescriptionLogger.warn('External API validation check failed', { error: externalError.message });
           }
 
           if (safetyResults.hasAnyCritical) {

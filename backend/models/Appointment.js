@@ -389,6 +389,10 @@ appointmentSchema.index({ clinic: 1, provider: 1, date: 1 }); // Clinic-scoped p
 appointmentSchema.index({ clinic: 1, patient: 1 }); // Clinic-scoped patient history
 // Note: Bidirectional reference - Visit.appointment and Appointment.visit both exist
 
+// Additional compound indexes for common query patterns
+appointmentSchema.index({ clinic: 1, date: 1, status: 1 }); // Clinic appointments filtered by date then status
+appointmentSchema.index({ provider: 1, date: 1 }); // Provider schedule without status filter
+
 // Virtual for isToday
 appointmentSchema.virtual('isToday').get(function() {
   const today = new Date();

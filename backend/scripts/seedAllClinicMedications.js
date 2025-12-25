@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const MedicationTemplate = require('../models/MedicationTemplate');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedAllClinicMedications.js');
+
 // ALL medications from the clinic maquettes - INCLUDING NON-EYE MEDICATIONS
 // As requested by the user: "every equipment and non eye medication needs to be included"
 const allClinicMedications = {

@@ -5,8 +5,11 @@
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { FrameInventory } = require('../models/Inventory');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedDepotFrames.js');
+
+const { FrameInventory } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 
 // Sample depot frames with base prices (in CDF)

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import deviceService from '../services/deviceService';
 import { toast } from 'react-toastify';
+import logger from '../services/logger';
 
 const DeviceManager = () => {
   const navigate = useNavigate();
@@ -60,7 +61,7 @@ const DeviceManager = () => {
       setDevices(Array.isArray(deviceArray) ? deviceArray : []);
     } catch (err) {
       toast.error('Échec du chargement des appareils');
-      console.error(err);
+      logger.error('Failed to load devices:', err);
     } finally {
       setLoading(false);
     }

@@ -5,14 +5,35 @@
  * Uses centralized password from config/defaults.js for consistency
  *
  * Run with: node scripts/seedUsers.js
+ *
+ * SECURITY: Only runs in development/test environments
  */
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedUsers.js');
+
 const User = require('../models/User');
 const Clinic = require('../models/Clinic');
 const defaults = require('../config/defaults');
 require('dotenv').config();
+
+// SECURITY: Block seeding in production environments
+const ALLOWED_ENVS = ['development', 'dev', 'test', 'local', undefined];
+const currentEnv = process.env.NODE_ENV?.toLowerCase();
+
+if (!ALLOWED_ENVS.includes(currentEnv)) {
+  console.error('⛔ BLOCKED: Cannot seed users in production environment!');
+  console.error(`   Current NODE_ENV: ${process.env.NODE_ENV}`);
+  console.error('   Use secure user management instead.');
+  process.exit(1);
+}
+
+console.log(`⚠️  Seeding users (NODE_ENV: ${process.env.NODE_ENV || 'undefined'})`);
+console.log('   Default passwords should NEVER be used in production!');
+console.log('');
 
 const seedUsers = async () => {
   try {

@@ -5,8 +5,11 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const { FrameInventory } = require('../models/Inventory');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedFrameInventory.js');
+
+const { FrameInventory } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 
 // Popular frame brands and models

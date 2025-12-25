@@ -4,6 +4,8 @@ const { Inventory, FrameInventory } = require('../models/Inventory');
 const { fileUtils } = require('../middleware/fileUpload');
 const { buildClinicFilter, verifyClinicAccess } = require('../utils/clinicFilter');
 const { isValidObjectId } = require('../utils/sanitize');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('TryOnPhotoController');
 
 const MAX_TRYON_PHOTOS_PER_ORDER = 5;
 
@@ -16,7 +18,7 @@ exports.uploadTryOnPhotos = async (req, res) => {
       if (req.files) {
         for (const fieldFiles of Object.values(req.files)) {
           for (const file of fieldFiles) {
-            await fileUtils.deleteFile(file.path).catch(console.error);
+            await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
           }
         }
       }
@@ -28,7 +30,7 @@ exports.uploadTryOnPhotos = async (req, res) => {
       if (req.files) {
         for (const fieldFiles of Object.values(req.files)) {
           for (const file of fieldFiles) {
-            await fileUtils.deleteFile(file.path).catch(console.error);
+            await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
           }
         }
       }
@@ -39,7 +41,7 @@ exports.uploadTryOnPhotos = async (req, res) => {
       if (req.files) {
         for (const fieldFiles of Object.values(req.files)) {
           for (const file of fieldFiles) {
-            await fileUtils.deleteFile(file.path).catch(console.error);
+            await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
           }
         }
       }
@@ -51,7 +53,7 @@ exports.uploadTryOnPhotos = async (req, res) => {
       if (req.files) {
         for (const fieldFiles of Object.values(req.files)) {
           for (const file of fieldFiles) {
-            await fileUtils.deleteFile(file.path).catch(console.error);
+            await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
           }
         }
       }
@@ -62,7 +64,7 @@ exports.uploadTryOnPhotos = async (req, res) => {
       if (req.files) {
         for (const fieldFiles of Object.values(req.files)) {
           for (const file of fieldFiles) {
-            await fileUtils.deleteFile(file.path).catch(console.error);
+            await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
           }
         }
       }
@@ -73,7 +75,7 @@ exports.uploadTryOnPhotos = async (req, res) => {
       if (req.files) {
         for (const fieldFiles of Object.values(req.files)) {
           for (const file of fieldFiles) {
-            await fileUtils.deleteFile(file.path).catch(console.error);
+            await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
           }
         }
       }
@@ -126,11 +128,11 @@ exports.uploadTryOnPhotos = async (req, res) => {
     if (req.files) {
       for (const fieldFiles of Object.values(req.files)) {
         for (const file of fieldFiles) {
-          await fileUtils.deleteFile(file.path).catch(console.error);
+          await fileUtils.deleteFile(file.path).catch(err => log.error('Failed to delete file', { path: file.path, error: err.message }));
         }
       }
     }
-    console.error('Upload try-on photos error:', error);
+    log.error('Upload try-on photos error', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: 'Failed to upload try-on photos' });
   }
 };
@@ -157,7 +159,7 @@ exports.getTryOnPhotos = async (req, res) => {
 
     res.json({ success: true, count: order.frameTryOnPhotos?.length || 0, data: order.frameTryOnPhotos || [] });
   } catch (error) {
-    console.error('Get try-on photos error:', error);
+    log.error('Get try-on photos error', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: 'Failed to get try-on photos' });
   }
 };
@@ -190,10 +192,10 @@ exports.deleteTryOnPhotos = async (req, res) => {
 
     const photoSet = order.frameTryOnPhotos[photoSetIndex];
     if (photoSet.frontPhoto?.path) {
-      await fileUtils.deleteFile(photoSet.frontPhoto.path).catch(console.error);
+      await fileUtils.deleteFile(photoSet.frontPhoto.path).catch(err => log.error('Failed to delete front photo', { path: photoSet.frontPhoto.path, error: err.message }));
     }
     if (photoSet.sidePhoto?.path) {
-      await fileUtils.deleteFile(photoSet.sidePhoto.path).catch(console.error);
+      await fileUtils.deleteFile(photoSet.sidePhoto.path).catch(err => log.error('Failed to delete side photo', { path: photoSet.sidePhoto.path, error: err.message }));
     }
 
     order.frameTryOnPhotos.splice(photoSetIndex, 1);
@@ -201,7 +203,7 @@ exports.deleteTryOnPhotos = async (req, res) => {
 
     res.json({ success: true, message: 'Try-on photos deleted successfully' });
   } catch (error) {
-    console.error('Delete try-on photos error:', error);
+    log.error('Delete try-on photos error', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: 'Failed to delete try-on photos' });
   }
 };
@@ -235,7 +237,7 @@ exports.selectFrame = async (req, res) => {
 
     res.json({ success: true, message: 'Frame selected successfully', data: { selectedFrameId: photoSet.frameId, selectedFrameName: photoSet.frameName } });
   } catch (error) {
-    console.error('Select frame error:', error);
+    log.error('Select frame error', { error: error.message, stack: error.stack });
     res.status(500).json({ success: false, error: 'Failed to select frame' });
   }
 };

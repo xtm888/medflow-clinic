@@ -1,6 +1,8 @@
 const CalendarIntegration = require('../models/CalendarIntegration');
 const calendarService = require('../services/calendarIntegrationService');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('Calendar');
 
 /**
  * @desc    Get user's calendar integrations
@@ -51,7 +53,7 @@ exports.googleCallback = asyncHandler(async (req, res) => {
     await calendarService.handleGoogleCallback(code, state);
     res.redirect(`${process.env.FRONTEND_URL}/settings/calendar?connected=google`);
   } catch (err) {
-    console.error('Google callback error:', err);
+    logger.error('Google callback error', { error: err.message });
     res.redirect(`${process.env.FRONTEND_URL}/settings/calendar?error=${encodeURIComponent(err.message)}`);
   }
 });
@@ -92,7 +94,7 @@ exports.microsoftCallback = asyncHandler(async (req, res) => {
     await calendarService.handleMicrosoftCallback(code, state);
     res.redirect(`${process.env.FRONTEND_URL}/settings/calendar?connected=outlook`);
   } catch (err) {
-    console.error('Microsoft callback error:', err);
+    logger.error('Microsoft callback error', { error: err.message });
     res.redirect(`${process.env.FRONTEND_URL}/settings/calendar?error=${encodeURIComponent(err.message)}`);
   }
 });
@@ -341,7 +343,7 @@ exports.refreshCalendarList = asyncHandler(async (req, res) => {
       data: calendars
     });
   } catch (error) {
-    console.error('Refresh calendars error:', error);
+    logger.error('Refresh calendars error', { error: error.message });
     res.status(500).json({
       success: false,
       error: 'Failed to refresh calendar list'
@@ -499,7 +501,7 @@ exports.getICalFeed = asyncHandler(async (req, res) => {
 
     res.send(icalContent);
   } catch (error) {
-    console.error('iCal feed error:', error);
+    logger.error('iCal feed error', { error: error.message });
     res.status(401).json({
       success: false,
       error: 'Invalid or expired subscription'

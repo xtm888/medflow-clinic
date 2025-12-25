@@ -6,6 +6,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedFeeScheduleAliases.js');
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
 
 // Short-code aliases matching what's used in consultation templates and UI

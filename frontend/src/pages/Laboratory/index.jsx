@@ -15,6 +15,7 @@ import PermissionGate from '../../components/PermissionGate';
 import FaceVerification from '../../components/biometric/FaceVerification';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLabWorklist, useLabCriticalAlerts, useQCFailures, useWebSocket } from '../../hooks/useWebSocket';
+import logger from '../../services/logger';
 
 // Import sections
 import {
@@ -91,13 +92,13 @@ export default function Laboratory() {
 
   // Handle real-time worklist updates
   const handleWorklistUpdate = useCallback((data) => {
-    console.log('[Lab] Real-time update:', data);
+    logger.debug('[Lab] Real-time update:', data);
 
     if (data.action === 'status_change' && data.newStatus === 'completed') {
       setPendingOrders(prev => prev.filter(o => (o._id || o.id) !== data.orderId));
       laboratoryService.getCompleted({ limit: 20 }).then(res => {
         setCompletedOrders(normalizeToArray(res));
-      }).catch(console.error);
+      }).catch(err => logger.error('Failed to fetch completed orders:', err));
       toast.info(`Résultats disponibles: ${data.testName || 'Test'}`);
     } else if (data.action === 'specimen_collected') {
       setPendingOrders(prev => prev.map(o => {
@@ -176,7 +177,7 @@ export default function Laboratory() {
       setCategories(uniqueCategories);
     } catch (err) {
       toast.error('Erreur lors du chargement des données');
-      console.error('Error fetching data:', err);
+      logger.error('Error fetching data:', err);
     } finally {
       setLoading(false);
     }
@@ -282,7 +283,7 @@ export default function Laboratory() {
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur lors de la création');
-      console.error('Error creating order:', err);
+      logger.error('Error creating order:', err);
     } finally {
       setSubmitting(false);
     }
@@ -303,7 +304,7 @@ export default function Laboratory() {
       fetchData();
     } catch (err) {
       toast.error('Erreur lors de la mise à jour du statut');
-      console.error('Error updating status:', err);
+      logger.error('Error updating status:', err);
     }
   };
 
@@ -323,7 +324,7 @@ export default function Laboratory() {
         setPendingOrders(prev => prev.filter(o => (o._id || o.id) !== orderId));
       } catch (err) {
         toast.error('Erreur lors de l\'annulation');
-        console.error('Error cancelling order:', err);
+        logger.error('Error cancelling order:', err);
       }
     }
   };
@@ -355,7 +356,7 @@ export default function Laboratory() {
       setRejectForm({ reason: '', reasonDetails: '' });
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur lors du rejet');
-      console.error('Error rejecting order:', err);
+      logger.error('Error rejecting order:', err);
     } finally {
       setSubmitting(false);
     }
@@ -394,7 +395,7 @@ export default function Laboratory() {
       fetchData();
     } catch (err) {
       toast.error(err.response?.data?.error || 'Erreur lors de l\'enregistrement');
-      console.error('Error submitting results:', err);
+      logger.error('Error submitting results:', err);
     } finally {
       setSubmitting(false);
     }
@@ -417,7 +418,7 @@ export default function Laboratory() {
       setShowViewResults(true);
     } catch (err) {
       toast.error('Erreur lors du chargement des résultats');
-      console.error('Error loading results:', err);
+      logger.error('Error loading results:', err);
     }
   };
 
@@ -427,7 +428,7 @@ export default function Laboratory() {
       toast.success('PDF téléchargé avec succès!');
     } catch (err) {
       toast.error('Erreur lors de l\'impression');
-      console.error('Error printing:', err);
+      logger.error('Error printing:', err);
     }
   };
 
@@ -483,7 +484,7 @@ export default function Laboratory() {
 
       toast.success('Export terminé!');
     } catch (err) {
-      console.error('Export error:', err);
+      logger.error('Export error:', err);
       toast.error('Erreur lors de l\'export');
     }
   };

@@ -2,17 +2,28 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 
 // Encryption key for sensitive data (required in production)
+// SECURITY: Use environment-specific salt derived from the key itself
+// This prevents rainbow table attacks and ensures unique derived keys per installation
 const ENCRYPTION_KEY = (() => {
   if (process.env.LIS_ENCRYPTION_KEY) {
-    // If provided as hex string, convert to buffer
+    // If provided as hex string (64 chars = 32 bytes), use directly
     const key = process.env.LIS_ENCRYPTION_KEY;
-    return key.length === 64 ? Buffer.from(key, 'hex') : crypto.scryptSync(key, 'salt', 32);
+    if (key.length === 64) {
+      return Buffer.from(key, 'hex');
+    }
+    // For passphrase-based keys, derive using a proper salt
+    // Use first 16 bytes of SHA256 hash of the key as salt (deterministic but unique per key)
+    const saltSource = process.env.LIS_ENCRYPTION_SALT || crypto.createHash('sha256').update(key).digest().slice(0, 16);
+    const salt = typeof saltSource === 'string' ? Buffer.from(saltSource, 'hex') : saltSource;
+    return crypto.scryptSync(key, salt, 32);
   }
   if (process.env.NODE_ENV === 'production') {
     throw new Error('CRITICAL: LIS_ENCRYPTION_KEY must be set in production');
   }
   console.warn('⚠️  LIS_ENCRYPTION_KEY not set - using development fallback (NOT FOR PRODUCTION)');
-  return crypto.scryptSync('dev-fallback-not-for-production', 'salt', 32);
+  // Development only: use a deterministic but unique salt
+  const devSalt = crypto.createHash('sha256').update('dev-salt-not-for-production').digest().slice(0, 16);
+  return crypto.scryptSync('dev-fallback-not-for-production', devSalt, 32);
 })();
 const IV_LENGTH = 16;
 

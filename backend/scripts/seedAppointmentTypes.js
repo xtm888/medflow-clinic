@@ -5,6 +5,9 @@ const AppointmentType = require('../models/AppointmentType');
 const ClinicalAct = require('../models/ClinicalAct');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedAppointmentTypes.js');
+
 // Generate unique type ID
 function generateTypeId(name, index) {
   const prefix = 'APPT';

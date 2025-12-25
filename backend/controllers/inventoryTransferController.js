@@ -9,6 +9,8 @@ const {
 } = require('../models/Inventory');
 const Clinic = require('../models/Clinic');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('InventoryTransfer');
 
 // Map inventory type to model
 const INVENTORY_MODELS = {
@@ -478,7 +480,7 @@ exports.shipTransfer = asyncHandler(async (req, res) => {
     await session.commitTransaction();
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error deducting stock during ship:', error);
+    logger.error('Error deducting stock during ship', { error: error.message, transferId: transfer._id });
     // Transfer is already marked as shipped, log error but don't fail
   } finally {
     session.endSession();
@@ -620,7 +622,7 @@ exports.receiveTransfer = asyncHandler(async (req, res) => {
     await session.commitTransaction();
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error adding stock during receive:', error);
+    logger.error('Error adding stock during receive', { error: error.message, transferId: transfer._id });
     // Transfer already marked as received, log error but don't fail
   } finally {
     session.endSession();

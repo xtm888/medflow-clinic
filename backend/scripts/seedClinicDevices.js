@@ -7,6 +7,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedClinicDevices.js');
+
 const Device = require('../models/Device');
 const Clinic = require('../models/Clinic');
 

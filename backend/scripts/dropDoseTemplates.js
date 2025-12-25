@@ -1,7 +1,11 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction, requireConfirmation } = require('./_guards');
+requireNonProduction('dropDoseTemplates.js');
+
 async function dropCollection() {
+  await requireConfirmation('This will DROP the dosetemplates collection. Are you sure?');
   try {
     console.log('Connecting to MongoDB...');
     await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow', {

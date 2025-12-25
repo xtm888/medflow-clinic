@@ -4,9 +4,12 @@
  * Verifies each convention matches the EXACT business rules provided
  */
 
-const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('verifyConventionRules.js');
+
+const mongoose = require('mongoose');
 
 const Company = require('../models/Company');
 

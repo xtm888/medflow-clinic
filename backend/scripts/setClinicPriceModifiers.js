@@ -7,6 +7,10 @@
  */
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('setClinicPriceModifiers.js');
+
 const Clinic = require('../models/Clinic');
 
 const CLINIC_MODIFIERS = {

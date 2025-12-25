@@ -14,6 +14,9 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedConventionRules.js');
+
 const Company = require('../models/Company');
 
 // Standard categories for full coverage with surgery/optical approval

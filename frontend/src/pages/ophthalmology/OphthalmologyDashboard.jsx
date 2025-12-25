@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   Eye, Users, Calendar, TrendingUp,
   AlertCircle, FileText, Package, Clock,
-  Glasses, Camera, Activity, ChevronRight, Loader2
+  Glasses, Camera, Activity, ChevronRight, Loader2, Search
 } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import PatientSelectorModal from '../../components/PatientSelectorModal';
@@ -15,6 +15,7 @@ const DIAGNOSIS_COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444',
 export default function OphthalmologyDashboard() {
   const navigate = useNavigate();
   const [showPatientSelector, setShowPatientSelector] = useState(false);
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -131,6 +132,27 @@ export default function OphthalmologyDashboard() {
         <p className="text-gray-600 text-sm mt-1">
           {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
         </p>
+      </div>
+
+      {/* Patient Search Bar */}
+      <div className="mb-6">
+        <div className="relative max-w-xl">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+          <input
+            type="text"
+            placeholder="Rechercher un patient..."
+            value={patientSearchTerm}
+            onChange={(e) => {
+              setPatientSearchTerm(e.target.value);
+              if (e.target.value.length > 0) {
+                setShowPatientSelector(true);
+              }
+            }}
+            onClick={() => setShowPatientSelector(true)}
+            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+            data-testid="patient-search"
+          />
+        </div>
       </div>
 
       {/* Quick Actions */}

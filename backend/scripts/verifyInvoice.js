@@ -1,5 +1,8 @@
-const mongoose = require('mongoose');
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('verifyInvoice.js');
+
+const mongoose = require('mongoose');
 const Invoice = require('../models/Invoice');
 
 mongoose.connect(process.env.MONGODB_URI).then(async () => {

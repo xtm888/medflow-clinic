@@ -21,6 +21,9 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('migrateToUnifiedInventory.js');
+
 // Unified model - import the discriminators
 const {
   Inventory,

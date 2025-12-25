@@ -79,7 +79,10 @@ export default function ReceptionistView() {
 
   const formatTime = (dateStr) => {
     if (!dateStr) return '--:--';
-    return new Date(dateStr).toLocaleTimeString('fr-FR', {
+    const date = new Date(dateStr);
+    // Check for invalid date
+    if (isNaN(date.getTime())) return '--:--';
+    return date.toLocaleTimeString('fr-FR', {
       hour: '2-digit',
       minute: '2-digit'
     });

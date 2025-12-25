@@ -3,6 +3,9 @@ const User = require('../models/User');
 const defaults = require('../config/defaults');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createAdminUser.js');
+
 async function createAdminUser() {
   try {
     // Connect to MongoDB

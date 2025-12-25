@@ -8,6 +8,9 @@
  */
 
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testSecurityFixes.js');
+
 const mongoose = require('mongoose');
 const { PharmacyInventory } = require('../models/Inventory');
 const jwt = require('jsonwebtoken');

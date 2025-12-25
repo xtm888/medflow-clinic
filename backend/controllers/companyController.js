@@ -64,16 +64,25 @@ exports.getCompanies = asyncHandler(async (req, res) => {
     Company.countDocuments(query)
   ]);
 
-  // Add employee count for each company
-  const companiesWithStats = await Promise.all(
-    companies.map(async (company) => {
-      const employeeCount = await Patient.countByCompany(company._id);
-      return {
-        ...company,
-        employeeCount
-      };
-    })
+  // OPTIMIZATION: Use aggregation to get all employee counts in a single query
+  // instead of N+1 individual countByCompany calls
+  const companyIds = companies.map(c => c._id);
+  const employeeCounts = await Patient.aggregate([
+    { $match: {
+      'convention.company': { $in: companyIds },
+      isDeleted: { $ne: true }
+    }},
+    { $group: { _id: '$convention.company', count: { $sum: 1 } }}
+  ]);
+
+  const countMap = new Map(
+    employeeCounts.map(e => [e._id.toString(), e.count])
   );
+
+  const companiesWithStats = companies.map(company => ({
+    ...company,
+    employeeCount: countMap.get(company._id.toString()) || 0
+  }));
 
   return success(res, {
     data: companiesWithStats,
@@ -302,10 +311,19 @@ exports.getCompanyInvoices = asyncHandler(async (req, res) => {
     ])
   ]);
 
+  // Standardized API response format:
+  // - data: array of invoices (not wrapped in object)
+  // - meta: summary statistics
+  // - pagination: standard pagination object
+  const summaryData = summary[0] || { totalBilled: 0, totalPaid: 0, count: 0 };
+
   return success(res, {
-    data: {
-      invoices,
-      summary: summary[0] || { totalBilled: 0, totalPaid: 0, count: 0 }
+    data: invoices,
+    meta: {
+      totalBilled: summaryData.totalBilled,
+      totalPaid: summaryData.totalPaid,
+      totalOutstanding: summaryData.totalBilled - summaryData.totalPaid,
+      count: summaryData.count
     },
     pagination: {
       page: parseInt(page),

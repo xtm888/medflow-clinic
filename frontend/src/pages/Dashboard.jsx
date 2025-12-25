@@ -15,6 +15,7 @@ import TodayTasksWidget from '../components/dashboard/TodayTasksWidget';
 import RecentPatientsWidget from '../components/dashboard/RecentPatientsWidget';
 import PendingActionsWidget from '../components/dashboard/PendingActionsWidget';
 import PermissionGate from '../components/PermissionGate';
+import logger from '../services/logger';
 
 // Cache configuration
 const CACHE_KEY = 'medflow_dashboard_cache';
@@ -168,12 +169,12 @@ export default function Dashboard() {
       setLoading(true);
       const [statsData, queueResponse] = await Promise.all([
         dashboardService.getStats().catch(err => {
-          console.error('Stats fetch error:', err);
+          logger.error('Stats fetch error:', err);
           errors.push('Statistiques');
           return defaultStats;
         }),
         queueService.getCurrentQueue().catch(err => {
-          console.error('Queue fetch error:', err);
+          logger.error('Queue fetch error:', err);
           errors.push('File d\'attente');
           return { data: {} };
         })
@@ -297,7 +298,7 @@ export default function Dashboard() {
       setError(null);
     } catch (err) {
       setError('Échec du chargement des données');
-      console.error('Dashboard error:', err);
+      logger.error('Dashboard error:', err);
     } finally {
       setLoading(false);
       setSecondaryLoading(false);

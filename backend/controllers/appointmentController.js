@@ -1,3 +1,4 @@
+const mongoose = require('mongoose');
 const Appointment = require('../models/Appointment');
 const Patient = require('../models/Patient');
 const Counter = require('../models/Counter');
@@ -377,44 +378,44 @@ exports.cancelAppointment = asyncHandler(async (req, res, next) => {
 exports.checkInAppointment = asyncHandler(async (req, res, next) => {
   const Visit = require('../models/Visit');
 
-  const appointment = await Appointment.findById(req.params.id)
-    .populate('patient', 'firstName lastName patientId');
+  // Helper function to perform check-in with or without transaction
+  const performCheckIn = async (useSession = false, session = null) => {
+    const queryOpts = useSession ? { session } : {};
+    const saveOpts = useSession ? { session } : {};
 
-  if (!appointment) {
-    return notFound(res, 'Appointment');
-  }
+    const appointment = useSession
+      ? await Appointment.findById(req.params.id).populate('patient', 'firstName lastName patientId').session(session)
+      : await Appointment.findById(req.params.id).populate('patient', 'firstName lastName patientId');
 
-  // Check if already checked in
-  if (appointment.status === 'checked-in' && appointment.visit) {
-    const existingVisit = await Visit.findById(appointment.visit);
-    return success(res, {
-      data: {
-        queueNumber: appointment.queueNumber,
+    if (!appointment) {
+      return { error: 'notFound' };
+    }
+
+    // ATOMIC idempotency check - must be within transaction to prevent race
+    if (appointment.status === 'checked-in' && appointment.visit) {
+      const existingVisit = useSession
+        ? await Visit.findById(appointment.visit).session(session)
+        : await Visit.findById(appointment.visit);
+      return {
+        alreadyCheckedIn: true,
         appointment,
-        visit: existingVisit ? {
-          _id: existingVisit._id,
-          visitId: existingVisit.visitId,
-          status: existingVisit.status
-        } : null
-      },
-      message: 'Patient already checked in'
-    });
-  }
+        visit: existingVisit
+      };
+    }
 
-  appointment.status = 'checked-in';
-  appointment.checkInTime = Date.now();
-  appointment.queueNumber = await generateQueueNumber();
-  appointment.updatedBy = req.user.id;
+    // Generate queue number atomically
+    const queueNumber = await generateQueueNumber();
 
-  await appointment.save();
+    // Update appointment status
+    appointment.status = 'checked-in';
+    appointment.checkInTime = Date.now();
+    appointment.queueNumber = queueNumber;
+    appointment.updatedBy = req.user.id;
 
-  // CRITICAL FIX: Create Visit with 'checked-in' status (not 'in-progress')
-  // This matches the queue controller behavior and correctly represents that
-  // the patient is waiting, not yet being seen by a provider
-  let visit = null;
-  if (!appointment.visit) {
-    try {
-      visit = await Visit.create({
+    // Create Visit within same transaction to prevent duplicates
+    let visit = null;
+    if (!appointment.visit) {
+      const visitData = {
         patient: appointment.patient._id || appointment.patient,
         appointment: appointment._id,
         visitDate: new Date(),
@@ -428,39 +429,96 @@ exports.checkInAppointment = asyncHandler(async (req, res, next) => {
         department: appointment.department,
         createdBy: req.user.id,
         updatedBy: req.user.id
-      });
+      };
+
+      const visits = await Visit.create([visitData], useSession ? { session } : {});
+      visit = visits[0];
 
       // Capture convention snapshot at check-in time for consistent billing
       await visit.captureConventionSnapshot();
 
       // Link visit to appointment (bidirectional)
       appointment.visit = visit._id;
-      await appointment.save();
+    }
 
-      appointmentLogger.info('Visit created at check-in', {
-        visitId: visit.visitId,
-        status: 'checked-in',
-        appointmentId: appointment._id
-      });
-    } catch (visitError) {
-      appointmentLogger.error('Error creating visit', { error: visitError.message, appointmentId: appointment._id });
-      // Continue - check-in still successful, visit can be created later
+    await appointment.save(saveOpts);
+
+    return { appointment, visit, queueNumber };
+  };
+
+  let result;
+
+  // Try with transaction first, fall back to non-transactional if not supported
+  try {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      result = await performCheckIn(true, session);
+
+      if (result.error === 'notFound') {
+        await session.abortTransaction();
+        session.endSession();
+        return notFound(res, 'Appointment');
+      }
+
+      await session.commitTransaction();
+    } catch (txError) {
+      await session.abortTransaction();
+      throw txError;
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    // If transaction not supported (standalone MongoDB), retry without transaction
+    if (error.code === 20 || error.codeName === 'IllegalOperation') {
+      appointmentLogger.info('Transactions not supported, saving without transaction');
+      result = await performCheckIn(false);
+
+      if (result.error === 'notFound') {
+        return notFound(res, 'Appointment');
+      }
+    } else {
+      throw error;
     }
   }
 
+  // Handle already checked-in case (idempotent response)
+  if (result.alreadyCheckedIn) {
+    return success(res, {
+      data: {
+        queueNumber: result.appointment.queueNumber,
+        appointment: result.appointment,
+        visit: result.visit ? {
+          _id: result.visit._id,
+          visitId: result.visit.visitId,
+          status: result.visit.status
+        } : null
+      },
+      message: 'Patient already checked in'
+    });
+  }
+
+  const { appointment, visit, queueNumber } = result;
+
+  appointmentLogger.info('Visit created at check-in', {
+    visitId: visit?.visitId,
+    status: 'checked-in',
+    appointmentId: appointment._id
+  });
+
   // Send WebSocket notification for queue update
-  // CRITICAL FIX: Use emitQueueUpdate() (notifyQueueUpdate doesn't exist)
   websocketService.emitQueueUpdate({
     event: 'patient_checked_in',
     appointmentId: appointment._id,
     patientId: appointment.patient?._id,
-    queueNumber: appointment.queueNumber,
+    queueNumber: queueNumber,
     visitId: visit?._id
   });
 
   return success(res, {
     data: {
-      queueNumber: appointment.queueNumber,
+      queueNumber: queueNumber,
       appointment,
       visit: visit ? {
         _id: visit._id,

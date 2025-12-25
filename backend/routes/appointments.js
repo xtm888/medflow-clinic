@@ -42,6 +42,7 @@ const {
 const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { logAction } = require('../middleware/auditLogger');
 const { optionalClinic } = require('../middleware/clinicAuth');
+const { deprecate } = require('../middleware/deprecation');
 
 // Protect all routes and add clinic context
 router.use(protect);
@@ -230,8 +231,16 @@ router.put(
   cancelAppointment
 );
 
+// DEPRECATED: Use POST /api/queue with { appointmentId } instead
+// This endpoint will be removed on 2026-03-01
+// The queue endpoint provides unified check-in with proper transaction handling
 router.put(
   '/:id/checkin',
+  deprecate(
+    'Utilisez POST /api/queue avec { appointmentId } pour le check-in',
+    '2026-03-01',
+    '/api/queue'
+  ),
   requirePermission('manage_appointments'),
   checkInAppointment
 );

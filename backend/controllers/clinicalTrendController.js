@@ -7,6 +7,8 @@
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ClinicalTrendController');
 
 /**
  * Convert Snellen VA to LogMAR for trend analysis
@@ -252,7 +254,7 @@ exports.getIOPTrends = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting IOP trends:', error);
+    log.error('Error getting IOP trends', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get IOP trends',
@@ -357,7 +359,7 @@ exports.getVisualAcuityTrends = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting VA trends:', error);
+    log.error('Error getting VA trends', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get visual acuity trends',
@@ -464,7 +466,7 @@ exports.getCupDiscTrends = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting C/D trends:', error);
+    log.error('Error getting C/D trends', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get cup/disc trends',
@@ -581,7 +583,7 @@ exports.getRefractionTrends = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting refraction trends:', error);
+    log.error('Error getting refraction trends', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get refraction trends',
@@ -680,7 +682,7 @@ exports.getPachymetryTrends = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting pachymetry trends:', error);
+    log.error('Error getting pachymetry trends', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get pachymetry trends',
@@ -748,7 +750,7 @@ exports.getAllTrends = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting all trends:', error);
+    log.error('Error getting all trends', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get all trends',
@@ -837,7 +839,7 @@ exports.getTrendSummary = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting trend summary:', error);
+    log.error('Error getting trend summary', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to get trend summary',
@@ -949,7 +951,7 @@ exports.compareExams = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error comparing exams:', error);
+    log.error('Error comparing exams', { error: error.message, stack: error.stack });
     res.status(500).json({
       success: false,
       message: 'Failed to compare exams',

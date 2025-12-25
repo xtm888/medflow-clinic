@@ -1,0 +1,146 @@
+{
+  "results": [
+    {
+      "test": "Patient detail loads content",
+      "status": "PASS",
+      "message": "Patient data visible"
+    },
+    {
+      "test": "Appointment: Patient autocomplete",
+      "status": "PASS",
+      "message": "Patient selected from dropdown"
+    },
+    {
+      "test": "Appointment: Practitioner select",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Appointment: Department select",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Appointment: Date filled",
+      "status": "PASS",
+      "message": "2025-12-22"
+    },
+    {
+      "test": "Appointment: Time filled",
+      "status": "PASS",
+      "message": "10:00"
+    },
+    {
+      "test": "Appointment: Motif filled",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Appointment: Form submission",
+      "status": "PASS",
+      "message": "Created"
+    },
+    {
+      "test": "IVT: Step 1 visible",
+      "status": "PASS",
+      "message": "Informations de base"
+    },
+    {
+      "test": "IVT: Step 2 reached",
+      "status": "PASS",
+      "message": "\u00c9valuation pr\u00e9-injection"
+    },
+    {
+      "test": "IVT: Step 3 reached",
+      "status": "PASS",
+      "message": "Proc\u00e9dure"
+    },
+    {
+      "test": "IVT: Step 4 reached",
+      "status": "PASS",
+      "message": "Suivi"
+    },
+    {
+      "test": "Surgery: Type selected",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Surgery: Notes filled",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Lab: Patient selected",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Lab: Test catalog visible",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Lab: Test selected",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "StudioVision: Navigate via UI",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Glasses Orders: Page loads",
+      "status": "PASS",
+      "message": "Content visible"
+    },
+    {
+      "test": "Documents: Patient selected",
+      "status": "PASS",
+      "message": ""
+    },
+    {
+      "test": "Document Templates",
+      "status": "SKIP",
+      "message": "Generate button not found"
+    }
+  ],
+  "findings": [
+    {
+      "category": "PATIENT_DETAIL",
+      "description": "Patient detail page loads correctly with data",
+      "screenshot": ""
+    },
+    {
+      "category": "APPOINTMENT",
+      "description": "Appointment creation works end-to-end!",
+      "screenshot": ""
+    },
+    {
+      "category": "IVT",
+      "description": "Successfully navigated to step 2",
+      "screenshot": ""
+    },
+    {
+      "category": "IVT",
+      "description": "All 4 IVT wizard steps are accessible!",
+      "screenshot": ""
+    },
+    {
+      "category": "SURGERY",
+      "description": "Surgery form can be filled with all fields",
+      "screenshot": ""
+    },
+    {
+      "category": "LAB",
+      "description": "Lab test selection from catalog works",
+      "screenshot": ""
+    },
+    {
+      "category": "GLASSES",
+      "description": "Page loads correctly",
+      "screenshot": ""
+    }
+  ]
+}

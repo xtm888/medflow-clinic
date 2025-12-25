@@ -1,4 +1,7 @@
 require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testTemplateInsert.js');
+
 const mongoose = require('mongoose');
 const MedicationTemplate = require('../models/MedicationTemplate');
 

@@ -1134,6 +1134,16 @@ patientSchema.index({ 'accountBalance.outstanding': -1, status: 1 }); // Outstan
 patientSchema.index({ 'accountBalance.overdueAmount': -1, status: 1 }); // Overdue balance reports
 patientSchema.index({ 'accountBalance.lastUpdated': -1 }); // Balance update tracking
 
+// Multi-clinic indexes for data isolation
+patientSchema.index({ homeClinic: 1, createdAt: -1 }); // Patients by clinic sorted by creation date
+patientSchema.index({ homeClinic: 1, status: 1, lastName: 1 }); // Clinic patient listing
+
+// Text search index for patient lookup
+patientSchema.index({ lastName: 'text', firstName: 'text', patientId: 'text' }, {
+  weights: { patientId: 10, lastName: 5, firstName: 3 },
+  name: 'patient_text_search'
+});
+
 // =====================================================
 // SOFT DELETE MIDDLEWARE
 // Automatically filter out deleted patients from queries

@@ -1,0 +1,176 @@
+{
+  "test": "Complete Cascade Workflow",
+  "executed_at": "2025-12-22T19:10:58.621677",
+  "screenshots": [
+    {
+      "name": "01_logged_in",
+      "path": "screenshots/cascade_workflow/01_logged_in.png",
+      "time": "2025-12-22T19:09:56.705420"
+    },
+    {
+      "name": "02_patient_wizard_start",
+      "path": "screenshots/cascade_workflow/02_patient_wizard_start.png",
+      "time": "2025-12-22T19:09:59.310398"
+    },
+    {
+      "name": "03_patient_basic_info",
+      "path": "screenshots/cascade_workflow/03_patient_basic_info.png",
+      "time": "2025-12-22T19:10:01.033930"
+    },
+    {
+      "name": "04_patient_contact",
+      "path": "screenshots/cascade_workflow/04_patient_contact.png",
+      "time": "2025-12-22T19:10:02.248440"
+    },
+    {
+      "name": "05_step3_contact",
+      "path": "screenshots/cascade_workflow/05_step3_contact.png",
+      "time": "2025-12-22T19:10:03.978941"
+    },
+    {
+      "name": "06_step4_convention",
+      "path": "screenshots/cascade_workflow/06_step4_convention.png",
+      "time": "2025-12-22T19:10:04.685795"
+    },
+    {
+      "name": "06b_step4_convention_enabled",
+      "path": "screenshots/cascade_workflow/06b_step4_convention_enabled.png",
+      "time": "2025-12-22T19:10:07.931184"
+    },
+    {
+      "name": "07_step5_medical",
+      "path": "screenshots/cascade_workflow/07_step5_medical.png",
+      "time": "2025-12-22T19:10:08.612376"
+    },
+    {
+      "name": "08_before_submit",
+      "path": "screenshots/cascade_workflow/08_before_submit.png",
+      "time": "2025-12-22T19:10:09.263915"
+    },
+    {
+      "name": "06_patient_created",
+      "path": "screenshots/cascade_workflow/06_patient_created.png",
+      "time": "2025-12-22T19:10:12.440165"
+    },
+    {
+      "name": "07_appointments_page",
+      "path": "screenshots/cascade_workflow/07_appointments_page.png",
+      "time": "2025-12-22T19:10:15.237186"
+    },
+    {
+      "name": "08_appointment_modal",
+      "path": "screenshots/cascade_workflow/08_appointment_modal.png",
+      "time": "2025-12-22T19:10:17.116580"
+    },
+    {
+      "name": "10_appointment_details",
+      "path": "screenshots/cascade_workflow/10_appointment_details.png",
+      "time": "2025-12-22T19:10:18.944768"
+    },
+    {
+      "name": "11_appointment_created",
+      "path": "screenshots/cascade_workflow/11_appointment_created.png",
+      "time": "2025-12-22T19:10:21.272021"
+    },
+    {
+      "name": "14_queue_with_patient",
+      "path": "screenshots/cascade_workflow/14_queue_with_patient.png",
+      "time": "2025-12-22T19:10:25.222297"
+    },
+    {
+      "name": "16_studiovision_started",
+      "path": "screenshots/cascade_workflow/16_studiovision_started.png",
+      "time": "2025-12-22T19:10:28.747642"
+    },
+    {
+      "name": "16b_studiovision_ready",
+      "path": "screenshots/cascade_workflow/16b_studiovision_ready.png",
+      "time": "2025-12-22T19:10:30.850030"
+    },
+    {
+      "name": "17a_refraction_tab_open",
+      "path": "screenshots/cascade_workflow/17a_refraction_tab_open.png",
+      "time": "2025-12-22T19:10:31.996021"
+    },
+    {
+      "name": "17_refraction_filled",
+      "path": "screenshots/cascade_workflow/17_refraction_filled.png",
+      "time": "2025-12-22T19:10:32.649871"
+    },
+    {
+      "name": "18_iop_filled",
+      "path": "screenshots/cascade_workflow/18_iop_filled.png",
+      "time": "2025-12-22T19:10:32.738618"
+    },
+    {
+      "name": "21_consultation_saved",
+      "path": "screenshots/cascade_workflow/21_consultation_saved.png",
+      "time": "2025-12-22T19:10:34.856383"
+    },
+    {
+      "name": "22_invoicing_page",
+      "path": "screenshots/cascade_workflow/22_invoicing_page.png",
+      "time": "2025-12-22T19:10:37.499647"
+    },
+    {
+      "name": "26_no_invoices",
+      "path": "screenshots/cascade_workflow/26_no_invoices.png",
+      "time": "2025-12-22T19:10:38.628602"
+    },
+    {
+      "name": "27_laboratory",
+      "path": "screenshots/cascade_workflow/27_laboratory.png",
+      "time": "2025-12-22T19:10:40.198017"
+    },
+    {
+      "name": "29_surgery_dashboard",
+      "path": "screenshots/cascade_workflow/29_surgery_dashboard.png",
+      "time": "2025-12-22T19:10:41.692339"
+    },
+    {
+      "name": "31_optical_shop",
+      "path": "screenshots/cascade_workflow/31_optical_shop.png",
+      "time": "2025-12-22T19:10:44.188531"
+    },
+    {
+      "name": "32_glasses_orders",
+      "path": "screenshots/cascade_workflow/32_glasses_orders.png",
+      "time": "2025-12-22T19:10:46.756124"
+    },
+    {
+      "name": "33_pharmacy",
+      "path": "screenshots/cascade_workflow/33_pharmacy.png",
+      "time": "2025-12-22T19:10:48.260874"
+    },
+    {
+      "name": "35_unified_inventory",
+      "path": "screenshots/cascade_workflow/35_unified_inventory.png",
+      "time": "2025-12-22T19:10:51.307338"
+    },
+    {
+      "name": "36_frame_inventory",
+      "path": "screenshots/cascade_workflow/36_frame_inventory.png",
+      "time": "2025-12-22T19:10:53.842017"
+    },
+    {
+      "name": "37_contact_lens_inventory",
+      "path": "screenshots/cascade_workflow/37_contact_lens_inventory.png",
+      "time": "2025-12-22T19:10:56.376298"
+    },
+    {
+      "name": "37_patient_record",
+      "path": "screenshots/cascade_workflow/37_patient_record.png",
+      "time": "2025-12-22T19:10:57.924116"
+    },
+    {
+      "name": "38_patient_documents",
+      "path": "screenshots/cascade_workflow/38_patient_documents.png",
+      "time": "2025-12-22T19:10:58.621666"
+    }
+  ],
+  "created_ids": {
+    "patient": "69498981d54bacfc9e85f353",
+    "patient_name": "Cascade Test_190954"
+  },
+  "status": "completed"
+}

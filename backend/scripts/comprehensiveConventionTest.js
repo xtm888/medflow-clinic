@@ -22,6 +22,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('comprehensiveConventionTest.js');
+
 const { PharmacyInventory, FrameInventory } = require('../models/Inventory');
 
 // Models

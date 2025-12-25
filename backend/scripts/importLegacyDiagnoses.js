@@ -15,6 +15,9 @@ const fs = require('fs');
 const Papa = require('papaparse');
 require('dotenv').config();
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('importLegacyDiagnoses.js');
+
 // Models
 const Patient = require('../models/Patient');
 const Visit = require('../models/Visit');

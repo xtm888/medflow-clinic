@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Environment files (use Docker secrets or env vars)
+.env
+.env.*
+*.env
+
+# Development files
+tests/
+*.test.js
+*.spec.js
+coverage/
+.nyc_output/
+
+# Seed scripts with demo data
+scripts/seed*.js
+scripts/create*.js
+scripts/demo*.js
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Docker files
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/

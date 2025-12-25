@@ -6,6 +6,7 @@ import {
 import api from '../../services/apiConfig';
 import { useAuth } from '../../contexts/AuthContext';
 import { CollapsibleSectionGroup } from '../../components/CollapsibleSection';
+import logger from '../../services/logger';
 
 // Import sections
 import {
@@ -45,7 +46,7 @@ export default function IVTDashboard() {
       setUpcomingCount(upcomingRes.data.data?.length || 0);
       setDueCount(dueRes.data.data?.length || 0);
     } catch (err) {
-      console.error('Error fetching IVT data:', err);
+      logger.error('Error fetching IVT data:', err);
     } finally {
       setLoading(false);
     }
@@ -106,8 +107,16 @@ export default function IVTDashboard() {
               <div>
                 <p className="text-sm text-gray-500">Taux Complications</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {stats.complicationRate ? `${stats.complicationRate.toFixed(1)}%` : '0%'}
+                  {stats.totalInjections < 10
+                    ? (stats.totalInjections === 0 ? 'N/A' : `${stats.complicationRate?.toFixed(1) || 0}%`)
+                    : `${stats.complicationRate?.toFixed(1) || 0}%`
+                  }
                 </p>
+                {stats.totalInjections > 0 && stats.totalInjections < 10 && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    ({stats.totalInjections} injection{stats.totalInjections > 1 ? 's' : ''})
+                  </p>
+                )}
               </div>
               <div className="bg-yellow-100 rounded-full p-3">
                 <AlertTriangle className="h-6 w-6 text-yellow-600" />

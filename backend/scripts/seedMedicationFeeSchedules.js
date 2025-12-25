@@ -9,6 +9,9 @@ const mongoose = require('mongoose');
 const { PharmacyInventory } = require('../models/Inventory');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedMedicationFeeSchedules.js');
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
 
 // Generate clean code from medication name

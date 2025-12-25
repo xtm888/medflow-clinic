@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import logger from '../services/logger';
 import {
   FolderOpen,
   HardDrive,
@@ -91,7 +92,7 @@ const ImportWizard = () => {
           }
         }
       } catch (err) {
-        console.error('Error polling status:', err);
+        logger.error('Error polling status:', err);
       }
     }, 2000);
 
@@ -100,15 +101,15 @@ const ImportWizard = () => {
 
   const loadNetworkShares = async () => {
     try {
-      console.log('[ImportWizard] Loading network shares...');
+      logger.debug('[ImportWizard] Loading network shares...');
       const result = await ocrImportService.getNetworkShares();
-      console.log('[ImportWizard] API result:', result);
+      logger.debug('[ImportWizard] API result:', result);
       const shares = result.data || [];
-      console.log('[ImportWizard] Setting shares:', shares);
+      logger.debug('[ImportWizard] Setting shares:', shares);
       setNetworkShares(shares);
     } catch (err) {
-      console.error('[ImportWizard] Error loading shares:', err);
-      console.error('[ImportWizard] Error details:', err.response?.data || err.message);
+      logger.error('[ImportWizard] Error loading shares:', err);
+      logger.error('[ImportWizard] Error details:', err.response?.data || err.message);
       toast.error('Impossible de charger les partages réseau');
     }
   };

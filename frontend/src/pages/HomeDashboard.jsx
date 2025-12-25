@@ -54,6 +54,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import PermissionGate from '../components/PermissionGate';
 import dashboardService from '../services/dashboardService';
+import logger from '../services/logger';
 
 /**
  * HomeDashboard - Category-based navigation with drill-down
@@ -86,7 +87,7 @@ export default function HomeDashboard() {
           pendingPrescriptions: data.pendingPrescriptions || 0
         });
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        logger.error('Error fetching dashboard stats:', error);
       } finally {
         setLoading(false);
       }
@@ -235,7 +236,7 @@ export default function HomeDashboard() {
       await logout();
       navigate('/login');
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     }
   };
 

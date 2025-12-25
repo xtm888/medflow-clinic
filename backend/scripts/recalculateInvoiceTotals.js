@@ -5,6 +5,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('recalculateInvoiceTotals.js');
+
 const Invoice = require('../models/Invoice');
 
 async function recalculateTotals() {

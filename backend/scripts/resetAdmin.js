@@ -3,7 +3,11 @@ require('dotenv').config();
 require('../models/User');
 const defaults = require('../config/defaults');
 
+const { requireNonProduction, requireConfirmation } = require('./_guards');
+requireNonProduction('resetAdmin.js');
+
 async function resetAdmin() {
+  await requireConfirmation('This will RESET the admin password. Are you sure?');
   await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow');
   const User = mongoose.model('User');
 

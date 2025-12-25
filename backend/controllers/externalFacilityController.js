@@ -1,5 +1,7 @@
 const ExternalFacility = require('../models/ExternalFacility');
 const { apiResponse } = require('../utils/apiResponse');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ExternalFacilityController');
 
 /**
  * External Facility Controller
@@ -83,7 +85,7 @@ exports.getExternalFacilities = async (req, res) => {
       }
     }));
   } catch (error) {
-    console.error('Error fetching external facilities:', error);
+    log.error('Error fetching external facilities', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -103,7 +105,7 @@ exports.getExternalFacility = async (req, res) => {
 
     res.json(apiResponse(true, 'External facility retrieved', facility));
   } catch (error) {
-    console.error('Error fetching external facility:', error);
+    log.error('Error fetching external facility', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -122,7 +124,7 @@ exports.createExternalFacility = async (req, res) => {
 
     res.status(201).json(apiResponse(true, 'External facility created', facility));
   } catch (error) {
-    console.error('Error creating external facility:', error);
+    log.error('Error creating external facility', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -146,7 +148,7 @@ exports.updateExternalFacility = async (req, res) => {
 
     res.json(apiResponse(true, 'External facility updated', facility));
   } catch (error) {
-    console.error('Error updating external facility:', error);
+    log.error('Error updating external facility', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -169,7 +171,7 @@ exports.deleteExternalFacility = async (req, res) => {
 
     res.json(apiResponse(true, 'External facility deactivated'));
   } catch (error) {
-    console.error('Error deleting external facility:', error);
+    log.error('Error deleting external facility', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -197,7 +199,7 @@ exports.getFacilitiesByType = async (req, res) => {
 
     res.json(apiResponse(true, `${type} facilities retrieved`, facilities));
   } catch (error) {
-    console.error('Error fetching facilities by type:', error);
+    log.error('Error fetching facilities by type', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -213,7 +215,7 @@ exports.getPreferredForService = async (req, res) => {
 
     res.json(apiResponse(true, 'Preferred facilities retrieved', facilities));
   } catch (error) {
-    console.error('Error fetching preferred facilities:', error);
+    log.error('Error fetching preferred facilities', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -238,7 +240,7 @@ exports.recordReferral = async (req, res) => {
       completedReferrals: facility.performance.completedReferrals
     }));
   } catch (error) {
-    console.error('Error recording referral:', error);
+    log.error('Error recording referral', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -278,7 +280,7 @@ exports.getFacilityStats = async (req, res) => {
 
     res.json(apiResponse(true, 'Facility stats retrieved', stats));
   } catch (error) {
-    console.error('Error fetching facility stats:', error);
+    log.error('Error fetching facility stats', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -303,7 +305,7 @@ exports.checkIfOpen = async (req, res) => {
       operatingHours: facility.operatingHours
     }));
   } catch (error) {
-    console.error('Error checking if open:', error);
+    log.error('Error checking if open', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };
@@ -348,7 +350,7 @@ exports.getFacilitySummary = async (req, res) => {
       byType: summary
     }));
   } catch (error) {
-    console.error('Error fetching facility summary:', error);
+    log.error('Error fetching facility summary', { error: error.message, stack: error.stack });
     res.status(500).json(apiResponse(false, error.message));
   }
 };

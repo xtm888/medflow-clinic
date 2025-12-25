@@ -8,6 +8,7 @@
 import { useState, useRef, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import logger from '../../services/logger';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useClinic } from '../../contexts/ClinicContext';
 import patientService from '../../services/patientService';
@@ -108,7 +109,7 @@ export default function Patients() {
       window.URL.revokeObjectURL(url);
       toast.success('Export terminé!');
     } catch (err) {
-      console.error('Export error:', err);
+      logger.error('Export error:', err);
       toast.error('Erreur lors de l\'export');
     }
   }, []);
@@ -162,7 +163,7 @@ export default function Patients() {
         navigate(`/patients/${patientId}`);
       }
     } catch (error) {
-      console.error('Error creating patient:', error);
+      logger.error('Error creating patient:', error);
       const errorMessage = error.response?.data?.error || error.message || 'Erreur lors de la création du patient';
       toast.error(errorMessage);
     }

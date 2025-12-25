@@ -1,0 +1,83 @@
+{
+  "results": [
+    {
+      "test": "Navigate: Click StudioVision",
+      "status": "PASS",
+      "message": "StudioVision button clicked"
+    },
+    {
+      "test": "Navigate: Select patient",
+      "status": "PASS",
+      "message": "CELESTE NGONE selected"
+    },
+    {
+      "test": "StudioVision loaded",
+      "status": "PASS",
+      "message": "URL: http://localhost:5173/ophthalmology/studio/69441d91f3feff49134dc3b4"
+    },
+    {
+      "test": "Refraction tab",
+      "status": "PASS",
+      "message": "Tab clicked"
+    },
+    {
+      "test": "Refraction section",
+      "status": "PASS",
+      "message": "Section visible"
+    },
+    {
+      "test": "Refraction: OD Sphere",
+      "status": "PASS",
+      "message": "-2.50"
+    },
+    {
+      "test": "Refraction: OD Cylinder",
+      "status": "PASS",
+      "message": "-0.75"
+    },
+    {
+      "test": "Refraction: OD Axis",
+      "status": "SKIP",
+      "message": "Axis disabled (may need cylinder)"
+    },
+    {
+      "test": "Refraction: OD Addition",
+      "status": "PASS",
+      "message": "+2.00"
+    },
+    {
+      "test": "Refraction: OS Sphere",
+      "status": "PASS",
+      "message": "-2.25"
+    },
+    {
+      "test": "Refraction: OS Cylinder",
+      "status": "PASS",
+      "message": "-1.00"
+    },
+    {
+      "test": "Save consultation",
+      "status": "PASS",
+      "message": "Save button clicked"
+    },
+    {
+      "test": "Save result",
+      "status": "CHECK",
+      "message": "Verify data was saved"
+    }
+  ],
+  "findings": [
+    {
+      "category": "REFRACTION",
+      "description": "Refraction data entry: 11 inputs found"
+    },
+    {
+      "category": "VISUAL_ACUITY",
+      "description": "Visual acuity fields accessible (Monoyer/Parinaud)"
+    },
+    {
+      "category": "IOP",
+      "description": "IOP entry fields accessible"
+    }
+  ]
+}

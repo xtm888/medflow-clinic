@@ -10,6 +10,10 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('fixInvoiceApprovalFlags.js');
+
 const Invoice = require('../models/Invoice');
 const Company = require('../models/Company');
 const Approval = require('../models/Approval');

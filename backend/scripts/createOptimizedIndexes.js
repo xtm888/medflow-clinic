@@ -15,6 +15,9 @@ const mongoose = require('mongoose');
 const { PharmacyInventory } = require('../models/Inventory');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createOptimizedIndexes.js');
+
 // Import all models to ensure they're registered
 const Patient = require('../models/Patient');
 const Visit = require('../models/Visit');

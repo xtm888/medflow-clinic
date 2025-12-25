@@ -15,6 +15,9 @@
 const fs = require('fs');
 const path = require('path');
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('autoMigrateConsoleLogs.js');
+
 const args = process.argv.slice(2);
 const DRY_RUN = args.includes('--dry-run');
 const SERVICES_ONLY = args.includes('--services-only');

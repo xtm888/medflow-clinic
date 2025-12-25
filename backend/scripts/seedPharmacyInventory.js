@@ -5,6 +5,9 @@ const Drug = require('../models/Drug');
 const Clinic = require('../models/Clinic');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedPharmacyInventory.js');
+
 // Generate random stock levels based on medication type
 function generateStockLevels(isOphthalmic) {
   if (isOphthalmic) {

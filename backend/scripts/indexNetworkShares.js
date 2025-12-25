@@ -18,6 +18,9 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('indexNetworkShares.js');
 const fs = require('fs');
 const path = require('path');
 const sharp = require('sharp');

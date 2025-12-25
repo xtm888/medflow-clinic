@@ -10,6 +10,8 @@ const Patient = require('../models/Patient');
 const clinicalAlertService = require('../services/clinicalAlertService');
 const mongoose = require('mongoose');
 const { asyncHandler } = require('../middleware/errorHandler');
+const { createContextLogger } = require('../utils/structuredLogger');
+const logger = createContextLogger('ClinicalAlertController');
 
 /**
  * Get active alerts for a patient
@@ -119,7 +121,7 @@ exports.getExamAlerts = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting exam alerts:', error);
+    logger.error('Error getting exam alerts', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to get exam alerts',
@@ -200,7 +202,7 @@ exports.evaluateExamAlerts = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error evaluating exam alerts:', error);
+    logger.error('Error evaluating exam alerts', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to evaluate alerts',
@@ -269,7 +271,7 @@ exports.reEvaluateExamAlerts = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error re-evaluating alerts:', error);
+    logger.error('Error re-evaluating alerts', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to re-evaluate alerts',
@@ -306,7 +308,7 @@ exports.getAlertById = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error getting alert:', error);
+    logger.error('Error getting alert', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to get alert',
@@ -332,7 +334,7 @@ exports.acknowledgeAlert = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error acknowledging alert:', error);
+    logger.error('Error acknowledging alert', { error: error.message });
     res.status(error.message === 'Alert not found' ? 404 : 500).json({
       success: false,
       message: error.message || 'Failed to acknowledge alert'
@@ -357,7 +359,7 @@ exports.resolveAlert = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error resolving alert:', error);
+    logger.error('Error resolving alert', { error: error.message });
     res.status(error.message === 'Alert not found' ? 404 : 500).json({
       success: false,
       message: error.message || 'Failed to resolve alert'
@@ -389,7 +391,7 @@ exports.escalateAlert = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error escalating alert:', error);
+    logger.error('Error escalating alert', { error: error.message });
     res.status(error.message === 'Alert not found' ? 404 : 500).json({
       success: false,
       message: error.message || 'Failed to escalate alert'
@@ -415,7 +417,7 @@ exports.dismissAlert = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error dismissing alert:', error);
+    logger.error('Error dismissing alert', { error: error.message });
 
     // Handle specific error codes for better client-side handling
     let statusCode = 500;
@@ -460,7 +462,7 @@ exports.acknowledgeEmergencyAlert = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error acknowledging emergency alert:', error);
+    logger.error('Error acknowledging emergency alert', { error: error.message });
 
     let statusCode = 500;
     if (error.message === 'Alert not found') {
@@ -515,7 +517,7 @@ exports.completeRecommendedAction = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error completing action:', error);
+    logger.error('Error completing action', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to complete action',
@@ -554,7 +556,7 @@ exports.bulkAcknowledge = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error bulk acknowledging alerts:', error);
+    logger.error('Error bulk acknowledging alerts', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to bulk acknowledge alerts',
@@ -587,7 +589,7 @@ exports.createManualAlert = async (req, res) => {
       data: alert
     });
   } catch (error) {
-    console.error('Error creating manual alert:', error);
+    logger.error('Error creating manual alert', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to create alert',
@@ -621,7 +623,7 @@ exports.getAlertRules = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting alert rules:', error);
+    logger.error('Error getting alert rules', { error: error.message });
     res.status(500).json({
       success: false,
       message: 'Failed to get alert rules',

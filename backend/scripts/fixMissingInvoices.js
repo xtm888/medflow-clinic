@@ -6,6 +6,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProductionStrict } = require('./_guards');
+requireNonProductionStrict('fixMissingInvoices.js');
+
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/medflow';
 
 async function fixMissingInvoices() {

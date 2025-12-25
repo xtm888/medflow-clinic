@@ -1,0 +1,2192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedFlow - Architecture EXHAUSTIVE | 77 Modeles - 78 Routes - 61 Services</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #e2e8f0;
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 40%, #db2777 70%, #f59e0b 100%);
+      padding: 60px 40px;
+      text-align: center;
+      position: relative;
+    }
+    .hero h1 { font-size: 3rem; font-weight: 900; margin-bottom: 15px; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+    .hero p { font-size: 1.3rem; opacity: 0.95; max-width: 900px; margin: 0 auto; }
+    .hero .stats {
+      margin-top: 25px;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .hero .stat {
+      background: rgba(255,255,255,0.15);
+      padding: 12px 25px;
+      border-radius: 30px;
+      backdrop-filter: blur(10px);
+    }
+    .hero .stat strong { font-size: 1.3rem; color: #fbbf24; }
+
+    .container { max-width: 1900px; margin: 0 auto; padding: 40px; }
+
+    .nav {
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 0.97);
+      backdrop-filter: blur(20px);
+      padding: 12px 30px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 1000;
+      border-bottom: 1px solid #334155;
+    }
+    .nav a {
+      color: #94a3b8;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .nav a:hover { background: #334155; color: #f1f5f9; }
+
+    .section {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 20px;
+      margin-bottom: 40px;
+      border: 1px solid #334155;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    }
+    .section-header {
+      background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
+      padding: 25px 35px;
+      border-bottom: 1px solid #475569;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .section-header .icon {
+      width: 50px;
+      height: 50px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+    .section-header h2 { font-size: 1.6rem; color: #f1f5f9; font-weight: 700; }
+    .section-header .badge {
+      margin-left: auto;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .section-content { padding: 30px; }
+
+    /* Tables */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #1e293b; color: #94a3b8; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; }
+    tr:hover { background: rgba(59, 130, 246, 0.1); }
+    .mono { font-family: 'SF Mono', Monaco, monospace; font-size: 0.85rem; color: #a78bfa; }
+    .tag {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .tag-core { background: #3b82f6; color: white; }
+    .tag-clinical { background: #10b981; color: white; }
+    .tag-billing { background: #f59e0b; color: black; }
+    .tag-inventory { background: #8b5cf6; color: white; }
+    .tag-lab { background: #ec4899; color: white; }
+    .tag-device { background: #06b6d4; color: black; }
+    .tag-admin { background: #64748b; color: white; }
+
+    /* Cards Grid */
+    .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 20px; }
+    .card {
+      background: #0f172a;
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid #334155;
+    }
+    .card h4 { color: #3b82f6; margin-bottom: 10px; font-size: 1.1rem; }
+    .card ul { list-style: none; }
+    .card li { padding: 5px 0; border-bottom: 1px solid #1e293b; font-size: 0.9rem; }
+    .card li:last-child { border: none; }
+
+    /* Cascade Diagrams */
+    .cascade {
+      background: #0f172a;
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 25px;
+      border: 1px solid #334155;
+    }
+    .cascade-title {
+      font-size: 1.3rem;
+      color: #f1f5f9;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .trigger-badge {
+      background: #dc2626;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 15px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .flow {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 15px;
+      margin: 15px 0;
+    }
+    .flow-step {
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      padding: 15px 20px;
+      border-radius: 10px;
+      border-left: 4px solid #3b82f6;
+      min-width: 200px;
+    }
+    .flow-step h5 { color: #3b82f6; font-size: 0.9rem; margin-bottom: 5px; }
+    .flow-step p { font-size: 0.85rem; color: #94a3b8; }
+    .flow-arrow { color: #f59e0b; font-size: 1.5rem; font-weight: bold; }
+    .why-box {
+      background: linear-gradient(135deg, #065f46 0%, #064e3b 100%);
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-top: 15px;
+    }
+    .why-box strong { color: #34d399; }
+
+    /* Enum boxes */
+    .enum-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px; }
+    .enum-box {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .enum-box h5 { color: #f59e0b; margin-bottom: 10px; font-size: 0.95rem; }
+    .enum-values { display: flex; flex-wrap: wrap; gap: 5px; }
+    .enum-val {
+      background: #0f172a;
+      padding: 4px 10px;
+      border-radius: 5px;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      font-family: monospace;
+    }
+
+    .highlight { background: rgba(251, 191, 36, 0.2); padding: 2px 6px; border-radius: 4px; }
+    .code-block {
+      background: #0f172a;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'SF Mono', Monaco, monospace;
+      font-size: 0.85rem;
+      overflow-x: auto;
+      margin: 15px 0;
+      border: 1px solid #334155;
+    }
+
+    /* Collapsible */
+    details { margin-bottom: 15px; }
+    summary {
+      cursor: pointer;
+      background: #1e293b;
+      padding: 15px 20px;
+      border-radius: 10px;
+      font-weight: 600;
+      color: #f1f5f9;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    summary:hover { background: #334155; }
+    details[open] summary { border-radius: 10px 10px 0 0; }
+    details > div {
+      background: #0f172a;
+      padding: 20px;
+      border-radius: 0 0 10px 10px;
+      border: 1px solid #334155;
+      border-top: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>MedFlow - Architecture EXHAUSTIVE</h1>
+  <p>Documentation ultra-complete de chaque modele, route, service et cascade du systeme EMR ophtalmologique</p>
+  <div class="stats">
+    <div class="stat"><strong>77</strong> Modeles MongoDB</div>
+    <div class="stat"><strong>78</strong> Routes API</div>
+    <div class="stat"><strong>61</strong> Services Backend</div>
+    <div class="stat"><strong>70+</strong> Pages Frontend</div>
+    <div class="stat"><strong>40+</strong> Composants UI</div>
+    <div class="stat"><strong>3</strong> Devises (CDF/USD/EUR)</div>
+  </div>
+</div>
+
+<nav class="nav">
+  <a href="#models">77 Modeles</a>
+  <a href="#routes">78 Routes</a>
+  <a href="#services">61 Services</a>
+  <a href="#frontend">Frontend</a>
+  <a href="#cascades">Cascades</a>
+  <a href="#enums">Enums/Status</a>
+  <a href="#dataflow">Flux de Donnees</a>
+  <a href="#reuse">Reutilisation</a>
+  <a href="#multiclinic">Multi-Clinique</a>
+  <a href="#devices">Devices</a>
+  <a href="#bugfixes">Corrections</a>
+</nav>
+
+<div class="container">
+
+<!-- ============================================ -->
+<!-- SECTION 1: 77 MONGODB MODELS -->
+<!-- ============================================ -->
+<section id="models" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">📦</div>
+    <h2>Les 77 Modeles MongoDB</h2>
+    <span class="badge">Exhaustif</span>
+  </div>
+  <div class="section-content">
+
+    <h3 style="color: #3b82f6; margin-bottom: 20px;">Modeles Principaux (Core)</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th><th>Relations</th><th>Tags</th></tr>
+      <tr>
+        <td class="mono">Patient</td>
+        <td>Entite centrale - toutes les donnees patient</td>
+        <td>patientId (auto), firstName, lastName, dateOfBirth, gender, convention{company, employeeId, coverage}, faceEncoding[], folderIds[]</td>
+        <td>→ Company, → Clinic, → User (referredBy), → Document (photo)</td>
+        <td><span class="tag tag-core">Core</span></td>
+      </tr>
+      <tr>
+        <td class="mono">Visit</td>
+        <td>Visite/Consultation avec actes cliniques</td>
+        <td>status (scheduled→completed), clinicalActs[], diagnoses[], examinations{}, referrals[], fulfillment{}</td>
+        <td>→ Patient, → Appointment, → SurgeryCase, → Invoice, → User</td>
+        <td><span class="tag tag-core">Core</span><span class="tag tag-clinical">Clinical</span></td>
+      </tr>
+      <tr>
+        <td class="mono">Invoice</td>
+        <td>Facture avec items, paiements, convention</td>
+        <td>items[], payments[], summary{total, paid, due, companyShare, patientShare}, companyBilling{}, fulfillment{}</td>
+        <td>→ Patient, → Company, → Visit, → User, → Clinic</td>
+        <td><span class="tag tag-core">Core</span><span class="tag tag-billing">Billing</span></td>
+      </tr>
+      <tr>
+        <td class="mono">Company</td>
+        <td>Entreprise/Assurance avec convention</td>
+        <td>parentConvention{}, defaultCoverage, coveredCategories[], actsRequiringApproval[], employeeCount</td>
+        <td>→ Company (parent), → Patient (employees)</td>
+        <td><span class="tag tag-core">Core</span><span class="tag tag-billing">Billing</span></td>
+      </tr>
+      <tr>
+        <td class="mono">Appointment</td>
+        <td>Rendez-vous avec statut et rappels</td>
+        <td>date, startTime, endTime, type, status, priority, recurringPattern{}, billing{}</td>
+        <td>→ Patient, → User (provider), → Service, → Room, → Clinic</td>
+        <td><span class="tag tag-core">Core</span></td>
+      </tr>
+      <tr>
+        <td class="mono">User</td>
+        <td>Utilisateur systeme avec role et permissions</td>
+        <td>email, passwordHash, role, permissions[], clinics[], signature, twoFactorSecret</td>
+        <td>→ Clinic[], → RolePermission</td>
+        <td><span class="tag tag-admin">Admin</span></td>
+      </tr>
+      <tr>
+        <td class="mono">Clinic</td>
+        <td>Clinique/Site de pratique</td>
+        <td>name, address, phone, timezone, settings{}, priceModifier, rooms[]</td>
+        <td>→ User[], → Room[]</td>
+        <td><span class="tag tag-admin">Admin</span></td>
+      </tr>
+    </table>
+
+    <h3 style="color: #10b981; margin: 30px 0 20px;">Modeles Cliniques Ophtalmologiques</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th><th>Relations</th></tr>
+      <tr>
+        <td class="mono">OphthalmologyExam</td>
+        <td>Examen ophtalmo complet (StudioVision)</td>
+        <td>visualAcuity{OD,OS,method}, refraction{sphere,cylinder,axis,add}, currentGlasses{}, medicalHistory{}</td>
+        <td>→ Patient, → Appointment, → Clinic</td>
+      </tr>
+      <tr>
+        <td class="mono">OrthopticExam</td>
+        <td>Examen orthoptique</td>
+        <td>coverTest{}, motility{}, convergence{}, stereopsis{}, sensoryTests{}, pediatricTests{}</td>
+        <td>→ Patient, → Appointment</td>
+      </tr>
+      <tr>
+        <td class="mono">IVTInjection</td>
+        <td>Injection intra-vitreenne</td>
+        <td>eye (OD/OS), medication{type,name,dose}, technique{}, iopCheck{pre,post}, complications{}, outcome{}</td>
+        <td>→ Patient, → Visit, → IVTVial, → User (physician, nurse)</td>
+      </tr>
+      <tr>
+        <td class="mono">IVTVial</td>
+        <td>Flacon IVT avec tracabilite</td>
+        <td>medication, lotNumber, expirationDate, doses{total,used,remaining}, temperature{}, storageConditions</td>
+        <td>→ IVTInjection[]</td>
+      </tr>
+      <tr>
+        <td class="mono">SurgeryCase</td>
+        <td>Cas chirurgical avec checklist</td>
+        <td>procedure, eye, status, scheduledDate, preOpChecklist{}, usedItems[], surgeryReport</td>
+        <td>→ Patient, → Invoice, → Room, → User (surgeon, anesthetist), → SurgeryReport</td>
+      </tr>
+      <tr>
+        <td class="mono">SurgeryReport</td>
+        <td>Compte-rendu operatoire</td>
+        <td>findings, procedure, complications, postOpInstructions, signature</td>
+        <td>→ SurgeryCase, → User</td>
+      </tr>
+      <tr>
+        <td class="mono">ImagingStudy</td>
+        <td>Etude d'imagerie (OCT, fond d'oeil, etc.)</td>
+        <td>modality, bodyPart, images[], findings, status, dicomData{}</td>
+        <td>→ Patient, → Device, → Visit</td>
+      </tr>
+      <tr>
+        <td class="mono">ImagingOrder</td>
+        <td>Demande d'imagerie</td>
+        <td>examType, priority, status, scheduledDate</td>
+        <td>→ Patient, → User (ordering)</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #ec4899; margin: 30px 0 20px;">Modeles Laboratoire</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th></tr>
+      <tr>
+        <td class="mono">LabOrder</td>
+        <td>Demande d'analyses labo</td>
+        <td>tests[], priority (routine/urgent/stat), status, specimenInfo{}, billing{}</td>
+      </tr>
+      <tr>
+        <td class="mono">LabResult</td>
+        <td>Resultat d'analyse</td>
+        <td>testName, value, unit, referenceRange, flags[], verifiedBy, criticalAlert</td>
+      </tr>
+      <tr>
+        <td class="mono">LabAnalyzer</td>
+        <td>Analyseur LIS</td>
+        <td>name, protocol (HL7/ASTM), connectionParams{}, testMappings[]</td>
+      </tr>
+      <tr>
+        <td class="mono">LaboratoryTemplate</td>
+        <td>Template d'analyse</td>
+        <td>name, tests[], referenceRanges{}, units</td>
+      </tr>
+      <tr>
+        <td class="mono">ReagentLot</td>
+        <td>Lot de reactif avec QC</td>
+        <td>reagentName, lotNumber, expirationDate, qcResults[], westgardViolations[]</td>
+      </tr>
+      <tr>
+        <td class="mono">LISIntegration</td>
+        <td>Config integration LIS</td>
+        <td>analyzer, protocol, host, port, testCodeMappings[]</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #8b5cf6; margin: 30px 0 20px;">Modeles Inventaire (Unifie)</h3>
+    <table>
+      <tr><th>Modele</th><th>Type</th><th>Champs Specifiques</th></tr>
+      <tr>
+        <td class="mono">Inventory</td>
+        <td>pharmacy | frame | contact_lens | optical_lens | reagent | lab_consumable | surgical_supply</td>
+        <td>name, sku, barcode, stockLevels{currentStock, reserved, available}, pricing{costPrice, sellingPrice}, batches[], movements[], alerts[]</td>
+      </tr>
+      <tr>
+        <td class="mono" style="padding-left: 30px;">→ pharmacy</td>
+        <td>Medicaments</td>
+        <td>drug (→Drug), dosageForm, controlled, prescriptionRequired, therapeuticClass</td>
+      </tr>
+      <tr>
+        <td class="mono" style="padding-left: 30px;">→ frame</td>
+        <td>Montures lunettes</td>
+        <td>brand, model, color, size{bridge,temple,lens}, frameType, material, gender</td>
+      </tr>
+      <tr>
+        <td class="mono" style="padding-left: 30px;">→ contact_lens</td>
+        <td>Lentilles de contact</td>
+        <td>brand, type, baseCurve, diameter, power, cylinder, axis, wearSchedule</td>
+      </tr>
+      <tr>
+        <td class="mono" style="padding-left: 30px;">→ optical_lens</td>
+        <td>Verres optiques</td>
+        <td>lensType, material, index, coating[], treatment</td>
+      </tr>
+      <tr>
+        <td class="mono" style="padding-left: 30px;">→ surgical_supply</td>
+        <td>Fournitures chirurgicales</td>
+        <td>sterile, singleUse, surgeryType[], storage</td>
+      </tr>
+      <tr>
+        <td class="mono">InventoryTransfer</td>
+        <td>Transfert inter-clinique</td>
+        <td>fromClinic, toClinic, items[], status (pending→completed), transferredBy</td>
+      </tr>
+      <tr>
+        <td class="mono">StockReconciliation</td>
+        <td>Reconciliation stock</td>
+        <td>inventoryItem, expectedQty, actualQty, variance, reason, performedBy</td>
+      </tr>
+      <tr>
+        <td class="mono">PurchaseOrder</td>
+        <td>Commande fournisseur</td>
+        <td>supplier, items[], status, expectedDelivery, receivedItems[]</td>
+      </tr>
+      <tr>
+        <td class="mono">Supplier</td>
+        <td>Fournisseur</td>
+        <td>name, contact, address, paymentTerms, leadTime</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #f59e0b; margin: 30px 0 20px;">Modeles Pharmacie & Optique</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th></tr>
+      <tr>
+        <td class="mono">Drug</td>
+        <td>Reference medicament</td>
+        <td>name, dci, form, dosages[], contraindications[], interactions[], therapeuticClass</td>
+      </tr>
+      <tr>
+        <td class="mono">Prescription</td>
+        <td>Ordonnance</td>
+        <td>medications[], status, pharmacyStatus (pending→dispensed), dispensingNotes, invoiceId</td>
+      </tr>
+      <tr>
+        <td class="mono">GlassesOrder</td>
+        <td>Commande lunettes</td>
+        <td>orderType, lensSpecs{}, frame{}, status, priority, labExport{}, externalLabStatus{}</td>
+      </tr>
+      <tr>
+        <td class="mono">RepairTracking</td>
+        <td>Suivi reparations</td>
+        <td>item, issue, status, estimatedCost, actualCost, repairNotes</td>
+      </tr>
+      <tr>
+        <td class="mono">WarrantyTracking</td>
+        <td>Suivi garantie</td>
+        <td>item, purchaseDate, warrantyEndDate, claims[], status</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #06b6d4; margin: 30px 0 20px;">Modeles Devices & Integration</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th></tr>
+      <tr>
+        <td class="mono">Device</td>
+        <td>Appareil medical</td>
+        <td>name, type (oct/autorefractor/tonometer/...), manufacturer, connectionType, sharePath, folderPattern</td>
+      </tr>
+      <tr>
+        <td class="mono">DeviceImage</td>
+        <td>Image importee d'appareil</td>
+        <td>device, patient, filePath, fileType, metadata{}, dicomTags{}</td>
+      </tr>
+      <tr>
+        <td class="mono">DeviceMeasurement</td>
+        <td>Mesure importee</td>
+        <td>device, patient, measurementType, values{}, capturedAt</td>
+      </tr>
+      <tr>
+        <td class="mono">DeviceIntegrationLog</td>
+        <td>Log d'integration</td>
+        <td>device, action, status, errorMessage, processedFiles</td>
+      </tr>
+      <tr>
+        <td class="mono">SyncQueue</td>
+        <td>File de synchronisation</td>
+        <td>item, operation, status, retryCount, lastError</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #64748b; margin: 30px 0 20px;">Modeles Administration & Config</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th></tr>
+      <tr><td class="mono">RolePermission</td><td>Permissions par role</td><td>role, permissions[], clinicRestrictions[]</td></tr>
+      <tr><td class="mono">AuditLog</td><td>Journal d'audit</td><td>user, action, resource, resourceId, changes{before,after}, ipAddress</td></tr>
+      <tr><td class="mono">Notification</td><td>Notification utilisateur</td><td>recipient, type, title, message, channels{inApp,email,sms,push}, read</td></tr>
+      <tr><td class="mono">Settings</td><td>Parametres systeme</td><td>key, value, clinic, category</td></tr>
+      <tr><td class="mono">FeeSchedule</td><td>Grille tarifaire</td><td>name, items[], clinic, isTemplate, priceModifier</td></tr>
+      <tr><td class="mono">FiscalYear</td><td>Annee fiscale</td><td>year, startDate, endDate, status, closingBalance</td></tr>
+      <tr><td class="mono">TaxConfig</td><td>Configuration fiscale</td><td>taxType, rate, applicableCategories[]</td></tr>
+      <tr><td class="mono">Room</td><td>Salle/Bureau</td><td>name, clinic, type, capacity, equipment[]</td></tr>
+      <tr><td class="mono">Service</td><td>Service medical</td><td>name, code, category, defaultPrice, duration</td></tr>
+      <tr><td class="mono">ClinicalAct</td><td>Acte medical (CCAM)</td><td>code, name, category, basePrice, modifiers[]</td></tr>
+      <tr><td class="mono">Referrer</td><td>Medecin referent</td><td>name, specialty, contact, hospital</td></tr>
+      <tr><td class="mono">ExternalFacility</td><td>Etablissement externe</td><td>name, type (pharmacy/lab/surgical_center), address, dispatchMethod</td></tr>
+      <tr><td class="mono">CalendarIntegration</td><td>Integration calendrier</td><td>provider (google/outlook), tokens{}, syncSettings</td></tr>
+    </table>
+
+    <h3 style="color: #a78bfa; margin: 30px 0 20px;">Modeles Templates & Documents</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th></tr>
+      <tr><td class="mono">Document</td><td>Document genere</td><td>type, patient, content, signedBy, signedAt</td></tr>
+      <tr><td class="mono">DocumentTemplate</td><td>Template document</td><td>name, type, content, variables[], header, footer</td></tr>
+      <tr><td class="mono">ConsultationTemplate</td><td>Template consultation</td><td>name, sections[], defaultValues{}</td></tr>
+      <tr><td class="mono">ClinicalTemplate</td><td>Template clinique</td><td>name, type, fields[], validations[]</td></tr>
+      <tr><td class="mono">LetterTemplate</td><td>Template courrier</td><td>name, content, placeholders[]</td></tr>
+      <tr><td class="mono">MedicationTemplate</td><td>Template ordonnance</td><td>name, medications[], instructions</td></tr>
+      <tr><td class="mono">DoseTemplate</td><td>Template dosage</td><td>drug, indication, doses[], adjustments[]</td></tr>
+      <tr><td class="mono">TreatmentProtocol</td><td>Protocole traitement</td><td>name, condition, steps[], intervals[]</td></tr>
+      <tr><td class="mono">PathologyTemplate</td><td>Template compte-rendu patho</td><td>name, sections[], fields[]</td></tr>
+      <tr><td class="mono">ExaminationTemplate</td><td>Template examen</td><td>name, examType, fields[], normalValues{}</td></tr>
+      <tr><td class="mono">CommentTemplate</td><td>Template commentaire</td><td>name, category, text</td></tr>
+      <tr><td class="mono">EquipmentCatalog</td><td>Catalogue equipement</td><td>name, category, specifications[], suppliers[]</td></tr>
+    </table>
+
+    <h3 style="color: #dc2626; margin: 30px 0 20px;">Modeles Workflow & Alertes</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th><th>Champs Cles</th></tr>
+      <tr><td class="mono">Approval</td><td>Demande d'approbation convention</td><td>patient, company, items[], status (pending→approved→denied), approvedBy</td></tr>
+      <tr><td class="mono">FulfillmentDispatch</td><td>Expedition externe</td><td>invoice, facility, items[], status, dispatchMethod, trackingNumber</td></tr>
+      <tr><td class="mono">Alert</td><td>Alerte systeme</td><td>type, severity, message, resolved, acknowledgedBy</td></tr>
+      <tr><td class="mono">ClinicalAlert</td><td>Alerte clinique patient</td><td>patient, type, priority, message, active, dismissedBy</td></tr>
+      <tr><td class="mono">WaitingList</td><td>Liste d'attente</td><td>patient, service, priority, requestDate, status</td></tr>
+      <tr><td class="mono">InsuranceClaim</td><td>Demande remboursement</td><td>invoice, company, amount, status, submittedAt, response</td></tr>
+      <tr><td class="mono">PaymentPlan</td><td>Plan de paiement</td><td>invoice, installments[], status, nextDueDate</td></tr>
+      <tr><td class="mono">ConsultationSession</td><td>Session consultation active</td><td>patient, provider, startTime, status, notes</td></tr>
+      <tr><td class="mono">Correspondence</td><td>Courrier patient</td><td>patient, type, content, sentAt, deliveryStatus</td></tr>
+      <tr><td class="mono">EmailQueue</td><td>File d'attente email</td><td>to, subject, body, status, attempts, lastError</td></tr>
+    </table>
+
+    <h3 style="color: #84cc16; margin: 30px 0 20px;">Modeles Migration & Legacy</h3>
+    <table>
+      <tr><th>Modele</th><th>Description</th></tr>
+      <tr><td class="mono">LegacyMapping</td><td>Mapping IDs ancien systeme → nouveau (LV_ID → Patient._id)</td></tr>
+      <tr><td class="mono">Counter</td><td>Compteurs auto-increment (patientId, invoiceNumber, etc.)</td></tr>
+      <tr><td class="mono">UnitConversion</td><td>Conversions unites medicales</td></tr>
+      <tr><td class="mono">ProviderAvailability</td><td>Disponibilites praticiens</td></tr>
+      <tr><td class="mono">AppointmentType</td><td>Types de RDV avec durees et couleurs</td></tr>
+    </table>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 2: 78 API ROUTES -->
+<!-- ============================================ -->
+<section id="routes" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">🔌</div>
+    <h2>Les 78 Routes API</h2>
+    <span class="badge">/api/*</span>
+  </div>
+  <div class="section-content">
+
+    <details open>
+      <summary>🏥 Routes Core (Patients, Visits, Invoices)</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints Principaux</th><th>Permissions</th></tr>
+          <tr>
+            <td class="mono">/api/patients</td>
+            <td>GET /, GET /:id, POST /, PUT /:id, DELETE /:id, GET /search, GET /:id/history, GET /:id/visits, GET /:id/billing, POST /:id/photo, POST /:id/link-folder, GET /:id/alerts, POST /merge</td>
+            <td>view_patients, register_patients, manage_patients</td>
+          </tr>
+          <tr>
+            <td class="mono">/api/visits</td>
+            <td>GET /, GET /:id, POST /, PUT /:id, POST /:id/complete, POST /:id/sign, GET /:id/summary</td>
+            <td>view_visits, create_visits, sign_visits</td>
+          </tr>
+          <tr>
+            <td class="mono">/api/invoices</td>
+            <td>GET /, GET /:id, POST /, PUT /:id, POST /:id/payments, GET /stats, POST /:id/void, POST /:id/dispatch</td>
+            <td>view_invoices, create_invoices, manage_payments</td>
+          </tr>
+          <tr>
+            <td class="mono">/api/appointments</td>
+            <td>GET /, GET /:id, POST /, PUT /:id, DELETE /:id, GET /availability, POST /:id/confirm, POST /:id/cancel, POST /:id/reschedule</td>
+            <td>view_appointments, manage_appointments</td>
+          </tr>
+          <tr>
+            <td class="mono">/api/companies</td>
+            <td>GET /, GET /:id, POST /, PUT /:id, GET /:id/employees, GET /:id/invoices, GET /:id/statement, GET /:id/approvals, GET /:id/stats</td>
+            <td>view_companies, manage_companies</td>
+          </tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>👁️ Routes Cliniques Ophtalmologiques</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th><th>Usage</th></tr>
+          <tr><td class="mono">/api/ophthalmology</td><td>GET /exams, POST /exams, GET /exams/:id, PUT /exams/:id</td><td>Examens StudioVision</td></tr>
+          <tr><td class="mono">/api/orthoptic</td><td>GET /, POST /, GET /:id, PUT /:id</td><td>Examens orthoptiques</td></tr>
+          <tr><td class="mono">/api/ivt</td><td>GET /, POST /, GET /:id, GET /stats, GET /patient/:patientId/history</td><td>Injections IVT</td></tr>
+          <tr><td class="mono">/api/ivtVials</td><td>GET /, POST /, PUT /:id/use-dose, GET /:id/doses</td><td>Gestion flacons IVT</td></tr>
+          <tr><td class="mono">/api/surgery</td><td>GET /, POST /, PUT /:id, GET /:id/checklist, POST /:id/complete-checklist, GET /stats</td><td>Cas chirurgicaux</td></tr>
+          <tr><td class="mono">/api/imaging</td><td>GET /, POST /, GET /:id, GET /patient/:patientId</td><td>Etudes d'imagerie</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>🧪 Routes Laboratoire</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/laboratory</td><td>GET /dashboard, GET /pending, GET /stats</td></tr>
+          <tr><td class="mono">/api/labOrders</td><td>GET /, POST /, GET /:id, PUT /:id, POST /:id/collect, POST /:id/receive</td></tr>
+          <tr><td class="mono">/api/labResults</td><td>GET /, POST /, PUT /:id, POST /:id/verify, POST /:id/validate</td></tr>
+          <tr><td class="mono">/api/labAnalyzers</td><td>GET /, POST /, PUT /:id, POST /:id/test-connection</td></tr>
+          <tr><td class="mono">/api/labQC</td><td>GET /, POST /, GET /westgard-violations</td></tr>
+          <tr><td class="mono">/api/lis</td><td>POST /receive-message, GET /status</td></tr>
+          <tr><td class="mono">/api/reagentLots</td><td>GET /, POST /, PUT /:id, POST /:id/qc-result</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>💊 Routes Pharmacie & Optique</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/pharmacy</td><td>GET /dashboard, GET /inventory, GET /low-stock, GET /expiring</td></tr>
+          <tr><td class="mono">/api/prescriptions</td><td>GET /, POST /, GET /:id, PUT /:id, POST /:id/dispense, GET /queue</td></tr>
+          <tr><td class="mono">/api/drugSafety</td><td>POST /check-interactions, POST /check-allergies, POST /check-contraindications</td></tr>
+          <tr><td class="mono">/api/opticalShop</td><td>GET /dashboard, GET /frames, GET /lenses</td></tr>
+          <tr><td class="mono">/api/glassesOrders</td><td>GET /, POST /, PUT /:id, POST /:id/export-lab, PUT /:id/lab-status</td></tr>
+          <tr><td class="mono">/api/contactLensFitting</td><td>POST /, GET /:patientId/history</td></tr>
+          <tr><td class="mono">/api/repairs</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/warranties</td><td>GET /, POST /:id/claim</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>📦 Routes Inventaire</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/unifiedInventory</td><td>GET /, GET /:id, POST /, PUT /:id, POST /:id/adjust, POST /:id/reserve, POST /:id/release</td></tr>
+          <tr><td class="mono">/api/frameInventory</td><td>GET /, POST /, PUT /:id (type-specific endpoints)</td></tr>
+          <tr><td class="mono">/api/contactLensInventory</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/opticalLensInventory</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/reagentInventory</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/labConsumableInventory</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/surgicalSupplyInventory</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/inventoryTransfers</td><td>GET /, POST /, PUT /:id/accept, PUT /:id/reject</td></tr>
+          <tr><td class="mono">/api/crossClinicInventory</td><td>GET /summary, GET /alerts, POST /transfer</td></tr>
+          <tr><td class="mono">/api/stockReconciliations</td><td>GET /, POST /, PUT /:id/approve</td></tr>
+          <tr><td class="mono">/api/purchaseOrders</td><td>GET /, POST /, PUT /:id, POST /:id/receive</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>📅 Routes Queue & Scheduling</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/queue</td><td>GET /, POST /check-in, POST /call-next, POST /:id/assign-room, POST /:id/complete, GET /stats, GET /analytics, GET /display</td></tr>
+          <tr><td class="mono">/api/rooms</td><td>GET /, POST /, PUT /:id, GET /availability, POST /:id/occupy, POST /:id/release</td></tr>
+          <tr><td class="mono">/api/calendar</td><td>GET /events, POST /sync, GET /availability/:providerId</td></tr>
+          <tr><td class="mono">/api/portal</td><td>GET /appointments, POST /book (Public booking)</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>🔧 Routes Devices & Integration</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/devices</td><td>GET /, POST /, PUT /:id, GET /:id/images, POST /:id/sync, GET /discovery, GET /auto-sync/status, GET /smb2/stats</td></tr>
+          <tr><td class="mono">/api/ocrImport</td><td>POST /upload, GET /queue, PUT /:id/review</td></tr>
+          <tr><td class="mono">/api/faceRecognition</td><td>POST /enroll, POST /identify, POST /check-duplicates</td></tr>
+          <tr><td class="mono">/api/sync</td><td>GET /status, POST /trigger, GET /conflicts</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>📄 Routes Documents & Templates</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/documents</td><td>GET /, POST /, GET /:id, DELETE /:id, GET /:id/download</td></tr>
+          <tr><td class="mono">/api/documentGeneration</td><td>POST /fiche-ophta, POST /prescription, POST /letter, POST /consent, POST /invoice-pdf</td></tr>
+          <tr><td class="mono">/api/correspondence</td><td>GET /, POST /, POST /:id/send</td></tr>
+          <tr><td class="mono">/api/templateCatalog</td><td>GET /, GET /:type</td></tr>
+          <tr><td class="mono">/api/consultationTemplates</td><td>GET /, POST /, PUT /:id</td></tr>
+          <tr><td class="mono">/api/treatmentProtocols</td><td>GET /, POST /, GET /:id</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>⚙️ Routes Administration</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/auth</td><td>POST /login, POST /logout, POST /refresh, POST /forgot-password, POST /reset-password, POST /2fa/setup, POST /2fa/verify</td></tr>
+          <tr><td class="mono">/api/users</td><td>GET /, POST /, PUT /:id, DELETE /:id, PUT /:id/password, GET /:id/activity</td></tr>
+          <tr><td class="mono">/api/clinics</td><td>GET /, POST /, PUT /:id, GET /:id/stats</td></tr>
+          <tr><td class="mono">/api/rolePermissions</td><td>GET /, PUT /:role</td></tr>
+          <tr><td class="mono">/api/settings</td><td>GET /, PUT /, GET /:category</td></tr>
+          <tr><td class="mono">/api/audit</td><td>GET /, GET /patient/:patientId, GET /user/:userId, GET /export</td></tr>
+          <tr><td class="mono">/api/backup</td><td>GET /, POST /create, POST /restore, GET /schedule</td></tr>
+          <tr><td class="mono">/api/notifications</td><td>GET /, PUT /:id/read, PUT /read-all, GET /unread-count</td></tr>
+          <tr><td class="mono">/api/alerts</td><td>GET /, PUT /:id/acknowledge, PUT /:id/resolve</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>💰 Routes Financieres</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/billing</td><td>GET /dashboard, GET /aging, GET /revenue-by-provider</td></tr>
+          <tr><td class="mono">/api/feeSchedules</td><td>GET /, POST /, PUT /:id, GET /public, POST /:id/copy-to-clinic</td></tr>
+          <tr><td class="mono">/api/approvals</td><td>GET /, POST /, PUT /:id/approve, PUT /:id/deny</td></tr>
+          <tr><td class="mono">/api/fulfillmentDispatches</td><td>GET /, POST /, PUT /:id/acknowledge, PUT /:id/complete</td></tr>
+          <tr><td class="mono">/api/fiscalYear</td><td>GET /, POST /, PUT /:id/close</td></tr>
+          <tr><td class="mono">/api/externalFacilities</td><td>GET /, POST /, PUT /:id</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>📊 Routes Analytiques</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/dashboard</td><td>GET / (role-based dashboard data)</td></tr>
+          <tr><td class="mono">/api/clinicalTrends</td><td>GET /glaucoma, GET /diabetic-retinopathy, GET /cataract</td></tr>
+          <tr><td class="mono">/api/clinicalDecisionSupport</td><td>POST /analyze, GET /recommendations/:patientId</td></tr>
+          <tr><td class="mono">/api/patientHistory</td><td>GET /:patientId/timeline, GET /:patientId/summary</td></tr>
+          <tr><td class="mono">/api/referrers</td><td>GET /, POST /, GET /:id/stats</td></tr>
+        </table>
+      </div>
+    </details>
+
+    <details>
+      <summary>🔄 Routes Utilitaires</summary>
+      <div>
+        <table>
+          <tr><th>Route</th><th>Endpoints</th></tr>
+          <tr><td class="mono">/api/health</td><td>GET / (Health check - no auth)</td></tr>
+          <tr><td class="mono">/api/uploads</td><td>POST /image, POST /document, POST /dicom</td></tr>
+          <tr><td class="mono">/api/migration</td><td>POST /import-legacy, GET /status</td></tr>
+          <tr><td class="mono">/api/unitConversions</td><td>GET /, POST /convert</td></tr>
+          <tr><td class="mono">/api/central</td><td>POST /sync, GET /updates (Multi-clinic sync)</td></tr>
+        </table>
+      </div>
+    </details>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 3: 61 BACKEND SERVICES -->
+<!-- ============================================ -->
+<section id="services" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">⚙️</div>
+    <h2>Les 61 Services Backend</h2>
+    <span class="badge">Business Logic</span>
+  </div>
+  <div class="section-content">
+
+    <div class="cards-grid">
+      <div class="card">
+        <h4>🔔 Schedulers (6)</h4>
+        <ul>
+          <li><span class="mono">alertScheduler</span> - Alertes stock, expirations</li>
+          <li><span class="mono">backupScheduler</span> - Sauvegardes automatiques</li>
+          <li><span class="mono">calendarSyncScheduler</span> - Sync calendriers externes</li>
+          <li><span class="mono">deviceSyncScheduler</span> - Polling appareils SMB</li>
+          <li><span class="mono">invoiceReminderScheduler</span> - Rappels factures dues</li>
+          <li><span class="mono">reminderScheduler</span> - Rappels RDV (SMS/Email)</li>
+          <li><span class="mono">reservationCleanupScheduler</span> - Nettoyage reservations</li>
+          <li><span class="mono">visitCleanupScheduler</span> - Cloture visites incompletes</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📧 Communication (5)</h4>
+        <ul>
+          <li><span class="mono">emailService</span> - Envoi emails (nodemailer)</li>
+          <li><span class="mono">emailQueueService</span> - File d'attente emails</li>
+          <li><span class="mono">smsService</span> - Envoi SMS (Orange/MTN)</li>
+          <li><span class="mono">notificationService</span> - Notifications in-app</li>
+          <li><span class="mono">notificationFacade</span> - Facade multi-canal</li>
+          <li><span class="mono">enhancedNotificationService</span> - Notifications enrichies</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>💊 Securite Medicaments (5)</h4>
+        <ul>
+          <li><span class="mono">drugSafetyService</span> - Interactions, allergies</li>
+          <li><span class="mono">therapeuticClassService</span> - Classes therapeutiques</li>
+          <li><span class="mono">doseCalculationService</span> - Calcul doses</li>
+          <li><span class="mono">cumulativeDoseService</span> - Suivi doses cumulatives (IVT)</li>
+          <li><span class="mono">coldChainService</span> - Surveillance chaine du froid</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>🧪 Laboratoire (4)</h4>
+        <ul>
+          <li><span class="mono">lisIntegrationService</span> - Integration LIS (HL7)</li>
+          <li><span class="mono">hl7ParserService</span> - Parsing messages HL7</li>
+          <li><span class="mono">labAutoVerificationService</span> - Auto-validation resultats</li>
+          <li><span class="mono">westgardQCService</span> - Controle qualite (Westgard)</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📊 Analytiques (4)</h4>
+        <ul>
+          <li><span class="mono">drGradingService</span> - Staging retinopathie diabetique</li>
+          <li><span class="mono">gpaService</span> - Analyse progression glaucome</li>
+          <li><span class="mono">rnflAnalysisService</span> - Analyse RNFL (OCT)</li>
+          <li><span class="mono">surgeonAnalyticsService</span> - Stats chirurgiens</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>🔗 Integration (6)</h4>
+        <ul>
+          <li><span class="mono">fhirService</span> - Export/Import FHIR</li>
+          <li><span class="mono">calendarIntegrationService</span> - Google/Outlook sync</li>
+          <li><span class="mono">centralServerClient</span> - Sync multi-clinique</li>
+          <li><span class="mono">networkDiscoveryService</span> - Decouverte reseau</li>
+          <li><span class="mono">paymentGateway</span> - (Placeholder paiements)</li>
+          <li><span class="mono">ePrescribingService</span> - E-prescriptions</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📁 Devices & Sync (8)</h4>
+        <ul>
+          <li><span class="mono">smb2ClientService</span> - Client SMB2 pour partages</li>
+          <li><span class="mono">smbStreamService</span> - Streaming fichiers SMB</li>
+          <li><span class="mono">patientFolderIndexer</span> - Index dossiers patients</li>
+          <li><span class="mono">folderSyncService</span> - Sync dossiers locaux</li>
+          <li><span class="mono">deviceSyncQueue</span> - File sync appareils</li>
+          <li><span class="mono">universalFileProcessor</span> - DICOM, JPEG, CSV parsing</li>
+          <li><span class="mono">cloudSyncService</span> - Sync cloud backup</li>
+          <li><span class="mono">dataSyncService</span> - Sync donnees generique</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📄 Documents (4)</h4>
+        <ul>
+          <li><span class="mono">pdfGenerator</span> - Generation PDF (PDFKit)</li>
+          <li><span class="mono">cerfaGenerator</span> - Formulaires CERFA</li>
+          <li><span class="mono">labelPrintingService</span> - Etiquettes specimens</li>
+          <li><span class="mono">referralTriggerService</span> - Courriers orientation</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>🔐 Infrastructure (8)</h4>
+        <ul>
+          <li><span class="mono">cacheService</span> - Cache Redis</li>
+          <li><span class="mono">sessionService</span> - Gestion sessions</li>
+          <li><span class="mono">distributedLock</span> - Verrous distribues</li>
+          <li><span class="mono">backupService</span> - Sauvegardes MongoDB</li>
+          <li><span class="mono">sentryService</span> - Error tracking</li>
+          <li><span class="mono">websocketService</span> - Temps reel (Socket.io)</li>
+          <li><span class="mono">paginationService</span> - Pagination standard</li>
+          <li><span class="mono">currencyService</span> - Conversion devises</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>🏥 Metier Specifique (6)</h4>
+        <ul>
+          <li><span class="mono">appointmentValidationService</span> - Validation RDV</li>
+          <li><span class="mono">approvalValidationService</span> - Validation approbations</li>
+          <li><span class="mono">ivtComplianceService</span> - Conformite protocoles IVT</li>
+          <li><span class="mono">clinicalAlertService</span> - Alertes cliniques</li>
+          <li><span class="mono">autoReorderService</span> - Reappro automatique</li>
+          <li><span class="mono">autoSyncService</span> - Sync automatique</li>
+          <li><span class="mono">legacyPatientMapper</span> - Mapping patients LV</li>
+          <li><span class="mono">paymentPlanAutoChargeService</span> - Echeances auto</li>
+          <li><span class="mono">unifiedInventoryService</span> - Inventaire unifie</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 4: FRONTEND PAGES -->
+<!-- ============================================ -->
+<section id="frontend" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);">🖥️</div>
+    <h2>Pages Frontend (70+)</h2>
+    <span class="badge">React + Vite</span>
+  </div>
+  <div class="section-content">
+
+    <div class="cards-grid">
+      <div class="card">
+        <h4>🏠 Pages Principales</h4>
+        <ul>
+          <li><span class="mono">Dashboard</span> - Tableau de bord role-based</li>
+          <li><span class="mono">HomeDashboard</span> - Accueil avec stats</li>
+          <li><span class="mono">Login</span> - Authentification</li>
+          <li><span class="mono">NotFound</span> - Page 404</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>👥 Patients</h4>
+        <ul>
+          <li><span class="mono">Patients</span> - Liste patients</li>
+          <li><span class="mono">PatientDetail</span> - Dossier patient complet</li>
+          <li><span class="mono">PatientEdit</span> - Edition patient</li>
+          <li><span class="mono">PatientRegistration</span> - Wizard 6 etapes</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>👁️ Ophtalmologie</h4>
+        <ul>
+          <li><span class="mono">ophthalmology/</span> - Module complet</li>
+          <li><span class="mono">StudioVisionConsultation</span> - Consultation</li>
+          <li><span class="mono">OphthalmologyDashboard</span> - Dashboard ophtalmo</li>
+          <li><span class="mono">OrthopticExams</span> - Liste examens orthoptiques</li>
+          <li><span class="mono">OrthopticExamForm</span> - Formulaire orthoptie</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>💉 IVT & Chirurgie</h4>
+        <ul>
+          <li><span class="mono">IVTDashboard</span> - Dashboard IVT</li>
+          <li><span class="mono">IVTDetail</span> - Detail injection</li>
+          <li><span class="mono">IVTInjectionForm</span> - Formulaire injection</li>
+          <li><span class="mono">Surgery/</span> - Module chirurgical</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>🧪 Laboratoire</h4>
+        <ul>
+          <li><span class="mono">Laboratory/</span> - Module labo</li>
+          <li><span class="mono">LabCheckIn</span> - Reception specimens</li>
+          <li><span class="mono">LabTechWorklist</span> - Worklist technicien</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>💊 Pharmacie & Optique</h4>
+        <ul>
+          <li><span class="mono">PharmacyDashboard</span> - Dashboard pharma</li>
+          <li><span class="mono">PharmacyDetail</span> - Detail produit</li>
+          <li><span class="mono">Prescriptions</span> - Liste ordonnances</li>
+          <li><span class="mono">PrescriptionQueue</span> - File dispensation</li>
+          <li><span class="mono">OpticalShop/</span> - Boutique optique</li>
+          <li><span class="mono">GlassesOrders</span> - Commandes lunettes</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📦 Inventaire</h4>
+        <ul>
+          <li><span class="mono">UnifiedInventory/</span> - Inventaire unifie</li>
+          <li><span class="mono">FrameInventory</span> - Montures</li>
+          <li><span class="mono">ContactLensInventory</span> - Lentilles</li>
+          <li><span class="mono">OpticalLensInventory</span> - Verres</li>
+          <li><span class="mono">ReagentInventory</span> - Reactifs</li>
+          <li><span class="mono">LabConsumableInventory</span> - Consommables</li>
+          <li><span class="mono">CrossClinicInventory</span> - Inter-clinique</li>
+          <li><span class="mono">StockReconciliation</span> - Reconciliation</li>
+          <li><span class="mono">PurchaseOrders</span> - Commandes achat</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📅 Rendez-vous & Queue</h4>
+        <ul>
+          <li><span class="mono">Appointments</span> - Agenda</li>
+          <li><span class="mono">Queue/</span> - File d'attente</li>
+          <li><span class="mono">QueueDisplayBoard</span> - Affichage salle</li>
+          <li><span class="mono">QueueAnalytics</span> - Stats file</li>
+          <li><span class="mono">PublicBooking</span> - Reservation publique</li>
+          <li><span class="mono">BookingConfirmation</span> - Confirmation RDV</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>💰 Facturation</h4>
+        <ul>
+          <li><span class="mono">Invoicing/</span> - Module factures</li>
+          <li><span class="mono">Financial/</span> - Rapports financiers</li>
+          <li><span class="mono">Approvals</span> - Approbations convention</li>
+          <li><span class="mono">Companies/</span> - Gestion entreprises</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>⚙️ Administration</h4>
+        <ul>
+          <li><span class="mono">UserManagement</span> - Utilisateurs</li>
+          <li><span class="mono">Settings/</span> - Parametres</li>
+          <li><span class="mono">BackupManagement</span> - Sauvegardes</li>
+          <li><span class="mono">AuditTrail</span> - Journal audit</li>
+          <li><span class="mono">Notifications</span> - Centre notifs</li>
+          <li><span class="mono">AlertDashboard</span> - Alertes systeme</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>🔧 Devices & Import</h4>
+        <ul>
+          <li><span class="mono">DeviceManager</span> - Gestion appareils</li>
+          <li><span class="mono">DeviceDetail</span> - Detail appareil</li>
+          <li><span class="mono">DeviceImport</span> - Import donnees</li>
+          <li><span class="mono">DeviceStatusDashboard</span> - Statut sync</li>
+          <li><span class="mono">NetworkDiscovery</span> - Decouverte reseau</li>
+          <li><span class="mono">Imaging</span> - Imagerie</li>
+          <li><span class="mono">OCRReviewQueue</span> - Validation OCR</li>
+          <li><span class="mono">ImportWizard</span> - Wizard import</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h4>📋 Divers</h4>
+        <ul>
+          <li><span class="mono">visits/</span> - Module visites</li>
+          <li><span class="mono">templates/</span> - Gestion templates</li>
+          <li><span class="mono">analytics/</span> - Analytiques</li>
+          <li><span class="mono">RoleViews/</span> - Vues par role</li>
+          <li><span class="mono">NurseVitalsEntry</span> - Saisie constantes</li>
+          <li><span class="mono">Services</span> - Catalogue services</li>
+          <li><span class="mono">DocumentGeneration</span> - Generation docs</li>
+          <li><span class="mono">DispatchDashboard</span> - Expeditions</li>
+          <li><span class="mono">ExternalFacilities</span> - Etablissements ext.</li>
+          <li><span class="mono">RepairTracking</span> - Suivi reparations</li>
+          <li><span class="mono">WarrantyManagement</span> - Garanties</li>
+          <li><span class="mono">CrossClinicDashboard</span> - Dashboard multi-site</li>
+          <li><span class="mono">ConsolidatedReports</span> - Rapports consolides</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 5: CASCADES DETAILLEES -->
+<!-- ============================================ -->
+<section id="cascades" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);">⚡</div>
+    <h2>Cascades & Effets de Bord</h2>
+    <span class="badge">Critique</span>
+  </div>
+  <div class="section-content">
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 1: Dispensation Ordonnance → Facture Auto
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Prescription.dispense()</h5>
+          <p>prescriptionController.dispense() appele</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Update Status</h5>
+          <p>pharmacyStatus = 'dispensed'</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. Auto Create Invoice</h5>
+          <p>invoiceController.autoCreateInvoice()</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Link Back</h5>
+          <p>prescription.invoiceId = newInvoice._id</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>5. Stock Deduction</h5>
+          <p>Inventory.recordMovement('dispensed')</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> La facturation doit suivre la dispensation. Le pharmacien dispense, le systeme cree automatiquement la facture pour paiement immediat ou convention.
+      </div>
+    </div>
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 2: Paiement Facture Chirurgie → Creation Cas Chirurgical
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Invoice.addPayment()</h5>
+          <p>invoiceController.addPayment() appele</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Check Paid Status</h5>
+          <p>summary.paid >= summary.total?</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. Scan Surgery Items</h5>
+          <p>items.filter(isSurgeryProcedure)</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Create SurgeryCase</h5>
+          <p>status = 'awaiting_scheduling'</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>5. Link Invoice Item</h5>
+          <p>item.surgeryCaseId = newCase._id</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> Pas de chirurgie sans paiement confirme. Le paiement declenche automatiquement la mise en file d'attente chirurgicale. L'oeil (OD/OS) est extrait de la description de l'acte.
+      </div>
+      <div class="code-block">
+// invoiceController.js - Extrait
+async function createSurgeryCasesIfNeeded(invoice) {
+  for (const item of invoice.items) {
+    const clinicalAct = await ClinicalAct.findOne({ code: item.code });
+    if (clinicalAct?.category === 'surgery' || /chirurgie|cataracte|vitrectomie/i.test(item.description)) {
+      const eye = extractEyeFromDescription(item.description); // 'OD', 'OS', 'OU'
+      await SurgeryCase.create({
+        patient: invoice.patient,
+        invoice: invoice._id,
+        procedure: item.description,
+        eye,
+        status: 'awaiting_scheduling'
+      });
+      item.surgeryCaseCreated = true;
+    }
+  }
+}</div>
+    </div>
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 3: Check-in Queue → Visit Auto + WebSocket
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Queue.checkIn()</h5>
+          <p>queueController.checkIn(patientId, appointmentId)</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Create Visit</h5>
+          <p>Visit.create({status: 'checked-in'})</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. WebSocket Emit</h5>
+          <p>emitQueueUpdate({type: 'check-in'})</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Display Update</h5>
+          <p>QueueDisplayBoard refresh</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> L'arrivee patient doit creer immediatement une visite et notifier tous les ecrans de file d'attente en temps reel via WebSocket.
+      </div>
+    </div>
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 4: Completion Visite → Facture + Notifications
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Visit.complete()</h5>
+          <p>queueController ou visitController</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Generate Invoice</h5>
+          <p>Depuis clinicalActs[] de la visite</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. Apply Convention</h5>
+          <p>Split company/patient shares</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Create Notifications</h5>
+          <p>Patient: facture prete, RDV suivant</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>5. Update Queue</h5>
+          <p>emitQueueUpdate({type: 'completed'})</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> La fin de consultation doit generer toute la facturation avec splits convention, liberer le patient et notifier la caisse.
+      </div>
+    </div>
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 5: Device Sync → Images + Mesures + Matching Patient
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Folder Poll</h5>
+          <p>deviceSyncScheduler detecte nouveaux fichiers</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Parse File</h5>
+          <p>universalFileProcessor (DICOM, JPEG, CSV)</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. Extract ID</h5>
+          <p>Nom dossier, DICOM tags, CSV fields</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Match Patient</h5>
+          <p>Patient.folderIds[] contains folderId?</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>5. Create Records</h5>
+          <p>DeviceImage + DeviceMeasurement + ImagingStudy</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> Les appareils exportent vers des dossiers SMB. Le systeme doit detecter, parser, matcher au patient et creer les enregistrements cliniques automatiquement.
+      </div>
+    </div>
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 6: Stock Bas → Alerte + Auto-Reorder
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Stock Change</h5>
+          <p>Inventory.recordMovement('dispensed')</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Check Threshold</h5>
+          <p>available < reorderPoint?</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. Create Alert</h5>
+          <p>Inventory.alerts.push({type: 'low_stock'})</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Notify Users</h5>
+          <p>Pharmacists, Inventory managers</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>5. Auto-Reorder?</h5>
+          <p>Si autoReorder=true, create PurchaseOrder</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> Rupture de stock = patients non traites. Le systeme doit alerter proactivement et peut commander automatiquement chez le fournisseur prefere.
+      </div>
+    </div>
+
+    <div class="cascade">
+      <div class="cascade-title">
+        <span class="trigger-badge">DECLENCHEUR</span>
+        Cascade 7: Resultat Labo Critique → Alerte Immediate
+      </div>
+      <div class="flow">
+        <div class="flow-step">
+          <h5>1. Result Posted</h5>
+          <p>labResultsController.create()</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>2. Check Ranges</h5>
+          <p>value outside criticalRange?</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>3. Flag Critical</h5>
+          <p>result.criticalAlert = true</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>4. Notify Provider</h5>
+          <p>Ordering physician via SMS + inApp</p>
+        </div>
+        <span class="flow-arrow">→</span>
+        <div class="flow-step">
+          <h5>5. Audit Log</h5>
+          <p>Track notification acknowledgment</p>
+        </div>
+      </div>
+      <div class="why-box">
+        <strong>POURQUOI:</strong> Un resultat critique non communique = danger vital. Le medecin prescripteur doit etre alerte immediatement par tous les canaux disponibles.
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 6: ENUMS & STATUTS -->
+<!-- ============================================ -->
+<section id="enums" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);">📋</div>
+    <h2>Toutes les Enums & Statuts</h2>
+    <span class="badge">Reference Complete</span>
+  </div>
+  <div class="section-content">
+
+    <div class="enum-grid">
+      <div class="enum-box">
+        <h5>Visit.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">scheduled</span>
+          <span class="enum-val">checked-in</span>
+          <span class="enum-val">in-progress</span>
+          <span class="enum-val">completed</span>
+          <span class="enum-val">cancelled</span>
+          <span class="enum-val">no-show</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Invoice.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">draft</span>
+          <span class="enum-val">pending</span>
+          <span class="enum-val">partial</span>
+          <span class="enum-val">paid</span>
+          <span class="enum-val">overdue</span>
+          <span class="enum-val">voided</span>
+          <span class="enum-val">refunded</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Invoice.item.category</h5>
+        <div class="enum-values">
+          <span class="enum-val">consultation</span>
+          <span class="enum-val">procedure</span>
+          <span class="enum-val">laboratory</span>
+          <span class="enum-val">imaging</span>
+          <span class="enum-val">surgery</span>
+          <span class="enum-val">pharmacy</span>
+          <span class="enum-val">optical</span>
+          <span class="enum-val">supplies</span>
+          <span class="enum-val">administrative</span>
+          <span class="enum-val">other</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Payment.method</h5>
+        <div class="enum-values">
+          <span class="enum-val">cash</span>
+          <span class="enum-val">card</span>
+          <span class="enum-val">check</span>
+          <span class="enum-val">bank-transfer</span>
+          <span class="enum-val">insurance</span>
+          <span class="enum-val">mobile-payment</span>
+          <span class="enum-val">orange-money</span>
+          <span class="enum-val">mtn-money</span>
+          <span class="enum-val">wave</span>
+          <span class="enum-val">other</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Fulfillment.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">pending</span>
+          <span class="enum-val">dispatched</span>
+          <span class="enum-val">acknowledged</span>
+          <span class="enum-val">in_progress</span>
+          <span class="enum-val">completed</span>
+          <span class="enum-val">cancelled</span>
+          <span class="enum-val">failed</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Dispatch.method</h5>
+        <div class="enum-values">
+          <span class="enum-val">email</span>
+          <span class="enum-val">fax</span>
+          <span class="enum-val">print</span>
+          <span class="enum-val">api</span>
+          <span class="enum-val">phone</span>
+          <span class="enum-val">manual</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Prescription.pharmacyStatus</h5>
+        <div class="enum-values">
+          <span class="enum-val">pending</span>
+          <span class="enum-val">processing</span>
+          <span class="enum-val">ready</span>
+          <span class="enum-val">dispensed</span>
+          <span class="enum-val">cancelled</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>LabOrder.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">ordered</span>
+          <span class="enum-val">collected</span>
+          <span class="enum-val">received</span>
+          <span class="enum-val">in-progress</span>
+          <span class="enum-val">completed</span>
+          <span class="enum-val">cancelled</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>LabOrder.priority</h5>
+        <div class="enum-values">
+          <span class="enum-val">routine</span>
+          <span class="enum-val">urgent</span>
+          <span class="enum-val">stat</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>SurgeryCase.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">awaiting_scheduling</span>
+          <span class="enum-val">scheduled</span>
+          <span class="enum-val">pre_op</span>
+          <span class="enum-val">in_surgery</span>
+          <span class="enum-val">post_op</span>
+          <span class="enum-val">completed</span>
+          <span class="enum-val">cancelled</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>GlassesOrder.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">pending</span>
+          <span class="enum-val">acknowledged</span>
+          <span class="enum-val">in-production</span>
+          <span class="enum-val">shipped</span>
+          <span class="enum-val">delivered</span>
+          <span class="enum-val">cancelled</span>
+          <span class="enum-val">on-hold</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Inventory.type</h5>
+        <div class="enum-values">
+          <span class="enum-val">pharmacy</span>
+          <span class="enum-val">frame</span>
+          <span class="enum-val">contact_lens</span>
+          <span class="enum-val">optical_lens</span>
+          <span class="enum-val">reagent</span>
+          <span class="enum-val">lab_consumable</span>
+          <span class="enum-val">surgical_supply</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Inventory.stockStatus</h5>
+        <div class="enum-values">
+          <span class="enum-val">in_stock</span>
+          <span class="enum-val">low_stock</span>
+          <span class="enum-val">out_of_stock</span>
+          <span class="enum-val">overstocked</span>
+          <span class="enum-val">discontinued</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Movement.type</h5>
+        <div class="enum-values">
+          <span class="enum-val">received</span>
+          <span class="enum-val">dispensed</span>
+          <span class="enum-val">adjusted</span>
+          <span class="enum-val">transferred</span>
+          <span class="enum-val">returned</span>
+          <span class="enum-val">expired</span>
+          <span class="enum-val">damaged</span>
+          <span class="enum-val">reserved</span>
+          <span class="enum-val">released</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>IVTInjection.medication.type</h5>
+        <div class="enum-values">
+          <span class="enum-val">anti-VEGF</span>
+          <span class="enum-val">steroid</span>
+          <span class="enum-val">antibiotic</span>
+          <span class="enum-val">antifungal</span>
+          <span class="enum-val">other</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>IVTInjection.technique.site</h5>
+        <div class="enum-values">
+          <span class="enum-val">inferotemporal</span>
+          <span class="enum-val">superotemporal</span>
+          <span class="enum-val">superonasal</span>
+          <span class="enum-val">inferonasal</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Eye Laterality</h5>
+        <div class="enum-values">
+          <span class="enum-val">OD</span>
+          <span class="enum-val">OS</span>
+          <span class="enum-val">OU</span>
+          <span class="enum-val">OG</span>
+          <span class="enum-val">ODG</span>
+          <span class="enum-val">NA</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Notification.type</h5>
+        <div class="enum-values">
+          <span class="enum-val">appointment_reminder</span>
+          <span class="enum-val">appointment_confirmed</span>
+          <span class="enum-val">appointment_cancelled</span>
+          <span class="enum-val">prescription_ready</span>
+          <span class="enum-val">prescription_expiring</span>
+          <span class="enum-val">invoice_due</span>
+          <span class="enum-val">invoice_paid</span>
+          <span class="enum-val">result_available</span>
+          <span class="enum-val">message_received</span>
+          <span class="enum-val">stock_alert</span>
+          <span class="enum-val">system_announcement</span>
+          <span class="enum-val">task_assigned</span>
+          <span class="enum-val">followup_due</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Notification.priority</h5>
+        <div class="enum-values">
+          <span class="enum-val">low</span>
+          <span class="enum-val">normal</span>
+          <span class="enum-val">high</span>
+          <span class="enum-val">urgent</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Patient.convention.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">active</span>
+          <span class="enum-val">suspended</span>
+          <span class="enum-val">terminated</span>
+          <span class="enum-val">pending</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Approval.status</h5>
+        <div class="enum-values">
+          <span class="enum-val">pending</span>
+          <span class="enum-val">approved</span>
+          <span class="enum-val">denied</span>
+          <span class="enum-val">expired</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Currency</h5>
+        <div class="enum-values">
+          <span class="enum-val">CDF</span>
+          <span class="enum-val">USD</span>
+          <span class="enum-val">EUR</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>Device.type</h5>
+        <div class="enum-values">
+          <span class="enum-val">oct</span>
+          <span class="enum-val">autorefractor</span>
+          <span class="enum-val">tonometer</span>
+          <span class="enum-val">fundus_camera</span>
+          <span class="enum-val">visual_field</span>
+          <span class="enum-val">specular_microscope</span>
+          <span class="enum-val">keratometer</span>
+          <span class="enum-val">topographer</span>
+          <span class="enum-val">biometer</span>
+          <span class="enum-val">slit_lamp</span>
+        </div>
+      </div>
+
+      <div class="enum-box">
+        <h5>User.role</h5>
+        <div class="enum-values">
+          <span class="enum-val">admin</span>
+          <span class="enum-val">doctor</span>
+          <span class="enum-val">nurse</span>
+          <span class="enum-val">receptionist</span>
+          <span class="enum-val">optician</span>
+          <span class="enum-val">pharmacist</span>
+          <span class="enum-val">lab_technician</span>
+          <span class="enum-val">cashier</span>
+          <span class="enum-val">accountant</span>
+          <span class="enum-val">orthoptist</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 7: FLUX DE DONNEES -->
+<!-- ============================================ -->
+<section id="dataflow" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);">🔄</div>
+    <h2>Flux de Donnees Complets</h2>
+    <span class="badge">End-to-End</span>
+  </div>
+  <div class="section-content">
+
+    <h3 style="color: #06b6d4; margin-bottom: 20px;">Flux Principal: Parcours Patient Complet</h3>
+    <div class="code-block" style="font-size: 0.9rem; line-height: 2;">
+1. ENREGISTREMENT
+   Patient.create() → patientId auto (Counter) → faceRecognition.enroll() → convention.company link → Photo upload
+
+2. RENDEZ-VOUS
+   Appointment.create() → ProviderAvailability check → Room.availability check → Reminder scheduled (email/SMS)
+
+3. ARRIVEE (CHECK-IN)
+   Queue.checkIn() → Visit.create(status:'checked-in') → WebSocket.emitQueueUpdate() → Display board refresh
+
+4. CONSULTATION
+   Visit.update(status:'in-progress') → OphthalmologyExam.create() → DeviceMeasurement.fetch() →
+   Diagnoses ICD-10 → ClinicalActs[] added → Prescription.create() → GlassesOrder.create()
+
+5. FIN CONSULTATION
+   Visit.complete() → Invoice.autoCreate() from clinicalActs →
+   Convention split (Company.defaultCoverage) → Approval.create() if required
+
+6. FACTURATION
+   Invoice.addPayment() → If paid: createSurgeryCasesIfNeeded() →
+   If pharmacy items: dispatch to external or internal dispensing
+
+7. DISPENSATION
+   Prescription.dispense() → Inventory.recordMovement('dispensed') →
+   Invoice linked → Stock alerts check → Notification.create()
+
+8. SUIVI
+   Visit.referrals[] → Appointment next → Correspondence.send() → ClinicalAlert if needed
+    </div>
+
+    <h3 style="color: #f59e0b; margin: 30px 0 20px;">Flux Facturation Convention</h3>
+    <div class="code-block">
+1. Patient avec convention:
+   Patient.convention = {
+     company: ObjectId("...ACTIVA..."),
+     employeeId: "EMP-001",
+     coverage: 80,
+     status: "active"
+   }
+
+2. Creation facture:
+   Invoice.items[].conventionApplied = true
+   Invoice.items[].companyShare = item.total * (Patient.convention.coverage / 100)
+   Invoice.items[].patientShare = item.total - companyShare
+
+3. Si acte necessite approbation:
+   Company.actsRequiringApproval.includes(item.code) → Approval.create(status:'pending')
+
+4. Approbation:
+   Approval.approve() → Invoice.companyBilling.approvalId = approval._id
+
+5. Paiement:
+   - Patient paie patientShare (cash/card/mobile-money)
+   - Company paie companyShare (statement mensuel)
+
+6. Releve entreprise:
+   GET /api/companies/:id/statement → aggregate invoices where companyBilling.company = id
+    </div>
+
+    <h3 style="color: #ec4899; margin: 30px 0 20px;">Flux Laboratoire</h3>
+    <div class="code-block">
+1. Prescription analyses:
+   LabOrder.create(tests:[], priority:'routine') → Status: 'ordered'
+
+2. Reception specimen:
+   LabOrder.collect(specimenInfo) → Print label (labelPrintingService) → Status: 'collected'
+
+3. Reception labo:
+   LabOrder.receive() → Status: 'received' → Assign to analyzer
+
+4. Analyse:
+   LIS receives HL7 message → hl7ParserService.parse() →
+   LabResult.create() for each test → Auto-verify if in range (labAutoVerificationService)
+
+5. Validation:
+   LabResult.verify() → westgardQCService.check() →
+   If critical: Notification IMMEDIATE to ordering provider
+
+6. Diffusion:
+   Status: 'completed' → Patient notification → Results available in portal
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 8: REUTILISATION DONNEES -->
+<!-- ============================================ -->
+<section id="reuse" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #84cc16 0%, #65a30d 100%);">♻️</div>
+    <h2>Reutilisation des Donnees</h2>
+    <span class="badge">Ou et Pourquoi</span>
+  </div>
+  <div class="section-content">
+
+    <table>
+      <tr>
+        <th>Donnee Source</th>
+        <th>Reutilisee Dans</th>
+        <th>Pourquoi</th>
+        <th>Comment</th>
+      </tr>
+      <tr>
+        <td class="mono">Patient.convention.company</td>
+        <td>Invoice.companyBilling</td>
+        <td>Facturation split automatique patient/entreprise</td>
+        <td>Copie a la creation facture pour snapshot historique</td>
+      </tr>
+      <tr>
+        <td class="mono">Patient.convention.coverage</td>
+        <td>Invoice.items[].companyShare</td>
+        <td>Calculer la part entreprise de chaque acte</td>
+        <td>item.total * (coverage/100)</td>
+      </tr>
+      <tr>
+        <td class="mono">Company.actsRequiringApproval</td>
+        <td>Invoice creation workflow</td>
+        <td>Declencher workflow approbation pour certains actes</td>
+        <td>Check si item.code in actsRequiringApproval</td>
+      </tr>
+      <tr>
+        <td class="mono">Patient.folderIds[]</td>
+        <td>DeviceImage matching</td>
+        <td>Associer images appareils au bon patient</td>
+        <td>folderId extrait du chemin fichier → match Patient</td>
+      </tr>
+      <tr>
+        <td class="mono">OphthalmologyExam.refraction</td>
+        <td>GlassesOrder.lensSpecs, Prescription</td>
+        <td>Reporter la correction dans la commande</td>
+        <td>Copie des valeurs sphere/cylinder/axis/add</td>
+      </tr>
+      <tr>
+        <td class="mono">Visit.clinicalActs[]</td>
+        <td>Invoice.items[]</td>
+        <td>Generer facture depuis actes realises</td>
+        <td>Map clinicalActs → invoice items avec prix FeeSchedule</td>
+      </tr>
+      <tr>
+        <td class="mono">FeeSchedule.items[]</td>
+        <td>Invoice.items[].unitPrice</td>
+        <td>Appliquer grille tarifaire clinique</td>
+        <td>Lookup par code acte + clinic.priceModifier</td>
+      </tr>
+      <tr>
+        <td class="mono">IVTInjection.cumulativeDose</td>
+        <td>IVT compliance alerts</td>
+        <td>Alerter si dose cumulative depasse protocole</td>
+        <td>Sum of all previous injections for same patient/eye</td>
+      </tr>
+      <tr>
+        <td class="mono">Inventory.stockLevels</td>
+        <td>Prescription validation, Alerts</td>
+        <td>Verifier disponibilite avant dispensation</td>
+        <td>Check available >= requested quantity</td>
+      </tr>
+      <tr>
+        <td class="mono">Drug.interactions[]</td>
+        <td>Prescription safety check</td>
+        <td>Alerter interactions medicamenteuses</td>
+        <td>Cross-check tous medicaments patient actifs</td>
+      </tr>
+      <tr>
+        <td class="mono">Patient.allergies[]</td>
+        <td>Drug safety, ClinicalAlerts</td>
+        <td>Prevenir prescriptions dangereuses</td>
+        <td>Match allergen vs Drug.allergens[]</td>
+      </tr>
+      <tr>
+        <td class="mono">LabResult (previous)</td>
+        <td>LabResult.delta calculation</td>
+        <td>Montrer evolution par rapport au precedent</td>
+        <td>Query last result same test/patient</td>
+      </tr>
+    </table>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 9: MULTI-CLINIQUE -->
+<!-- ============================================ -->
+<section id="multiclinic" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);">🏥</div>
+    <h2>Architecture Multi-Clinique</h2>
+    <span class="badge">Isolation & Partage</span>
+  </div>
+  <div class="section-content">
+
+    <h3 style="color: #a855f7; margin-bottom: 20px;">Mecanisme d'Isolation</h3>
+    <div class="code-block">
+// Middleware: requireClinic
+const clinicId = req.headers['x-clinic-id'] || req.user.currentClinicId;
+req.clinicId = clinicId;
+
+// Injection automatique dans toutes les queries
+const query = { clinic: req.clinicId, ...otherFilters };
+
+// Models avec champ clinic (obligatoire)
+Patient, Visit, Invoice, Appointment, Inventory, Device, Room, etc.
+    </div>
+
+    <h3 style="color: #06b6d4; margin: 30px 0 20px;">Donnees Partagees vs Isolees</h3>
+    <table>
+      <tr><th>Type</th><th>Donnees</th><th>Raison</th></tr>
+      <tr>
+        <td style="background: #10b981; color: white; padding: 5px 10px; border-radius: 5px;">PARTAGE</td>
+        <td>Drug, ClinicalAct, TreatmentProtocol, DocumentTemplate, User (multi-clinic)</td>
+        <td>References communes, memes protocoles medicaux</td>
+      </tr>
+      <tr>
+        <td style="background: #10b981; color: white; padding: 5px 10px; border-radius: 5px;">PARTAGE</td>
+        <td>Company (conventions), Referrer</td>
+        <td>Entreprises et medecins referents travaillent avec toutes les cliniques</td>
+      </tr>
+      <tr>
+        <td style="background: #dc2626; color: white; padding: 5px 10px; border-radius: 5px;">ISOLE</td>
+        <td>Patient, Visit, Invoice, Prescription, LabOrder</td>
+        <td>Donnees patients strictement par clinique d'origine</td>
+      </tr>
+      <tr>
+        <td style="background: #dc2626; color: white; padding: 5px 10px; border-radius: 5px;">ISOLE</td>
+        <td>Inventory, Device, Room, FeeSchedule</td>
+        <td>Ressources physiques propres a chaque site</td>
+      </tr>
+      <tr>
+        <td style="background: #f59e0b; color: black; padding: 5px 10px; border-radius: 5px;">TRANSFERABLE</td>
+        <td>Inventory (via InventoryTransfer)</td>
+        <td>Stock peut etre transfere entre sites avec workflow</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #f59e0b; margin: 30px 0 20px;">Transferts Inter-Cliniques</h3>
+    <div class="code-block">
+// Workflow transfert stock
+POST /api/inventoryTransfers
+{
+  fromClinic: "clinic-kinshasa",
+  toClinic: "clinic-lubumbashi",
+  items: [{ inventory: "item-id", quantity: 50 }],
+  reason: "Rupture stock Lubumbashi"
+}
+
+// Status flow
+pending → approved_source → in_transit → received → completed
+        ↘ rejected
+
+// Stock updates
+- fromClinic: reserved += quantity (pending)
+- fromClinic: currentStock -= quantity (in_transit)
+- toClinic: currentStock += quantity (received)
+    </div>
+
+    <h3 style="color: #ec4899; margin: 30px 0 20px;">Rapports Consolides</h3>
+    <div class="code-block">
+// Dashboard multi-clinique (admin only)
+GET /api/crossClinicInventory/summary
+→ Aggregate stock levels across all clinics user has access to
+
+// Rapports financiers consolides
+GET /api/consolidated-reports/revenue
+→ Sum invoices grouped by clinic with totals
+
+// Alertes globales
+GET /api/crossClinicInventory/alerts
+→ Low stock, expiring items across all sites
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 10: INTEGRATION DEVICES -->
+<!-- ============================================ -->
+<section id="devices" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);">📡</div>
+    <h2>Integration Appareils Medicaux</h2>
+    <span class="badge">SMB2 + DICOM</span>
+  </div>
+  <div class="section-content">
+
+    <h3 style="color: #0ea5e9; margin-bottom: 20px;">Appareils Supportes</h3>
+    <table>
+      <tr><th>Type</th><th>Fabricants</th><th>Format Export</th><th>Donnees Extraites</th></tr>
+      <tr>
+        <td>OCT</td>
+        <td>Zeiss, Heidelberg, Topcon</td>
+        <td>DICOM, JPEG</td>
+        <td>Images RNFL, macula, nerf optique</td>
+      </tr>
+      <tr>
+        <td>Autorefractometre</td>
+        <td>Nidek, Topcon, Tomey</td>
+        <td>CSV, XML</td>
+        <td>Sphere, Cylindre, Axe, PD</td>
+      </tr>
+      <tr>
+        <td>Tonometre</td>
+        <td>iCare, Reichert, Nidek</td>
+        <td>CSV</td>
+        <td>IOP OD/OS</td>
+      </tr>
+      <tr>
+        <td>Keratometrie</td>
+        <td>Zeiss, Nidek</td>
+        <td>CSV</td>
+        <td>K1, K2, Axe, Astigmatisme</td>
+      </tr>
+      <tr>
+        <td>Fond d'oeil</td>
+        <td>Canon, Topcon, Zeiss</td>
+        <td>DICOM, JPEG</td>
+        <td>Images retine</td>
+      </tr>
+      <tr>
+        <td>Champ Visuel</td>
+        <td>Zeiss HFA, Octopus</td>
+        <td>DICOM, PDF</td>
+        <td>Perimetre, MD, PSD</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #10b981; margin: 30px 0 20px;">Workflow Synchronisation</h3>
+    <div class="code-block">
+1. CONFIGURATION APPAREIL
+   Device.create({
+     name: "OCT Zeiss",
+     type: "oct",
+     manufacturer: "zeiss",
+     sharePath: "smb://192.168.1.100/ZEISS_EXPORT",
+     folderPattern: "{{patientId}}_{{date}}"
+   })
+
+2. POLLING (deviceSyncScheduler - toutes les 5 min)
+   - smb2ClientService.connect(sharePath)
+   - List new files since lastSync
+   - Queue files for processing
+
+3. PROCESSING (universalFileProcessor)
+   - Detect file type (DICOM, JPEG, CSV)
+   - Extract patient identifier from:
+     * Folder name pattern
+     * DICOM PatientID tag
+     * CSV patient column
+   - Parse measurements/images
+
+4. PATIENT MATCHING
+   - Query Patient.folderIds.includes(extractedId)
+   - OR fuzzy match on name if no ID
+   - If no match: queue for manual review
+
+5. RECORD CREATION
+   - DeviceMeasurement.create() for values
+   - DeviceImage.create() for images
+   - ImagingStudy.create() for DICOM studies
+
+6. NOTIFICATION
+   - websocketService.emit('device_data_ready')
+   - StudioVision shows "Donnees appareil disponibles" banner
+    </div>
+
+  </div>
+</section>
+
+<!-- ============================================ -->
+<!-- SECTION 11: CORRECTIONS BUGS -->
+<!-- ============================================ -->
+<section id="bugfixes" class="section">
+  <div class="section-header">
+    <div class="icon" style="background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);">✅</div>
+    <h2>Bugs Corriges & Lecons</h2>
+    <span class="badge">6 Corrections Verifiees</span>
+  </div>
+  <div class="section-content">
+
+    <table>
+      <tr><th>#</th><th>Bug</th><th>Cause</th><th>Correction</th><th>Lecon</th></tr>
+      <tr>
+        <td>1</td>
+        <td>Patient Edit ne charge pas</td>
+        <td>ObjectId invalide non gere</td>
+        <td>Validation ObjectId + error state UI</td>
+        <td>Toujours valider les params URL avant query MongoDB</td>
+      </tr>
+      <tr>
+        <td>2</td>
+        <td>Company Detail cascade 404</td>
+        <td>Promise.all echoue si 1 sous-requete echoue</td>
+        <td>Promise.allSettled + extraction resultats</td>
+        <td>Utiliser allSettled pour fetch paralleles non-critiques</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>"Invalid Date" dans ReceptionistView</td>
+        <td>formatTime() recevait null/undefined</td>
+        <td>Validation date avant format + fallback "--:--"</td>
+        <td>Toujours valider les dates avant formatage</td>
+      </tr>
+      <tr>
+        <td>4</td>
+        <td>IVT 100% taux complications</td>
+        <td>Statistique sans contexte (1 injection = 100%)</td>
+        <td>Afficher "N/A" ou contexte si < 10 injections</td>
+        <td>Les statistiques sans contexte sont trompeuses</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>Public Booking 404 intermittent</td>
+        <td>Endpoint fee-schedules necessitait auth</td>
+        <td>Cree /api/feeSchedules/public sans auth</td>
+        <td>Identifier clairement les endpoints publics vs proteges</td>
+      </tr>
+      <tr>
+        <td>6</td>
+        <td>Company invoices nested response</td>
+        <td>API retournait {data: {invoices: []}} vs {data: []}</td>
+        <td>Extraction correcte: result.data?.invoices || result.data</td>
+        <td>Standardiser format reponse API sur tous les endpoints</td>
+      </tr>
+    </table>
+
+    <h3 style="color: #f59e0b; margin: 30px 0 20px;">Patterns a Eviter</h3>
+    <div class="code-block">
+// ❌ MAUVAIS: Promise.all avec fetch non-critiques
+const [invoices, stats, approvals] = await Promise.all([
+  fetchInvoices(), fetchStats(), fetchApprovals()
+]);
+// Si fetchApprovals echoue → TOUT echoue
+
+// ✅ BON: Promise.allSettled
+const results = await Promise.allSettled([
+  fetchInvoices(), fetchStats(), fetchApprovals()
+]);
+const invoices = results[0].status === 'fulfilled' ? results[0].value : [];
+const stats = results[1].status === 'fulfilled' ? results[1].value : {};
+const approvals = results[2].status === 'fulfilled' ? results[2].value : [];
+    </div>
+
+    <div class="code-block">
+// ❌ MAUVAIS: Formatage sans validation
+const formatTime = (date) => new Date(date).toLocaleTimeString();
+// Si date est null → "Invalid Date"
+
+// ✅ BON: Validation + fallback
+const formatTime = (date) => {
+  if (!date) return '--:--';
+  const d = new Date(date);
+  return isNaN(d.getTime()) ? '--:--' : d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+};
+    </div>
+
+  </div>
+</section>
+
+</div>
+
+<footer style="text-align: center; padding: 40px; color: #64748b; border-top: 1px solid #334155;">
+  <p>MedFlow Architecture Exhaustive v3.0 | Genere le 22 Dec 2025</p>
+  <p style="font-size: 0.9rem; margin-top: 10px;">77 Modeles | 78 Routes | 61 Services | 70+ Pages | 7 Cascades | 24 Enums</p>
+</footer>
+
+</body>
+</html>

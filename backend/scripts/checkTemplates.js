@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('checkTemplates.js');
+
 mongoose.connect(process.env.MONGODB_URI).then(async () => {
   const db = mongoose.connection.db;
 

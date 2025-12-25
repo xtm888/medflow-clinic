@@ -1,5 +1,9 @@
 require('dotenv').config();
 const mongoose = require('mongoose');
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedVitaminsFromTemplates.js');
+
 const { PharmacyInventory } = require('../models/Inventory');
 const Drug = require('../models/Drug');
 

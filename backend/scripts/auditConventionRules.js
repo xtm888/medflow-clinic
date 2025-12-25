@@ -14,6 +14,9 @@ const mongoose = require('mongoose');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('auditConventionRules.js');
+
 const Company = require('../models/Company');
 
 // Expected rules based on the user's specifications

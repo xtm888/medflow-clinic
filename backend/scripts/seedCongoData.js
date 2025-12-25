@@ -8,9 +8,14 @@
  * Run with:
  *   node scripts/seedCongoData.js              # Safe - adds sample data only
  *   FORCE_CLEAR=true node scripts/seedCongoData.js  # Destructive - clears all first
+ *
+ * SECURITY: Only runs in development/test environments
  */
 
 require('dotenv').config();
+
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedCongoData.js');
 const mongoose = require('mongoose');
 
 // Import models

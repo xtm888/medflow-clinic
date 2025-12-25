@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
+import api from '../services/apiConfig';
 import {
   BarChart3,
   Clock,
@@ -34,22 +35,14 @@ export default function QueueAnalytics() {
   const fetchAnalytics = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
       const params = new URLSearchParams({ dateRange });
       if (selectedDepartment !== 'all') {
         params.append('department', selectedDepartment);
       }
 
-      const API_URL = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5001/api`;
-      const response = await fetch(`${API_URL}/queue/analytics?${params}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch analytics');
-      }
-
-      const data = await response.json();
+      // Use configured api client which handles HttpOnly cookie auth automatically
+      const response = await api.get(`/queue/analytics?${params}`);
+      const data = response.data;
 
       // Convert byDepartment object to array for easier display
       const analyticsData = data.data;

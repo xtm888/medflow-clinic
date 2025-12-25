@@ -33,8 +33,12 @@ const BackupManagement = () => {
   const fetchBackups = async () => {
     try {
       setLoading(true);
-      const response = await api.get('/backup/list');
-      setBackups(response.data.data || response.data || []);
+      const response = await api.get('/backups/list');
+      // Backend returns { backups: { daily, monthly, yearly }, summary }
+      const allBackups = response.data.data?.backups
+        ? [...(response.data.data.backups.daily || []), ...(response.data.data.backups.monthly || []), ...(response.data.data.backups.yearly || [])]
+        : (response.data.backups ? [...(response.data.backups.daily || []), ...(response.data.backups.monthly || []), ...(response.data.backups.yearly || [])] : []);
+      setBackups(allBackups);
     } catch (err) {
       setError('Failed to load backups');
       console.error('Error fetching backups:', err);
@@ -45,9 +49,9 @@ const BackupManagement = () => {
 
   const fetchSettings = async () => {
     try {
-      const response = await api.get('/backup/settings');
-      if (response.data) {
-        setSettings(response.data);
+      const response = await api.get('/backups/scheduler/status');
+      if (response.data?.data) {
+        setSettings(prev => ({ ...prev, autoBackupEnabled: response.data.data.isRunning }));
       }
     } catch (err) {
       console.error('Error fetching backup settings:', err);
@@ -56,8 +60,8 @@ const BackupManagement = () => {
 
   const fetchStats = async () => {
     try {
-      const response = await api.get('/backup/stats');
-      setStats(response.data);
+      const response = await api.get('/backups/stats');
+      setStats(response.data?.data?.stats || response.data?.stats || null);
     } catch (err) {
       console.error('Error fetching backup stats:', err);
     }
@@ -67,9 +71,9 @@ const BackupManagement = () => {
     try {
       setCreating(true);
       setError(null);
-      const response = await api.post('/backup/create');
+      const response = await api.post('/backups/trigger', { type: 'manual' });
       await fetchBackups();
-      alert(`Backup created successfully: ${response.data.filename}`);
+      alert(`Backup created successfully: ${response.data?.data?.filename || 'Manual backup'}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create backup');
     } finally {
@@ -91,7 +95,7 @@ const BackupManagement = () => {
     try {
       setRestoring(backupId);
       setError(null);
-      await api.post(`/backup/restore/${backupId}`);
+      await api.post('/backups/restore', { backupName: filename, force: true });
       alert('Backup restored successfully. The system will reload.');
       window.location.reload();
     } catch (err) {
@@ -102,38 +106,23 @@ const BackupManagement = () => {
   };
 
   const downloadBackup = async (backupId, filename) => {
-    try {
-      const response = await api.get(`/backup/download/${backupId}`, {
-        responseType: 'blob'
-      });
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (err) {
-      setError('Failed to download backup');
-    }
+    // Note: Download endpoint not yet implemented in backend
+    setError('Download feature not yet available. Backups are stored in the server\'s backup directory.');
   };
 
   const deleteBackup = async (backupId, filename) => {
-    if (!window.confirm(`Delete backup "${filename}"? This cannot be undone.`)) {
-      return;
-    }
-
-    try {
-      await api.delete(`/backup/${backupId}`);
-      await fetchBackups();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to delete backup');
-    }
+    // Note: Delete endpoint not yet implemented in backend
+    setError('Delete feature not yet available. Contact system administrator to manage backup files.');
   };
 
   const saveSettings = async () => {
     try {
-      await api.put('/backup/settings', settings);
+      // Toggle scheduler based on autoBackupEnabled
+      if (settings.autoBackupEnabled) {
+        await api.post('/backups/scheduler/start');
+      } else {
+        await api.post('/backups/scheduler/stop');
+      }
       alert('Backup settings saved successfully');
       setShowSettings(false);
     } catch (err) {

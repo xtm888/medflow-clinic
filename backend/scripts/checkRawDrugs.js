@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('checkRawDrugs.js');
+
 async function checkRawDrugs() {
   try {
     console.log('Connecting to MongoDB...');

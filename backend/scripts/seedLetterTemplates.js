@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const LetterTemplate = require('../models/LetterTemplate');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedLetterTemplates.js');
+
 // Connect to database
 mongoose.connect(process.env.MONGODB_URI);
 

@@ -2,6 +2,9 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const defaults = require('../config/defaults');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('createAdminFixed.js');
+
 async function createAdminUser() {
   try {
     await mongoose.connect('mongodb://127.0.0.1:27017/medflow');

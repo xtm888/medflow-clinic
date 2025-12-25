@@ -18,6 +18,9 @@ const mongoose = require('mongoose');
 const { ReagentInventory, SurgicalSupplyInventory } = require('../models/Inventory');
 require('dotenv').config();
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('seedComprehensiveConfig.js');
+
 const Room = require('../models/Room');
 const TaxConfig = require('../models/TaxConfig');
 const FiscalYear = require('../models/FiscalYear');

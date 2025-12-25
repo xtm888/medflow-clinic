@@ -1,3 +1,7 @@
+require('dotenv').config();
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('testPharmacyEndpoint.js');
+
 const axios = require('axios');
 
 const BASE_URL = 'http://localhost:5001/api';

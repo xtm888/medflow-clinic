@@ -1,0 +1,61 @@
+{
+  "results": [
+    {
+      "test": "Login",
+      "status": "PASS",
+      "message": "Successfully logged in",
+      "timestamp": "2025-12-22T00:54:45.233002"
+    },
+    {
+      "test": "Patient Edit (invalid ID)",
+      "status": "PASS",
+      "message": "Shows proper error state UI",
+      "timestamp": "2025-12-22T00:54:52.302654"
+    },
+    {
+      "test": "Company Detail",
+      "status": "PASS",
+      "message": "No 404 error toasts",
+      "timestamp": "2025-12-22T00:54:58.562012"
+    },
+    {
+      "test": "Date Formatting",
+      "status": "PASS",
+      "message": "No 'Invalid Date' text found",
+      "timestamp": "2025-12-22T00:55:01.524475"
+    },
+    {
+      "test": "Appointments Date",
+      "status": "PASS",
+      "message": "Appointments dates valid",
+      "timestamp": "2025-12-22T00:55:04.515503"
+    },
+    {
+      "test": "Network Discovery",
+      "status": "PASS",
+      "message": "Page loaded successfully",
+      "timestamp": "2025-12-22T00:55:07.991853"
+    },
+    {
+      "test": "IVT Complications",
+      "status": "PASS",
+      "message": "Shows context for complication rate",
+      "timestamp": "2025-12-22T00:55:11.472235"
+    },
+    {
+      "test": "Public Booking",
+      "status": "PASS",
+      "message": "Page loaded with 115 service options",
+      "timestamp": "2025-12-22T00:55:15.175676"
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "passed": 8,
+    "failed": 0,
+    "errors": 0,
+    "checks": 0,
+    "skipped": 0
+  },
+  "timestamp": "2025-12-22T00:55:15.182934"
+}

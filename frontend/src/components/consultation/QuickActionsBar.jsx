@@ -29,7 +29,8 @@ import {
   Eye,
   AlertTriangle,
   Check,
-  Loader2
+  Loader2,
+  PenTool
 } from 'lucide-react';
 
 // Keyboard shortcuts mapping
@@ -38,6 +39,7 @@ const SHORTCUTS = {
   importLastVisit: { key: 'l', ctrl: true, label: 'Ctrl+L' },
   print: { key: 'p', ctrl: true, label: 'Ctrl+P' },
   quickDiagnosis: { key: 'd', ctrl: true, label: 'Ctrl+D' },
+  schema: { key: 's', ctrl: true, shift: true, label: 'Ctrl+Shift+S' },
   timer: { key: 't', ctrl: true, label: 'Ctrl+T' }
 };
 
@@ -294,6 +296,9 @@ export default function QuickActionsBar({
   // Diagnosis handler
   onAddDiagnosis,
 
+  // Schema handler
+  onOpenSchema,
+
   // Timer handlers
   onTimerUpdate,
   initialTimerSeconds = 0,
@@ -369,6 +374,9 @@ export default function QuickActionsBar({
       } else if (ctrl && key === SHORTCUTS.quickDiagnosis.key) {
         e.preventDefault();
         setDiagnosisOpen(prev => !prev);
+      } else if (ctrl && e.shiftKey && key === SHORTCUTS.schema.key) {
+        e.preventDefault();
+        onOpenSchema?.();
       }
     };
 
@@ -460,6 +468,19 @@ export default function QuickActionsBar({
           </button>
         }
       />
+
+      <div className={styles.separator} />
+
+      {/* Schema Button */}
+      <button
+        onClick={onOpenSchema}
+        className={`${styles.button} ${styles.buttonSecondary}`}
+        title="Ouvrir l'outil de schéma oculaire"
+      >
+        <PenTool className="h-4 w-4" />
+        Schéma
+        <span className={styles.shortcutBadge}>{SHORTCUTS.schema.label}</span>
+      </button>
 
       {/* Spacer */}
       <div className="flex-1" />

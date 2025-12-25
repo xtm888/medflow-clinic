@@ -630,23 +630,23 @@ exports.updateStatus = asyncHandler(async (req, res) => {
         switch (status) {
           case 'confirmed':
             notificationResult = await notificationFacade.sendGlassesOrderConfirmation(order, patient);
-            console.log(`[GlassesOrder] Confirmation notification sent for ${order.orderNumber}`);
+            glassesLogger.info('Confirmation notification sent', { orderNumber: order.orderNumber });
             break;
 
           case 'ready':
             // CRITICAL: Patient needs to know glasses are ready
             notificationResult = await notificationFacade.sendGlassesReadyNotification(order, patient);
-            console.log(`[GlassesOrder] READY notification sent for ${order.orderNumber}`);
+            glassesLogger.info('READY notification sent', { orderNumber: order.orderNumber });
             break;
 
           case 'delivered':
             notificationResult = await notificationFacade.sendGlassesDeliveredNotification(order, patient);
-            console.log(`[GlassesOrder] Delivery confirmation sent for ${order.orderNumber}`);
+            glassesLogger.info('Delivery confirmation sent', { orderNumber: order.orderNumber });
             break;
         }
       }
     } catch (notifError) {
-      console.error('[GlassesOrder] Notification error (non-blocking):', notifError.message);
+      glassesLogger.error('Notification error (non-blocking)', { error: notifError.message });
       // Don't fail the request - notifications are best-effort
     }
 
@@ -1828,7 +1828,7 @@ exports.qcOverride = asyncHandler(async (req, res) => {
       await notificationFacade.sendGlassesReadyNotification(order, order.patient);
     }
   } catch (notifError) {
-    console.error('[GlassesOrder] Notification error:', notifError.message);
+    glassesLogger.error('Notification error', { error: notifError.message });
   }
 
   // Audit log with special flag for override
@@ -2014,7 +2014,7 @@ exports.recordDelivery = asyncHandler(async (req, res) => {
         await notificationFacade.sendGlassesDeliveredNotification(order, order.patient);
       }
     } catch (notifError) {
-      console.error('[GlassesOrder] Notification error:', notifError.message);
+      glassesLogger.error('Notification error', { error: notifError.message });
     }
 
     // Audit log
@@ -2256,7 +2256,7 @@ exports.exportToLab = asyncHandler(async (req, res) => {
         `
       });
     } catch (emailError) {
-      console.error('[GlassesOrder] Error sending export email:', emailError);
+      glassesLogger.error('Error sending export email', { error: emailError.message });
     }
   }
 

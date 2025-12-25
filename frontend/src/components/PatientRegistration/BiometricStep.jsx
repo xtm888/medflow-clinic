@@ -24,7 +24,8 @@ const BiometricStep = memo(({
   onAddToQueue,
   onCancelDuplicateCheck,
   onRetakePhoto,
-  onBiometricConsentChange
+  onBiometricConsentChange,
+  onAdminSkipPhoto
 }) => {
   if (showCamera) {
     return (
@@ -120,6 +121,36 @@ const BiometricStep = memo(({
             <p className="text-amber-600 text-sm mt-1">
               Pour prévenir les fraudes, tous les nouveaux patients doivent être photographiés et vérifiés.
             </p>
+          </div>
+        )}
+
+        {/* Admin Skip Photo Option */}
+        {isAdmin && !formData.capturedPhoto && !formData.adminPhotoSkip && (
+          <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-4">
+            <div className="flex items-center gap-2 text-purple-700 mb-2">
+              <Shield className="h-5 w-5" />
+              <span className="font-medium">Mode Administrateur</span>
+            </div>
+            <p className="text-purple-600 text-sm mb-3">
+              En tant qu'administrateur, vous pouvez ignorer la capture photo si nécessaire.
+            </p>
+            <button
+              onClick={onAdminSkipPhoto}
+              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium"
+              data-testid="admin-skip-photo-btn"
+            >
+              Passer la photo (Admin)
+            </button>
+          </div>
+        )}
+
+        {/* Admin Photo Skipped Confirmation */}
+        {formData.adminPhotoSkip && (
+          <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg mb-4">
+            <div className="flex items-center gap-2 text-purple-700">
+              <CheckCircle className="h-5 w-5" />
+              <span className="font-medium">Photo ignorée (décision administrateur)</span>
+            </div>
           </div>
         )}
 

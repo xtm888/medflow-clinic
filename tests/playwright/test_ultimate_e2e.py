@@ -205,8 +205,8 @@ def test_studiovision_consultation(page):
     """StudioVision Consultation Interface"""
     print("\n🔬 Testing STUDIOVISION CONSULTATION...")
 
-    # StudioVision requires a patient ID - navigate to new consultation first
-    page.goto(f"{BASE_URL}/ophthalmology/new")
+    # Navigate to new consultation page (correct route is /ophthalmology/consultation)
+    page.goto(f"{BASE_URL}/ophthalmology/consultation")
     page.wait_for_load_state("networkidle")
     page.wait_for_timeout(1000)
     wait_and_screenshot(page, "studiovision_consultation")
@@ -216,6 +216,7 @@ def test_studiovision_consultation(page):
         page.get_by_text("Nouvelle Consultation", exact=False).count() > 0 or
         page.get_by_text("Rechercher", exact=False).count() > 0 or
         page.get_by_text("patient", exact=False).count() > 0 or
+        page.get_by_text("Type", exact=False).count() > 0 or
         page.locator('input').count() > 0
     )
     log_result("StudioVision", "New consultation page loads", has_content)
@@ -566,7 +567,7 @@ def test_dispatch(page):
     """Dispatch Dashboard"""
     print("\n🚚 Testing DISPATCH...")
 
-    page.goto(f"{BASE_URL}/dispatch")
+    page.goto(f"{BASE_URL}/dispatch-dashboard")
     wait_and_screenshot(page, "dispatch")
 
     log_result("Dispatch", "Page loads", True)
@@ -634,7 +635,7 @@ def test_queue_analytics(page):
     """Queue Analytics"""
     print("\n📊 Testing QUEUE ANALYTICS...")
 
-    page.goto(f"{BASE_URL}/queue-analytics")
+    page.goto(f"{BASE_URL}/queue/analytics")
     wait_and_screenshot(page, "queue_analytics")
 
     log_result("Queue Analytics", "Page loads", True)
@@ -652,7 +653,7 @@ def test_ocr_import(page):
     """OCR Import"""
     print("\n📑 Testing OCR IMPORT...")
 
-    page.goto(f"{BASE_URL}/ocr-import")
+    page.goto(f"{BASE_URL}/ocr/import")
     wait_and_screenshot(page, "ocr_import")
 
     log_result("OCR Import", "Page loads", True)

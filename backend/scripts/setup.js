@@ -42,6 +42,9 @@ const path = require('path');
 const fs = require('fs');
 const readline = require('readline');
 
+const { requireNonProduction } = require('./_guards');
+requireNonProduction('setup.js');
+
 // ============================================================================
 // CONFIGURATION
 // ============================================================================
