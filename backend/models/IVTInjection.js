@@ -15,6 +15,13 @@ const ivtInjectionSchema = new mongoose.Schema({
     index: true
   },
 
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   visit: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Visit'
@@ -497,6 +504,8 @@ const ivtInjectionSchema = new mongoose.Schema({
 
 // Indexes
 ivtInjectionSchema.index({ patient: 1, injectionDate: -1 });
+ivtInjectionSchema.index({ clinic: 1, status: 1, injectionDate: -1 });
+ivtInjectionSchema.index({ clinic: 1, patient: 1, injectionDate: -1 });
 ivtInjectionSchema.index({ patient: 1, eye: 1, injectionDate: -1 });
 ivtInjectionSchema.index({ performedBy: 1, injectionDate: -1 });
 ivtInjectionSchema.index({ 'indication.primary': 1 });

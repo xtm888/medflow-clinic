@@ -759,6 +759,21 @@ const visitSchema = new mongoose.Schema({
     },
     lockedAt: Date,
     lockExpires: Date
+  },
+
+  // Soft delete fields
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+  deletedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true,
@@ -784,6 +799,43 @@ visitSchema.index({ clinic: 1, primaryProvider: 1, visitDate: -1 }); // Clinic-s
 visitSchema.index({ patient: 1, primaryProvider: 1 }); // Patient-provider visit history
 visitSchema.index({ clinic: 1, visitDate: -1, status: 1 }); // Clinic visit list with status filter
 visitSchema.index({ clinic: 1, status: 1, createdAt: -1 }); // Recent visits by status per clinic
+// Soft delete index
+visitSchema.index({ clinic: 1, isDeleted: 1 });
+
+// Query middleware - exclude deleted records by default
+visitSchema.pre('find', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+visitSchema.pre('findOne', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+visitSchema.pre('countDocuments', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+// Soft delete method
+visitSchema.methods.softDelete = async function(deletedByUserId) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedByUserId;
+  return await this.save();
+};
+
+// Restore method
+visitSchema.methods.restore = async function() {
+  this.isDeleted = false;
+  this.deletedAt = null;
+  this.deletedBy = null;
+  return await this.save();
+};
 
 // CRITICAL: Validate dates to prevent future dates where inappropriate
 visitSchema.pre('save', function(next) {

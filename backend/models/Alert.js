@@ -13,6 +13,13 @@ const alertSchema = new mongoose.Schema({
     sparse: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   // Alert targeting
   targetUser: {
     type: mongoose.Schema.ObjectId,
@@ -195,6 +202,10 @@ alertSchema.index({ targetUser: 1, status: 1, isRead: 1 });
 alertSchema.index({ targetUser: 1, createdAt: -1 });
 alertSchema.index({ scheduledFor: 1, status: 1 });
 alertSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
+// Multi-clinic compound indexes
+alertSchema.index({ clinic: 1, targetUser: 1, status: 1 });
+alertSchema.index({ clinic: 1, type: 1, createdAt: -1 });
+alertSchema.index({ clinic: 1, category: 1, isRead: 1 });
 
 // Generate alert ID
 alertSchema.pre('save', async function(next) {

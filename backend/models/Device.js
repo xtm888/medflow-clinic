@@ -102,6 +102,14 @@ const deviceSchema = new mongoose.Schema({
     remoteControl: Boolean
   },
 
+  // Clinic assignment (multi-tenant)
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   // Location and assignment
   location: {
     facility: String,
@@ -442,6 +450,8 @@ const deviceSchema = new mongoose.Schema({
 
 // Indexes
 deviceSchema.index({ type: 1, status: 1 });
+deviceSchema.index({ clinic: 1, type: 1, status: 1 });
+deviceSchema.index({ clinic: 1, 'integration.status': 1 });
 deviceSchema.index({ serialNumber: 1 });
 deviceSchema.index({ 'location.facility': 1, 'location.department': 1 });
 deviceSchema.index({ 'integration.status': 1 });

@@ -1001,7 +1001,10 @@ async function checkRxNormInteractions(drugName, currentMedications) {
     // Get RxCUI (RxNorm Concept Unique Identifier) for the drug
     const rxcuiResponse = await axios.get(
       `${EXTERNAL_API_CONFIG.rxnorm.baseUrl}/rxcui.json`,
-      { params: { name: drugName } }
+      {
+        params: { name: drugName },
+        timeout: EXTERNAL_API_CONFIG.rxnorm.timeout
+      }
     );
 
     const rxcui = rxcuiResponse.data?.idGroup?.rxnormId?.[0];
@@ -1010,7 +1013,10 @@ async function checkRxNormInteractions(drugName, currentMedications) {
     // Get interactions using RxCUI
     const interactionsResponse = await axios.get(
       `${EXTERNAL_API_CONFIG.rxnorm.baseUrl}/interaction/interaction.json`,
-      { params: { rxcui } }
+      {
+        params: { rxcui },
+        timeout: EXTERNAL_API_CONFIG.rxnorm.timeout
+      }
     );
 
     const interactionGroups = interactionsResponse.data?.interactionTypeGroup || [];

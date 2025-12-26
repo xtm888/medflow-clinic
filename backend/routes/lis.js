@@ -320,7 +320,7 @@ router.delete('/mappings/:id', protect, authorize('admin'), async (req, res) => 
 /**
  * @route   POST /api/lis/webhook/hl7/:integrationId
  * @desc    Receive HL7 messages via HTTP POST
- * @access  Public (validated by integration settings)
+ * @access  Authenticated via webhook API key
  */
 router.post('/webhook/hl7/:integrationId', async (req, res) => {
   try {
@@ -333,6 +333,13 @@ router.post('/webhook/hl7/:integrationId', async (req, res) => {
       return res.status(503).send(hl7Parser.generateACK({ messageControlId: 'UNKNOWN' }, 'AR', 'Integration inactive'));
     }
 
+    // Validate webhook authentication
+    const authResult = integration.validateWebhookRequest(req.headers, req.body, req.ip);
+    if (!authResult.valid) {
+      console.warn(`[LIS Webhook] Auth failed for ${integration.name}: ${authResult.reason} from ${req.ip}`);
+      return res.status(401).send(hl7Parser.generateACK({ messageControlId: 'UNKNOWN' }, 'AR', `Authentication failed: ${authResult.reason}`));
+    }
+
     // Get raw HL7 message from body
     let rawMessage = req.body;
     if (typeof rawMessage === 'object') {
@@ -341,7 +348,8 @@ router.post('/webhook/hl7/:integrationId', async (req, res) => {
 
     const metadata = {
       sourceIp: req.ip,
-      userAgent: req.get('user-agent')
+      userAgent: req.get('user-agent'),
+      authenticated: authResult.reason
     };
 
     const result = await lisService.processInboundHL7(req.params.integrationId, rawMessage, metadata);
@@ -368,7 +376,7 @@ router.post('/webhook/hl7/:integrationId', async (req, res) => {
 /**
  * @route   POST /api/lis/webhook/fhir/:integrationId
  * @desc    Receive FHIR resources
- * @access  Public (validated by integration)
+ * @access  Authenticated via webhook API key
  */
 router.post('/webhook/fhir/:integrationId', async (req, res) => {
   try {
@@ -377,6 +385,16 @@ router.post('/webhook/fhir/:integrationId', async (req, res) => {
       return res.status(404).json({
         resourceType: 'OperationOutcome',
         issue: [{ severity: 'error', code: 'not-found', diagnostics: 'Integration not found' }]
+      });
+    }
+
+    // Validate webhook authentication
+    const authResult = integration.validateWebhookRequest(req.headers, req.body, req.ip);
+    if (!authResult.valid) {
+      console.warn(`[LIS Webhook FHIR] Auth failed for ${integration.name}: ${authResult.reason} from ${req.ip}`);
+      return res.status(401).json({
+        resourceType: 'OperationOutcome',
+        issue: [{ severity: 'error', code: 'security', diagnostics: `Authentication failed: ${authResult.reason}` }]
       });
     }
 

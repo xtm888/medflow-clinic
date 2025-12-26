@@ -1,12 +1,18 @@
 const mongoose = require('mongoose');
 
 const SettingsSchema = new mongoose.Schema({
-  // There should only be one settings document per clinic
+  // Multi-clinic support - one settings document per clinic
+  clinicId: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
+  // Settings type (for future extensibility)
   type: {
     type: String,
     enum: ['clinic'],
-    default: 'clinic',
-    unique: true
+    default: 'clinic'
   },
 
   // Clinic Information
@@ -187,13 +193,25 @@ const SettingsSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Ensure only one settings document exists
-SettingsSchema.statics.getSettings = async function() {
-  let settings = await this.findOne({ type: 'clinic' });
+// Compound unique index - one settings document per clinic
+SettingsSchema.index({ clinicId: 1, type: 1 }, { unique: true, sparse: true });
+
+// Get settings for a specific clinic (or global settings if no clinic specified)
+SettingsSchema.statics.getSettings = async function(clinicId = null) {
+  const query = clinicId ? { clinicId, type: 'clinic' } : { clinicId: null, type: 'clinic' };
+  let settings = await this.findOne(query);
   if (!settings) {
-    settings = await this.create({ type: 'clinic' });
+    settings = await this.create({ ...query });
   }
   return settings;
+};
+
+// Get or create settings for a clinic
+SettingsSchema.statics.getClinicSettings = async function(clinicId) {
+  if (!clinicId) {
+    throw new Error('clinicId est requis pour obtenir les paramètres de la clinique');
+  }
+  return this.getSettings(clinicId);
 };
 
 module.exports = mongoose.model('Settings', SettingsSchema);

@@ -865,6 +865,21 @@ const prescriptionSchema = new mongoose.Schema({
   version: {
     type: Number,
     default: 0
+  },
+
+  // Soft delete fields
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+  deletedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true,
@@ -887,6 +902,43 @@ prescriptionSchema.index({ clinic: 1, dateIssued: -1 }); // Clinic-scoped prescr
 prescriptionSchema.index({ clinic: 1, status: 1 }); // Clinic-scoped status filtering
 prescriptionSchema.index({ clinic: 1, patient: 1 }); // Clinic-scoped patient prescriptions
 prescriptionSchema.index({ clinic: 1, type: 1, status: 1 }); // Clinic-scoped type/status combo
+// Soft delete index
+prescriptionSchema.index({ clinic: 1, isDeleted: 1 });
+
+// Query middleware - exclude deleted records by default
+prescriptionSchema.pre('find', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+prescriptionSchema.pre('findOne', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+prescriptionSchema.pre('countDocuments', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+// Soft delete method
+prescriptionSchema.methods.softDelete = async function(deletedByUserId) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedByUserId;
+  return await this.save();
+};
+
+// Restore method
+prescriptionSchema.methods.restore = async function() {
+  this.isDeleted = false;
+  this.deletedAt = null;
+  this.deletedBy = null;
+  return await this.save();
+};
 
 // Virtual for isExpired
 prescriptionSchema.virtual('isExpired').get(function() {

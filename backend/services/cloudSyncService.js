@@ -99,9 +99,13 @@ class CloudSyncService {
     }
 
     this.syncInterval = setInterval(async () => {
-      if (await this.checkConnectivity()) {
-        await this.syncPendingChanges();
-        await this.pullRemoteChanges();
+      try {
+        if (await this.checkConnectivity()) {
+          await this.syncPendingChanges();
+          await this.pullRemoteChanges();
+        }
+      } catch (error) {
+        log.error('[CloudSync] Periodic sync error:', error.message);
       }
     }, intervalMs);
 

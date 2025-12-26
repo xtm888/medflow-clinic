@@ -1422,6 +1422,21 @@ const ophthalmologyExamSchema = new mongoose.Schema({
   updatedBy: {
     type: mongoose.Schema.ObjectId,
     ref: 'User'
+  },
+
+  // Soft delete fields
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+  deletedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true,
@@ -1436,6 +1451,43 @@ ophthalmologyExamSchema.index({ examId: 1 });
 ophthalmologyExamSchema.index({ appointment: 1 });
 // Index for cross-clinic patient history lookup (all exams for a patient regardless of clinic)
 ophthalmologyExamSchema.index({ patient: 1, createdAt: -1 });
+// Soft delete index
+ophthalmologyExamSchema.index({ clinic: 1, isDeleted: 1 });
+
+// Query middleware - exclude deleted records by default
+ophthalmologyExamSchema.pre('find', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+ophthalmologyExamSchema.pre('findOne', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+ophthalmologyExamSchema.pre('countDocuments', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+// Soft delete method
+ophthalmologyExamSchema.methods.softDelete = async function(deletedByUserId) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedByUserId;
+  return await this.save();
+};
+
+// Restore method
+ophthalmologyExamSchema.methods.restore = async function() {
+  this.isDeleted = false;
+  this.deletedAt = null;
+  this.deletedBy = null;
+  return await this.save();
+};
 
 // Generate exam ID
 ophthalmologyExamSchema.pre('save', async function(next) {

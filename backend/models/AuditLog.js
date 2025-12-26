@@ -7,6 +7,14 @@ const auditLogSchema = new mongoose.Schema({
     ref: 'User'
   },
 
+  // Clinic context (optional for system-wide operations)
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    index: true
+    // Not required - system operations may not have clinic context
+  },
+
   // Action Details
   action: {
     type: String,
@@ -501,6 +509,8 @@ const auditLogSchema = new mongoose.Schema({
 
 // Indexes for efficient querying
 auditLogSchema.index({ user: 1, createdAt: -1 });
+auditLogSchema.index({ clinic: 1, action: 1, createdAt: -1 });
+auditLogSchema.index({ clinic: 1, user: 1, createdAt: -1 });
 auditLogSchema.index({ action: 1, createdAt: -1 });
 auditLogSchema.index({ 'metadata.patientId': 1 });
 auditLogSchema.index({ 'security.suspicious': 1, 'security.threatLevel': 1 });

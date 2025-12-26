@@ -42,6 +42,31 @@ class AutoSyncService extends EventEmitter {
       filesProcessed: 0,
       errors: []
     };
+
+    // CRITICAL: Setup error handler to prevent process crash
+    this._setupErrorHandling();
+  }
+
+  /**
+   * Setup error handling for EventEmitter
+   * Prevents unhandled 'error' events from crashing the process
+   */
+  _setupErrorHandling() {
+    this.on('error', (error) => {
+      log.error('AutoSyncService error:', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+      this.stats.errors.push({
+        error: error.message,
+        timestamp: new Date()
+      });
+      // Keep only last 100 errors
+      if (this.stats.errors.length > 100) {
+        this.stats.errors = this.stats.errors.slice(-100);
+      }
+    });
   }
 
   /**

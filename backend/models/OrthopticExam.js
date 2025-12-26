@@ -14,6 +14,13 @@ const orthopticExamSchema = new mongoose.Schema({
     required: true
   },
 
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   visit: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Visit'
@@ -598,6 +605,8 @@ const orthopticExamSchema = new mongoose.Schema({
 
 // Indexes
 orthopticExamSchema.index({ patient: 1, examDate: -1 });
+orthopticExamSchema.index({ clinic: 1, status: 1, examDate: -1 });
+orthopticExamSchema.index({ clinic: 1, patient: 1, examDate: -1 });
 orthopticExamSchema.index({ examiner: 1, examDate: -1 });
 orthopticExamSchema.index({ visit: 1 });
 orthopticExamSchema.index({ status: 1 });

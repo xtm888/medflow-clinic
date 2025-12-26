@@ -24,6 +24,13 @@ const correspondenceSchema = new mongoose.Schema({
     required: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   appointment: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Appointment'
@@ -298,6 +305,11 @@ correspondenceSchema.index({ type: 1, status: 1 });
 correspondenceSchema.index({ 'recipient.type': 1 });
 correspondenceSchema.index({ sentAt: -1 });
 correspondenceSchema.index({ 'followUp.required': 1, 'followUp.date': 1 });
+
+// Multi-clinic compound indexes
+correspondenceSchema.index({ clinic: 1, patient: 1, createdAt: -1 });
+correspondenceSchema.index({ clinic: 1, type: 1, status: 1 });
+correspondenceSchema.index({ clinic: 1, createdAt: -1 });
 
 // Generate unique correspondenceId
 correspondenceSchema.pre('save', async function(next) {

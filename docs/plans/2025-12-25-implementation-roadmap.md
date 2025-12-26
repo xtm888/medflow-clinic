@@ -17,9 +17,16 @@ Based on comprehensive codebase analysis with verification against actual code.
 | 2.1 | E2E Test Coverage (78+ test files) | ✅ **COMPLETE** | Dec 26, 2025 |
 | 2.2 | Cascade Workflow Tests (20+ files) | ✅ **COMPLETE** | Dec 26, 2025 |
 | 3.1 | N+1 Query Fixes + Index Verification | ✅ **COMPLETE** | Nov 20, 2025 |
-| 5.1 | Device Adapters (8 adapters) | ✅ **COMPLETE** | Dec 13, 2025 |
+| 5.1 | Device Adapters (8 adapters + Visual Field) | ✅ **COMPLETE** | Dec 26, 2025 |
 | 6.1 | PHI Encryption Key Rotation | ✅ **COMPLETE** | Dec 26, 2025 |
 | 6.2 | Audit Log Export (CSV + PDF) | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.1 | Multi-Tenant Clinic Isolation (13 models) | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.2 | Async Event Handler Error Protection | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.3 | LIS Webhook Authentication | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.4 | NoSQL Injection Protection Middleware | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.5 | 2FA Secret Encryption (User model) | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.6 | National ID Encryption (LegacyMapping) | ✅ **COMPLETE** | Dec 26, 2025 |
+| 7.7 | MongoDB Connection Retry Logic | ✅ **COMPLETE** | Dec 26, 2025 |
 | N/A | Domain Services Architecture | ✅ **COMPLETE** | Dec 22, 2025 |
 
 ---
@@ -714,15 +721,94 @@ class VisualFieldAdapter extends BaseAdapter {
 7. ~~**Patient Portal E2E tests**~~ ✅ DONE - 98 tests in test_patient_portal.py
 8. ~~**Controller modularization**~~ ✅ DONE - 7 large controllers split
 9. ~~**Fix SMB2 routes error handling**~~ ✅ DONE - All 3 routes have try-catch blocks
-10. ~~**Device adapters**~~ ✅ DONE - 8 adapters (BiometerAdapter supports IOLMaster 700)
+10. ~~**Device adapters**~~ ✅ DONE - 8 adapters + Visual Field adapter (Humphrey HFA, Octopus, Kowa AP)
 11. ~~**Cascade workflow tests**~~ ✅ DONE - 20+ workflow test files
+12. ~~**Multi-tenant clinic isolation**~~ ✅ DONE - 13 models updated with clinic field and indexes
+13. ~~**Async event handler protection**~~ ✅ DONE - 5 handlers wrapped with try-catch
+14. ~~**LIS webhook authentication**~~ ✅ DONE - API key + HMAC + IP allowlist validation
+15. ~~**NoSQL injection protection**~~ ✅ DONE - Global middleware with recursive sanitization
+16. ~~**2FA secret encryption**~~ ✅ DONE - User.twoFactorSecret encrypted at rest
+17. ~~**National ID encryption**~~ ✅ DONE - LegacyMapping.nationalId encrypted with migration support
+18. ~~**MongoDB connection retry**~~ ✅ DONE - Exponential backoff with 10 retries, configurable via env vars
 
 ### Remaining Items
 1. **Add MongoDB transactions to migrations** - For data integrity (optional, bulkWrite used instead)
-2. **Visual Field adapter** - Humphrey HFA format parsing (low priority - not in current device inventory)
 
 ---
 
-*Plan Version: 3.2*
+## Phase 7: Security Hardening (December 26, 2025)
+
+### 7.1 Multi-Tenant Clinic Isolation ✅ COMPLETE
+**Effort: 4 hours | Priority: CRITICAL | Status: DONE**
+
+**Models updated with clinic field and compound indexes**:
+- LabOrder, LabResult, IVTInjection, GlassesOrder
+- DeviceMeasurement, ImagingOrder, OrthopticExam
+- PaymentPlan, WaitingList, Document
+- Notification (optional), Device, AuditLog (optional)
+
+### 7.2 Async Event Handler Error Protection ✅ COMPLETE
+**Effort: 2 hours | Priority: HIGH | Status: DONE**
+
+**Files protected with try-catch wrappers**:
+- `middleware/fileUpload.js` - Scheduled temp file cleanup
+- `config/redis.js` - Memory fallback cleanup
+- `services/cacheService.js` - Memory cache cleanup
+- `services/websocketService.js` - Message replay buffer cleanup
+- `services/cloudSyncService.js` - Periodic sync operations
+
+### 7.3 LIS Webhook Authentication ✅ COMPLETE
+**Effort: 3 hours | Priority: CRITICAL | Status: DONE**
+
+**Implemented in LISIntegration model and lis.js routes**:
+- API key authentication with encrypted storage
+- HMAC signature verification (SHA-256)
+- IP address allowlisting
+- Per-integration rate limiting
+- Timing-safe comparison to prevent timing attacks
+
+### 7.4 NoSQL Injection Protection Middleware ✅ COMPLETE
+**Effort: 2 hours | Priority: CRITICAL | Status: DONE**
+
+**New middleware: `middleware/noSqlInjectionProtection.js`**:
+- Recursive sanitization of req.body, req.query, req.params
+- Blocks all MongoDB operators ($gt, $ne, $regex, etc.)
+- Prototype pollution prevention (__proto__, constructor, prototype)
+- Strict mode in production (rejects malicious requests)
+- Logging for security monitoring
+
+### 7.5 2FA Secret Encryption ✅ COMPLETE
+**Effort: 1 hour | Priority: HIGH | Status: DONE**
+
+**User model enhanced**:
+- `setTwoFactorSecret()` - Encrypts TOTP secret with AES-256-GCM
+- `getTwoFactorSecret()` - Decrypts for TOTP verification
+- `needsTwoFactorSecretMigration()` - Detects legacy unencrypted secrets
+- `migrateTwoFactorSecret()` - Encrypts legacy secrets in place
+
+### 7.6 National ID Encryption ✅ COMPLETE
+**Effort: 1 hour | Priority: HIGH | Status: DONE**
+
+**LegacyMapping model enhanced**:
+- `setNationalId()` / `getNationalId()` - Encrypt/decrypt national ID
+- `migrateAllNationalIds()` - Batch migration of legacy data
+- Handles backward compatibility with unencrypted data
+
+### 7.7 MongoDB Connection Retry Logic ✅ COMPLETE
+**Effort: 2 hours | Priority: MEDIUM | Status: DONE**
+
+**New utility: `utils/mongoConnection.js`**:
+- Exponential backoff with jitter (prevents thundering herd)
+- Configurable via environment variables:
+  - `MONGO_MAX_RETRIES` (default: 10)
+  - `MONGO_INITIAL_DELAY_MS` (default: 1000)
+  - `MONGO_MAX_DELAY_MS` (default: 30000)
+- Automatic reconnection handlers
+- Health check function for monitoring
+- Graceful connection close
+
+---
+
+*Plan Version: 4.0*
 *Last Updated: December 26, 2025*
-*Status: PRODUCTION READY - 11/13 major milestones complete*
+*Status: PRODUCTION READY - 18/19 major milestones complete*

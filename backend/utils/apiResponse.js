@@ -133,7 +133,7 @@ const paginated = (res, dataOrOptions, optionsOrPage, limitArg, totalArg) => {
 const error = (res, options = {}) => {
   const {
     statusCode = 500,
-    error: errorMessage = 'An error occurred',
+    error: errorMessage = 'Une erreur s\'est produite',
     details = null,
     code = null
   } = options;
@@ -154,35 +154,35 @@ const error = (res, options = {}) => {
 /**
  * Send a 400 Bad Request response
  */
-const badRequest = (res, message = 'Bad request', details = null) => {
+const badRequest = (res, message = 'Requête invalide', details = null) => {
   return error(res, { statusCode: 400, error: message, details, code: 'BAD_REQUEST' });
 };
 
 /**
  * Send a 401 Unauthorized response
  */
-const unauthorized = (res, message = 'Unauthorized') => {
+const unauthorized = (res, message = 'Non autorisé') => {
   return error(res, { statusCode: 401, error: message, code: 'UNAUTHORIZED' });
 };
 
 /**
  * Send a 403 Forbidden response
  */
-const forbidden = (res, message = 'Forbidden') => {
+const forbidden = (res, message = 'Accès interdit') => {
   return error(res, { statusCode: 403, error: message, code: 'FORBIDDEN' });
 };
 
 /**
  * Send a 404 Not Found response
  */
-const notFound = (res, resource = 'Resource') => {
-  return error(res, { statusCode: 404, error: `${resource} not found`, code: 'NOT_FOUND' });
+const notFound = (res, resource = 'Ressource') => {
+  return error(res, { statusCode: 404, error: `${resource} non trouvé(e)`, code: 'NOT_FOUND' });
 };
 
 /**
  * Send a 409 Conflict response
  */
-const conflict = (res, message = 'Conflict') => {
+const conflict = (res, message = 'Conflit') => {
   return error(res, { statusCode: 409, error: message, code: 'CONFLICT' });
 };
 
@@ -192,7 +192,7 @@ const conflict = (res, message = 'Conflict') => {
 const validationError = (res, errors = []) => {
   return error(res, {
     statusCode: 422,
-    error: 'Validation failed',
+    error: 'La validation a échoué',
     details: errors,
     code: 'VALIDATION_ERROR'
   });
@@ -201,7 +201,7 @@ const validationError = (res, errors = []) => {
 /**
  * Send a 500 Internal Server Error response
  */
-const serverError = (res, message = 'Internal server error', details = null) => {
+const serverError = (res, message = 'Erreur interne du serveur', details = null) => {
   return error(res, { statusCode: 500, error: message, details, code: 'SERVER_ERROR' });
 };
 

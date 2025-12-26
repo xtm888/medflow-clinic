@@ -9,6 +9,13 @@ const NotificationSchema = new mongoose.Schema({
     index: true
   },
 
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+    // Not required - some system notifications are clinic-agnostic
+  },
+
   // Notification type
   type: {
     type: String,
@@ -119,6 +126,7 @@ const NotificationSchema = new mongoose.Schema({
 
 // Indexes for efficient queries
 NotificationSchema.index({ recipient: 1, read: 1, createdAt: -1 });
+NotificationSchema.index({ clinic: 1, recipient: 1, read: 1, createdAt: -1 });
 NotificationSchema.index({ recipient: 1, type: 1 });
 NotificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 

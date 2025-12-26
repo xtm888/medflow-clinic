@@ -509,7 +509,13 @@ function cleanupMemoryCache() {
 }
 
 // Run memory cache cleanup every 5 minutes
-setInterval(cleanupMemoryCache, 5 * 60 * 1000);
+setInterval(() => {
+  try {
+    cleanupMemoryCache();
+  } catch (error) {
+    log.error('Memory cache cleanup error:', error.message);
+  }
+}, 5 * 60 * 1000);
 
 module.exports = {
   // Generic cache operations

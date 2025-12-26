@@ -2,6 +2,8 @@ const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
 const FeeSchedule = require('../models/FeeSchedule');
+const { paginateOffset, getPaginationParams } = require('../services/paginationService');
+const CONSTANTS = require('../config/constants');
 
 // @route   GET /api/fee-schedules/public
 // @desc    Get public booking services (no auth required)
@@ -47,11 +49,12 @@ router.get('/public', async (req, res) => {
 });
 
 // @route   GET /api/fee-schedules
-// @desc    Get all active fee schedules with optional filtering
+// @desc    Get all active fee schedules with optional filtering and pagination
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
     const { category, department, search } = req.query;
+    const { page, limit, sort } = getPaginationParams(req.query, 'category');
 
     const query = {
       active: true,
@@ -73,24 +76,30 @@ router.get('/', protect, async (req, res) => {
 
     // Search by name, code, or description
     if (search) {
+      // Escape regex special characters for safety
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       query.$and = query.$and || [];
       query.$and.push({
         $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { code: { $regex: search, $options: 'i' } },
-          { description: { $regex: search, $options: 'i' } }
+          { name: { $regex: escapedSearch, $options: 'i' } },
+          { code: { $regex: escapedSearch, $options: 'i' } },
+          { description: { $regex: escapedSearch, $options: 'i' } }
         ]
       });
     }
 
-    const feeSchedules = await FeeSchedule.find(query)
-      .sort({ category: 1, name: 1 })
-      .lean();
+    const result = await paginateOffset(FeeSchedule, {
+      filter: query,
+      page,
+      limit,
+      sort: { category: 1, name: 1 }
+    });
 
     res.json({
       success: true,
-      count: feeSchedules.length,
-      data: feeSchedules
+      count: result.data.length,
+      data: result.data,
+      pagination: result.pagination
     });
   } catch (error) {
     console.error('Error fetching fee schedules:', error);

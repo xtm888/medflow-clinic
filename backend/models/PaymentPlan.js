@@ -13,6 +13,12 @@ const paymentPlanSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
   invoices: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Invoice'
@@ -127,6 +133,8 @@ const paymentPlanSchema = new mongoose.Schema({
 });
 
 paymentPlanSchema.index({ planId: 1 }, { unique: true });
+paymentPlanSchema.index({ clinic: 1, status: 1, createdAt: -1 });
+paymentPlanSchema.index({ clinic: 1, patient: 1, status: 1 });
 paymentPlanSchema.index({ patient: 1, status: 1 });
 
 paymentPlanSchema.virtual('remainingBalance').get(function() {

@@ -19,6 +19,12 @@ const insuranceClaimSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
   provider: {
     name: { type: String, required: true },
     policyNumber: { type: String, required: true },
@@ -126,6 +132,11 @@ const insuranceClaimSchema = new mongoose.Schema({
 insuranceClaimSchema.index({ claimNumber: 1 }, { unique: true });
 insuranceClaimSchema.index({ status: 1, createdAt: -1 });
 insuranceClaimSchema.index({ 'provider.name': 1, status: 1 });
+
+// Multi-clinic compound indexes
+insuranceClaimSchema.index({ clinic: 1, status: 1 });
+insuranceClaimSchema.index({ clinic: 1, patient: 1, createdAt: -1 });
+insuranceClaimSchema.index({ clinic: 1, createdAt: -1 });
 
 insuranceClaimSchema.pre('save', async function(next) {
   if (!this.claimNumber) {

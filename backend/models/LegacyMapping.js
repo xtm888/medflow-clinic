@@ -10,6 +10,7 @@
  */
 
 const mongoose = require('mongoose');
+const { encrypt, decrypt, isEncrypted } = require('../utils/phiEncryption');
 
 const legacyMappingSchema = new mongoose.Schema({
   // Legacy system identifier (unique per source system)
@@ -314,6 +315,97 @@ legacyMappingSchema.methods.updateImportStats = function(type, count = 1) {
   }
 
   return this;
+};
+
+// =====================================================
+// PHI ENCRYPTION FOR NATIONAL ID
+// Security: Encrypt nationalId at rest (PHI/PII data)
+// =====================================================
+
+/**
+ * Set national ID with encryption
+ * @param {string} nationalId - The plain national ID
+ */
+legacyMappingSchema.methods.setNationalId = function(nationalId) {
+  if (!this.importedData) {
+    this.importedData = {};
+  }
+  if (!nationalId) {
+    this.importedData.nationalId = null;
+    return;
+  }
+  this.importedData.nationalId = encrypt(nationalId);
+};
+
+/**
+ * Get decrypted national ID
+ * @returns {string|null} - The decrypted national ID or null
+ */
+legacyMappingSchema.methods.getNationalId = function() {
+  if (!this.importedData?.nationalId) {
+    return null;
+  }
+  // Handle legacy unencrypted national IDs
+  if (!isEncrypted(this.importedData.nationalId)) {
+    return this.importedData.nationalId;
+  }
+  return decrypt(this.importedData.nationalId);
+};
+
+/**
+ * Check if national ID needs migration (unencrypted legacy data)
+ * @returns {boolean}
+ */
+legacyMappingSchema.methods.needsNationalIdMigration = function() {
+  return this.importedData?.nationalId && !isEncrypted(this.importedData.nationalId);
+};
+
+/**
+ * Migrate legacy unencrypted national ID to encrypted format
+ * @returns {boolean} - True if migration was performed
+ */
+legacyMappingSchema.methods.migrateNationalId = function() {
+  if (this.needsNationalIdMigration()) {
+    const plainNationalId = this.importedData.nationalId;
+    this.importedData.nationalId = encrypt(plainNationalId);
+    return true;
+  }
+  return false;
+};
+
+// Static: Migrate all unencrypted national IDs in batch
+legacyMappingSchema.statics.migrateAllNationalIds = async function(batchSize = 100) {
+  const log = require('../utils/structuredLogger').createContextLogger('LegacyMapping');
+  let totalMigrated = 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    // Find records with non-encrypted national IDs
+    // Encrypted values start with 'enc:' prefix
+    const records = await this.find({
+      'importedData.nationalId': { $exists: true, $ne: null },
+      $or: [
+        { 'importedData.nationalId': { $not: /^enc:/ } },
+        { 'importedData.nationalId': { $not: /^v\d+:/ } }
+      ]
+    }).limit(batchSize);
+
+    if (records.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const record of records) {
+      if (record.migrateNationalId()) {
+        await record.save();
+        totalMigrated++;
+      }
+    }
+
+    log.info(`Migrated ${totalMigrated} national IDs so far...`);
+  }
+
+  return totalMigrated;
 };
 
 module.exports = mongoose.model('LegacyMapping', legacyMappingSchema);

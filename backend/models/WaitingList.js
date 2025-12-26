@@ -8,6 +8,13 @@ const waitingListSchema = new mongoose.Schema({
     required: true
   },
 
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   // Requested provider (optional - patient may accept any provider)
   requestedProvider: {
     type: mongoose.Schema.ObjectId,
@@ -158,6 +165,8 @@ const waitingListSchema = new mongoose.Schema({
 
 // Indexes
 waitingListSchema.index({ patient: 1, status: 1 });
+waitingListSchema.index({ clinic: 1, status: 1, priority: -1, createdAt: 1 });
+waitingListSchema.index({ clinic: 1, patient: 1, status: 1 });
 waitingListSchema.index({ department: 1, status: 1, priority: -1, createdAt: 1 });
 waitingListSchema.index({ requestedProvider: 1, status: 1 });
 waitingListSchema.index({ expiresAt: 1 });

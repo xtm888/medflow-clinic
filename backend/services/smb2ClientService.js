@@ -23,6 +23,33 @@ class SMB2ClientService extends EventEmitter {
     this.tempDir = path.join(os.tmpdir(), 'medflow_smb2_cache');
     this.fileCache = new Map();
     this.cacheTimeout = 5 * 60 * 1000;  // 5 minute cache
+
+    // CRITICAL: Setup error handler to prevent process crash
+    this._setupErrorHandling();
+  }
+
+  /**
+   * Setup error handling for EventEmitter
+   * Prevents unhandled 'error' events from crashing the process
+   */
+  _setupErrorHandling() {
+    this.on('error', (error) => {
+      log.error('SMB2ClientService error:', {
+        error: error.message,
+        stack: error.stack,
+        connectionCount: this.connections.size,
+        timestamp: new Date().toISOString()
+      });
+    });
+
+    // Handle connection-specific errors
+    this.on('connectionError', ({ deviceId, error }) => {
+      log.error('SMB2 connection failed:', { deviceId, error });
+    });
+
+    this.on('watchError', ({ deviceId, error }) => {
+      log.error('SMB2 watch error:', { deviceId, error });
+    });
   }
 
   async init() {

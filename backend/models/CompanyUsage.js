@@ -63,6 +63,13 @@ const companyUsageSchema = new Schema({
     index: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   fiscalYear: {
     type: Number,
     required: true,
@@ -133,6 +140,10 @@ companyUsageSchema.index(
 
 // Index for company-wide reporting
 companyUsageSchema.index({ company: 1, fiscalYear: 1 });
+
+// Multi-clinic compound indexes
+companyUsageSchema.index({ clinic: 1, company: 1, fiscalYear: 1 });
+companyUsageSchema.index({ clinic: 1, patient: 1, fiscalYear: 1 });
 
 /**
  * Get or create usage record for a patient/company/year

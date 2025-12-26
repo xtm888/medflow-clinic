@@ -342,7 +342,11 @@ const fileUtils = {
 
 // Scheduled cleanup - run every 6 hours
 setInterval(() => {
-  fileUtils.cleanTempFiles(24);
+  try {
+    fileUtils.cleanTempFiles(24);
+  } catch (error) {
+    console.error('[FileUpload] Scheduled cleanup error:', error.message);
+  }
 }, 6 * 60 * 60 * 1000);
 
 module.exports = {

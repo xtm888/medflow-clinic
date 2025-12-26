@@ -95,6 +95,13 @@ const documentSchema = new mongoose.Schema({
   },
 
   // Document associations
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   patient: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Patient',
@@ -292,6 +299,8 @@ const documentSchema = new mongoose.Schema({
 
 // Indexes
 documentSchema.index({ patient: 1, visit: 1 });
+documentSchema.index({ clinic: 1, category: 1, createdAt: -1 });
+documentSchema.index({ clinic: 1, patient: 1, createdAt: -1 });
 documentSchema.index({ patient: 1, createdAt: -1 });
 documentSchema.index({ prescription: 1 });
 documentSchema.index({ appointment: 1 });

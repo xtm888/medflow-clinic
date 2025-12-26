@@ -80,7 +80,11 @@ class WebSocketService {
   // Start periodic cleanup of old messages
   startCleanupInterval() {
     this.cleanupInterval = setInterval(() => {
-      this.cleanupOldMessages();
+      try {
+        this.cleanupOldMessages();
+      } catch (error) {
+        log.error('WebSocket cleanup error:', error.message);
+      }
     }, 5 * 60 * 1000); // Every 5 minutes
   }
 

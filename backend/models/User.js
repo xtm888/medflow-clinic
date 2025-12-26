@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const { validatePassword } = require('../utils/passwordValidator');
 const CONSTANTS = require('../config/constants');
+const { encrypt, decrypt, isEncrypted } = require('../utils/phiEncryption');
 
 const userSchema = new mongoose.Schema({
   // Basic Information
@@ -559,6 +560,59 @@ userSchema.methods.useBackupCode = function(code) {
   if (backupCode) {
     backupCode.used = true;
     backupCode.usedAt = new Date();
+    return true;
+  }
+  return false;
+};
+
+// =====================================================
+// TWO-FACTOR SECRET ENCRYPTION
+// Security: Encrypt TOTP secret at rest using PHI encryption
+// =====================================================
+
+/**
+ * Set 2FA secret with encryption
+ * @param {string} secret - The plain TOTP secret from speakeasy
+ */
+userSchema.methods.setTwoFactorSecret = function(secret) {
+  if (!secret) {
+    this.twoFactorSecret = null;
+    return;
+  }
+  this.twoFactorSecret = encrypt(secret);
+};
+
+/**
+ * Get decrypted 2FA secret for TOTP verification
+ * @returns {string|null} - The decrypted TOTP secret or null
+ */
+userSchema.methods.getTwoFactorSecret = function() {
+  if (!this.twoFactorSecret) {
+    return null;
+  }
+  // Handle legacy unencrypted secrets (base32 strings)
+  if (!isEncrypted(this.twoFactorSecret)) {
+    return this.twoFactorSecret;
+  }
+  return decrypt(this.twoFactorSecret);
+};
+
+/**
+ * Check if 2FA secret needs migration (unencrypted legacy data)
+ * @returns {boolean}
+ */
+userSchema.methods.needsTwoFactorSecretMigration = function() {
+  return this.twoFactorSecret && !isEncrypted(this.twoFactorSecret);
+};
+
+/**
+ * Migrate legacy unencrypted 2FA secret to encrypted format
+ * @returns {boolean} - True if migration was performed
+ */
+userSchema.methods.migrateTwoFactorSecret = function() {
+  if (this.needsTwoFactorSecretMigration()) {
+    const plainSecret = this.twoFactorSecret;
+    this.twoFactorSecret = encrypt(plainSecret);
     return true;
   }
   return false;

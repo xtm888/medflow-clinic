@@ -27,6 +27,13 @@ const deviceMeasurementSchema = new mongoose.Schema({
     required: true
   },
 
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   visit: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Visit'
@@ -507,6 +514,8 @@ const deviceMeasurementSchema = new mongoose.Schema({
 
 // Indexes
 deviceMeasurementSchema.index({ patient: 1, measurementDate: -1 });
+deviceMeasurementSchema.index({ clinic: 1, measurementType: 1, measurementDate: -1 });
+deviceMeasurementSchema.index({ clinic: 1, patient: 1, measurementDate: -1 });
 deviceMeasurementSchema.index({ device: 1, measurementDate: -1 });
 deviceMeasurementSchema.index({ visit: 1 });
 deviceMeasurementSchema.index({ measurementType: 1, eye: 1 });

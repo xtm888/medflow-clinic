@@ -23,6 +23,12 @@ const glassesOrderSchema = new mongoose.Schema({
     ref: 'Patient',
     required: true
   },
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
   orderedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
@@ -1003,6 +1009,8 @@ glassesOrderSchema.virtual('balanceDue').get(function() {
 
 // Index for efficient queries
 glassesOrderSchema.index({ patient: 1, createdAt: -1 });
+glassesOrderSchema.index({ clinic: 1, status: 1, createdAt: -1 });
+glassesOrderSchema.index({ clinic: 1, patient: 1, createdAt: -1 });
 glassesOrderSchema.index({ exam: 1 });
 glassesOrderSchema.index({ status: 1 });
 glassesOrderSchema.index({ orderNumber: 1 });

@@ -23,6 +23,13 @@ const labResultSchema = new mongoose.Schema({
     required: [true, 'Patient is required']
   },
 
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   test: {
     template: {
       type: mongoose.Schema.ObjectId,
@@ -232,6 +239,21 @@ const labResultSchema = new mongoose.Schema({
   updatedBy: {
     type: mongoose.Schema.ObjectId,
     ref: 'User'
+  },
+
+  // Soft delete fields
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: {
+    type: Date,
+    default: null
+  },
+  deletedBy: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true,
@@ -241,6 +263,8 @@ const labResultSchema = new mongoose.Schema({
 
 // Indexes for performance
 labResultSchema.index({ patient: 1, performedAt: -1 });
+labResultSchema.index({ clinic: 1, status: 1, performedAt: -1 });
+labResultSchema.index({ clinic: 1, patient: 1, performedAt: -1 });
 labResultSchema.index({ labOrder: 1 });
 labResultSchema.index({ resultId: 1 }, { unique: true });
 labResultSchema.index({ status: 1 });
@@ -250,6 +274,43 @@ labResultSchema.index({ createdAt: -1 });
 labResultSchema.index({ analyzer: 1 });
 labResultSchema.index({ reagentLot: 1 });
 labResultSchema.index({ 'reagentLotInfo.lotNumber': 1 });
+// Soft delete index
+labResultSchema.index({ clinic: 1, isDeleted: 1 });
+
+// Query middleware - exclude deleted records by default
+labResultSchema.pre('find', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+labResultSchema.pre('findOne', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+labResultSchema.pre('countDocuments', function() {
+  if (!this.getQuery().includeDeleted) {
+    this.where({ isDeleted: { $ne: true } });
+  }
+});
+
+// Soft delete method
+labResultSchema.methods.softDelete = async function(deletedByUserId) {
+  this.isDeleted = true;
+  this.deletedAt = new Date();
+  this.deletedBy = deletedByUserId;
+  return await this.save();
+};
+
+// Restore method
+labResultSchema.methods.restore = async function() {
+  this.isDeleted = false;
+  this.deletedAt = null;
+  this.deletedBy = null;
+  return await this.save();
+};
 
 // Virtual for abnormal count
 labResultSchema.virtual('abnormalCount').get(function() {

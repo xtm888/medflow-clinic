@@ -20,6 +20,13 @@ const deviceIntegrationLogSchema = new mongoose.Schema({
     required: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   // Event details
   eventType: {
     type: String,
@@ -376,6 +383,11 @@ deviceIntegrationLogSchema.index({ patient: 1, createdAt: -1 });
 deviceIntegrationLogSchema.index({ 'retry.nextRetryAt': 1 });
 deviceIntegrationLogSchema.index({ 'errorDetails.severity': 1 });
 deviceIntegrationLogSchema.index({ archived: 1, createdAt: -1 });
+
+// Multi-clinic compound indexes
+deviceIntegrationLogSchema.index({ clinic: 1, device: 1, createdAt: -1 });
+deviceIntegrationLogSchema.index({ clinic: 1, status: 1, createdAt: -1 });
+deviceIntegrationLogSchema.index({ clinic: 1, eventType: 1, status: 1 });
 
 // Pre-save middleware
 deviceIntegrationLogSchema.pre('save', async function(next) {

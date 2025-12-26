@@ -27,6 +27,13 @@ const deviceImageSchema = new mongoose.Schema({
     required: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   visit: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Visit'
@@ -412,6 +419,11 @@ deviceImageSchema.index({ 'dicom.studyInstanceUID': 1 });
 deviceImageSchema.index({ 'dicom.seriesInstanceUID': 1 });
 deviceImageSchema.index({ 'validation.status': 1 });
 deviceImageSchema.index({ source: 1, 'imported.at': -1 });
+
+// Multi-clinic compound indexes
+deviceImageSchema.index({ clinic: 1, patient: 1, capturedAt: -1 });
+deviceImageSchema.index({ clinic: 1, imageType: 1, capturedAt: -1 });
+deviceImageSchema.index({ clinic: 1, 'validation.status': 1 });
 
 // Pre-save middleware
 deviceImageSchema.pre('save', async function(next) {

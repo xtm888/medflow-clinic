@@ -17,6 +17,13 @@ const labOrderSchema = new mongoose.Schema({
     required: [true, 'Patient is required']
   },
 
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   visit: {
     type: mongoose.Schema.ObjectId,
     ref: 'Visit'
@@ -256,6 +263,8 @@ const labOrderSchema = new mongoose.Schema({
 
 // Indexes for performance
 labOrderSchema.index({ patient: 1, orderDate: -1 });
+labOrderSchema.index({ clinic: 1, status: 1, orderDate: -1 });
+labOrderSchema.index({ clinic: 1, patient: 1, orderDate: -1 });
 labOrderSchema.index({ status: 1, priority: 1 });
 labOrderSchema.index({ orderId: 1 }, { unique: true });
 labOrderSchema.index({ 'specimen.barcode': 1 }, { sparse: true });

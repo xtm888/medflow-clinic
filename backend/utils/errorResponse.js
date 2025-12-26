@@ -141,8 +141,8 @@ function accountDisabled() {
 /**
  * Generic not found (404)
  */
-function notFound(resourceType = 'Resource') {
-  return createErrorResponse(`${resourceType} not found`, 404);
+function notFound(resourceType = 'Ressource') {
+  return createErrorResponse(`${resourceType} non trouvé(e)`, 404);
 }
 
 /**
@@ -194,7 +194,7 @@ function conflict(message, details = null) {
 /**
  * Duplicate resource (409)
  */
-function duplicateResource(message = 'Resource already exists') {
+function duplicateResource(message = 'La ressource existe déjà') {
   return createErrorResponse(message, 409);
 }
 
@@ -202,7 +202,7 @@ function duplicateResource(message = 'Resource already exists') {
  * Already exists (409)
  */
 function alreadyExists(resourceType) {
-  return createErrorResponse(`${resourceType} already exists`, 409);
+  return createErrorResponse(`${resourceType} existe déjà`, 409);
 }
 
 // ==========================================
@@ -214,7 +214,7 @@ function alreadyExists(resourceType) {
  */
 function validationFailed(errors) {
   return createErrorResponse(
-    'Validation failed',
+    'La validation a échoué',
     422,
     { validationErrors: errors }
   );
@@ -285,7 +285,7 @@ function insufficientStock(medicationName, available, requested) {
  */
 function resourceExpired(resourceType) {
   return createErrorResponse(
-    `${resourceType} has expired`,
+    `${resourceType} a expiré`,
     422
   );
 }
@@ -295,7 +295,7 @@ function resourceExpired(resourceType) {
  */
 function alreadyProcessed(resourceType, action) {
   return createErrorResponse(
-    `${resourceType} has already been ${action}`,
+    `${resourceType} a déjà été ${action}`,
     422
   );
 }
@@ -305,7 +305,7 @@ function alreadyProcessed(resourceType, action) {
  */
 function invalidStateTransition(currentState, attemptedState) {
   return createErrorResponse(
-    `Cannot transition from ${currentState} to ${attemptedState}`,
+    `Impossible de passer de ${currentState} à ${attemptedState}`,
     422,
     { currentState, attemptedState }
   );

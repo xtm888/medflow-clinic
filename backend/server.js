@@ -227,6 +227,14 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 // Compression
 app.use(compression());
 
+// NoSQL Injection Protection - sanitizes req.body, req.query, req.params
+const { noSqlInjectionProtection } = require('./middleware/noSqlInjectionProtection');
+app.use(noSqlInjectionProtection({
+  logBlocked: true,
+  strict: process.env.NODE_ENV === 'production',
+  excludePaths: ['/api/lis/webhook']  // LIS webhooks have their own auth
+}));
+
 // Payload too large error handler
 app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') {
@@ -391,10 +399,13 @@ app.use('/datasets', cors(corsOptions), express.static('public/datasets'));
 // Error handling middleware
 app.use(errorHandler);
 
-// MongoDB connection - Force IPv4 and replica set
+// MongoDB connection - Force IPv4 and replica set with retry logic
 const CONSTANTS = require('./config/constants');
+const { connectWithRetry } = require('./utils/mongoConnection');
 const mongoUri = process.env.MONGODB_URI?.replace('localhost', '127.0.0.1') || 'mongodb://127.0.0.1:27017/medflow?replicaSet=rs0';
-mongoose.connect(mongoUri, {
+
+// MongoDB connection options
+const mongoOptions = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   family: 4, // Force IPv4
@@ -411,7 +422,16 @@ mongoose.connect(mongoUri, {
   // Auto-reconnection
   retryWrites: true,
   retryReads: true
-})
+};
+
+// Retry options for initial connection
+const retryOptions = {
+  maxRetries: parseInt(process.env.MONGO_MAX_RETRIES) || 10,
+  initialDelayMs: parseInt(process.env.MONGO_INITIAL_DELAY_MS) || 1000,
+  maxDelayMs: parseInt(process.env.MONGO_MAX_DELAY_MS) || 30000
+};
+
+connectWithRetry(mongoUri, mongoOptions, retryOptions)
   .then(async () => {
     console.log('✅ Connected to MongoDB');
 

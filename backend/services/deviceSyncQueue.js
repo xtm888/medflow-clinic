@@ -30,6 +30,24 @@ class DeviceSyncQueue extends EventEmitter {
       startedAt: null
     };
     this.pollInterval = null;
+
+    // CRITICAL: Setup error handler to prevent process crash
+    this._setupErrorHandling();
+  }
+
+  /**
+   * Setup error handling for EventEmitter
+   * Prevents unhandled 'error' events from crashing the process
+   */
+  _setupErrorHandling() {
+    this.on('error', (error) => {
+      log.error('DeviceSyncQueue error:', {
+        error: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+      this.stats.failed++;
+    });
   }
 
   /**
@@ -235,7 +253,17 @@ class DeviceSyncQueue extends EventEmitter {
 
         const jobData = await client.get(`${this.queuePrefix}${this.jobPrefix}${jobId}`);
         if (jobData) {
-          const job = JSON.parse(jobData);
+          let job;
+          try {
+            job = JSON.parse(jobData);
+          } catch (parseError) {
+            log.error('Failed to parse delayed job data:', {
+              error: parseError.message,
+              jobId,
+              jobDataPreview: jobData?.substring?.(0, 100)
+            });
+            continue; // Skip this corrupted job
+          }
           job.status = 'pending';
 
           // Add to priority queue
@@ -374,7 +402,18 @@ class DeviceSyncQueue extends EventEmitter {
 
     const client = getClient();
     const data = await client.get(`${this.queuePrefix}${this.jobPrefix}${jobId}`);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data);
+    } catch (parseError) {
+      log.error('Failed to parse job data:', {
+        error: parseError.message,
+        jobId,
+        dataPreview: data?.substring?.(0, 100)
+      });
+      return null;
+    }
   }
 
   /**

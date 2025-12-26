@@ -17,6 +17,13 @@ const imagingOrderSchema = new mongoose.Schema({
     required: [true, 'Patient is required']
   },
 
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    required: [true, 'Clinic is required for multi-tenant isolation'],
+    index: true
+  },
+
   visit: {
     type: mongoose.Schema.ObjectId,
     ref: 'Visit'
@@ -241,6 +248,8 @@ const imagingOrderSchema = new mongoose.Schema({
 
 // Indexes for performance
 imagingOrderSchema.index({ patient: 1, orderDate: -1 });
+imagingOrderSchema.index({ clinic: 1, status: 1, orderDate: -1 });
+imagingOrderSchema.index({ clinic: 1, patient: 1, orderDate: -1 });
 imagingOrderSchema.index({ status: 1, modality: 1 });
 imagingOrderSchema.index({ orderId: 1 }, { unique: true });
 imagingOrderSchema.index({ scheduledDate: 1, scheduledTime: 1 });

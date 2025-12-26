@@ -174,6 +174,45 @@ const lisIntegrationSchema = new mongoose.Schema({
       default: 5000
     }
   },
+  // Webhook authentication for inbound messages
+  webhookAuth: {
+    // Enable webhook authentication (recommended for production)
+    enabled: {
+      type: Boolean,
+      default: true
+    },
+    // API key for authenticating incoming webhook requests
+    apiKeyEncrypted: String,
+    // Header name for API key
+    apiKeyHeader: {
+      type: String,
+      default: 'X-LIS-API-Key'
+    },
+    // HMAC secret for signature verification (optional)
+    hmacSecretEncrypted: String,
+    // Signature header name
+    signatureHeader: {
+      type: String,
+      default: 'X-LIS-Signature'
+    },
+    // Allowed IP addresses (optional, leave empty to allow all)
+    allowedIPs: [String],
+    // Rate limiting
+    rateLimit: {
+      enabled: {
+        type: Boolean,
+        default: true
+      },
+      maxRequests: {
+        type: Number,
+        default: 100  // per window
+      },
+      windowMs: {
+        type: Number,
+        default: 60000  // 1 minute
+      }
+    }
+  },
   // File-based integration settings
   fileSettings: {
     inputDirectory: String,
@@ -322,6 +361,89 @@ lisIntegrationSchema.methods.getOAuthSecret = function() {
     return this.decryptData(this.fhirSettings.oauth2.clientSecretEncrypted);
   }
   return null;
+};
+
+// Set webhook API key (encrypts before storing)
+lisIntegrationSchema.methods.setWebhookApiKey = function(apiKey) {
+  if (!this.webhookAuth) this.webhookAuth = {};
+  this.webhookAuth.apiKeyEncrypted = this.encryptData(apiKey);
+};
+
+// Get webhook API key (decrypts)
+lisIntegrationSchema.methods.getWebhookApiKey = function() {
+  return this.decryptData(this.webhookAuth?.apiKeyEncrypted);
+};
+
+// Set webhook HMAC secret (encrypts before storing)
+lisIntegrationSchema.methods.setWebhookHmacSecret = function(secret) {
+  if (!this.webhookAuth) this.webhookAuth = {};
+  this.webhookAuth.hmacSecretEncrypted = this.encryptData(secret);
+};
+
+// Get webhook HMAC secret (decrypts)
+lisIntegrationSchema.methods.getWebhookHmacSecret = function() {
+  return this.decryptData(this.webhookAuth?.hmacSecretEncrypted);
+};
+
+// Generate new webhook API key and HMAC secret
+lisIntegrationSchema.methods.generateWebhookCredentials = function() {
+  const apiKey = crypto.randomBytes(32).toString('hex');
+  const hmacSecret = crypto.randomBytes(32).toString('hex');
+  this.setWebhookApiKey(apiKey);
+  this.setWebhookHmacSecret(hmacSecret);
+  return { apiKey, hmacSecret };
+};
+
+// Validate webhook request
+lisIntegrationSchema.methods.validateWebhookRequest = function(headers, body, sourceIp) {
+  // Check if webhook auth is enabled
+  if (!this.webhookAuth?.enabled) {
+    return { valid: true, reason: 'auth_disabled' };
+  }
+
+  // Check IP allowlist (if configured)
+  if (this.webhookAuth.allowedIPs?.length > 0) {
+    if (!this.webhookAuth.allowedIPs.includes(sourceIp)) {
+      return { valid: false, reason: 'ip_not_allowed' };
+    }
+  }
+
+  // Check API key
+  const apiKeyHeader = this.webhookAuth.apiKeyHeader || 'X-LIS-API-Key';
+  const providedApiKey = headers[apiKeyHeader.toLowerCase()];
+  const expectedApiKey = this.getWebhookApiKey();
+
+  if (expectedApiKey) {
+    if (!providedApiKey) {
+      return { valid: false, reason: 'missing_api_key' };
+    }
+    // Constant-time comparison to prevent timing attacks
+    if (!crypto.timingSafeEqual(Buffer.from(providedApiKey), Buffer.from(expectedApiKey))) {
+      return { valid: false, reason: 'invalid_api_key' };
+    }
+  }
+
+  // Check HMAC signature (if configured)
+  const hmacSecret = this.getWebhookHmacSecret();
+  if (hmacSecret) {
+    const signatureHeader = this.webhookAuth.signatureHeader || 'X-LIS-Signature';
+    const providedSignature = headers[signatureHeader.toLowerCase()];
+
+    if (!providedSignature) {
+      return { valid: false, reason: 'missing_signature' };
+    }
+
+    const bodyString = typeof body === 'string' ? body : JSON.stringify(body);
+    const expectedSignature = crypto.createHmac('sha256', hmacSecret)
+      .update(bodyString)
+      .digest('hex');
+
+    if (!crypto.timingSafeEqual(Buffer.from(providedSignature), Buffer.from(expectedSignature))) {
+      return { valid: false, reason: 'invalid_signature' };
+    }
+  }
+
+  return { valid: true, reason: 'authenticated' };
 };
 
 // Update sync state

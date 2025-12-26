@@ -509,7 +509,13 @@ const twoFactorStore = {
 };
 
 // Clean up memory fallback every 5 minutes
-setInterval(() => twoFactorStore.cleanupMemory(), 5 * 60 * 1000);
+setInterval(() => {
+  try {
+    twoFactorStore.cleanupMemory();
+  } catch (error) {
+    console.error('[Redis] Memory cleanup error:', error.message);
+  }
+}, 5 * 60 * 1000);
 
 module.exports = {
   initializeRedis,

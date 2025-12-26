@@ -19,6 +19,13 @@ const fiscalYearSchema = new mongoose.Schema({
     required: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   // Start and end dates
   startDate: {
     type: Date,
@@ -126,6 +133,11 @@ const fiscalYearSchema = new mongoose.Schema({
 fiscalYearSchema.index({ startDate: 1, endDate: 1 });
 fiscalYearSchema.index({ isCurrent: 1 });
 fiscalYearSchema.index({ status: 1 });
+
+// Multi-clinic compound indexes
+fiscalYearSchema.index({ clinic: 1, status: 1 });
+fiscalYearSchema.index({ clinic: 1, isCurrent: 1 });
+fiscalYearSchema.index({ clinic: 1, startDate: 1, endDate: 1 });
 
 // Virtual for fiscal year progress
 fiscalYearSchema.virtual('progress').get(function() {

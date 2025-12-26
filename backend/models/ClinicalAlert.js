@@ -31,6 +31,13 @@ const clinicalAlertSchema = new mongoose.Schema({
     ref: 'Visit'
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   // Alert Classification
   severity: {
     type: String,
@@ -215,6 +222,11 @@ clinicalAlertSchema.index({ exam: 1, code: 1 });
 clinicalAlertSchema.index({ severity: 1, status: 1 });
 clinicalAlertSchema.index({ createdAt: -1 });
 clinicalAlertSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // TTL index
+
+// Multi-clinic compound indexes
+clinicalAlertSchema.index({ clinic: 1, patient: 1, status: 1 });
+clinicalAlertSchema.index({ clinic: 1, severity: 1, status: 1 });
+clinicalAlertSchema.index({ clinic: 1, createdAt: -1 });
 
 // Pre-save: Generate alert ID and hash
 clinicalAlertSchema.pre('save', async function(next) {

@@ -28,6 +28,13 @@ const approvalSchema = new mongoose.Schema({
     required: true
   },
 
+  // Multi-clinic support
+  clinic: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Clinic',
+    index: true
+  },
+
   // Medical act/service requiring approval
   actCode: {
     type: String,
@@ -176,6 +183,11 @@ approvalSchema.index({ company: 1, status: 1 });
 approvalSchema.index({ patient: 1, actCode: 1, status: 1 });
 approvalSchema.index({ status: 1, validUntil: 1 });
 approvalSchema.index({ requestedAt: -1 });
+
+// Multi-clinic compound indexes
+approvalSchema.index({ clinic: 1, status: 1 });
+approvalSchema.index({ clinic: 1, patient: 1, status: 1 });
+approvalSchema.index({ clinic: 1, requestedAt: -1 });
 
 // Pre-save hook to generate approvalId
 approvalSchema.pre('save', async function(next) {
