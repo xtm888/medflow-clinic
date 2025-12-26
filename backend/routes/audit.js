@@ -505,10 +505,14 @@ router.get('/user/:userId', asyncHandler(async (req, res) => {
 router.get('/patient/:patientId', asyncHandler(async (req, res) => {
   const { page = 1, limit = 50 } = req.query;
 
+  // Escape special regex characters to prevent RegExp injection
+  const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const safePatientId = escapeRegExp(req.params.patientId);
+
   const query = {
     $or: [
       { 'metadata.patientId': req.params.patientId },
-      { resource: new RegExp(`patients.*${req.params.patientId}`, 'i') }
+      { resource: new RegExp(`patients.*${safePatientId}`, 'i') }
     ]
   };
 

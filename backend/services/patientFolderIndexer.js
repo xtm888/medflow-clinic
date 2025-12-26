@@ -408,9 +408,13 @@ class PatientFolderIndexer {
 
     // 2. Try patient ID match
     if (folderInfo.patientId) {
+      // Escape special regex characters to prevent injection
+      const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const safePatientId = escapeRegExp(folderInfo.patientId);
+
       const byId = await Patient.findOne({
         $or: [
-          { patientId: { $regex: new RegExp(folderInfo.patientId, 'i') } },
+          { patientId: { $regex: new RegExp(safePatientId, 'i') } },
           { legacyPatientNumber: folderInfo.patientId }
         ],
         ...query

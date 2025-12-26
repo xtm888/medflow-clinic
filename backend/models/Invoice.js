@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Invoice');
 const {
   validateAmount,
   validateExchangeRate,
@@ -1051,7 +1053,7 @@ invoiceSchema.methods.addPayment = async function(paymentData, userId, session =
       throw new Error(`Exchange rate validation failed: ${rateValidation.error}`);
     }
     if (rateValidation.warning) {
-      console.warn(`Payment exchange rate warning: ${rateValidation.warning}`);
+      log.warn('Payment exchange rate warning', { warning: rateValidation.warning });
     }
   }
 
@@ -1247,7 +1249,7 @@ invoiceSchema.methods.addPayment = async function(paymentData, userId, session =
         userId
       );
     } catch (err) {
-      console.error('Failed to create patient credit for overpayment:', err.message);
+      log.error('Failed to create patient credit for overpayment', { error: err.message });
     }
   }
 
@@ -1407,7 +1409,7 @@ invoiceSchema.methods.issueRefund = async function(amount, userId, reason, metho
     }
     // For multi-currency: refund should ideally be in same currency as original payment
     if (originalPayment.currency !== refundCurrency) {
-      console.warn(`Refund currency (${refundCurrency}) differs from original payment currency (${originalPayment.currency})`);
+      log.warn('Refund currency differs from original payment currency', { refundCurrency, originalCurrency: originalPayment.currency });
     }
   }
 
@@ -1548,7 +1550,7 @@ invoiceSchema.methods.refreshCachedNames = async function() {
         updates['companyBilling.companyId'] = company.companyId;
       }
     } catch (err) {
-      console.error('[INVOICE] Error refreshing company name:', err.message);
+      log.error('Error refreshing company name', { error: err.message });
     }
   }
 
@@ -1562,7 +1564,7 @@ invoiceSchema.methods.refreshCachedNames = async function() {
         updates['referrerCommission.referrerType'] = referrer.type;
       }
     } catch (err) {
-      console.error('[INVOICE] Error refreshing referrer name:', err.message);
+      log.error('Error refreshing referrer name', { error: err.message });
     }
   }
 
@@ -1580,14 +1582,14 @@ invoiceSchema.methods.refreshCachedNames = async function() {
         }
       }
     } catch (err) {
-      console.error('[INVOICE] Error refreshing facility names:', err.message);
+      log.error('Error refreshing facility names', { error: err.message });
     }
   }
 
   // Apply updates if any
   if (Object.keys(updates).length > 0) {
     await this.updateOne({ $set: updates });
-    console.log(`[INVOICE] Refreshed ${Object.keys(updates).length} cached name(s) for invoice ${this.invoiceId || this._id}`);
+    log.debug('Refreshed cached names for invoice', { count: Object.keys(updates).length, invoiceId: this.invoiceId || this._id });
   }
 
   return updates;
@@ -1796,7 +1798,7 @@ invoiceSchema.methods.applyCompanyBilling = async function(companyId, userId, ex
     }
   } catch (usageErr) {
     // If CompanyUsage model not available, fallback to aggregation
-    console.warn('[Invoice] CompanyUsage lookup failed, using aggregation fallback:', usageErr.message);
+    log.warn('CompanyUsage lookup failed, using aggregation fallback', { error: usageErr.message });
     ytdUsage = await Invoice.getPatientYTDCategoryUsage(
       this.patient,
       companyId,
@@ -2504,19 +2506,19 @@ invoiceSchema.post('save', async (doc) => {
       try {
         await Patient.updatePatientBalance(doc.patient);
       } catch (err) {
-        console.error('Error updating patient balance after invoice save:', err.message);
+        log.error('Error updating patient balance after invoice save', { error: err.message });
       }
     });
 
     // AUTO-DISPENSE: When invoice is fully paid, dispense linked prescriptions
     // Trigger on any paid invoice - the dispense function will skip already-dispensed prescriptions
     if (doc.status === 'paid') {
-      console.log(`[Invoice ${doc.invoiceId}] Invoice is paid - checking for prescriptions to auto-dispense...`);
+      log.info('Invoice is paid - checking for prescriptions to auto-dispense', { invoiceId: doc.invoiceId });
       setImmediate(async () => {
         try {
           await autoDispensePrescriptionsForInvoice(doc);
         } catch (err) {
-          console.error('[Invoice] Error auto-dispensing prescriptions:', err.message);
+          log.error('Error auto-dispensing prescriptions', { error: err.message });
         }
       });
     }
@@ -2536,9 +2538,9 @@ invoiceSchema.post('save', async (doc) => {
           try {
             const CompanyUsage = mongoose.model('CompanyUsage');
             await CompanyUsage.recordInvoiceUsage(doc);
-            console.log(`[Invoice ${doc.invoiceId}] Updated CompanyUsage cache`);
+            log.debug('Updated CompanyUsage cache', { invoiceId: doc.invoiceId });
           } catch (err) {
-            console.error('[Invoice] Error updating CompanyUsage:', err.message);
+            log.error('Error updating CompanyUsage', { error: err.message });
             // Non-blocking - cache will be rebuilt on next access if needed
           }
         });
@@ -2547,15 +2549,15 @@ invoiceSchema.post('save', async (doc) => {
           try {
             const CompanyUsage = mongoose.model('CompanyUsage');
             await CompanyUsage.reverseInvoiceUsage(doc, doc.updatedBy || doc.createdBy, `Invoice ${doc.status}`);
-            console.log(`[Invoice ${doc.invoiceId}] Reversed CompanyUsage for ${doc.status}`);
+            log.debug('Reversed CompanyUsage', { invoiceId: doc.invoiceId, status: doc.status });
           } catch (err) {
-            console.error('[Invoice] Error reversing CompanyUsage:', err.message);
+            log.error('Error reversing CompanyUsage', { error: err.message });
           }
         });
       }
     }
   } catch (err) {
-    console.error('Error in invoice post-save hook:', err);
+    log.error('Error in invoice post-save hook', { error: err.message });
   }
 });
 
@@ -2583,7 +2585,7 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
     );
 
     if (medicationItems.length > 0) {
-      console.log(`[Invoice ${invoice.invoiceId}] Found ${medicationItems.length} medication items on invoice`);
+      log.debug('Found medication items on invoice', { invoiceId: invoice.invoiceId, count: medicationItems.length });
     }
 
     for (const item of medicationItems) {
@@ -2606,10 +2608,10 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
         for (const prescId of visit.prescriptions) {
           prescriptionsToDispense.add(prescId.toString());
         }
-        console.log(`[Invoice ${invoice.invoiceId}] Found ${visit.prescriptions.length} prescriptions from linked visit`);
+        log.debug('Found prescriptions from linked visit', { invoiceId: invoice.invoiceId, count: visit.prescriptions.length });
       }
     } catch (err) {
-      console.error(`[Invoice ${invoice.invoiceId}] Error fetching visit prescriptions:`, err.message);
+      log.error("Error fetching visit prescriptions", { invoiceId: invoice.invoiceId, error: err.message });
     }
   }
 
@@ -2629,7 +2631,7 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
     );
 
     if (hasMedicationItems) {
-      console.log(`[Invoice ${invoice.invoiceId}] Medications on invoice but no prescription refs - searching prescriptions from same visit only`);
+      log.debug('Medications on invoice but no prescription refs - searching prescriptions from same visit only', { invoiceId: invoice.invoiceId });
 
       try {
         // CRITICAL: Only search for prescriptions from the EXACT same visit
@@ -2642,24 +2644,24 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
         }).select('_id prescriptionId');
 
         if (visitPrescriptions.length > 0) {
-          console.log(`[Invoice ${invoice.invoiceId}] Found ${visitPrescriptions.length} pending prescriptions from same visit`);
+          log.debug('Found pending prescriptions from same visit', { invoiceId: invoice.invoiceId, count: visitPrescriptions.length });
           for (const p of visitPrescriptions) {
             prescriptionsToDispense.add(p._id.toString());
           }
         }
         // NOTE: No fallback! If no prescriptions found for this visit, don't search other visits
       } catch (err) {
-        console.error(`[Invoice ${invoice.invoiceId}] Error searching visit prescriptions:`, err.message);
+        log.error('Error searching visit prescriptions', { invoiceId: invoice.invoiceId, error: err.message });
       }
     }
   }
 
   if (prescriptionsToDispense.size === 0) {
-    console.log(`[Invoice ${invoice.invoiceId}] No prescriptions to auto-dispense`);
+    log.debug('No prescriptions to auto-dispense', { invoiceId: invoice.invoiceId });
     return;
   }
 
-  console.log(`[Invoice ${invoice.invoiceId}] Auto-dispensing ${prescriptionsToDispense.size} prescription(s) after payment`);
+  log.info('Auto-dispensing prescriptions after payment', { invoiceId: invoice.invoiceId, count: prescriptionsToDispense.size });
 
   // Process each prescription
   for (const prescriptionId of prescriptionsToDispense) {
@@ -2685,11 +2687,11 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
 
       if (!prescription) {
         // Either not found, already dispensed, or being processed by another
-        console.log(`[Invoice ${invoice.invoiceId}] Prescription ${prescriptionId} skipped (not found, already dispensed, or being processed)`);
+        log.debug('Prescription skipped (not found, already dispensed, or being processed)', { invoiceId: invoice.invoiceId, prescriptionId });
         continue;
       }
 
-      console.log(`[Invoice ${invoice.invoiceId}] Locked and dispensing prescription ${prescription.prescriptionId || prescriptionId}`);
+      log.debug('Locked and dispensing prescription', { invoiceId: invoice.invoiceId, prescriptionId: prescription.prescriptionId || prescriptionId });
 
       // Dispense each medication and deduct inventory
       const dispensingRecord = {
@@ -2767,9 +2769,9 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
             await inventoryItem.save();
             inventoryDeductedCount++;
 
-            console.log(`[Invoice ${invoice.invoiceId}] Deducted ${quantityToDispense} ${medication.name} from inventory. Remaining: ${inventoryItem.inventory.currentStock}`);
+            log.debug('Deducted medication from inventory', { invoiceId: invoice.invoiceId, medication: medication.name, quantity: quantityToDispense, remaining: inventoryItem.inventory.currentStock });
           } else {
-            console.warn(`[Invoice ${invoice.invoiceId}] Insufficient stock for ${medication.name}. Available: ${inventoryItem.inventory.currentStock}, Required: ${quantityToDispense}`);
+            log.warn('Insufficient stock for medication', { invoiceId: invoice.invoiceId, medication: medication.name, available: inventoryItem.inventory.currentStock, required: quantityToDispense });
           }
         }
 
@@ -2797,10 +2799,10 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
 
       await prescription.save();
 
-      console.log(`[Invoice ${invoice.invoiceId}] Successfully dispensed prescription ${prescription.prescriptionId || prescriptionId}`);
+      log.info('Successfully dispensed prescription', { invoiceId: invoice.invoiceId, prescriptionId: prescription.prescriptionId || prescriptionId });
 
     } catch (err) {
-      console.error(`[Invoice ${invoice.invoiceId}] Error dispensing prescription ${prescriptionId}:`, err.message);
+      log.error('Error dispensing prescription', { invoiceId: invoice.invoiceId, prescriptionId, error: err.message });
 
       // CRITICAL: Release the lock on error so it can be retried
       try {
@@ -2812,7 +2814,7 @@ async function autoDispensePrescriptionsForInvoice(invoice) {
           }
         });
       } catch (unlockErr) {
-        console.error(`[Invoice ${invoice.invoiceId}] Failed to release lock on prescription ${prescriptionId}:`, unlockErr.message);
+        log.error('Failed to release lock on prescription', { invoiceId: invoice.invoiceId, prescriptionId, error: unlockErr.message });
       }
     }
   }

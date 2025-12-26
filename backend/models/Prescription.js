@@ -35,6 +35,14 @@ const prescriptionSchema = new mongoose.Schema({
     ref: 'Appointment'
   },
 
+  // Multi-Clinic: Which clinic this prescription was created at
+  clinic: {
+    type: mongoose.Schema.ObjectId,
+    ref: 'Clinic',
+    required: true,
+    index: true
+  },
+
   // Invoice reference (auto-generated when prescription is dispensed)
   invoice: {
     type: mongoose.Schema.ObjectId,
