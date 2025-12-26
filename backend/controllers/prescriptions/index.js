@@ -1,55 +1,150 @@
 /**
- * Prescription Controller Module
+ * Prescription Controllers Index
  *
- * This module re-exports all prescription-related controller functions.
+ * Re-exports all prescription-related controller functions for backward compatibility.
+ * The original prescriptionController.js (4,725 lines) has been split into:
  *
- * REFACTORING PLAN (4,724 lines -> ~6 files of ~800 lines each):
- * ================================================================
- * The original prescriptionController.js is a "god object" that should be
- * split into focused modules. Current plan:
- *
- * 1. core.js (~800 lines)
- *    - getPrescriptions, getPrescription, createPrescription
- *    - updatePrescription, deletePrescription, cancelPrescription
- *    - signPrescription, verifyPrescription, printPrescription
- *    - renewPrescription, clonePrescription
- *    - getActivePrescriptions, getProviderPrescriptions
- *    - getExpiredPrescriptions, getPrescriptionHistory
- *
- * 2. dispensing.js (~600 lines)
- *    - dispensePrescription, createInvoiceForPrescription
- *    - updatePharmacyStatus, sendToPharmacy
- *    - refillPrescription, getRefillHistory
- *
- * 3. ePrescribing.js (~500 lines)
- *    - transmitEPrescription, getEPrescriptionStatus
- *    - cancelEPrescription, respondToRefillRequest
- *    - searchEPrescribingPharmacies, verifyPharmacy
- *    - getEPrescribingServiceStatus
- *
- * 4. priorAuth.js (~400 lines)
- *    - requestPriorAuthorization, updatePriorAuthorization
- *    - getPriorAuthorizationStatus, getPendingPriorAuthorizations
- *
- * 5. safety.js (~400 lines)
- *    - checkDrugInteractions, runSafetyCheck
- *    - getDrugSafetyStatus, validatePrescription
- *    - createPrescriptionWithSafetyOverride
- *
- * 6. templates.js (~400 lines)
- *    - getTemplates, createTemplate, getTemplate
- *    - updateTemplate, deleteTemplate
- *
- * 7. specialized.js (~600 lines)
- *    - getOpticalPrescriptions, createOpticalPrescription
- *    - updateOpticalPrescription
- *    - getDrugPrescriptions, createDrugPrescription
- *    - bulkCreatePrescriptions
- *    - generatePDF, getStatistics
- *
- * For backward compatibility, this file re-exports all functions from
- * the original controller. Migration to modular structure is in progress.
+ * - coreController.js: Core CRUD, signing, verification, PDF, templates, statistics
+ * - drugController.js: Dispensing, refills, pharmacy status, drug safety checks
+ * - opticalController.js: Optical Rx CRUD, lens calculations, frame recommendations
+ * - ePrescribingController.js: NCPDP transmission, prior authorization workflows
  */
 
-// Re-export everything from original controller for backward compatibility
-module.exports = require('../prescriptionController');
+const coreController = require('./coreController');
+const drugController = require('./drugController');
+const opticalController = require('./opticalController');
+const ePrescribingController = require('./ePrescribingController');
+
+// Re-export all functions maintaining backward compatibility
+module.exports = {
+  // =====================================================
+  // Core Controller Functions
+  // =====================================================
+  // CRUD Operations
+  getPrescriptions: coreController.getPrescriptions,
+  getPrescription: coreController.getPrescription,
+  createPrescription: coreController.createPrescription,
+  createPrescriptionWithSafetyOverride: coreController.createPrescriptionWithSafetyOverride,
+  updatePrescription: coreController.updatePrescription,
+  cancelPrescription: coreController.cancelPrescription,
+  deletePrescription: coreController.deletePrescription,
+
+  // Signature & Verification
+  signPrescription: coreController.signPrescription,
+  verifyPrescription: coreController.verifyPrescription,
+
+  // Invoice
+  createInvoiceForPrescription: coreController.createInvoiceForPrescription,
+
+  // Printing & PDF
+  printPrescription: coreController.printPrescription,
+  generatePDF: coreController.generatePDF,
+
+  // Renewal & Validation
+  renewPrescription: coreController.renewPrescription,
+  validatePrescription: coreController.validatePrescription,
+
+  // Templates
+  getTemplates: coreController.getTemplates,
+  createTemplate: coreController.createTemplate,
+  getTemplate: coreController.getTemplate,
+  updateTemplate: coreController.updateTemplate,
+  deleteTemplate: coreController.deleteTemplate,
+
+  // Statistics & History
+  getStatistics: coreController.getStatistics,
+  getExpiredPrescriptions: coreController.getExpiredPrescriptions,
+  getPrescriptionHistory: coreController.getPrescriptionHistory,
+
+  // Clone & Bulk
+  clonePrescription: coreController.clonePrescription,
+  bulkCreatePrescriptions: coreController.bulkCreatePrescriptions,
+
+  // Patient/Provider Queries
+  getActivePrescriptions: coreController.getActivePrescriptions,
+  getProviderPrescriptions: coreController.getProviderPrescriptions,
+
+  // Utilities
+  generateQRCode: coreController.generateQRCode,
+  sendToPatient: coreController.sendToPatient,
+  checkInsuranceCoverage: coreController.checkInsuranceCoverage,
+
+  // =====================================================
+  // Drug Controller Functions
+  // =====================================================
+  // Dispensing
+  dispensePrescription: drugController.dispensePrescription,
+  getDispensingHistory: drugController.getDispensingHistory,
+
+  // Refills
+  requestRefill: drugController.requestRefill,
+  processRefillRequest: drugController.processRefillRequest,
+  getRefillHistory: drugController.getRefillHistory,
+
+  // Pharmacy Status
+  updatePharmacyStatus: drugController.updatePharmacyStatus,
+  getPharmacyQueue: drugController.getPharmacyQueue,
+
+  // Drug Safety
+  checkDrugInteractions: drugController.checkDrugInteractions,
+  runSafetyCheck: drugController.runSafetyCheck,
+  getPatientMedications: drugController.getPatientMedications,
+
+  // =====================================================
+  // Optical Controller Functions
+  // =====================================================
+  getOpticalPrescriptions: opticalController.getOpticalPrescriptions,
+  createOpticalPrescription: opticalController.createOpticalPrescription,
+  updateOpticalPrescription: opticalController.updateOpticalPrescription,
+  getLensOptions: opticalController.getLensOptions,
+  calculateLensPower: opticalController.calculateLensPower,
+  getFrameRecommendations: opticalController.getFrameRecommendations,
+
+  // =====================================================
+  // E-Prescribing Controller Functions
+  // =====================================================
+  // NCPDP Transmission
+  transmitPrescription: ePrescribingController.transmitPrescription,
+  getTransmissionStatus: ePrescribingController.getTransmissionStatus,
+  cancelTransmission: ePrescribingController.cancelTransmission,
+  handleRefillResponse: ePrescribingController.handleRefillResponse,
+
+  // Pharmacy Integration
+  searchPharmacies: ePrescribingController.searchPharmacies,
+  verifyPharmacy: ePrescribingController.verifyPharmacy,
+  getEPrescribingStatus: ePrescribingController.getEPrescribingStatus,
+
+  // Prior Authorization
+  submitPriorAuthorization: ePrescribingController.submitPriorAuthorization,
+  updatePriorAuthorizationStatus: ePrescribingController.updatePriorAuthorizationStatus,
+  getPriorAuthorizationStatus: ePrescribingController.getPriorAuthorizationStatus,
+  getPendingAuthorizations: ePrescribingController.getPendingAuthorizations,
+
+  // =====================================================
+  // Backward Compatibility Aliases
+  // =====================================================
+  // E-Prescribing aliases (old names -> new functions)
+  transmitEPrescription: ePrescribingController.transmitPrescription,
+  getEPrescriptionStatus: ePrescribingController.getTransmissionStatus,
+  cancelEPrescription: ePrescribingController.cancelTransmission,
+  respondToRefillRequest: ePrescribingController.handleRefillResponse,
+  searchEPrescribingPharmacies: ePrescribingController.searchPharmacies,
+  getEPrescribingServiceStatus: ePrescribingController.getEPrescribingStatus,
+
+  // Prior Authorization aliases
+  requestPriorAuthorization: ePrescribingController.submitPriorAuthorization,
+  updatePriorAuthorization: ePrescribingController.updatePriorAuthorizationStatus,
+  getPendingPriorAuthorizations: ePrescribingController.getPendingAuthorizations,
+
+  // Drug controller aliases
+  refillPrescription: drugController.processRefillRequest,
+
+  // =====================================================
+  // Functions delegated to original controller (to be migrated)
+  // =====================================================
+  // These functions are still in prescriptionController.js pending full migration
+  getDrugSafetyStatus: require('../prescriptionController').getDrugSafetyStatus,
+  getDrugPrescriptions: require('../prescriptionController').getDrugPrescriptions,
+  createDrugPrescription: require('../prescriptionController').createDrugPrescription,
+  sendToPharmacy: require('../prescriptionController').sendToPharmacy
+};

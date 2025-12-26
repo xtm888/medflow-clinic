@@ -9,6 +9,9 @@ const { ReagentInventory } = require('../../models/Inventory');
 const LaboratoryTemplate = require('../../models/LaboratoryTemplate');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('ReagentInventory');
+
 // Create factory instance with reagent-specific config
 const factory = new InventoryControllerFactory({
   Model: ReagentInventory,
@@ -59,7 +62,7 @@ const addBatch = async (req, res) => {
       message: `Lot ${req.body.lotNumber} ajouté avec succès`
     });
   } catch (error) {
-    console.error('Error adding reagent batch:', error);
+    log.error('Error adding reagent batch:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -97,7 +100,7 @@ const consumeReagent = async (req, res) => {
       message: `${quantity} unité(s) consommée(s)`
     });
   } catch (error) {
-    console.error('Error consuming reagent:', error);
+    log.error('Error consuming reagent:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -139,7 +142,7 @@ const consumeForQC = async (req, res) => {
       message: 'Consommation QC enregistrée'
     });
   } catch (error) {
-    console.error('Error consuming reagent for QC:', error);
+    log.error('Error consuming reagent for QC:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -172,7 +175,7 @@ const expireBatch = async (req, res) => {
       message: `Lot ${lotNumber} marqué comme expiré`
     });
   } catch (error) {
-    console.error('Error expiring reagent batch:', error);
+    log.error('Error expiring reagent batch:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -205,7 +208,7 @@ const disposeReagent = async (req, res) => {
       message: 'Réactif éliminé'
     });
   } catch (error) {
-    console.error('Error disposing reagent:', error);
+    log.error('Error disposing reagent:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -227,7 +230,7 @@ const getExpiring = async (req, res) => {
       data: items
     });
   } catch (error) {
-    console.error('Error getting expiring reagents:', error);
+    log.error('Error getting expiring reagents:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -248,7 +251,7 @@ const getBySection = async (req, res) => {
       data: items
     });
   } catch (error) {
-    console.error('Error getting reagents by section:', error);
+    log.error('Error getting reagents by section:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -285,7 +288,7 @@ const getQCHistory = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting reagent QC history:', error);
+    log.error('Error getting reagent QC history:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -331,7 +334,7 @@ const linkTemplate = async (req, res) => {
       data: reagent
     });
   } catch (error) {
-    console.error('Error linking reagent to template:', error);
+    log.error('Error linking reagent to template:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -351,7 +354,7 @@ const getManufacturers = async (req, res) => {
       data: manufacturers.filter(m => m).sort()
     });
   } catch (error) {
-    console.error('Error getting reagent manufacturers:', error);
+    log.error('Error getting reagent manufacturers:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message

@@ -1,10 +1,232 @@
 const express = require('express');
 const router = express.Router();
+const PDFDocument = require('pdfkit');
 const AuditLog = require('../models/AuditLog');
 const { generateAuditReport } = require('../middleware/auditLogger');
 const { protect, authorize } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { escapeRegex } = require('../utils/sanitize');
+
+/**
+ * Generate PDF for audit log export
+ * @param {Array} logs - Array of audit log entries
+ * @param {Object} options - Export options (startDate, endDate)
+ * @returns {Promise<Buffer>} PDF buffer
+ */
+async function generateAuditPDF(logs, options = {}) {
+  return new Promise((resolve, reject) => {
+    try {
+      const doc = new PDFDocument({
+        size: 'A4',
+        layout: 'landscape',
+        margins: { top: 40, bottom: 40, left: 40, right: 40 },
+        info: {
+          Title: 'Rapport d\'Audit - MedFlow',
+          Author: 'MedFlow EMR',
+          Creator: 'MedFlow Audit System'
+        }
+      });
+
+      const chunks = [];
+      doc.on('data', chunk => chunks.push(chunk));
+      doc.on('end', () => resolve(Buffer.concat(chunks)));
+      doc.on('error', reject);
+
+      // Colors
+      const colors = {
+        primary: '#2563eb',
+        header: '#1e3a5f',
+        text: '#1e293b',
+        lightText: '#64748b',
+        border: '#e2e8f0',
+        rowAlt: '#f8fafc',
+        critical: '#dc2626',
+        warning: '#f59e0b',
+        success: '#16a34a'
+      };
+
+      // Header
+      doc.fillColor(colors.header)
+        .fontSize(18)
+        .font('Helvetica-Bold')
+        .text('RAPPORT D\'AUDIT', { align: 'center' });
+
+      doc.moveDown(0.5);
+      doc.fillColor(colors.lightText)
+        .fontSize(10)
+        .font('Helvetica')
+        .text('MedFlow - Système de Gestion Médicale', { align: 'center' });
+
+      // Date range
+      doc.moveDown(1);
+      const startStr = options.startDate ? new Date(options.startDate).toLocaleDateString('fr-CD') : 'Non spécifié';
+      const endStr = options.endDate ? new Date(options.endDate).toLocaleDateString('fr-CD') : 'Non spécifié';
+      doc.fillColor(colors.text)
+        .fontSize(10)
+        .text(`Période: ${startStr} - ${endStr}`, { align: 'center' });
+      doc.text(`Total d'entrées: ${logs.length}`, { align: 'center' });
+      doc.text(`Généré le: ${new Date().toLocaleString('fr-CD')}`, { align: 'center' });
+
+      doc.moveDown(1.5);
+
+      // Summary Statistics
+      const actionCounts = {};
+      const userCounts = {};
+      let suspiciousCount = 0;
+      let criticalCount = 0;
+
+      logs.forEach(log => {
+        actionCounts[log.action] = (actionCounts[log.action] || 0) + 1;
+        if (log.user) {
+          const userName = log.user.firstName ? `${log.user.firstName} ${log.user.lastName}` : 'Système';
+          userCounts[userName] = (userCounts[userName] || 0) + 1;
+        }
+        if (log.security?.suspicious) suspiciousCount++;
+        if (log.action?.startsWith('CRITICAL_')) criticalCount++;
+      });
+
+      // Stats box
+      doc.fillColor(colors.header)
+        .fontSize(12)
+        .font('Helvetica-Bold')
+        .text('Résumé Statistique');
+      doc.moveDown(0.5);
+
+      const topActions = Object.entries(actionCounts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5);
+
+      doc.fillColor(colors.text)
+        .fontSize(9)
+        .font('Helvetica');
+
+      doc.text(`Actions critiques: ${criticalCount}  |  Activités suspectes: ${suspiciousCount}`);
+      doc.moveDown(0.3);
+      doc.text('Top 5 actions: ' + topActions.map(([action, count]) => `${action} (${count})`).join(', '));
+
+      doc.moveDown(1.5);
+
+      // Table header
+      const tableTop = doc.y;
+      const colWidths = { date: 80, time: 50, user: 100, action: 140, resource: 150, ip: 80, status: 50 };
+      let xPos = 40;
+
+      doc.fillColor(colors.header)
+        .rect(40, tableTop, 750, 20)
+        .fill();
+
+      doc.fillColor('#ffffff')
+        .fontSize(8)
+        .font('Helvetica-Bold');
+
+      doc.text('Date', xPos + 5, tableTop + 6, { width: colWidths.date });
+      xPos += colWidths.date;
+      doc.text('Heure', xPos + 5, tableTop + 6, { width: colWidths.time });
+      xPos += colWidths.time;
+      doc.text('Utilisateur', xPos + 5, tableTop + 6, { width: colWidths.user });
+      xPos += colWidths.user;
+      doc.text('Action', xPos + 5, tableTop + 6, { width: colWidths.action });
+      xPos += colWidths.action;
+      doc.text('Ressource', xPos + 5, tableTop + 6, { width: colWidths.resource });
+      xPos += colWidths.resource;
+      doc.text('Adresse IP', xPos + 5, tableTop + 6, { width: colWidths.ip });
+      xPos += colWidths.ip;
+      doc.text('Status', xPos + 5, tableTop + 6, { width: colWidths.status });
+
+      // Table rows
+      let rowY = tableTop + 22;
+      const rowHeight = 16;
+      const maxRowsPerPage = 35;
+      let rowCount = 0;
+
+      logs.forEach((log, index) => {
+        if (rowCount >= maxRowsPerPage) {
+          doc.addPage();
+          rowY = 40;
+          rowCount = 0;
+
+          // Re-draw header on new page
+          doc.fillColor(colors.header)
+            .rect(40, rowY, 750, 20)
+            .fill();
+
+          xPos = 40;
+          doc.fillColor('#ffffff')
+            .fontSize(8)
+            .font('Helvetica-Bold');
+
+          doc.text('Date', xPos + 5, rowY + 6, { width: colWidths.date });
+          xPos += colWidths.date;
+          doc.text('Heure', xPos + 5, rowY + 6, { width: colWidths.time });
+          xPos += colWidths.time;
+          doc.text('Utilisateur', xPos + 5, rowY + 6, { width: colWidths.user });
+          xPos += colWidths.user;
+          doc.text('Action', xPos + 5, rowY + 6, { width: colWidths.action });
+          xPos += colWidths.action;
+          doc.text('Ressource', xPos + 5, rowY + 6, { width: colWidths.resource });
+          xPos += colWidths.resource;
+          doc.text('Adresse IP', xPos + 5, rowY + 6, { width: colWidths.ip });
+          xPos += colWidths.ip;
+          doc.text('Status', xPos + 5, rowY + 6, { width: colWidths.status });
+
+          rowY += 22;
+        }
+
+        // Alternate row background
+        if (index % 2 === 0) {
+          doc.fillColor(colors.rowAlt)
+            .rect(40, rowY, 750, rowHeight)
+            .fill();
+        }
+
+        // Row data
+        const date = new Date(log.createdAt);
+        const userName = log.user ? `${log.user.firstName || ''} ${log.user.lastName || ''}`.trim() : 'Système';
+
+        // Color based on action type
+        let actionColor = colors.text;
+        if (log.action?.startsWith('CRITICAL_')) actionColor = colors.critical;
+        else if (log.security?.suspicious) actionColor = colors.warning;
+        else if (log.action?.includes('SUCCESS')) actionColor = colors.success;
+
+        xPos = 40;
+        doc.fillColor(colors.text)
+          .fontSize(7)
+          .font('Helvetica');
+
+        doc.text(date.toLocaleDateString('fr-CD'), xPos + 5, rowY + 4, { width: colWidths.date - 10 });
+        xPos += colWidths.date;
+        doc.text(date.toLocaleTimeString('fr-CD'), xPos + 5, rowY + 4, { width: colWidths.time - 10 });
+        xPos += colWidths.time;
+        doc.text(userName.substring(0, 15), xPos + 5, rowY + 4, { width: colWidths.user - 10 });
+        xPos += colWidths.user;
+        doc.fillColor(actionColor)
+          .text((log.action || '').substring(0, 25), xPos + 5, rowY + 4, { width: colWidths.action - 10 });
+        xPos += colWidths.action;
+        doc.fillColor(colors.text)
+          .text((log.resource || '').substring(0, 25), xPos + 5, rowY + 4, { width: colWidths.resource - 10 });
+        xPos += colWidths.resource;
+        doc.text(log.ipAddress || '-', xPos + 5, rowY + 4, { width: colWidths.ip - 10 });
+        xPos += colWidths.ip;
+        doc.text(log.responseStatus ? String(log.responseStatus) : '-', xPos + 5, rowY + 4, { width: colWidths.status - 10 });
+
+        rowY += rowHeight;
+        rowCount++;
+      });
+
+      // Footer on last page
+      doc.moveDown(2);
+      doc.fillColor(colors.lightText)
+        .fontSize(8)
+        .text('Ce rapport est confidentiel et destiné à un usage interne uniquement.', { align: 'center' });
+      doc.text('MedFlow EMR - Système de Gestion de Cabinet Médical', { align: 'center' });
+
+      doc.end();
+    } catch (error) {
+      reject(error);
+    }
+  });
+}
 
 // Protect all routes and require admin role
 router.use(protect);
@@ -613,7 +835,7 @@ router.get('/critical', asyncHandler(async (req, res) => {
   });
 }));
 
-// @desc    Export audit logs to CSV
+// @desc    Export audit logs to CSV or PDF
 // @route   GET /api/audit/export
 // @access  Private/Admin
 router.get('/export', asyncHandler(async (req, res) => {
@@ -628,15 +850,26 @@ router.get('/export', asyncHandler(async (req, res) => {
     if (endDate) query.createdAt.$lte = new Date(endDate);
   }
 
+  // PDF has lower limit due to file size constraints
+  const limit = format === 'pdf' ? 5000 : 10000;
+
   const logs = await AuditLog.find(query)
     .populate('user', 'firstName lastName email role')
     .sort('-createdAt')
-    .limit(10000); // Limit export to 10k records
+    .limit(limit);
 
-  if (format === 'csv') {
+  if (format === 'pdf') {
+    // Generate PDF
+    const pdfBuffer = await generateAuditPDF(logs, { startDate, endDate });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=rapport-audit-${Date.now()}.pdf`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+  } else if (format === 'csv') {
     // Generate CSV
     const csvRows = [
-      'Date,Time,User,Email,Role,Action,Resource,IP Address,Status,Details'
+      'Date,Heure,Utilisateur,Email,Rôle,Action,Ressource,Adresse IP,Status,Détails'
     ];
 
     logs.forEach(log => {
@@ -644,7 +877,7 @@ router.get('/export', asyncHandler(async (req, res) => {
       const row = [
         date.toLocaleDateString('fr-CD'),
         date.toLocaleTimeString('fr-CD'),
-        log.user ? `${log.user.firstName} ${log.user.lastName}` : 'System',
+        log.user ? `${log.user.firstName} ${log.user.lastName}` : 'Système',
         log.user?.email || '',
         log.user?.role || '',
         log.action,

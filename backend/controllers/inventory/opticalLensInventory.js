@@ -9,6 +9,9 @@ const mongoose = require('mongoose');
 const { OpticalLensInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('OpticalLensInventory');
+
 // Create factory instance with optical lens-specific config
 const factory = new InventoryControllerFactory({
   Model: OpticalLensInventory,
@@ -86,7 +89,7 @@ const reserveForOrder = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error reserving optical lens stock:', error);
+    log.error('Error reserving optical lens stock:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error reserving stock'
@@ -127,7 +130,7 @@ const releaseReservation = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error releasing optical lens reservation:', error);
+    log.error('Error releasing optical lens reservation:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error releasing reservation'
@@ -168,7 +171,7 @@ const fulfillReservation = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error fulfilling optical lens reservation:', error);
+    log.error('Error fulfilling optical lens reservation:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error completing sale'
@@ -211,7 +214,7 @@ const findBySpecs = async (req, res) => {
       count: lenses.length
     });
   } catch (error) {
-    console.error('Error finding optical lenses by specs:', error);
+    log.error('Error finding optical lenses by specs:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error finding lenses',
@@ -242,7 +245,7 @@ const getByMaterial = async (req, res) => {
       count: lenses.length
     });
   } catch (error) {
-    console.error('Error getting optical lenses by material:', error);
+    log.error('Error getting optical lenses by material:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error retrieving lenses',
@@ -284,7 +287,7 @@ const acknowledgeAlert = async (req, res) => {
       message: 'Alert acknowledged successfully'
     });
   } catch (error) {
-    console.error('Error acknowledging optical lens alert:', error);
+    log.error('Error acknowledging optical lens alert:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error acknowledging alert',

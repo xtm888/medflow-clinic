@@ -16,6 +16,9 @@
 
 const crypto = require('crypto');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Csrf');
+
 // Routes that should be excluded from CSRF (public endpoints, webhooks, etc.)
 const CSRF_EXEMPT_ROUTES = [
   '/api/health',
@@ -81,7 +84,7 @@ function csrfProtection(req, res, next) {
 
   // Must have both cookie and header
   if (!cookieToken) {
-    console.warn(`[CSRF] Missing cookie token for ${req.method} ${req.path} from ${req.ip}`);
+    log.warn(`[CSRF] Missing cookie token for ${req.method} ${req.path} from ${req.ip}`);
     return res.status(403).json({
       success: false,
       error: 'CSRF_MISSING_COOKIE',
@@ -90,7 +93,7 @@ function csrfProtection(req, res, next) {
   }
 
   if (!headerToken) {
-    console.warn(`[CSRF] Missing header token for ${req.method} ${req.path} from ${req.ip}`);
+    log.warn(`[CSRF] Missing header token for ${req.method} ${req.path} from ${req.ip}`);
     return res.status(403).json({
       success: false,
       error: 'CSRF_MISSING_HEADER',
@@ -105,7 +108,7 @@ function csrfProtection(req, res, next) {
 
     if (cookieBuffer.length !== headerBuffer.length ||
         !crypto.timingSafeEqual(cookieBuffer, headerBuffer)) {
-      console.warn(`[CSRF] Token mismatch for ${req.method} ${req.path} from ${req.ip}`);
+      log.warn(`[CSRF] Token mismatch for ${req.method} ${req.path} from ${req.ip}`);
       return res.status(403).json({
         success: false,
         error: 'CSRF_INVALID',
@@ -113,7 +116,7 @@ function csrfProtection(req, res, next) {
       });
     }
   } catch (error) {
-    console.error('[CSRF] Validation error:', error.message);
+    log.error('[CSRF] Validation error:', error.message);
     return res.status(403).json({
       success: false,
       error: 'CSRF_ERROR',

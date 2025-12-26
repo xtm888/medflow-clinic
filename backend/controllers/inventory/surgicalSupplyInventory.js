@@ -9,6 +9,9 @@ const mongoose = require('mongoose');
 const { SurgicalSupplyInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('SurgicalSupplyInventory');
+
 // Create factory instance with surgical supply-specific config
 const factory = new InventoryControllerFactory({
   Model: SurgicalSupplyInventory,
@@ -67,7 +70,7 @@ const reserveForSurgery = async (req, res) => {
     const result = await supply.reserveForSurgery(quantity, surgeryId, req.user._id);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error reserving for surgery:', error);
+    log.error('Error reserving for surgery:', { error: error });
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -101,7 +104,7 @@ const consumeForSurgery = async (req, res) => {
 
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error consuming for surgery:', error);
+    log.error('Error consuming for surgery:', { error: error });
     res.status(400).json({ success: false, message: error.message });
   }
 };
@@ -124,7 +127,7 @@ const releaseReservation = async (req, res) => {
     const result = await supply.releaseReservation(quantity);
     res.json({ success: true, data: result });
   } catch (error) {
-    console.error('Error releasing reservation:', error);
+    log.error('Error releasing reservation:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -180,7 +183,7 @@ const findIOLByPower = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error finding IOL by power:', error);
+    log.error('Error finding IOL by power:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -219,7 +222,7 @@ const getIOLTypes = async (req, res) => {
       data: { types: iolTypes, materials: iolMaterials, designs: iolDesigns }
     });
   } catch (error) {
-    console.error('Error getting IOL types:', error);
+    log.error('Error getting IOL types:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -268,7 +271,7 @@ const getExpiringSoon = async (req, res) => {
       total: supplies.length
     });
   } catch (error) {
-    console.error('Error getting expiring supplies:', error);
+    log.error('Error getting expiring supplies:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -304,7 +307,7 @@ const getBatches = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error getting batches:', error);
+    log.error('Error getting batches:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -340,7 +343,7 @@ const updateBatch = async (req, res) => {
 
     res.json({ success: true, data: batch });
   } catch (error) {
-    console.error('Error updating batch:', error);
+    log.error('Error updating batch:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -381,7 +384,7 @@ const recallBatch = async (req, res) => {
 
     res.json({ success: true, message: 'Batch recalled successfully' });
   } catch (error) {
-    console.error('Error recalling batch:', error);
+    log.error('Error recalling batch:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };
@@ -410,7 +413,7 @@ const getCategories = async (req, res) => {
 
     res.json({ success: true, data: categories });
   } catch (error) {
-    console.error('Error getting categories:', error);
+    log.error('Error getting categories:', { error: error });
     res.status(500).json({ success: false, message: error.message });
   }
 };

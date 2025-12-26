@@ -264,6 +264,9 @@ exports.markClaimPaid = asyncHandler(async (req, res) => {
     if (invoice) {
       // Generate unique payment ID for audit trail
       const crypto = require('crypto');
+
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Claims');
       const paymentId = `INS${Date.now()}${crypto.randomBytes(4).toString('hex').toUpperCase()}`;
 
       // Validate payment amount doesn't exceed what's owed
@@ -295,7 +298,7 @@ exports.markClaimPaid = asyncHandler(async (req, res) => {
 
         // Warn if insurance paid more than was due
         if (paidAmount > effectivePayment) {
-          console.warn(`Insurance payment ${claim.claimNumber} was ${paidAmount} but only ${effectivePayment} was applied (remaining was ${paidAmount - effectivePayment})`);
+          log.warn(`Insurance payment ${claim.claimNumber} was ${paidAmount} but only ${effectivePayment} was applied (remaining was ${paidAmount - effectivePayment})`);
         }
       }
     }

@@ -10,6 +10,9 @@ const crypto = require('crypto');
 const Visit = require('../../../models/Visit');
 const LabOrder = require('../../../models/LabOrder');
 
+const { createContextLogger } = require('../../../utils/structuredLogger');
+const log = createContextLogger('BarcodeGenerator');
+
 /**
  * Generate a barcode string (without collision check)
  * @returns {string} Barcode in format SP{timestamp}{random}
@@ -54,7 +57,7 @@ async function generateUniqueBarcode(maxRetries = 5) {
     }
 
     // If collision, log warning and retry
-    console.warn(`Barcode collision detected for ${barcode}, attempt ${attempt + 1}/${maxRetries}`);
+    log.warn(`Barcode collision detected for ${barcode}, attempt ${attempt + 1}/${maxRetries}`);
 
     // Small delay to ensure timestamp changes
     await new Promise(resolve => setTimeout(resolve, 1));
@@ -62,7 +65,7 @@ async function generateUniqueBarcode(maxRetries = 5) {
 
   // If all retries fail, add UUID suffix for guaranteed uniqueness
   const fallback = generateBarcode() + crypto.randomUUID().slice(0, 4).toUpperCase();
-  console.warn(`Using fallback barcode: ${fallback}`);
+  log.warn(`Using fallback barcode: ${fallback}`);
   return fallback;
 }
 

@@ -3,6 +3,9 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('FileUpload');
+
 // Create upload directories if they don't exist
 const uploadDirs = {
   patients: 'uploads/patients',
@@ -320,7 +323,7 @@ const fileUtils = {
         }
       }
     } catch (error) {
-      console.error('Error cleaning temp files:', error);
+      log.error('Error cleaning temp files:', { error: error });
     }
   },
 

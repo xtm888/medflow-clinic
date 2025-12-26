@@ -15,6 +15,9 @@ const { asyncHandler } = require('../../middleware/errorHandler');
 exports.generateInvoicePDF = asyncHandler(async (req, res) => {
   const Document = require('../../models/Document');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Documents');
+
   const invoice = await Invoice.findById(req.params.id)
     .populate('patient', 'firstName lastName patientId dateOfBirth phoneNumber email address')
     .populate('createdBy', 'name');
@@ -40,7 +43,7 @@ exports.generateInvoicePDF = asyncHandler(async (req, res) => {
     },
     filename,
     fileSize: pdfBuffer.length
-  }).catch(err => console.error('Document tracking error:', err.message));
+  }).catch(err => log.error('Document tracking error:', err.message));
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename=${filename}`);

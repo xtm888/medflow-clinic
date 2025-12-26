@@ -282,12 +282,26 @@ const auditService = {
   async exportToCSV(params = {}) {
     try {
       const response = await api.get('/audit/export', {
-        params,
+        params: { ...params, format: 'csv' },
         responseType: 'blob'
       });
       return response.data;
     } catch (error) {
       console.error('Error exporting audit logs:', error);
+      throw error;
+    }
+  },
+
+  // Export audit logs to PDF
+  async exportToPDF(params = {}) {
+    try {
+      const response = await api.get('/audit/export', {
+        params: { ...params, format: 'pdf' },
+        responseType: 'blob'
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error exporting audit logs to PDF:', error);
       throw error;
     }
   },

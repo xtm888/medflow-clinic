@@ -5,6 +5,9 @@ const Approval = require('../../models/Approval');
 const currencyService = require('../../services/currencyService');
 const { asyncHandler } = require('../../middleware/errorHandler');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Conventions');
+
 // @desc    Apply convention/company billing to invoice
 // @route   POST /api/billing/convention/apply/:invoiceId
 // @access  Private (Admin, Billing)
@@ -34,7 +37,7 @@ exports.applyConventionBilling = asyncHandler(async (req, res) => {
       const rates = await currencyService.getExchangeRates('CDF');
       rate = rates.USD || null;
     } catch (err) {
-      console.warn('Could not get exchange rate:', err.message);
+      log.warn('Could not get exchange rate:', err.message);
     }
   }
 
@@ -366,7 +369,7 @@ exports.getConventionPrice = asyncHandler(async (req, res) => {
         priceUSD = Math.round((priceInfo.price / rates.USD) * 100) / 100;
       }
     } catch (err) {
-      console.warn('Could not get exchange rate:', err.message);
+      log.warn('Could not get exchange rate:', err.message);
     }
   }
 

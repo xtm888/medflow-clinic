@@ -1,12 +1,15 @@
 const AuditLog = require('../models/AuditLog');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ErrorHandler');
+
 // Error handler middleware
 exports.errorHandler = async (err, req, res, next) => {
   let error = { ...err };
   error.message = err.message;
 
   // Log error to console for dev
-  console.error(err);
+  log.error(err);
 
   // Log error to audit log
   try {
@@ -29,7 +32,7 @@ exports.errorHandler = async (err, req, res, next) => {
       }
     });
   } catch (logError) {
-    console.error('Error logging failed:', logError);
+    log.error('Error logging failed:', { error: logError });
   }
 
   // Mongoose bad ObjectId
@@ -110,15 +113,15 @@ exports.notFound = (req, res, next) => {
 
 // MongoDB connection error handler
 exports.mongooseErrorHandler = (error) => {
-  console.error('MongoDB Error:', error);
+  log.error('MongoDB Error:', { error: error });
 
   if (error.name === 'MongoNetworkError') {
-    console.error('Failed to connect to MongoDB');
+    log.error('Failed to connect to MongoDB');
     process.exit(1);
   }
 
   if (error.name === 'MongooseServerSelectionError') {
-    console.error('MongoDB server selection error');
+    log.error('MongoDB server selection error');
     process.exit(1);
   }
 };

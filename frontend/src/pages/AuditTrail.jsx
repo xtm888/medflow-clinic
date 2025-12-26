@@ -33,7 +33,9 @@ import {
   MessageSquare,
   CheckSquare,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  FileSpreadsheet,
+  FilePdf
 } from 'lucide-react';
 import auditService from '../services/auditService';
 import { normalizeToArray } from '../utils/apiHelpers';
@@ -334,12 +336,22 @@ export default function AuditTrail() {
     setCurrentPage(1);
   };
 
-  const handleExport = async () => {
+  // Export dropdown state
+  const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
+
+  const handleExport = async (exportFormat = 'csv') => {
+    setExportDropdownOpen(false);
+
+    const formatLabel = exportFormat === 'pdf' ? 'PDF' : 'CSV';
+    const extension = exportFormat === 'pdf' ? 'pdf' : 'csv';
+    const mimeType = exportFormat === 'pdf' ? 'application/pdf' : 'text/csv;charset=utf-8;';
+
     try {
-      toast.info('Génération du fichier CSV...');
+      toast.info(`Génération du fichier ${formatLabel}...`);
 
       // Use backend export endpoint
-      const blob = await auditService.exportToCSV({
+      const exportFn = exportFormat === 'pdf' ? auditService.exportToPDF : auditService.exportToCSV;
+      const blob = await exportFn({
         startDate: filters.startDate,
         endDate: filters.endDate,
         action: filters.action || undefined
@@ -348,24 +360,28 @@ export default function AuditTrail() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `journal_audit_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
+      link.download = `journal_audit_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.${extension}`;
       link.click();
       URL.revokeObjectURL(url);
-      toast.success('Export terminé');
+      toast.success(`Export ${formatLabel} terminé`);
     } catch (error) {
-      // Fallback to client-side CSV generation
-      try {
-        const csvContent = generateCSV(logs);
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `journal_audit_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.csv`;
-        link.click();
-        URL.revokeObjectURL(url);
-        toast.success('Export terminé');
-      } catch (err) {
-        toast.error("Échec de l'export");
+      // Fallback to client-side CSV generation (only for CSV)
+      if (exportFormat === 'csv') {
+        try {
+          const csvContent = generateCSV(logs);
+          const blob = new Blob([csvContent], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `journal_audit_${format(new Date(), 'yyyy-MM-dd_HH-mm')}.${extension}`;
+          link.click();
+          URL.revokeObjectURL(url);
+          toast.success('Export CSV terminé');
+        } catch (err) {
+          toast.error("Échec de l'export");
+        }
+      } else {
+        toast.error(`Échec de l'export ${formatLabel}`);
       }
     }
   };
@@ -427,13 +443,35 @@ export default function AuditTrail() {
             <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
             <span>Actualiser</span>
           </button>
-          <button
-            onClick={handleExport}
-            className="btn btn-primary flex items-center space-x-2"
-          >
-            <Download className="h-5 w-5" />
-            <span>Exporter</span>
-          </button>
+          {/* Export dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setExportDropdownOpen(!exportDropdownOpen)}
+              className="btn btn-primary flex items-center space-x-2"
+            >
+              <Download className="h-5 w-5" />
+              <span>Exporter</span>
+              <ChevronDown className={`h-4 w-4 transition-transform ${exportDropdownOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {exportDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-50 border border-gray-200">
+                <button
+                  onClick={() => handleExport('csv')}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-t-md"
+                >
+                  <FileSpreadsheet className="h-4 w-4 mr-3 text-green-600" />
+                  Exporter en CSV
+                </button>
+                <button
+                  onClick={() => handleExport('pdf')}
+                  className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-b-md"
+                >
+                  <FileText className="h-4 w-4 mr-3 text-red-600" />
+                  Exporter en PDF
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

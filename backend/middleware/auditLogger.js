@@ -1,5 +1,8 @@
 const AuditLog = require('../models/AuditLog');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('AuditLogger');
+
 // Main audit logging middleware
 exports.auditLogger = async (req, res, next) => {
   // Store the original send function
@@ -72,7 +75,7 @@ exports.auditLogger = async (req, res, next) => {
     // Save audit log asynchronously
     if (shouldLogRequest(req)) {
       AuditLog.create(auditEntry).catch(err => {
-        console.error('Audit logging error:', err);
+        log.error('Audit logging error:', { error: err });
       });
     }
 
@@ -97,7 +100,7 @@ exports.logAction = (action, metadata = {}) => {
         requestBody: req.body ? sanitizeRequestBody(req.body) : {}
       });
     } catch (error) {
-      console.error('Action logging error:', error);
+      log.error('Action logging error:', { error: error });
     }
     next();
   };
@@ -127,7 +130,7 @@ exports.logPatientDataAccess = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error('Patient data access logging error:', error);
+    log.error('Patient data access logging error:', { error: error });
   }
   next();
 };
@@ -158,7 +161,7 @@ exports.logCriticalOperation = (operation) => {
         triggerSecurityAlert(entry);
       }
     } catch (error) {
-      console.error('Critical operation logging error:', error);
+      log.error('Critical operation logging error:', { error: error });
     }
     next();
   };
@@ -189,7 +192,7 @@ exports.logPrescriptionActivity = async (req, res, next) => {
       });
     }
   } catch (error) {
-    console.error('Prescription activity logging error:', error);
+    log.error('Prescription activity logging error:', { error: error });
   }
   next();
 };
@@ -218,14 +221,14 @@ exports.logPermissionDenial = async (denialDetails) => {
     });
 
     // Log to console for real-time monitoring
-    console.warn('PERMISSION DENIED - Audit logged:', {
+    log.warn('PERMISSION DENIED - Audit logged:', {
       userId: denialDetails.userId,
       userRole: denialDetails.userRole,
       path: denialDetails.path,
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error('Permission denial logging error:', error);
+    log.error('Permission denial logging error:', { error: error });
   }
 };
 
@@ -315,7 +318,7 @@ function shouldTriggerAlert(operation) {
 function triggerSecurityAlert(entry) {
   // Implement your alert mechanism here
   // This could send emails, SMS, or push notifications to administrators
-  console.warn('SECURITY ALERT:', entry);
+  log.warn('SECURITY ALERT:', { data: entry });
 
   // Example: Send email to admin
   // sendEmail({
@@ -354,7 +357,7 @@ exports.generateAuditReport = async (req, res, next) => {
       data: logs
     });
   } catch (error) {
-    console.error('Audit report generation error:', error);
+    log.error('Audit report generation error:', { error: error });
     res.status(500).json({
       success: false,
       error: 'Error generating audit report'

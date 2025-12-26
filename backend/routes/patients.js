@@ -52,7 +52,8 @@ const {
   acknowledgePatientAlert,
   syncAllergyAlerts,
   generateFollowupAlerts
-} = require('../controllers/patientController');
+// Import from split controller modules (maintains backward compatibility via index.js)
+} = require('../controllers/patients');
 
 const { getPatientBilling } = require('../controllers/billing');
 const pdfGenerator = require('../services/pdfGenerator');

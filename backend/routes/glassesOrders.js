@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+// Import from split controller modules (maintains backward compatibility via index.js)
 const {
   getOrders,
   getOrder,
@@ -34,7 +35,7 @@ const {
   updateLabStatus,
   getPendingExport,
   getAwaitingFromLab
-} = require('../controllers/glassesOrderController');
+} = require('../controllers/glassesOrders');
 const { protect, authorize } = require('../middleware/auth');
 const { logAction, logCriticalOperation, logPatientDataAccess } = require('../middleware/auditLogger');
 

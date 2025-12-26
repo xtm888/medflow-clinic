@@ -839,11 +839,32 @@ exports.getCompaniesHierarchy = asyncHandler(async (req, res) => {
     subCompaniesByParent[parentId].push(company);
   }
 
-  // Add employee counts if requested
-  const addStats = async (company) => {
+  // OPTIMIZATION: Fetch all employee counts in a single aggregation instead of N+1 queries
+  let employeeCountMap = new Map();
+  if (includeStats === 'true') {
+    const allCompanyIds = [
+      ...parentConventions.map(c => c._id),
+      ...companiesWithParent.map(c => c._id),
+      ...standaloneCompanies.map(c => c._id)
+    ];
+
+    const employeeCounts = await Patient.aggregate([
+      { $match: {
+        'convention.company': { $in: allCompanyIds },
+        isDeleted: { $ne: true }
+      }},
+      { $group: { _id: '$convention.company', count: { $sum: 1 } }}
+    ]);
+
+    employeeCountMap = new Map(
+      employeeCounts.map(e => [e._id.toString(), e.count])
+    );
+  }
+
+  // Helper to add stats from pre-fetched map
+  const addStats = (company) => {
     if (includeStats === 'true') {
-      const employeeCount = await Patient.countByCompany(company._id);
-      return { ...company, employeeCount };
+      return { ...company, employeeCount: employeeCountMap.get(company._id.toString()) || 0 };
     }
     return company;
   };
@@ -854,11 +875,9 @@ exports.getCompaniesHierarchy = asyncHandler(async (req, res) => {
   // Add parent conventions with their sub-companies
   for (const parent of parentConventions) {
     const subCompanies = subCompaniesByParent[parent._id.toString()] || [];
-    const parentWithStats = await addStats(parent);
+    const parentWithStats = addStats(parent);
 
-    const subCompaniesWithStats = await Promise.all(
-      subCompanies.map(sub => addStats(sub))
-    );
+    const subCompaniesWithStats = subCompanies.map(sub => addStats(sub));
 
     hierarchy.push({
       ...parentWithStats,
@@ -870,7 +889,7 @@ exports.getCompaniesHierarchy = asyncHandler(async (req, res) => {
 
   // Add standalone companies
   for (const company of standaloneCompanies) {
-    const companyWithStats = await addStats(company);
+    const companyWithStats = addStats(company);
     hierarchy.push({
       ...companyWithStats,
       isParent: false,

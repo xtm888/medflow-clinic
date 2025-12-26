@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const prescriptionController = require('../controllers/prescriptionController');
+// Import from split controller modules (maintains backward compatibility via index.js)
+const prescriptionController = require('../controllers/prescriptions');
 const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { logPrescriptionActivity } = require('../middleware/auditLogger');
 const { optionalClinic } = require('../middleware/clinicAuth');

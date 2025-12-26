@@ -11,6 +11,9 @@ const InventoryControllerFactory = require('./InventoryControllerFactory');
 const { verifyClinicAccess } = require('../../utils/clinicFilter');
 const { sanitizeNumber, sanitizePrice } = require('../../utils/sanitize');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('FrameInventory');
+
 // Create factory instance with frame-specific config
 const factory = new InventoryControllerFactory({
   Model: FrameInventory,
@@ -80,7 +83,7 @@ const reserveForOrder = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error reserving frame stock:', error);
+    log.error('Error reserving frame stock:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error reserving stock'
@@ -121,7 +124,7 @@ const releaseReservation = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error releasing frame reservation:', error);
+    log.error('Error releasing frame reservation:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error releasing reservation'
@@ -178,7 +181,7 @@ const fulfillReservation = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error fulfilling frame reservation:', error);
+    log.error('Error fulfilling frame reservation:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error completing sale'
@@ -202,7 +205,7 @@ const getByCategory = async (req, res) => {
       count: frames.length
     });
   } catch (error) {
-    console.error('Error getting frames by category:', error);
+    log.error('Error getting frames by category:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error retrieving frames',

@@ -7,6 +7,9 @@ const Notification = require('../../models/Notification');
 const AuditLog = require('../../models/AuditLog');
 const websocketService = require('../../services/websocketService');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Results');
+
 // ============================================
 // CONSTANTS & HELPER FUNCTIONS
 // ============================================
@@ -132,7 +135,7 @@ exports.updateTestResults = asyncHandler(async (req, res) => {
     if (!canTransitionLabStatus(currentStatus, status)) {
       // Allow admin to force transition with audit
       if (forceTransition && req.user.role === 'admin') {
-        console.warn(`Admin ${req.user.id} forcing lab status transition: ${currentStatus} -> ${status}`);
+        log.warn(`Admin ${req.user.id} forcing lab status transition: ${currentStatus} -> ${status}`);
         await AuditLog.create({
           user: req.user.id,
           action: 'LAB_STATUS_FORCE_TRANSITION',
@@ -520,8 +523,13 @@ exports.checkAbnormalValues = asyncHandler(async (req, res) => {
     });
   }
 
-  const checkedResults = await Promise.all(results.map(async (item) => {
-    const template = await LaboratoryTemplate.findById(item.templateId);
+  // OPTIMIZATION: Fetch all templates in a single query instead of N+1 individual calls
+  const templateIds = [...new Set(results.map(r => r.templateId).filter(Boolean))];
+  const templates = await LaboratoryTemplate.find({ _id: { $in: templateIds } }).lean();
+  const templateMap = new Map(templates.map(t => [t._id.toString(), t]));
+
+  const checkedResults = results.map((item) => {
+    const template = templateMap.get(item.templateId?.toString());
     if (!template) {
       return {
         ...item,
@@ -537,7 +545,7 @@ exports.checkAbnormalValues = asyncHandler(async (req, res) => {
       referenceRange: template.referenceRange,
       ...check
     };
-  }));
+  });
 
   const abnormalCount = checkedResults.filter(r => r.isAbnormal).length;
   const criticalCount = checkedResults.filter(r => r.severity === 'critical').length;

@@ -3,6 +3,8 @@ const User = require('../models/User');
 const { validateSession, updateActivity } = require('../services/sessionService');
 const { isRedisConnected, twoFactorStore } = require('../config/redis');
 const { logPermissionDenial } = require('./auditLogger');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Auth');
 
 // Protect routes - verify JWT token
 exports.protect = async (req, res, next) => {
@@ -29,7 +31,7 @@ exports.protect = async (req, res, next) => {
     // SECURITY: Validate token type - prevent refresh tokens from being used as access tokens
     // This is critical because refresh tokens have a 30-day expiry while access tokens are 15 minutes
     if (decoded.tokenType && decoded.tokenType !== 'access') {
-      console.warn(`[SECURITY] Token type mismatch: expected 'access', got '${decoded.tokenType}' for user ${decoded.id}`);
+      log.warn('Token type mismatch', { expected: 'access', got: decoded.tokenType, userId: decoded.id });
       return res.status(401).json({
         success: false,
         error: 'Invalid token type',
@@ -92,7 +94,7 @@ exports.protect = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Token verification error:', error);
+    log.error('Token verification error', { error: error.message });
     return res.status(401).json({
       success: false,
       error: 'Not authorized to access this route'
@@ -149,7 +151,7 @@ exports.authorize = (...roles) => {
         method: req.method,
         ip: req.ip,
         userAgent: req.headers['user-agent']
-      }).catch(err => console.error('Audit log error:', err));
+      }).catch(err => log.error('Audit log error', { error: err.message }));
 
       // Return generic response to client (no details)
       return res.status(403).json({
@@ -192,7 +194,7 @@ exports.requirePermission = (...permissions) => {
           method: req.method,
           ip: req.ip,
           userAgent: req.headers['user-agent']
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => log.error('Audit log error', { error: err.message }));
 
         return res.status(403).json({
           success: false,
@@ -217,7 +219,7 @@ exports.requirePermission = (...permissions) => {
           method: req.method,
           ip: req.ip,
           userAgent: req.headers['user-agent']
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => log.error('Audit log error', { error: err.message }));
 
         return res.status(403).json({
           success: false,
@@ -228,7 +230,7 @@ exports.requirePermission = (...permissions) => {
       // User has permission, proceed
       next();
     } catch (error) {
-      console.error('Permission check error:', error);
+      log.error('Permission check error', { error: error.message });
       return res.status(500).json({
         success: false,
         message: 'Authorization error'
@@ -251,7 +253,7 @@ exports.checkPermission = (module, action) => {
         method: req.method,
         ip: req.ip,
         userAgent: req.headers['user-agent']
-      }).catch(err => console.error('Audit log error:', err));
+      }).catch(err => log.error('Audit log error', { error: err.message }));
 
       // Return generic response to client (no details)
       return res.status(403).json({
@@ -299,7 +301,7 @@ exports.verifyEmailToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Email verification error:', error);
+    log.error('Email verification error', { error: error.message });
     return res.status(500).json({
       success: false,
       error: 'Error verifying email token'
@@ -339,7 +341,7 @@ exports.verifyResetToken = async (req, res, next) => {
     req.user = user;
     next();
   } catch (error) {
-    console.error('Reset token verification error:', error);
+    log.error('Reset token verification error', { error: error.message });
     return res.status(500).json({
       success: false,
       error: 'Error verifying reset token'
@@ -375,7 +377,7 @@ exports.checkOwnership = (model, paramName = 'id') => {
           method: req.method,
           ip: req.ip,
           userAgent: req.headers['user-agent']
-        }).catch(err => console.error('Audit log error:', err));
+        }).catch(err => log.error('Audit log error', { error: err.message }));
 
         // Return generic response to client (no details)
         return res.status(403).json({
@@ -386,7 +388,7 @@ exports.checkOwnership = (model, paramName = 'id') => {
       req.resource = resource;
       next();
     } catch (error) {
-      console.error('Ownership check error:', error);
+      log.error('Ownership check error', { error: error.message });
       return res.status(500).json({
         success: false,
         error: 'Error checking resource ownership'
@@ -454,22 +456,19 @@ exports.requireTwoFactor = async (req, res, next) => {
 async function verifyTwoFactorCode(user, code) {
   // If user doesn't have 2FA secret configured, reject
   if (!user.twoFactorSecret) {
-    console.error('2FA verification failed: User has 2FA enabled but no secret configured');
+    log.error('2FA verification failed: User has 2FA enabled but no secret configured', { userId: user._id });
     return false;
   }
 
   // SECURITY: Check if code has already been used (prevent replay attacks)
   // Uses Redis-backed store that survives server restarts
   if (await twoFactorStore.isUsed(user._id.toString(), code)) {
-    console.warn(`2FA code reuse attempt detected for user ${user._id}`);
+    log.warn('2FA code reuse attempt detected', { userId: user._id });
     return false;
   }
 
   // Use speakeasy for TOTP verification
   const speakeasy = require('speakeasy');
-
-const { createContextLogger } = require('../utils/structuredLogger');
-const log = createContextLogger('Auth');
 
   try {
     const isValid = speakeasy.totp.verify({
@@ -480,7 +479,7 @@ const log = createContextLogger('Auth');
     });
 
     if (!isValid) {
-      console.warn(`2FA verification failed for user ${user._id}: Invalid code`);
+      log.warn('2FA verification failed: Invalid code', { userId: user._id });
       return false;
     }
 
@@ -491,7 +490,7 @@ const log = createContextLogger('Auth');
 
     return true;
   } catch (error) {
-    console.error('2FA verification error:', error.message);
+    log.error('2FA verification error', { error: error.message });
     return false;
   }
 }

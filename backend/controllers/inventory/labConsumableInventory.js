@@ -8,6 +8,9 @@
 const { LabConsumableInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('LabConsumableInventory');
+
 // Create factory instance with lab consumable-specific config
 const factory = new InventoryControllerFactory({
   Model: LabConsumableInventory,
@@ -58,7 +61,7 @@ const addBatch = async (req, res) => {
       message: `Lot ${req.body.lotNumber} ajouté avec succès`
     });
   } catch (error) {
-    console.error('Error adding lab consumable batch:', error);
+    log.error('Error adding lab consumable batch:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -100,7 +103,7 @@ const consumeItem = async (req, res) => {
       message: `${quantity} unité(s) consommée(s)`
     });
   } catch (error) {
-    console.error('Error consuming lab consumable:', error);
+    log.error('Error consuming lab consumable:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -133,7 +136,7 @@ const markDamaged = async (req, res) => {
       message: 'Stock marqué comme endommagé'
     });
   } catch (error) {
-    console.error('Error marking lab consumable as damaged:', error);
+    log.error('Error marking lab consumable as damaged:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -158,7 +161,7 @@ const getCollectionTubes = async (req, res) => {
       data: tubes
     });
   } catch (error) {
-    console.error('Error getting collection tubes:', error);
+    log.error('Error getting collection tubes:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -199,7 +202,7 @@ const getTubeStats = async (req, res) => {
       data: mappedStats
     });
   } catch (error) {
-    console.error('Error getting tube stats:', error);
+    log.error('Error getting tube stats:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -230,7 +233,7 @@ const getTubeTypes = async (req, res) => {
       data: tubeTypes
     });
   } catch (error) {
-    console.error('Error getting tube types:', error);
+    log.error('Error getting tube types:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -255,7 +258,7 @@ const getByCategory = async (req, res) => {
       data: items
     });
   } catch (error) {
-    console.error('Error getting lab consumables by category:', error);
+    log.error('Error getting lab consumables by category:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -294,7 +297,7 @@ const getCategories = async (req, res) => {
       data: categories
     });
   } catch (error) {
-    console.error('Error getting categories:', error);
+    log.error('Error getting categories:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message
@@ -314,7 +317,7 @@ const getManufacturers = async (req, res) => {
       data: manufacturers.filter(m => m).sort()
     });
   } catch (error) {
-    console.error('Error getting lab consumable manufacturers:', error);
+    log.error('Error getting lab consumable manufacturers:', { error: error });
     res.status(500).json({
       success: false,
       error: error.message

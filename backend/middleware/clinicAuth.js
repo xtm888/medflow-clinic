@@ -93,7 +93,7 @@ const clinicContext = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Clinic context middleware error:', error);
+    log.error('Clinic context middleware error:', { error: error });
     return res.status(500).json({
       success: false,
       error: 'Error processing clinic context'
@@ -186,7 +186,7 @@ const optionalClinic = async (req, res, next) => {
     req.accessAllClinics = req.user.accessAllClinics || false;
     next();
   } catch (error) {
-    console.error('Optional clinic context error:', error);
+    log.error('Optional clinic context error:', { error: error });
     // Don't fail, just proceed without clinic context
     req.clinicId = null;
     req.clinic = null;
@@ -208,6 +208,9 @@ const validateProviderClinic = async (req, res, next) => {
     }
 
     const User = require('../models/User');
+
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('ClinicAuth');
     const providerUser = await User.findById(providerToCheck);
 
     if (!providerUser) {
@@ -228,7 +231,7 @@ const validateProviderClinic = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Provider clinic validation error:', error);
+    log.error('Provider clinic validation error:', { error: error });
     return res.status(500).json({
       success: false,
       error: 'Error validating provider clinic assignment'

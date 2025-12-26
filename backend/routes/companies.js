@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const companyController = require('../controllers/companyController');
+// Import from split controller modules (maintains backward compatibility via index.js)
+const companyController = require('../controllers/companies');
 const { protect, authorize } = require('../middleware/auth');
 
 // All routes require authentication

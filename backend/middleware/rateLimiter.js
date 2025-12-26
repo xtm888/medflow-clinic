@@ -11,6 +11,9 @@ const rateLimit = require('express-rate-limit');
 const { RedisStore, isRedisConnected } = require('../config/redis');
 const CONSTANTS = require('../config/constants');
 
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('RateLimiter');
+
 // Whitelist IPs that skip rate limiting
 const whitelistedIPs = (process.env.RATE_LIMIT_WHITELIST || '127.0.0.1,::1,localhost')
   .split(',')
@@ -45,7 +48,7 @@ function createRateLimiter(options = {}) {
 
   // Initialize store (non-blocking)
   store.init().catch(err => {
-    console.warn('Rate limiter Redis store init warning:', err.message);
+    log.warn('Rate limiter Redis store init warning:', err.message);
   });
 
   return rateLimit({

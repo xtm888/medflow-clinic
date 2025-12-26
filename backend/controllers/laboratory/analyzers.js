@@ -2,6 +2,9 @@ const LabAnalyzer = require('../../models/LabAnalyzer');
 const LaboratoryTemplate = require('../../models/LaboratoryTemplate');
 const ReagentLot = require('../../models/ReagentLot');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Analyzers');
+
 /**
  * Lab Analyzer Controller
  * Gestion des analyseurs/instruments de laboratoire
@@ -46,7 +49,7 @@ exports.getAnalyzers = async (req, res) => {
       data: analyzers
     });
   } catch (error) {
-    console.error('Error fetching analyzers:', error);
+    log.error('Error fetching analyzers:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des analyseurs',
@@ -77,7 +80,7 @@ exports.getAnalyzer = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error fetching analyzer:', error);
+    log.error('Error fetching analyzer:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération de l\'analyseur',
@@ -118,7 +121,7 @@ exports.createAnalyzer = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error creating analyzer:', error);
+    log.error('Error creating analyzer:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la création de l\'analyseur',
@@ -172,7 +175,7 @@ exports.updateAnalyzer = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error updating analyzer:', error);
+    log.error('Error updating analyzer:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la mise à jour de l\'analyseur',
@@ -218,7 +221,7 @@ exports.deleteAnalyzer = async (req, res) => {
       message: 'Analyseur désactivé avec succès'
     });
   } catch (error) {
-    console.error('Error deleting analyzer:', error);
+    log.error('Error deleting analyzer:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression de l\'analyseur',
@@ -271,7 +274,7 @@ exports.addSupportedTest = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error adding supported test:', error);
+    log.error('Error adding supported test:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de l\'ajout du test',
@@ -306,7 +309,7 @@ exports.removeSupportedTest = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error removing supported test:', error);
+    log.error('Error removing supported test:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la suppression du test',
@@ -353,7 +356,7 @@ exports.updateAnalyzerStatus = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error updating analyzer status:', error);
+    log.error('Error updating analyzer status:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la mise à jour du statut',
@@ -376,7 +379,7 @@ exports.getAnalyzersForTest = async (req, res) => {
       data: analyzers
     });
   } catch (error) {
-    console.error('Error fetching analyzers for test:', error);
+    log.error('Error fetching analyzers for test:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des analyseurs',
@@ -434,7 +437,7 @@ exports.getAnalyzerStats = async (req, res) => {
       data: result
     });
   } catch (error) {
-    console.error('Error fetching analyzer stats:', error);
+    log.error('Error fetching analyzer stats:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de la récupération des statistiques',
@@ -494,7 +497,7 @@ exports.setActiveReagentLot = async (req, res) => {
       data: analyzer
     });
   } catch (error) {
-    console.error('Error setting active reagent lot:', error);
+    log.error('Error setting active reagent lot:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Erreur lors de l\'activation du lot',

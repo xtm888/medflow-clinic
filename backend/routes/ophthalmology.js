@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+// Import from split controller modules (maintains backward compatibility via index.js)
 const {
   // Core exam CRUD
   getExams,
@@ -61,7 +62,7 @@ const {
 
   // Dashboard
   getDashboardStats
-} = require('../controllers/ophthalmologyController');
+} = require('../controllers/ophthalmology');
 
 const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { logAction, logPatientDataAccess } = require('../middleware/auditLogger');

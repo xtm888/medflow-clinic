@@ -9,6 +9,9 @@ const mongoose = require('mongoose');
 const { ContactLensInventory } = require('../../models/Inventory');
 const InventoryControllerFactory = require('./InventoryControllerFactory');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('ContactLensInventory');
+
 // Create factory instance with contact lens-specific config
 const factory = new InventoryControllerFactory({
   Model: ContactLensInventory,
@@ -104,7 +107,7 @@ const reserveForOrder = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error reserving contact lens stock:', error);
+    log.error('Error reserving contact lens stock:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error reserving stock'
@@ -143,7 +146,7 @@ const releaseReservation = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error releasing contact lens reservation:', error);
+    log.error('Error releasing contact lens reservation:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error releasing reservation'
@@ -190,7 +193,7 @@ const fulfillReservation = async (req, res) => {
     });
   } catch (error) {
     await session.abortTransaction();
-    console.error('Error fulfilling contact lens reservation:', error);
+    log.error('Error fulfilling contact lens reservation:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error completing sale'
@@ -214,7 +217,7 @@ const getExpiring = async (req, res) => {
       count: expiring.length
     });
   } catch (error) {
-    console.error('Error getting expiring contact lenses:', error);
+    log.error('Error getting expiring contact lenses:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error retrieving expiring items',
@@ -250,7 +253,7 @@ const markBatchExpired = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error('Error marking contact lens batch expired:', error);
+    log.error('Error marking contact lens batch expired:', { error: error });
     res.status(500).json({
       success: false,
       message: error.message || 'Error marking batch as expired'
@@ -282,7 +285,7 @@ const findMatchingLens = async (req, res) => {
       count: matches.length
     });
   } catch (error) {
-    console.error('Error finding matching contact lens:', error);
+    log.error('Error finding matching contact lens:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error finding matching contact lens',
@@ -303,7 +306,7 @@ const getProductLines = async (req, res) => {
       data: productLines
     });
   } catch (error) {
-    console.error('Error getting contact lens product lines:', error);
+    log.error('Error getting contact lens product lines:', { error: error });
     res.status(500).json({
       success: false,
       message: 'Error retrieving product lines',

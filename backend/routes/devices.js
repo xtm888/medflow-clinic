@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const deviceController = require('../controllers/deviceController');
+// Import from split controller modules (maintains backward compatibility via index.js)
+const deviceController = require('../controllers/devices');
 const { protect, authorize } = require('../middleware/auth');
 const multer = require('multer');
 

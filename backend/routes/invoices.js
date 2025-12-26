@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+// Import from split controller modules (maintains backward compatibility via index.js)
 const {
   getInvoices,
   getInvoice,
@@ -27,7 +28,7 @@ const {
   markItemExternal,
   collectItemPayment,
   getInvoiceItems
-} = require('../controllers/invoiceController');
+} = require('../controllers/invoices');
 
 const { getPayments, applyDiscount, writeOff, generateInvoicePDF, generateReceiptPDF } = require('../controllers/billing');
 

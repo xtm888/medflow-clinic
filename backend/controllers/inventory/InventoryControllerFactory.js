@@ -19,6 +19,9 @@
 
 const mongoose = require('mongoose');
 
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('InventoryControllerFactory');
+
 // Helper function to escape regex special characters
 const escapeRegex = (str) => {
   if (!str) return '';
@@ -139,7 +142,7 @@ class InventoryControllerFactory {
         pages: Math.ceil(total / validLimit)
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityNamePlural}:`, error);
+      log.error(`Error getting ${this.entityNamePlural}:`, { error: error });
       res.status(500).json({
         success: false,
         message: `Error retrieving ${this.entityName} inventory`,
@@ -181,7 +184,7 @@ class InventoryControllerFactory {
         data: item
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityName}:`, error);
+      log.error(`Error getting ${this.entityName}:`, { error: error });
       res.status(500).json({
         success: false,
         message: `Error retrieving ${this.entityName}`,
@@ -226,7 +229,7 @@ class InventoryControllerFactory {
         data: item
       });
     } catch (error) {
-      console.error(`Error creating ${this.entityName}:`, error);
+      log.error(`Error creating ${this.entityName}:`, { error: error });
       if (error.code === 11000) {
         return res.status(400).json({
           success: false,
@@ -285,7 +288,7 @@ class InventoryControllerFactory {
         data: item
       });
     } catch (error) {
-      console.error(`Error updating ${this.entityName}:`, error);
+      log.error(`Error updating ${this.entityName}:`, { error: error });
       res.status(500).json({
         success: false,
         message: `Error updating ${this.entityName}`,
@@ -337,7 +340,7 @@ class InventoryControllerFactory {
         message: `${this.entityName} discontinued successfully`
       });
     } catch (error) {
-      console.error(`Error deleting ${this.entityName}:`, error);
+      log.error(`Error deleting ${this.entityName}:`, { error: error });
       res.status(500).json({
         success: false,
         message: `Error deleting ${this.entityName}`,
@@ -432,7 +435,7 @@ class InventoryControllerFactory {
       });
     } catch (error) {
       await session.abortTransaction();
-      console.error(`Error adding stock to ${this.entityName}:`, error);
+      log.error(`Error adding stock to ${this.entityName}:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error adding stock',
@@ -506,7 +509,7 @@ class InventoryControllerFactory {
         }
       });
     } catch (error) {
-      console.error(`Error adjusting ${this.entityName} stock:`, error);
+      log.error(`Error adjusting ${this.entityName} stock:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error adjusting stock',
@@ -573,7 +576,7 @@ class InventoryControllerFactory {
         }
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityName} stats:`, error);
+      log.error(`Error getting ${this.entityName} stats:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error retrieving statistics',
@@ -618,7 +621,7 @@ class InventoryControllerFactory {
         count: items.length
       });
     } catch (error) {
-      console.error(`Error getting low stock ${this.entityNamePlural}:`, error);
+      log.error(`Error getting low stock ${this.entityNamePlural}:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error retrieving low stock items',
@@ -659,7 +662,7 @@ class InventoryControllerFactory {
         data: value[0] || { totalCostValue: 0, totalSaleValue: 0, itemCount: 0 }
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityName} inventory value:`, error);
+      log.error(`Error getting ${this.entityName} inventory value:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error calculating inventory value',
@@ -710,7 +713,7 @@ class InventoryControllerFactory {
         count: items.length
       });
     } catch (error) {
-      console.error(`Error searching ${this.entityNamePlural}:`, error);
+      log.error(`Error searching ${this.entityNamePlural}:`, { error: error });
       res.status(500).json({
         success: false,
         message: `Error searching ${this.entityNamePlural}`,
@@ -746,7 +749,7 @@ class InventoryControllerFactory {
         data: brands.map(b => ({ brand: b._id, count: b.count }))
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityName} brands:`, error);
+      log.error(`Error getting ${this.entityName} brands:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error retrieving brands',
@@ -802,7 +805,7 @@ class InventoryControllerFactory {
         count: alerts.length
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityName} alerts:`, error);
+      log.error(`Error getting ${this.entityName} alerts:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error retrieving alerts',
@@ -850,7 +853,7 @@ class InventoryControllerFactory {
         message: 'Alert resolved successfully'
       });
     } catch (error) {
-      console.error(`Error resolving ${this.entityName} alert:`, error);
+      log.error(`Error resolving ${this.entityName} alert:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error resolving alert',
@@ -904,7 +907,7 @@ class InventoryControllerFactory {
         }
       });
     } catch (error) {
-      console.error(`Error getting ${this.entityName} transactions:`, error);
+      log.error(`Error getting ${this.entityName} transactions:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error retrieving transactions',
@@ -957,7 +960,7 @@ class InventoryControllerFactory {
         }
       });
     } catch (error) {
-      console.error(`Error checking ${this.entityName} availability:`, error);
+      log.error(`Error checking ${this.entityName} availability:`, { error: error });
       res.status(500).json({
         success: false,
         message: 'Error checking availability',

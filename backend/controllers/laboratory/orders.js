@@ -195,9 +195,9 @@ exports.createOrder = asyncHandler(async (req, res) => {
       if (patient?.convention?.company) {
         try {
           await invoice.applyCompanyBilling(patient.convention.company, req.user.id, null, { bypassWaitingPeriod: false });
-          console.log(`[LabOrder] Applied convention billing for invoice ${invoice.invoiceNumber}`);
+          log.info(`Applied convention billing for invoice ${invoice.invoiceNumber}`);
         } catch (conventionError) {
-          console.warn(`[LabOrder] Convention billing failed: ${conventionError.message}, invoice remains as patient-pay`);
+          log.warn(`[LabOrder] Convention billing failed: ${conventionError.message}, invoice remains as patient-pay`);
         }
       }
 
@@ -206,9 +206,9 @@ exports.createOrder = asyncHandler(async (req, res) => {
       order.billing.estimatedCost = totalAmount;
       await order.save();
 
-      console.log(`[LabOrder] Auto-created invoice ${invoice.invoiceNumber} for lab order ${order.orderId}`);
+      log.info(`Auto-created invoice ${invoice.invoiceNumber} for lab order ${order.orderId}`);
     } catch (invoiceError) {
-      console.error('[LabOrder] Error auto-generating invoice:', invoiceError);
+      log.error('[LabOrder] Error auto-generating invoice:', { error: invoiceError });
       // Continue without failing - invoice can be created manually
     }
   }
@@ -222,6 +222,9 @@ exports.createOrder = asyncHandler(async (req, res) => {
   // Create notification for lab technicians (find actual users with lab roles)
   try {
     const User = require('../../models/User');
+
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Orders');
     const labStaff = await User.find({
       role: { $in: ['lab_technician', 'laboratory', 'lab', 'admin'] },
       isActive: { $ne: false }
@@ -242,7 +245,7 @@ exports.createOrder = asyncHandler(async (req, res) => {
     }
   } catch (notificationError) {
     // Don't fail lab order creation if notifications fail
-    console.warn('[LabOrder] Could not create notifications:', notificationError.message);
+    log.warn('[LabOrder] Could not create notifications:', notificationError.message);
   }
 
   res.status(201).json({
@@ -548,7 +551,7 @@ exports.rescheduleAfterRejection = asyncHandler(async (req, res) => {
 
   if (!penaltyPaid && penaltyInvoice) {
     // Warning but allow rescheduling - reception is responsible for collecting payment
-    console.warn(`[LAB RESCHEDULE] Rescheduling ${order.orderId} with unpaid penalty invoice`);
+    log.warn(`[LAB RESCHEDULE] Rescheduling ${order.orderId} with unpaid penalty invoice`);
   }
 
   await order.rescheduleAfterRejection(req.user.id, new Date(scheduledDate), notes);

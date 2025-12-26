@@ -422,7 +422,7 @@ exports.allocatePaymentToInvoices = asyncHandler(async (req, res) => {
     }
   } catch (transactionError) {
     // Transaction failed - no payments were applied
-    console.error('Multi-invoice payment transaction failed:', transactionError.message);
+    log.error('Multi-invoice payment transaction failed:', transactionError.message);
     return res.status(400).json({
       success: false,
       error: `Payment allocation failed: ${transactionError.message}`,
@@ -442,7 +442,7 @@ exports.allocatePaymentToInvoices = asyncHandler(async (req, res) => {
       );
       creditAdded = remainingAmount;
     } catch (err) {
-      console.error('Failed to add overpayment as credit:', err.message);
+      log.error('Failed to add overpayment as credit:', err.message);
     }
   }
 
@@ -467,7 +467,7 @@ exports.allocatePaymentToInvoices = asyncHandler(async (req, res) => {
       }
     });
   } catch (err) {
-    console.error('Failed to log batch payment:', err.message);
+    log.error('Failed to log batch payment:', err.message);
   }
 
   res.status(200).json({
@@ -777,7 +777,7 @@ exports.processRefund = asyncHandler(async (req, res) => {
         });
       }
     } catch (gatewayError) {
-      console.error('Payment gateway refund error:', gatewayError.message);
+      log.error('Payment gateway refund error:', gatewayError.message);
       return res.status(500).json({
         success: false,
         error: `Payment gateway error: ${gatewayError.message}`
@@ -820,7 +820,7 @@ exports.processRefund = asyncHandler(async (req, res) => {
         }
       });
     } catch (auditError) {
-      console.error('Failed to log refund audit:', auditError.message);
+      log.error('Failed to log refund audit:', auditError.message);
     }
 
     res.status(200).json({
@@ -836,11 +836,11 @@ exports.processRefund = asyncHandler(async (req, res) => {
       }
     });
   } catch (refundError) {
-    console.error('Refund transaction failed:', refundError.message);
+    log.error('Refund transaction failed:', refundError.message);
 
     // If gateway refund succeeded but our DB update failed, log critical error
     if (gatewayRefundResult?.success) {
-      console.error('CRITICAL: Gateway refund succeeded but database update failed!', {
+      log.error('CRITICAL: Gateway refund succeeded but database update failed!', {
         gatewayRefundId: gatewayRefundResult.refundId,
         invoiceId: invoice.invoiceId,
         amount: refundAmount,
@@ -900,7 +900,7 @@ exports.handlePaymentWebhook = asyncHandler(async (req, res) => {
 
     res.status(200).json({ received: true, event: event.type });
   } catch (error) {
-    console.error('Webhook error:', error);
+    log.error('Webhook error:', { error: error });
     res.status(400).json({ error: error.message });
   }
 });
@@ -1262,6 +1262,9 @@ exports.bulkGenerateInvoices = asyncHandler(async (req, res) => {
   // Process appointments
   if (appointmentIds && appointmentIds.length > 0) {
     const Appointment = require('../../models/Appointment');
+
+const { createContextLogger } = require('../../utils/structuredLogger');
+const log = createContextLogger('Payments');
 
     for (const appointmentId of appointmentIds) {
       try {
