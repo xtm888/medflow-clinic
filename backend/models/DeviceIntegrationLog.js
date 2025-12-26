@@ -369,7 +369,15 @@ const deviceIntegrationLogSchema = new mongoose.Schema({
   },
 
   archivedAt: Date
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

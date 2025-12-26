@@ -196,7 +196,25 @@ const RepairTrackingSchema = new mongoose.Schema({
     performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     performedAt: { type: Date, default: Date.now },
     details: mongoose.Schema.Types.Mixed
-  }]
+  }],
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
   timestamps: true
 });

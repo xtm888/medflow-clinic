@@ -271,7 +271,25 @@ const SurgeryReportSchema = new Schema({
     type: String,  // 'intraop_photo', 'video', 'document'
     uploadedAt: Date
   }]
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
   timestamps: true
 });

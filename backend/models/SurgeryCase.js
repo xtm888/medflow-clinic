@@ -453,7 +453,15 @@ const SurgeryCaseSchema = new Schema({
   },
 
   paymentIssueNotes: String
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

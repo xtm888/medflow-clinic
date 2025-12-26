@@ -363,7 +363,15 @@ const companySchema = new mongoose.Schema({
     ref: 'User'
   },
   notes: String
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

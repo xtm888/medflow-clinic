@@ -163,7 +163,15 @@ const consultationTemplateSchema = new mongoose.Schema({
   lastUsedAt: {
     type: Date
   }
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

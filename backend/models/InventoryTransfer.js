@@ -224,7 +224,25 @@ const inventoryTransferSchema = new mongoose.Schema({
     default: false
   },
   recommendationId: String // Reference to the recommendation that generated this
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

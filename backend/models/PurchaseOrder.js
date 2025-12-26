@@ -134,7 +134,15 @@ const PurchaseOrderSchema = new mongoose.Schema({
     performedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     performedAt: { type: Date, default: Date.now },
     details: mongoose.Schema.Types.Mixed
-  }]
+  }],
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

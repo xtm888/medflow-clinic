@@ -17,7 +17,15 @@ const optionSchema = new mongoose.Schema({
   sortOrder: {
     type: Number,
     default: 0
-  }
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, { _id: false });
 
 const doseTemplateSchema = new mongoose.Schema({

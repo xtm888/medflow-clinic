@@ -236,6 +236,24 @@ const appointmentTypeSchema = new mongoose.Schema({
     },
     averageDuration: Number,
     cancellationRate: Number
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

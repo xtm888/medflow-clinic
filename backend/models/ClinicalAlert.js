@@ -210,7 +210,15 @@ const clinicalAlertSchema = new mongoose.Schema({
   },
 
   // Expiration (for time-sensitive alerts)
-  expiresAt: Date
+  expiresAt: Date,
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

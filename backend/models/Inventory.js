@@ -37,7 +37,15 @@ const BatchSchema = new Schema({
     type: String,
     enum: ['available', 'reserved', 'expired', 'recalled', 'quarantine'],
     default: 'available'
-  }
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, { _id: true });
 
 /**

@@ -192,7 +192,15 @@ const alertSchema = new mongoose.Schema({
     type: Date,
     index: true
   }
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

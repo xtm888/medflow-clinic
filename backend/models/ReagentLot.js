@@ -46,7 +46,15 @@ const referenceRangeSchema = new mongoose.Schema({
   female: {
     min: Number,
     max: Number
-  }
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, { _id: false });
 
 // Validation result schema

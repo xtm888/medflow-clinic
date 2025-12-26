@@ -44,6 +44,24 @@ const categoryUsageSchema = new Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, { _id: false });
 

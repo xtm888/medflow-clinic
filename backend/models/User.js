@@ -365,7 +365,15 @@ const userSchema = new mongoose.Schema({
       },
       viewedAt: Date
     }]
-  }
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

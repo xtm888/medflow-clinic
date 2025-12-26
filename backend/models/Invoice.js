@@ -893,7 +893,15 @@ const invoiceSchema = new mongoose.Schema({
   version: {
     type: Number,
     default: 0
-  }
+  },
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true,
   toJSON: { virtuals: true },

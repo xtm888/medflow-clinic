@@ -67,7 +67,15 @@ const conventionFeeItemSchema = new mongoose.Schema({
 
   // Notes about this pricing
   notes: String
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, { _id: true });
 
 const conventionFeeScheduleSchema = new mongoose.Schema({

@@ -26,13 +26,23 @@ class AutoSyncService extends EventEmitter {
     this.watchers = new Map();        // File watchers for mounted paths
     this.pollJobs = new Map();        // Polling jobs for SMB shares
     this.deviceStatus = new Map();    // Track device sync status
+    this.reconnectAttempts = new Map(); // Track reconnection attempts per device
+    this.reconnectTimers = new Map();   // Reconnection timers
 
     this.config = {
       pollIntervalMinutes: 5,         // Default polling interval
       enableAutoSync: true,
       maxConcurrentSyncs: 3,
       syncOnStartup: true,
-      watchMountedPaths: true
+      watchMountedPaths: true,
+      // Auto-reconnect settings
+      reconnect: {
+        enabled: true,
+        maxAttempts: 10,
+        baseDelayMs: 1000,      // Initial retry delay
+        maxDelayMs: 300000,     // Max 5 minutes between retries
+        backoffMultiplier: 2    // Exponential backoff factor
+      }
     };
 
     this.stats = {
@@ -374,7 +384,12 @@ class AutoSyncService extends EventEmitter {
       })
       .on('error', (error) => {
         log.error(`[Watcher] Error for ${deviceId}:`, { error: error });
+        // Trigger auto-reconnect
+        this._handleWatcherError(deviceId, mountPath, device, error);
       });
+
+    // Reset reconnect attempts on successful watch start
+    this.reconnectAttempts.set(deviceId, 0);
 
     this.watchers.set(deviceId, watcher);
 
@@ -394,6 +409,143 @@ class AutoSyncService extends EventEmitter {
       this.watchers.delete(deviceId);
       log.info(`Stopped watching device ${device.name}`);
     }
+
+    // Cancel any pending reconnection
+    this._cancelReconnect(deviceId);
+  }
+
+  /**
+   * Handle watcher error and schedule reconnection
+   */
+  _handleWatcherError(deviceId, mountPath, device, error) {
+    if (!this.config.reconnect.enabled) {
+      return;
+    }
+
+    const attempts = (this.reconnectAttempts.get(deviceId) || 0) + 1;
+    this.reconnectAttempts.set(deviceId, attempts);
+
+    if (attempts > this.config.reconnect.maxAttempts) {
+      log.error(`[AutoSync] Max reconnect attempts (${this.config.reconnect.maxAttempts}) reached for device ${deviceId}`);
+      this.deviceStatus.set(deviceId, {
+        syncing: false,
+        connected: false,
+        lastError: `Max reconnect attempts reached: ${error.message}`,
+        lastErrorAt: new Date(),
+        reconnectAttempts: attempts
+      });
+      this.broadcastUpdate('device_disconnected', {
+        deviceId,
+        deviceName: device.name,
+        error: error.message,
+        reconnectAttempts: attempts,
+        permanent: true
+      });
+      return;
+    }
+
+    // Calculate exponential backoff delay
+    const { baseDelayMs, maxDelayMs, backoffMultiplier } = this.config.reconnect;
+    const delay = Math.min(
+      baseDelayMs * Math.pow(backoffMultiplier, attempts - 1),
+      maxDelayMs
+    );
+
+    log.info(`[AutoSync] Scheduling reconnect for ${deviceId} in ${delay}ms (attempt ${attempts}/${this.config.reconnect.maxAttempts})`);
+
+    this.deviceStatus.set(deviceId, {
+      syncing: false,
+      connected: false,
+      reconnecting: true,
+      reconnectAttempts: attempts,
+      nextReconnectAt: new Date(Date.now() + delay),
+      lastError: error.message
+    });
+
+    this.broadcastUpdate('device_reconnecting', {
+      deviceId,
+      deviceName: device.name,
+      attempt: attempts,
+      maxAttempts: this.config.reconnect.maxAttempts,
+      nextRetryMs: delay
+    });
+
+    // Cancel any existing reconnection timer
+    this._cancelReconnect(deviceId);
+
+    // Schedule reconnection
+    const timer = setTimeout(async () => {
+      try {
+        log.info(`[AutoSync] Attempting reconnect for ${deviceId} (attempt ${attempts})`);
+
+        // Close existing watcher if any
+        const existingWatcher = this.watchers.get(deviceId);
+        if (existingWatcher) {
+          existingWatcher.close();
+          this.watchers.delete(deviceId);
+        }
+
+        // Try to re-establish the watch
+        this.watchMountedPath(mountPath, device);
+
+        // If we get here, reconnection succeeded
+        log.info(`[AutoSync] Reconnected successfully to ${deviceId}`);
+        this.reconnectAttempts.set(deviceId, 0);
+
+        this.deviceStatus.set(deviceId, {
+          syncing: false,
+          connected: true,
+          reconnecting: false,
+          reconnectedAt: new Date()
+        });
+
+        this.broadcastUpdate('device_reconnected', {
+          deviceId,
+          deviceName: device.name,
+          attempts
+        });
+
+      } catch (reconnectError) {
+        log.error(`[AutoSync] Reconnect failed for ${deviceId}:`, { error: reconnectError });
+        // The watcher error handler will trigger the next retry
+      }
+    }, delay);
+
+    this.reconnectTimers.set(deviceId, timer);
+  }
+
+  /**
+   * Cancel pending reconnection for a device
+   */
+  _cancelReconnect(deviceId) {
+    const timer = this.reconnectTimers.get(deviceId);
+    if (timer) {
+      clearTimeout(timer);
+      this.reconnectTimers.delete(deviceId);
+    }
+  }
+
+  /**
+   * Force reconnection for a device
+   */
+  async forceReconnect(device) {
+    const deviceId = device._id?.toString() || device.deviceId;
+
+    // Cancel any pending reconnect
+    this._cancelReconnect(deviceId);
+
+    // Reset attempt counter
+    this.reconnectAttempts.set(deviceId, 0);
+
+    // Close existing watcher
+    const existingWatcher = this.watchers.get(deviceId);
+    if (existingWatcher) {
+      existingWatcher.close();
+      this.watchers.delete(deviceId);
+    }
+
+    // Re-sync the device
+    return this.syncDevice(device);
   }
 
   /**

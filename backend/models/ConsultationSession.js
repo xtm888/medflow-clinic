@@ -20,7 +20,25 @@ const refractionDataSchema = new mongoose.Schema({
   axis: Number,
   addition: Number,
   visualAcuity: String,
-  notes: String
+  notes: String,
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, { _id: false });
 
 // Contact lens data schema

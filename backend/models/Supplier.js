@@ -331,7 +331,15 @@ const supplierSchema = new mongoose.Schema({
     },
     details: mongoose.Schema.Types.Mixed
   }]
+,
 
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, {
   timestamps: true
 });

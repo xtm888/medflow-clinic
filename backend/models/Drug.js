@@ -283,7 +283,25 @@ const drugSchema = new mongoose.Schema({
     reason: String
   }],
 
-  therapeuticEquivalents: [String]
+  therapeuticEquivalents: [String],
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date,
+
+  // Audit fields
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  updatedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
+  }
 }, {
   timestamps: true
 });

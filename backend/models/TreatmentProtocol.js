@@ -112,7 +112,15 @@ const medicationInProtocolSchema = new mongoose.Schema({
     default: false
   },
 
-  warnings: [String]
+  warnings: [String],
+
+  // Soft delete support
+  isDeleted: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
+  deletedAt: Date
 }, { _id: false });
 
 const treatmentProtocolSchema = new mongoose.Schema({
