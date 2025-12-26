@@ -507,8 +507,10 @@ auditLogSchema.index({ 'security.suspicious': 1, 'security.threatLevel': 1 });
 auditLogSchema.index({ createdAt: -1 });
 auditLogSchema.index({ ipAddress: 1 });
 
-// TTL index to automatically delete old logs after 2 years
-auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 63072000 });
+// TTL index to automatically delete old logs after 6 years (HIPAA requirement)
+// HIPAA requires healthcare records be retained for minimum 6 years
+// 6 years = 6 * 365.25 * 24 * 60 * 60 = 189,345,600 seconds
+auditLogSchema.index({ createdAt: 1 }, { expireAfterSeconds: 189345600 });
 
 // Static methods
 auditLogSchema.statics.logUserActivity = async function(userId, action, metadata = {}) {

@@ -2004,6 +2004,41 @@ invoiceSchema.methods.applyCompanyBilling = async function(companyId, userId, ex
     }
   }
 
+  // ========================================
+  // GLOBAL ANNUAL LIMIT CHECK (maxAnnual)
+  // ========================================
+  // Check if total company share would exceed global annual limit
+  if (company.defaultCoverage.maxAnnual && company.defaultCoverage.maxAnnual > 0) {
+    // Calculate total YTD usage across ALL categories
+    const totalYTDUsage = Object.values(ytdUsage).reduce(
+      (sum, cat) => sum + (cat?.totalCompanyShare || 0),
+      0
+    );
+    const globalAnnualLimit = company.defaultCoverage.maxAnnual;
+    const remainingGlobalBudget = globalAnnualLimit - totalYTDUsage;
+
+    if (remainingGlobalBudget <= 0) {
+      // Global annual budget exhausted - patient pays 100%
+      annualLimitWarnings.push(`Plafond annuel global épuisé (${globalAnnualLimit} ${company.defaultCoverage?.currency || 'CDF'}/an). Patient responsable à 100%.`);
+      totalPatientShare += totalCompanyShare;
+      totalCompanyShare = 0;
+      // Mark all items as exceeded
+      for (const item of this.items) {
+        item.globalAnnualLimitExceeded = true;
+        item.patientShare = (item.companyShare || 0) + (item.patientShare || 0);
+        item.companyShare = 0;
+      }
+    } else if (totalCompanyShare > remainingGlobalBudget) {
+      // Partial coverage - company pays what's left of global budget
+      const excess = totalCompanyShare - remainingGlobalBudget;
+      annualLimitWarnings.push(`Plafond annuel global partiellement épuisé - reste ${remainingGlobalBudget} sur ${globalAnnualLimit} ${company.defaultCoverage?.currency || 'CDF'}`);
+      totalCompanyShare = remainingGlobalBudget;
+      totalPatientShare += excess;
+      // Note: item-level shares remain as calculated; only totals are adjusted
+      // A more sophisticated approach would prorate the excess across items
+    }
+  }
+
   // Apply max per visit limit if set
   if (company.defaultCoverage.maxPerVisit && totalCompanyShare > company.defaultCoverage.maxPerVisit) {
     const excess = totalCompanyShare - company.defaultCoverage.maxPerVisit;

@@ -140,11 +140,11 @@ module.exports = {
   refillPrescription: drugController.processRefillRequest,
 
   // =====================================================
-  // Functions delegated to original controller (to be migrated)
+  // Drug Prescription Functions (migrated from prescriptionController)
   // =====================================================
-  // These functions are still in prescriptionController.js pending full migration
-  getDrugSafetyStatus: require('../prescriptionController').getDrugSafetyStatus,
-  getDrugPrescriptions: require('../prescriptionController').getDrugPrescriptions,
-  createDrugPrescription: require('../prescriptionController').createDrugPrescription,
-  sendToPharmacy: require('../prescriptionController').sendToPharmacy
+  // These map to appropriate functions in the modular controllers
+  getDrugSafetyStatus: drugController.runSafetyCheck,
+  getDrugPrescriptions: coreController.getPrescriptions, // Filter by type='medication' in route
+  createDrugPrescription: coreController.createPrescription, // Type specified in request body
+  sendToPharmacy: drugController.updatePharmacyStatus
 };

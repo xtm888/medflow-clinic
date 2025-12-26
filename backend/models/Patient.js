@@ -2388,14 +2388,39 @@ const log = createContextLogger('Patient');
 // - storedPaymentMethods.phoneNumber: Mobile money phone numbers
 // - storedPaymentMethods.stripePaymentMethodId: Stripe tokens
 // - storedPaymentMethods.stripeCustomerId: Stripe customer IDs
+// - phoneNumber / alternativePhone: Contact phone numbers
+// - address.street: Street address (most identifying address component)
+// - emergencyContact.phone / .name: Emergency contact info
 //
 // Note: biometric.faceEncoding is already protected via select:false
 // and is cleared on patient deletion for GDPR compliance
+//
+// IMPORTANT: firstName and lastName are NOT encrypted because:
+// 1. Encryption would break patient search functionality (encrypted text can't be searched)
+// 2. Names are protected via:
+//    - Role-based access controls (only authorized staff access patients)
+//    - Audit logging of all patient data access
+//    - Database-level encryption at rest (MongoDB storage)
+// For HIPAA compliance, names should use database-level CSFLE in production.
 // =====================================================
 patientSchema.plugin(phiEncryptionPlugin, {
   fields: [
+    // Identity documents
     'nationalId',
+
+    // Insurance information
     'insurance.policyNumber',
+
+    // Contact information (PHI - HIPAA identifiers)
+    'phoneNumber',
+    'alternativePhone',
+    'address.street',
+
+    // Emergency contact (PHI - can identify patient relationships)
+    'emergencyContact.name',
+    'emergencyContact.phone',
+
+    // Payment information (PCI-DSS + PHI)
     'storedPaymentMethods.phoneNumber',
     'storedPaymentMethods.stripePaymentMethodId',
     'storedPaymentMethods.stripeCustomerId'

@@ -293,13 +293,20 @@ approvalSchema.statics.checkApproval = async function(patientId, companyId, actC
     company: companyId,
     actCode: actCode.toUpperCase(),
     status: 'approved',
-    $or: [
-      { validFrom: null },
-      { validFrom: { $lte: now } }
-    ],
-    $or: [
-      { validUntil: null },
-      { validUntil: { $gte: now } }
+    // Use $and to combine both $or conditions (duplicate $or keys would overwrite)
+    $and: [
+      {
+        $or: [
+          { validFrom: null },
+          { validFrom: { $lte: now } }
+        ]
+      },
+      {
+        $or: [
+          { validUntil: null },
+          { validUntil: { $gte: now } }
+        ]
+      }
     ]
   }).sort({ createdAt: -1 });
 

@@ -316,8 +316,12 @@ export default function StudioVisionConsultation() {
       }
 
       // Adjust axis for OG (mirror: axis ± 90° if cylinder present)
-      let adjustedAxis = odData.axis || 0;
-      if (odData.cylinder && adjustedAxis) {
+      // Note: axis=0 is valid and falsy, so we use explicit check
+      let adjustedAxis = odData.axis !== undefined && odData.axis !== ''
+        ? Number(odData.axis)
+        : 0;
+      if (odData.cylinder) {
+        // Mirror axis adjustment: add 90 if <=90, subtract 90 if >90
         adjustedAxis = adjustedAxis <= 90 ? adjustedAxis + 90 : adjustedAxis - 90;
       }
 
