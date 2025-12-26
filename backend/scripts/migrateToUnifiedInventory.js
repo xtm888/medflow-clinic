@@ -24,6 +24,8 @@ const mongoose = require('mongoose');
 const { requireNonProductionStrict } = require('./_guards');
 requireNonProductionStrict('migrateToUnifiedInventory.js');
 
+const { withTransaction, supportsTransactions } = require('../utils/migrationTransaction');
+
 // Unified model - import the discriminators
 const {
   Inventory,
@@ -487,7 +489,7 @@ const stats = {
 };
 
 // Migrate a single collection
-async function migrateCollection(config) {
+async function migrateCollection(config, session = null) {
   const { name, legacyCollection, unifiedModel, fieldMapper, inventoryType } = config;
 
   console.log(`\n${'='.repeat(60)}`);
@@ -555,7 +557,9 @@ async function migrateCollection(config) {
             try {
               // Use native MongoDB insertMany to avoid Mongoose discriminator issues with bulkWrite
               const docsToInsert = batch.map(doc => ({ ...doc, inventoryType }));
-              const result = await mongoose.connection.db.collection('inventories').insertMany(docsToInsert, { ordered: false });
+              const insertOptions = { ordered: false };
+              if (session) insertOptions.session = session;
+              const result = await mongoose.connection.db.collection('inventories').insertMany(docsToInsert, insertOptions);
               const insertedCount = result.insertedCount || 0;
               stats.byType[inventoryType].migrated += insertedCount;
               stats.migrated += insertedCount;
@@ -593,9 +597,11 @@ async function migrateCollection(config) {
     if (batch.length > 0) {
       if (!DRY_RUN) {
         try {
-          // Use native MongoDB insertMany
+          // Use native MongoDB insertMany with optional session
           const docsToInsert = batch.map(doc => ({ ...doc, inventoryType }));
-          const result = await mongoose.connection.db.collection('inventories').insertMany(docsToInsert, { ordered: false });
+          const insertOptions = { ordered: false };
+          if (session) insertOptions.session = session;
+          const result = await mongoose.connection.db.collection('inventories').insertMany(docsToInsert, insertOptions);
           const insertedCount = result.insertedCount || 0;
           stats.byType[inventoryType].migrated += insertedCount;
           stats.migrated += insertedCount;
@@ -643,10 +649,21 @@ async function runMigration() {
     await mongoose.connect(process.env.MONGODB_URI);
     console.log('Connected successfully');
 
-    // Run migrations for each type
-    for (const config of MIGRATION_CONFIG) {
-      await migrateCollection(config);
-    }
+    // Check transaction support
+    const hasTransactions = await supportsTransactions();
+    console.log(`Transaction support: ${hasTransactions ? '✅ Available (replica set)' : '⚠️ Not available (standalone)'}`);
+
+    // Run migrations for each type (with transaction wrapper if available)
+    await withTransaction(async (session) => {
+      for (const config of MIGRATION_CONFIG) {
+        await migrateCollection(config, session);
+      }
+    }, { operationName: 'Unified Inventory Migration', requireTransaction: false });
+
+    // Legacy: Run migrations for each type
+    // for (const config of MIGRATION_CONFIG) {
+    //   await migrateCollection(config);
+    // }
 
     // Print summary
     console.log('\n' + '='.repeat(60));

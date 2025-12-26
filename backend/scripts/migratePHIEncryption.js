@@ -27,6 +27,7 @@ const { requireNonProductionStrict } = require('./_guards');
 requireNonProductionStrict('migratePHIEncryption.js');
 
 const { encrypt, isEncrypted, ENCRYPTED_PREFIX } = require('../utils/phiEncryption');
+const { withTransaction, supportsTransactions } = require('../utils/migrationTransaction');
 
 const DRY_RUN = process.env.DRY_RUN === 'true';
 const BATCH_SIZE = parseInt(process.env.BATCH_SIZE || '100', 10);
@@ -66,7 +67,7 @@ function setNestedValue(obj, path, value) {
   target[lastKey] = value;
 }
 
-async function migratePatients() {
+async function migratePatients(session = null) {
   // Access collection directly to avoid model middleware
   const db = mongoose.connection.db;
   const patientsCollection = db.collection('patients');
@@ -74,6 +75,7 @@ async function migratePatients() {
   console.log('\n=== PHI Encryption Migration ===');
   console.log(`Mode: ${DRY_RUN ? 'DRY RUN (no changes will be made)' : 'LIVE MIGRATION'}`);
   console.log(`Batch size: ${BATCH_SIZE}`);
+  console.log(`Transaction: ${session ? 'Yes (replica set)' : 'No (standalone)'}`);
   console.log(`Fields to encrypt: ${PHI_FIELDS.join(', ')}`);
   console.log(`Array fields: ${PHI_ARRAY_FIELDS.map(f => `${f.arrayPath}.{${f.fields.join(',')}}`).join(', ')}`);
 
@@ -185,9 +187,11 @@ async function migratePatients() {
 
       if (hasUpdates) {
         if (!DRY_RUN) {
+          const updateOptions = session ? { session } : {};
           await patientsCollection.updateOne(
             { _id: patient._id },
-            { $set: updates }
+            { $set: updates },
+            updateOptions
           );
         }
         migrated++;
@@ -267,10 +271,25 @@ async function main() {
   try {
     await connectDB();
 
-    const stats = await migratePatients();
-    await createAuditRecord(stats);
+    // Check transaction support
+    const hasTransactions = await supportsTransactions();
+    console.log(`Transaction support: ${hasTransactions ? '✅ Available (replica set)' : '⚠️ Not available (standalone)'}`);
+
+    // Run migration with transaction support (if available)
+    const result = await withTransaction(
+      async (session) => {
+        const stats = await migratePatients(session);
+        await createAuditRecord(stats);
+        return stats;
+      },
+      {
+        operationName: 'PHI Encryption Migration',
+        requireTransaction: false // Allow fallback for standalone MongoDB
+      }
+    );
 
     console.log('\nMigration script finished successfully.');
+    console.log(`Transaction used: ${result.usedTransaction ? 'Yes' : 'No'}`);
 
   } catch (err) {
     console.error('\nMigration failed:', err);

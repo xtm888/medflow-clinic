@@ -15,6 +15,7 @@ const AutorefractorAdapter = require('./AutorefractorAdapter');
 const SpecularMicroscopeAdapter = require('./SpecularMicroscopeAdapter');
 const BiometerAdapter = require('./BiometerAdapter');
 const NidekAdapter = require('./NidekAdapter');
+const VisualFieldAdapter = require('./VisualFieldAdapter');
 
 const { createContextLogger } = require('../../utils/structuredLogger');
 const log = createContextLogger('AdapterFactory');
@@ -59,6 +60,15 @@ class AdapterFactory {
     'nidek-rs': NidekAdapter,
     'nidek-cem': NidekAdapter,
     'nidek-nt': NidekAdapter,
+
+    // Visual Field / Perimetry devices
+    'visual-field': VisualFieldAdapter,
+    'perimeter': VisualFieldAdapter,
+    'perimetry': VisualFieldAdapter,
+    'hfa': VisualFieldAdapter,           // Humphrey Field Analyzer
+    'humphrey': VisualFieldAdapter,
+    'octopus': VisualFieldAdapter,       // Haag-Streit Octopus
+    'kowa-ap': VisualFieldAdapter,       // Kowa AP series
   };
 
   /**
