@@ -83,3 +83,9 @@ dump.rdb
 # Misc
 .turbo/
 .eslintcache
+# Ignore SSL certificates (security)
+ssl/
+
+# Ignore test screenshots (artifacts)
+tests/playwright/screenshots/
+
