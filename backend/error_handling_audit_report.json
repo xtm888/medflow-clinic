@@ -1,0 +1,2370 @@
+{
+  "asyncWithoutTryCatch": [
+    {
+      "location": "services/adapters/BaseAdapter.js:78",
+      "line": "async save(transformedData, patientId, examId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/adapters/BaseAdapter.js:205",
+      "line": "async storeImage(imageData, patientId, examId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:91",
+      "line": "async function checkProviderConflicts(providerId, startTime, endTime, excludeAppointmentId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:139",
+      "line": "async function checkRoomConflicts(roomId, startTime, endTime, excludeAppointmentId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:188",
+      "line": "async function checkEquipmentConflicts(equipmentIds, startTime, endTime, excludeAppointmentId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:235",
+      "line": "async function checkBufferTimeViolations(providerId, startTime, endTime, appointmentType, excludeAppointmentId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:329",
+      "line": "async function validateAppointment(appointmentData, excludeAppointmentId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:413",
+      "line": "async function findNextAvailableSlot(providerId, afterTime, duration, appointmentType) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/appointmentValidationService.js:490",
+      "line": "async function getAvailableSlots(providerId, date, duration, appointmentType) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/approvalValidationService.js:58",
+      "line": "async function validateItemForCompanyBilling(item, company, patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/approvalValidationService.js:127",
+      "line": "async function validateInvoiceForCompanyBilling(items, companyOrId, patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/approvalValidationService.js:285",
+      "line": "async function getItemsNeedingApprovalRequest(items, companyId, patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/autoReorderService.js:323",
+      "line": "async function getReorderStatusReport(clinicId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/autoReorderService.js:382",
+      "line": "async function configureReorderSettings(inventoryType, itemId, settings) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/autoSyncService.js:377",
+      "line": "async handleFileChange(eventType, filePath, device) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/autoSyncService.js:434",
+      "line": "async handleWebhook(deviceId, payload) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/autoSyncService.js:586",
+      "line": "async shutdown() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:201",
+      "line": "async get(feeScheduleId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:209",
+      "line": "async set(feeScheduleId, feeScheduleData) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:217",
+      "line": "async getAll() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:225",
+      "line": "async setAll(feeSchedules) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:233",
+      "line": "async invalidate(feeScheduleId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:244",
+      "line": "async invalidateAll() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:256",
+      "line": "async get(userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:264",
+      "line": "async set(userId, userData) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:274",
+      "line": "async getByEmail(email) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:282",
+      "line": "async setByEmail(email, userData) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:291",
+      "line": "async invalidate(userId, email = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:301",
+      "line": "async invalidateAll() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:314",
+      "line": "async get(patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:322",
+      "line": "async set(patientId, patientData) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:345",
+      "line": "async getByMRN(mrn) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:353",
+      "line": "async setByMRN(mrn, patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:361",
+      "line": "async invalidate(patientId, mrn = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:371",
+      "line": "async invalidateAll() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:384",
+      "line": "async get(settingKey) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:392",
+      "line": "async set(settingKey, settingValue) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarIntegrationService.js:805",
+      "line": "async getUserIntegrations(userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarIntegrationService.js:1118",
+      "line": "async generateICalSubscriptionToken(userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarIntegrationService.js:1156",
+      "line": "async validateICalSubscriptionToken(token) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarSyncScheduler.js:155",
+      "line": "async forceSync() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:46",
+      "line": "async function getDashboard() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:57",
+      "line": "async function searchPatients(params) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:66",
+      "line": "async function getPatientHistory(patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:75",
+      "line": "async function getFullPatient(patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:84",
+      "line": "async function getPatientAllClinics(patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:93",
+      "line": "async function checkPatientExists(params) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:113",
+      "line": "async function getInventorySummary() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:122",
+      "line": "async function getInventoryAlerts() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:131",
+      "line": "async function getTransferRecommendations() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:140",
+      "line": "async function getInventoryCategories() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:149",
+      "line": "async function getExpiringItems() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:158",
+      "line": "async function getProductStock(sku) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:169",
+      "line": "async function getFinancialDashboard() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:214",
+      "line": "async function getOutstanding() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:225",
+      "line": "async function getClinics() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:234",
+      "line": "async function getClinic(clinicId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:245",
+      "line": "async function getSyncStatus() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1037",
+      "line": "async createAlert(rule, trigger, patientId, examId, visitId, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1109",
+      "line": "async acknowledgeAlert(alertId, userId, reason = '') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1120",
+      "line": "async resolveAlert(alertId, userId, resolution = '') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1131",
+      "line": "async escalateAlert(alertId, userId, toUserId, reason = '') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1143",
+      "line": "async dismissAlert(alertId, userId, reason = '') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1253",
+      "line": "async createManualAlert(alertData, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cloudSyncService.js:319",
+      "line": "async searchPatientAcrossClinics(searchParams) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cloudSyncService.js:584",
+      "line": "async getStatus() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cloudSyncService.js:617",
+      "line": "async forceSync() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/coldChainService.js:84",
+      "line": "async function recordTemperature(location, temperature, userId, method = 'manual') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/coldChainService.js:162",
+      "line": "async function checkTemperatureExcursions(clinicId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/coldChainService.js:225",
+      "line": "async function getColdChainComplianceReport(clinicId, startDate, endDate) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/coldChainService.js:331",
+      "line": "async function getExpiringVials(clinicId, daysAhead = 30) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cumulativeDoseService.js:400",
+      "line": "async function updateCumulativeRecord(patientId, prescriptionId, drugName, dose) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/currencyService.js:91",
+      "line": "async fetchFromSource(source, baseCurrency) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/currencyService.js:154",
+      "line": "async convert(amount, fromCurrency, toCurrency) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/currencyService.js:218",
+      "line": "async calculateMultiCurrencyTotal(payments) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/currencyService.js:264",
+      "line": "async splitAmountAcrossCurrencies(totalCDF, currenciesToShow = ['CDF', 'USD', 'EUR']) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/currencyService.js:290",
+      "line": "async getAllRates() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/currencyService.js:349",
+      "line": "async calculateChange(totalDueCDF, paymentsReceived, preferredCurrency = 'CDF') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/dataSyncService.js:570",
+      "line": "async function getLastPullTimestamp() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/dataSyncService.js:634",
+      "line": "async function queueForSync(collection, documentId, operation = 'update') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/dataSyncService.js:703",
+      "line": "async function clearDeadLetterItems(syncIds) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:17",
+      "line": "async initialize() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:92",
+      "line": "async processImageFile(device, filePath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:121",
+      "line": "async processReportFile(device, filePath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:228",
+      "line": "async cleanup() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceParsers/nidekParser.js:70",
+      "line": "async function parseCEM530(xmlPath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:38",
+      "line": "async init() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:337",
+      "line": "async failJob(job, error) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:358",
+      "line": "async updateJob(job) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:372",
+      "line": "async getJob(jobId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:395",
+      "line": "async getStats() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:423",
+      "line": "async clearFailedJobs() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:464",
+      "line": "async handleFileProcess(data) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:503",
+      "line": "async handlePatientMatch(data) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncScheduler.js:403",
+      "line": "async triggerSync(deviceId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/BillingService.js:43",
+      "line": "async processPayment(invoiceId, paymentData, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:41",
+      "line": "async getSurgeryActs() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:375",
+      "line": "async updateStatus(caseId, newStatus, userId, notes = '') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:72",
+      "line": "async function calculatePediatricDose(drugOrId, patientWeight, patientAge) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:220",
+      "line": "async function validatePrescribedDose(drugOrId, prescribedDose, patientWeight, patientAge, frequency, duration) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:336",
+      "line": "async function calculateRenalAdjustment(drugOrId, eGFR) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:409",
+      "line": "async function calculateHepaticAdjustment(drugOrId, childPughScore) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:537",
+      "line": "async function getPatientRenalFunction(patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/drugSafetyService.js:1110",
+      "line": "async function getDrugInfo(drugName) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/emailQueueService.js:420",
+      "line": "async cancelEmail(emailId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/enhancedNotificationService.js:232",
+      "line": "async sendViAfricasTalking(phoneNumber, message) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:77",
+      "line": "async startWatchingDevice(device) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:199",
+      "line": "async handleNewFile(device, filePath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:563",
+      "line": "async matchPatient(patientInfo, filePath = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:781",
+      "line": "async updateDeviceStatus(deviceId, status, message = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:798",
+      "line": "async stopWatchingDevice(deviceId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:815",
+      "line": "async shutdown() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:876",
+      "line": "async triggerSync(deviceId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/invoiceReminderScheduler.js:303",
+      "line": "async function getOverdueStats() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/invoiceReminderScheduler.js:387",
+      "line": "async function triggerReminders() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/legacyPatientMapper.js:41",
+      "line": "async function findPatientByDmiId(dmiId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/legacyPatientMapper.js:193",
+      "line": "async function scanAndMapFolder(dmiId, files) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/legacyPatientMapper.js:236",
+      "line": "async function getPatientFiles(dmiId, basePath = '//serverlv/Archives/ArchivesPatients') {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:43",
+      "line": "async createIntegration(data, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:180",
+      "line": "async sendHL7Message(integrationId, message) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:309",
+      "line": "async buildHTTPConfig(integration) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:630",
+      "line": "async findOrCreatePatient(integration, patientData, forceCreate = false) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:709",
+      "line": "async updateOrderWithResult(order, result, orderData) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:754",
+      "line": "async sendLabOrder(integrationId, order, patient, practitioner) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:970",
+      "line": "async upsertTestMapping(integrationId, mappingData) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:1010",
+      "line": "async getStatistics(integrationId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/networkDiscoveryService.js:627",
+      "line": "async quickScan() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:169",
+      "line": "async sendGlassesOrderConfirmation(order, patient) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:198",
+      "line": "async sendGlassesReadyNotification(order, patient) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:228",
+      "line": "async sendGlassesDeliveredNotification(order, patient) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:254",
+      "line": "async sendGlassesPickupReminder(order, patient, daysSinceReady) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:279",
+      "line": "async sendSurgeryScheduledNotification(surgeryCase, patient, scheduledDate) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:314",
+      "line": "async sendSurgeryReminder(surgeryCase, patient) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:334",
+      "line": "async sendFollowUpAppointmentNotification(appointment, patient, surgeryType) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:372",
+      "line": "async sendLabResultsReadyNotification(labOrder, patient) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:405",
+      "line": "async sendAppointmentReminder(appointment, patient, hoursBeforeAppointment = 24) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:433",
+      "line": "async sendNewAppointmentNotification(appointment, patient) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:469",
+      "line": "async sendAppointmentUpdateNotification(appointment, patient, changeType) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/notificationFacade.js:526",
+      "line": "async sendPaymentReminder(invoice, patient, daysOverdue = 0) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/patientFolderIndexer.js:390",
+      "line": "async matchPatientFromFolder(folderInfo, folderPath, device) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/patientFolderIndexer.js:505",
+      "line": "async linkFolderToPatient(patient, folderPath, deviceType, device) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentGateway.js:232",
+      "line": "async callMobileMoneyAPI(config, data) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentGateway.js:447",
+      "line": "async verifyStripePayment(paymentIntentId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentGateway.js:462",
+      "line": "async verifyMobileMoneyPayment(transactionId, provider) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentPlanAutoChargeService.js:373",
+      "line": "async manualTrigger(planId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentPlanAutoChargeService.js:437",
+      "line": "async getAutoChargeStatus(planId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/reservationCleanupScheduler.js:198",
+      "line": "async manualCleanup() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/sessionService.js:210",
+      "line": "async function invalidateSession(sessionId, user = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/sessionService.js:231",
+      "line": "async function invalidateAllUserSessions(userId, exceptSessionId = null) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/sessionService.js:258",
+      "line": "async function enforceMaxSessions(userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:238",
+      "line": "async readFile(device, filepath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:297",
+      "line": "async writeFile(device, filepath, data) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:314",
+      "line": "async fileExists(device, filepath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:328",
+      "line": "async createDirectory(device, dirpath) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/surgeonAnalyticsService.js:449",
+      "line": "async function getSurgeonComparisonReport(surgeonIds, startDate, endDate) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:225",
+      "line": "async getItem(type, itemId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:244",
+      "line": "async createItem(type, data, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:259",
+      "line": "async updateItem(type, itemId, data, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:488",
+      "line": "async transferBetweenClinics(type, itemId, quantity, fromClinicId, toClinicId, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:600",
+      "line": "async adjustStock(type, itemId, adjustment, reason, userId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:647",
+      "line": "async getDashboardSummary(clinicId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/visitCleanupScheduler.js:376",
+      "line": "async manualCheck() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/appointmentController.js:856",
+      "line": "async function generateQueueNumber() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/authController.js:918",
+      "line": "async function generateEmployeeId() {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:454",
+      "line": "async function updateInvoiceItemStatus(dispatch, status) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:476",
+      "line": "async function updatePrescriptionStatus(dispatch, status) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:498",
+      "line": "async function updateSurgeryStatus(dispatch, status) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/ocrImportController.js:479",
+      "line": "async function findPatientMatches(patientKey) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/ocrImportController.js:523",
+      "line": "async function batchFindPatientMatches(patients) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/ocrImportController.js:613",
+      "line": "async function matchPatient(extractedInfo, threshold = 0.85) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:1451",
+      "line": "async function checkLensInventory(order, eye) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:1474",
+      "line": "async function getPatientConventionInfo(patientId) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:1559",
+      "line": "async function calculatePricing(order) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:1775",
+      "line": "async function reserveInventory(order) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/queueController.js:807",
+      "line": "async function getQueuePosition(appointment) {",
+      "severity": "HIGH"
+    }
+  ],
+  "promiseWithoutCatch": [
+    {
+      "location": "services/invoiceReminderScheduler.js:351",
+      "line": "updateOverdueStatuses().then(() => processPaymentReminders());",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/networkDiscoveryService.js:247",
+      "line": "promises.push(this.checkSMBPort(ip, timeout).then(open => open ? ip : null));",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/surgeryController.js:72",
+      "line": "SurgeryCase.findOverdue(30, clinicId).then(cases => cases.length)",
+      "severity": "MEDIUM"
+    }
+  ],
+  "eventEmitterWithoutError": [
+    {
+      "location": "services/autoSyncService.js:19",
+      "line": "class AutoSyncService extends EventEmitter {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:17",
+      "line": "class DeviceSyncQueue extends EventEmitter {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:17",
+      "line": "class SMB2ClientService extends EventEmitter {",
+      "severity": "HIGH"
+    }
+  ],
+  "dbWithoutErrorHandling": [
+    {
+      "location": "services/adapters/BaseAdapter.js:389",
+      "line": "return crypto.createHash('sha256').update(content).digest('hex');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/approvalValidationService.js:26",
+      "line": "const specificAct = company.actsRequiringApproval.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/approvalValidationService.js:39",
+      "line": "const categorySettings = company.coveredCategories.find(c => c.category === category);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/autoSyncService.js:369",
+      "line": "this.watchers.delete(deviceId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/backupService.js:199",
+      "line": "const encrypted = Buffer.concat([cipher.update(input), cipher.final()]);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/backupService.js:231",
+      "line": "const decrypted = Buffer.concat([decipher.update(encrypted), decipher.final()]);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/backupService.js:276",
+      "line": "hashSum.update(fileBuffer);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:90",
+      "line": "memoryCache.delete(key);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:135",
+      "line": "memoryCache.delete(key);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:160",
+      "line": "memoryCache.delete(key);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cacheService.js:501",
+      "line": "memoryCache.delete(key);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarIntegrationService.js:103",
+      "line": "defaultCalendarId: calendars.find(c => c.primary)?.calendarId",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarIntegrationService.js:408",
+      "line": "defaultCalendarId: calendars.find(c => c.primary)?.calendarId",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/calendarSyncScheduler.js:122",
+      "line": "const providerResult = results.find(r => r.provider === provider);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/centralServerClient.js:19",
+      "line": "return axios.create({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1170",
+      "line": "return alert.save();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/clinicalAlertService.js:1217",
+      "line": "return alert.save();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/cloudSyncService.js:371",
+      "line": "return Patient.find(query).limit(50).lean();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceParsers/nidekParser.js:104",
+      "line": "const rightData = data.OD || data.RightEye || data.Eye?.find(e => e.Side === 'OD');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceParsers/nidekParser.js:105",
+      "line": "const leftData = data.OS || data.LeftEye || data.Eye?.find(e => e.Side === 'OS');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:293",
+      "line": "this.activeJobs.delete(job.id);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:313",
+      "line": "this.activeJobs.delete(job.id);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncScheduler.js:379",
+      "line": "this.syncJobs.delete(deviceId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/BillingService.js:646",
+      "line": "Invoice.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:127",
+      "line": "const matchByCode = surgeryActs.find(act =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:135",
+      "line": "const matchByName = surgeryActs.find(act =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:142",
+      "line": "const genericMatch = surgeryActs.find(act =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:455",
+      "line": "return SurgeryCase.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/domain/SurgeryService.js:470",
+      "line": "return SurgeryCase.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:144",
+      "line": "const ageRange = pediatricDosing.ageBased.find(range => {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/doseCalculationService.js:573",
+      "line": "const creatinineResult = latestCreatinine.results.find(r =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/drugSafetyService.js:319",
+      "line": "const matchedInteraction = drugInteractions.find(interaction =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/drugSafetyService.js:334",
+      "line": "const reverseMatch = reverseInteractions.find(interaction =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/drugSafetyService.js:339",
+      "line": "if (reverseMatch && !interactions.find(i => i.drug2 === currentDrugName)) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/fhirService.js:542",
+      "line": "phone: phones.find(p => p.use === 'home')?.value || phones[0]?.value || '',",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/fhirService.js:543",
+      "line": "mobile: phones.find(p => p.use === 'mobile')?.value || '',",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/fhirService.js:553",
+      "line": "ssn: fhirPatient.identifier?.find(i => i.type?.coding?.[0]?.code === 'SS')?.value || '',",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:802",
+      "line": "this.watchers.delete(deviceId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/folderSyncService.js:808",
+      "line": "this.syncJobs.delete(deviceId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/gpaService.js:348",
+      "line": "const centralProgression = pointwiseAnalysis.clusters?.find(c => c.zone === 'central');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/hl7ParserService.js:44",
+      "line": "const mshSegment = segments.find(s => s.startsWith('MSH'));",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/hl7ParserService.js:58",
+      "line": "const msh = parsedSegments.find(s => s.name === 'MSH');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/hl7ParserService.js:165",
+      "line": "const pid = segments.find(s => s.name === 'PID');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/hl7ParserService.js:193",
+      "line": "const orc = segments.find(s => s.name === 'ORC');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/hl7ParserService.js:194",
+      "line": "const obr = segments.find(s => s.name === 'OBR');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/invoiceReminderScheduler.js:91",
+      "line": "const reminderToSend = REMINDER_INTERVALS.find(interval => {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/labAutoVerificationService.js:524",
+      "line": "const autoVerified = stats.find(s => s._id === 'auto_verified')?.count || 0;",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/labAutoVerificationService.js:529",
+      "line": "manuallyVerified: stats.find(s => s._id === 'verified')?.count || 0,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/labAutoVerificationService.js:530",
+      "line": "pendingReview: stats.find(s => s._id === 'pending')?.count || 0,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/labAutoVerificationService.js:531",
+      "line": "criticalPending: stats.find(s => s._id === 'critical_pending')?.count || 0,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/legacyPatientMapper.js:87",
+      "line": "idCache.delete(dmiId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:30",
+      "line": "return LISIntegration.find().sort({ createdAt: -1 });",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:166",
+      "line": "integration.save();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:232",
+      "line": "integration.save();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:242",
+      "line": "integration.save();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:611",
+      "line": ".find(s => s.name === 'MSA')?.fields?.[1]?.value;",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:623",
+      "line": "ackCode: parsed.segments.find(s => s.name === 'MSA')?.fields?.[0]?.value",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:703",
+      "line": "return Visit.findOne(query);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:903",
+      "line": "return LISMessageLog.create({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:935",
+      "line": "LISMessageLog.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:962",
+      "line": "return LISTestMapping.find({ integration: integrationId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:978",
+      "line": "return existing.save();",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:981",
+      "line": "return LISTestMapping.create({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:1003",
+      "line": "this.activeConnections.delete(integrationId.toString());",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:1043",
+      "line": "LISMessageLog.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paginationService.js:55",
+      "line": "let mongooseQuery = model.find(query);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paginationService.js:142",
+      "line": ".find(filter)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paginationService.js:212",
+      "line": ".find(searchQuery, { score: { $meta: 'textScore' } })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paginationService.js:255",
+      "line": ".find(filter)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/patientFolderIndexer.js:509",
+      "line": "const existingLink = patient.folderIds?.find(f =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/patientFolderIndexer.js:693",
+      "line": "const existing = patient.folderIds.find(f => f.path === validatedPath);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentGateway.js:877",
+      "line": ".update(JSON.stringify(payload.data))",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/paymentPlanAutoChargeService.js:204",
+      "line": "return patient.storedPaymentMethods.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/referralTriggerService.js:367",
+      "line": "conditionInfo: REFERRAL_TRIGGERS[referral.specialty]?.conditions.find(c => c.code === referral.code)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/reservationCleanupScheduler.js:98",
+      "line": "const batch = item.batches.find(b => b.lotNumber === reservedBatch.lotNumber);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/rnflAnalysisService.js:129",
+      "line": "const affectedSector = abnormalSectors.find(s => s.classification === 'SEVERELY_ABNORMAL');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/rnflAnalysisService.js:140",
+      "line": "global: sectorAnalysis.find(s => s.sector === 'global'),",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:100",
+      "line": "this.connections.delete(deviceId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:279",
+      "line": "this.fileCache.delete(cacheKey);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smbStreamService.js:232",
+      "line": "this.fileCache.delete(cacheKey);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:200",
+      "line": "Model.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:573",
+      "line": "sourceItem.save(),",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:574",
+      "line": "destItem.save()",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:185",
+      "line": "this.connectionErrors.delete(socket.id);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:197",
+      "line": "this.connectionErrors.delete(socket.id);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:201",
+      "line": "this.userSockets.delete(socket.userId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:216",
+      "line": "this.messageBuffer.delete(room);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:226",
+      "line": "this.userMessageBuffer.delete(userId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:238",
+      "line": "this.userLastSeen.delete(userId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:240",
+      "line": "this.userMessageBuffer.delete(userId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/websocketService.js:343",
+      "line": "this.connectionErrors.delete(socket.id);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/approvalController.js:48",
+      "line": "const categorySettings = company.coveredCategories?.find(c => c.category === item.category);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/approvalController.js:618",
+      "line": "const categorySettings = company.coveredCategories?.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/approvalController.js:633",
+      "line": "const specificAct = company.actsRequiringApproval.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/authController.js:401",
+      "line": ".update(req.params.resettoken)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/authController.js:571",
+      "line": ".update(req.params.token)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/billing/payments.js:194",
+      "line": "Invoice.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/billing/payments.js:346",
+      "line": "const invoice = outstandingInvoices.find(inv => inv._id.toString() === allocation.invoiceId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/billing/payments.js:714",
+      "line": "payment = invoice.payments.find(p => p.paymentId === paymentId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/billing/payments.js:874",
+      "line": "const existingPayment = invoice.payments.find(p => p.transactionId === event.transactionId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/calendarController.js:160",
+      "line": "const update = calendars.find(c => c.calendarId === cal.calendarId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/calendarController.js:318",
+      "line": "syncEnabled: integration.calendars.find(c => c.calendarId === cal.id)?.syncEnabled || false,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/calendarController.js:333",
+      "line": "syncEnabled: integration.calendars.find(c => c.calendarId === cal.id)?.syncEnabled || false,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/companies/billingController.js:56",
+      "line": "Invoice.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/companies/billingController.js:394",
+      "line": "Approval.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/companies/coreController.js:67",
+      "line": "Company.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/companies/coreController.js:124",
+      "line": "Invoice.find({ 'companyBilling.company': company._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/companies/coreController.js:240",
+      "line": "Patient.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/contactLensFittingController.js:250",
+      "line": "const dispensingRecord = item.trialTracking.dispensings?.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/crossClinicInventoryController.js:500",
+      "line": "const clinicStats = stats.find(s => s._id?.toString() === clinic._id.toString());",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/devices/coreController.js:289",
+      "line": "const successCount = last30DaysLogs.find(l => l._id === 'SUCCESS')?.count || 0;",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/devices/folderController.js:600",
+      "line": "AuditLog.create({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/devices/folderController.js:701",
+      "line": "const existing = patient.folderIds?.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/devices/shared.js:47",
+      "line": "hmac.update(JSON.stringify(body));",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/documentController.js:280",
+      "line": "const share = document.security.sharedWith.find(s =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/externalFacilityController.js:69",
+      "line": "ExternalFacility.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:57",
+      "line": "FulfillmentDispatch.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:405",
+      "line": "FulfillmentDispatch.find({ ...clinicQuery, status: { $ne: 'completed' } })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/glassesOrders/coreController.js:190",
+      "line": "const opticalConfig = company.coveredCategories?.find(c => c.category === 'optical');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/inventory/InventoryControllerFactory.js:117",
+      "line": "this.Model.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/inventory/InventoryControllerFactory.js:382",
+      "line": "const existingLot = item.batches?.find(b => b.lotNumber === lotNumber);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/inventory/UnifiedInventoryController.js:211",
+      "line": "Model.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/inventory/UnifiedInventoryController.js:472",
+      "line": "const existingLot = item.batches?.find(b => b.lotNumber === lotNumber);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/inventoryTransferController.js:102",
+      "line": "InventoryTransfer.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/inventoryTransferController.js:716",
+      "line": "inTransit: statusCounts.find(s => s._id === 'in-transit')?.count || 0",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/invoices/billingController.js:93",
+      "line": "const specificAct = company.actsRequiringApproval.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/invoices/billingController.js:104",
+      "line": "const categorySettings = company.coveredCategories.find(c => c.category === item.category);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/invoices/coreController.js:611",
+      "line": "const categorySettings = company.coveredCategories?.find(c => c.category === item.category);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/invoices/paymentController.js:460",
+      "line": "if (!serviceUpdates.glassesOrders.find(o => o.id.toString() === order._id.toString())) {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/ivtVialController.js:34",
+      "line": "IVTVial.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/orders.js:757",
+      "line": "Visit.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/orders.js:767",
+      "line": "LabOrder.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/reports.js:283",
+      "line": "const specimen = visit.specimens?.find(s => s.barcode === test.specimenBarcode);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:77",
+      "line": "const ageRange = range.ageSpecific.find(ar =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:313",
+      "line": "compTemplate = template.components.find(c =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:445",
+      "line": "const test = visit.laboratoryOrders?.find(t =>",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:662",
+      "line": "const refRange = template?.components?.find(c => c.name === r.parameter)?.referenceRange || {};",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:909",
+      "line": "const component = result.results.find(r => r.parameter === componentName);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:1007",
+      "line": "const component = previousResult.results.find(r => r.parameter === componentName);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:1090",
+      "line": "Visit.find(visitQuery)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/results.js:1098",
+      "line": "LabOrder.find(labOrderQuery)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/specimens.js:137",
+      "line": "const specimen = visit.specimens.find(s => s._id.toString() === req.params.specimenId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/specimens.js:164",
+      "line": "const specimen = visit.specimens.find(s => s.barcode === req.params.barcode);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/utils/barcodeGenerator.js:51",
+      "line": "Visit.findOne({ 'specimens.barcode': barcode }).select('_id').lean(),",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/laboratory/utils/barcodeGenerator.js:52",
+      "line": "LabOrder.findOne({ 'specimen.barcode': barcode }).select('_id').lean()",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/notificationController.js:27",
+      "line": "Notification.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:234",
+      "line": "let opticalSettings = company.coveredCategories?.find(c => c.category === 'optical');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:269",
+      "line": "const parentOptical = parentCompany.coveredCategories?.find(c => c.category === 'optical');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:1496",
+      "line": "let opticalSettings = company.coveredCategories?.find(c => c.category === 'optical');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/opticalShopController.js:1529",
+      "line": "const parentOptical = parentCompany.coveredCategories?.find(c => c.category === 'optical');",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:27",
+      "line": "Visit.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:35",
+      "line": "Prescription.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:41",
+      "line": "OphthalmologyExam.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:46",
+      "line": "Appointment.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:52",
+      "line": "AuditLog.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:274",
+      "line": "Visit.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:277",
+      "line": "Prescription.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:279",
+      "line": "OphthalmologyExam.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/advancedController.js:484",
+      "line": "const existingLink = patient.folderIds?.find(",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:218",
+      "line": "Visit.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:224",
+      "line": "OphthalmologyExam.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:229",
+      "line": "ConsultationSession.find({ patient: patient._id, status: 'completed' })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:569",
+      "line": "Visit.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:573",
+      "line": "Appointment.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:577",
+      "line": "Prescription.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:671",
+      "line": "Visit.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:673",
+      "line": "Appointment.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:45",
+      "line": "PharmacyInventory.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:361",
+      "line": "PharmacyInventory.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:742",
+      "line": "const existingBatch = medication.batches.find(b => b.lotNumber === lotNumber);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:758",
+      "line": "return success(res, { data: medication.batches.find(b => b.lotNumber === lotNumber), message: 'Batch added successfully', statusCode: 201 });",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:1580",
+      "line": "const existingSupplier = medication.suppliers.find(s => s.name === name);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:1616",
+      "line": "const supplier = medicationsWithSupplier[0]?.suppliers.find(s => s.name === supplierName);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:1744",
+      "line": "primarySupplier: item.suppliers?.find(s => s.isPrimary) || item.suppliers?.[0],",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/pharmacyController.js:1786",
+      "line": "supplier: supplier || medication.suppliers?.find(s => s.isPrimary)?.name,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/portalController.js:103",
+      "line": "Appointment.findOne({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/portalController.js:111",
+      "line": "Prescription.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/portalController.js:116",
+      "line": "Invoice.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/portalController.js:152",
+      "line": "Appointment.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/portalController.js:159",
+      "line": "Appointment.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/portalController.js:315",
+      "line": "Invoice.find({ patient: patient._id })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/prescriptions/coreController.js:1629",
+      "line": "Prescription.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/purchaseOrderController.js:54",
+      "line": "PurchaseOrder.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/queueController.js:1323",
+      "line": "lastCalled: appointments.find(a => a.status === 'in-progress')",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/queueController.js:1325",
+      "line": "queueNumber: appointments.find(a => a.status === 'in-progress').queueNumber,",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/queueController.js:1326",
+      "line": "room: appointments.find(a => a.status === 'in-progress').location?.room",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/repairController.js:47",
+      "line": "RepairTracking.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/stockReconciliationController.js:40",
+      "line": "StockReconciliation.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/stockReconciliationController.js:315",
+      "line": "StockReconciliation.find({ ...query, status: 'completed' })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/surgeryController.js:409",
+      "line": "ConsultationSession.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/surgeryController.js:415",
+      "line": "OphthalmologyExam.find({ patient: patientId })",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/surgeryController.js:420",
+      "line": "Prescription.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/surgeryController.js:426",
+      "line": "Document.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/surgeryController.js:434",
+      "line": "SurgeryCase.find({",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/tryOnPhotoController.js:227",
+      "line": "const photoSet = order.frameTryOnPhotos?.find(p => p._id.toString() === photoSetId);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/userController.js:320",
+      "line": "Prescription.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "controllers/warrantyController.js:50",
+      "line": "WarrantyTracking.find(query)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "middleware/auth.js:286",
+      "line": ".update(token)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "middleware/auth.js:326",
+      "line": ".update(token)",
+      "severity": "HIGH"
+    }
+  ],
+  "externalApiWithoutTimeout": [
+    {
+      "location": "services/calendarIntegrationService.js:355",
+      "line": "const response = await fetch(tokenUrl, {",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/calendarIntegrationService.js:434",
+      "line": "const response = await fetch(tokenUrl, {",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/cloudSyncService.js:499",
+      "line": "const response = await axios.get(",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/lisIntegrationService.js:283",
+      "line": "const response = await axios.get(`${baseUrl}/metadata`, config);",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/lisIntegrationService.js:297",
+      "line": "const response = await axios.get(baseUrl, config);",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/paymentGateway.js:242",
+      "line": "const response = await axios.post(`${config.apiUrl}/v1/webpayment`, {",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/smsService.js:225",
+      "line": "const message = await this.client.messages(messageId).fetch();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/universalFileProcessor.js:532",
+      "line": "const response = await axios.post(",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/settingsController.js:113",
+      "line": "// await twilio.api.accounts(settings.twilio.accountSid).fetch();",
+      "severity": "MEDIUM"
+    }
+  ],
+  "fileOpsWithoutErrorHandling": [
+    {
+      "location": "services/cerfaGenerator.js:782",
+      "line": "fs.unlink(filepath, (err) => {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/smb2ClientService.js:268",
+      "line": "fs.writeFile(tempFile, data)",
+      "severity": "HIGH"
+    },
+    {
+      "location": "middleware/fileUpload.js:242",
+      "line": "fs.unlink(filepath, (err) => {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "middleware/fileUpload.js:269",
+      "line": "fs.unlink(oldPath, (unlinkErr) => {",
+      "severity": "HIGH"
+    },
+    {
+      "location": "middleware/fileUpload.js:291",
+      "line": "fs.stat(filepath, (err, stats) => {",
+      "severity": "HIGH"
+    }
+  ],
+  "jsonParseWithoutTryCatch": [
+    {
+      "location": "services/deviceSyncQueue.js:238",
+      "line": "const job = JSON.parse(jobData);",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:377",
+      "line": "return data ? JSON.parse(data) : null;",
+      "severity": "HIGH"
+    },
+    {
+      "location": "services/lisIntegrationService.js:895",
+      "line": "parsed = JSON.parse(message);",
+      "severity": "HIGH"
+    }
+  ],
+  "missingValidation": [
+    {
+      "location": "services/adapters/BaseAdapter.js:80",
+      "line": "const measurement = new DeviceMeasurement({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/adapters/BaseAdapter.js:206",
+      "line": "const deviceImage = new DeviceImage({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/adapters/BaseAdapter.js:238",
+      "line": "const log = new DeviceIntegrationLog({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:101",
+      "line": "const deviceImage = new DeviceImage({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:142",
+      "line": "const measurement = new DeviceMeasurement({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceIntegration/DeviceIntegrationService.js:237",
+      "line": "module.exports = new DeviceIntegrationService();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:511",
+      "line": "const indexer = new PatientFolderIndexer();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:555",
+      "line": "const indexer = new PatientFolderIndexer();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceSyncQueue.js:610",
+      "line": "const instance = new DeviceSyncQueue();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/deviceSyncScheduler.js:410",
+      "line": "const deviceSyncScheduler = new DeviceSyncScheduler();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/patientFolderIndexer.js:772",
+      "line": "const patientFolderIndexer = new PatientFolderIndexer();",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/appointmentController.js:161",
+      "line": "appointment = new Appointment(appointmentData);",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/appointmentController.js:1659",
+      "line": "const parentAppointment = new Appointment({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/appointmentController.js:1715",
+      "line": "const childAppointment = new Appointment({",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/ivtController.js:520",
+      "line": "const tempAppointment = new Appointment(appointmentData);",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/ivtController.js:539",
+      "line": "const altAppointment = new Appointment(appointmentData);",
+      "severity": "MEDIUM"
+    }
+  ],
+  "potentialRaceConditions": [
+    {
+      "location": "services/domain/BillingService.js:645",
+      "line": "const [invoices, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/lisIntegrationService.js:96",
+      "line": "await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/lisIntegrationService.js:934",
+      "line": "const [logs, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/lisIntegrationService.js:1019",
+      "line": "const [todayStats, weekStats, errorStats] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/paginationService.js:140",
+      "line": "const [results, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/paginationService.js:210",
+      "line": "const [results, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:199",
+      "line": "const [items, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:572",
+      "line": "await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "services/unifiedInventoryService.js:648",
+      "line": "const [lowStock, expiring, value] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/billing/payments.js:193",
+      "line": "const [invoices, stats] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/clinicalTrendController.js:859",
+      "line": "const [exam1, exam2] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/companies/billingController.js:55",
+      "line": "const [invoices, total, summary] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/companies/billingController.js:393",
+      "line": "const [approvals, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/companies/billingController.js:435",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/companies/coreController.js:66",
+      "line": "const [companies, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/companies/coreController.js:121",
+      "line": "const [employeeCount, pendingApprovals, recentInvoices] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/companies/coreController.js:239",
+      "line": "const [employees, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/crossClinicInventoryController.js:229",
+      "line": "const [results, totalCount] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/crossClinicInventoryController.js:594",
+      "line": "const [fromClinic, toClinic] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:56",
+      "line": "const [dispatches, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/fulfillmentDispatchController.js:389",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/imagingController.js:485",
+      "line": "const [todayOrders, todayCompleted, pendingOrders, unreportedStudies] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/inventory/InventoryControllerFactory.js:116",
+      "line": "const [items, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/inventory/InventoryControllerFactory.js:537",
+      "line": "const [stats, byStatus] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/inventory/UnifiedInventoryController.js:210",
+      "line": "const [items, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/inventoryTransferController.js:101",
+      "line": "const [transfers, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/inventoryTransferController.js:187",
+      "line": "const [sourceClinic, destinationClinic] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/inventoryTransferController.js:687",
+      "line": "const [statusCounts, recentTransfers, pendingApproval] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/ivtVialController.js:307",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/laboratory/orders.js:755",
+      "line": "const [visits, labOrders] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/laboratory/results.js:1088",
+      "line": "const [visits, labOrders] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/laboratory/statistics.js:285",
+      "line": "const [todayOrders, todayCompleted, pendingOrders, criticalPending] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/laboratory/utils/barcodeGenerator.js:50",
+      "line": "const [visitCollision, labOrderCollision] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/notificationController.js:26",
+      "line": "const [notifications, total, unreadCount] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/ophthalmology/analyticsController.js:212",
+      "line": "const [examOne, examTwo] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/ophthalmology/coreController.js:529",
+      "line": "const [todayExams, weeklyExams, pendingExams] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/patientHistoryController.js:20",
+      "line": "const [patient, visits, prescriptions, examinations, appointments, auditLogs] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/patients/advancedController.js:47",
+      "line": "const [primaryPatient, secondaryPatient] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:217",
+      "line": "const [visits, ophthalmologyExams, sessions] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:568",
+      "line": "const [visits, appointments, prescriptions] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:670",
+      "line": "const [visitProviders, appointmentProviders] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/patients/recordsController.js:785",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/pharmacyController.js:44",
+      "line": "const [medications, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/pharmacyController.js:180",
+      "line": "const [totalItems, lowStockItems, expiringItems, valueResult] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/pharmacyController.js:224",
+      "line": "const [statsResult, expiringResult] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/pharmacyController.js:360",
+      "line": "const [medications, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/portalController.js:57",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/portalController.js:151",
+      "line": "const [upcoming, past] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/portalController.js:314",
+      "line": "const [invoices, summary] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/prescriptions/coreController.js:1628",
+      "line": "const [prescriptions, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/repairController.js:360",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/stockReconciliationController.js:311",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/surgeryController.js:47",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/surgeryController.js:407",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/templateCatalogController.js:794",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/userController.js:319",
+      "line": "const [prescriptions, total] = await Promise.all([",
+      "severity": "MEDIUM"
+    },
+    {
+      "location": "controllers/warrantyController.js:292",
+      "line": "] = await Promise.all([",
+      "severity": "MEDIUM"
+    }
+  ]
+}
