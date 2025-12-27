@@ -12,8 +12,10 @@ const log = createContextLogger('Currency');
 class CurrencyService {
   constructor() {
     // Supported currencies
+    // CRITICAL FIX: CDF has 0 decimal places (no centimes in Congo)
+    // USD and EUR have 2 decimal places
     this.currencies = {
-      CDF: { code: 'CDF', name: 'Franc Congolais', symbol: 'FC', decimals: 2 },
+      CDF: { code: 'CDF', name: 'Franc Congolais', symbol: 'FC', decimals: 0 },
       USD: { code: 'USD', name: 'Dollar Américain', symbol: '$', decimals: 2 },
       EUR: { code: 'EUR', name: 'Euro', symbol: '€', decimals: 2 }
     };

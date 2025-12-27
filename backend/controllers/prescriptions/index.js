@@ -74,21 +74,21 @@ module.exports = {
   // =====================================================
   // Dispensing
   dispensePrescription: drugController.dispensePrescription,
-  getDispensingHistory: drugController.getDispensingHistory,
 
   // Refills
-  requestRefill: drugController.requestRefill,
-  processRefillRequest: drugController.processRefillRequest,
+  refillPrescription: drugController.refillPrescription,
   getRefillHistory: drugController.getRefillHistory,
 
   // Pharmacy Status
   updatePharmacyStatus: drugController.updatePharmacyStatus,
-  getPharmacyQueue: drugController.getPharmacyQueue,
+  sendToPharmacy: drugController.sendToPharmacy,
 
   // Drug Safety
   checkDrugInteractions: drugController.checkDrugInteractions,
   runSafetyCheck: drugController.runSafetyCheck,
-  getPatientMedications: drugController.getPatientMedications,
+  getDrugSafetyStatus: drugController.getDrugSafetyStatus,
+  getDrugPrescriptions: drugController.getDrugPrescriptions,
+  createDrugPrescription: drugController.createDrugPrescription,
 
   // =====================================================
   // Optical Controller Functions
@@ -104,47 +104,33 @@ module.exports = {
   // E-Prescribing Controller Functions
   // =====================================================
   // NCPDP Transmission
-  transmitPrescription: ePrescribingController.transmitPrescription,
-  getTransmissionStatus: ePrescribingController.getTransmissionStatus,
-  cancelTransmission: ePrescribingController.cancelTransmission,
-  handleRefillResponse: ePrescribingController.handleRefillResponse,
+  transmitEPrescription: ePrescribingController.transmitEPrescription,
+  getEPrescriptionStatus: ePrescribingController.getEPrescriptionStatus,
+  cancelEPrescription: ePrescribingController.cancelEPrescription,
+  respondToRefillRequest: ePrescribingController.respondToRefillRequest,
 
   // Pharmacy Integration
-  searchPharmacies: ePrescribingController.searchPharmacies,
+  searchEPrescribingPharmacies: ePrescribingController.searchEPrescribingPharmacies,
   verifyPharmacy: ePrescribingController.verifyPharmacy,
-  getEPrescribingStatus: ePrescribingController.getEPrescribingStatus,
+  getEPrescribingServiceStatus: ePrescribingController.getEPrescribingServiceStatus,
 
   // Prior Authorization
-  submitPriorAuthorization: ePrescribingController.submitPriorAuthorization,
-  updatePriorAuthorizationStatus: ePrescribingController.updatePriorAuthorizationStatus,
+  requestPriorAuthorization: ePrescribingController.requestPriorAuthorization,
+  updatePriorAuthorization: ePrescribingController.updatePriorAuthorization,
   getPriorAuthorizationStatus: ePrescribingController.getPriorAuthorizationStatus,
-  getPendingAuthorizations: ePrescribingController.getPendingAuthorizations,
+  getPendingPriorAuthorizations: ePrescribingController.getPendingPriorAuthorizations,
 
   // =====================================================
   // Backward Compatibility Aliases
   // =====================================================
-  // E-Prescribing aliases (old names -> new functions)
-  transmitEPrescription: ePrescribingController.transmitPrescription,
-  getEPrescriptionStatus: ePrescribingController.getTransmissionStatus,
-  cancelEPrescription: ePrescribingController.cancelTransmission,
-  respondToRefillRequest: ePrescribingController.handleRefillResponse,
-  searchEPrescribingPharmacies: ePrescribingController.searchPharmacies,
-  getEPrescribingServiceStatus: ePrescribingController.getEPrescribingStatus,
-
-  // Prior Authorization aliases
-  requestPriorAuthorization: ePrescribingController.submitPriorAuthorization,
-  updatePriorAuthorization: ePrescribingController.updatePriorAuthorizationStatus,
-  getPendingPriorAuthorizations: ePrescribingController.getPendingAuthorizations,
-
-  // Drug controller aliases
-  refillPrescription: drugController.processRefillRequest,
-
-  // =====================================================
-  // Drug Prescription Functions (migrated from prescriptionController)
-  // =====================================================
-  // These map to appropriate functions in the modular controllers
-  getDrugSafetyStatus: drugController.runSafetyCheck,
-  getDrugPrescriptions: coreController.getPrescriptions, // Filter by type='medication' in route
-  createDrugPrescription: coreController.createPrescription, // Type specified in request body
-  sendToPharmacy: drugController.updatePharmacyStatus
+  // Routes may use different names - map them here
+  transmitPrescription: ePrescribingController.transmitEPrescription,
+  getTransmissionStatus: ePrescribingController.getEPrescriptionStatus,
+  cancelTransmission: ePrescribingController.cancelEPrescription,
+  handleRefillResponse: ePrescribingController.respondToRefillRequest,
+  searchPharmacies: ePrescribingController.searchEPrescribingPharmacies,
+  getEPrescribingStatus: ePrescribingController.getEPrescribingServiceStatus,
+  submitPriorAuthorization: ePrescribingController.requestPriorAuthorization,
+  updatePriorAuthorizationStatus: ePrescribingController.updatePriorAuthorization,
+  getPendingAuthorizations: ePrescribingController.getPendingPriorAuthorizations
 };

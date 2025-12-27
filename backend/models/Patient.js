@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 const Counter = require('./Counter');
-const { phiEncryptionPlugin, PHI_FIELDS } = require('../utils/phiEncryption');
+const { phiEncryptionPlugin, PHI_FIELDS, encrypt, decrypt, isEncrypted } = require('../utils/phiEncryption');
 
 const patientSchema = new mongoose.Schema({
   // Identification
@@ -2391,6 +2391,13 @@ const log = createContextLogger('Patient');
 // - phoneNumber / alternativePhone: Contact phone numbers
 // - address.street: Street address (most identifying address component)
 // - emergencyContact.phone / .name: Emergency contact info
+// - email: PII - email address is a HIPAA identifier
+//
+// HIPAA-PROTECTED FIELDS (encrypted via pre-save/post-find hooks below):
+// - medicalHistory: Contains allergies, chronic conditions, surgeries,
+//                   family history, social history - all sensitive health info
+// - ophthalmology: Clinical exam data including visual acuity, prescriptions,
+//                  eye conditions, surgical history, IOP measurements
 //
 // Note: biometric.faceEncoding is already protected via select:false
 // and is cleared on patient deletion for GDPR compliance
@@ -2415,10 +2422,12 @@ patientSchema.plugin(phiEncryptionPlugin, {
     'phoneNumber',
     'alternativePhone',
     'address.street',
+    'email',  // HIPAA identifier - PII that should be encrypted
 
     // Emergency contact (PHI - can identify patient relationships)
     'emergencyContact.name',
     'emergencyContact.phone',
+    'emergencyContact.email',  // Emergency contact email is also PII
 
     // Payment information (PCI-DSS + PHI)
     'storedPaymentMethods.phoneNumber',
@@ -2427,6 +2436,156 @@ patientSchema.plugin(phiEncryptionPlugin, {
   ],
   // Log encryption operations for audit trail
   logOperations: process.env.NODE_ENV !== 'test'
+});
+
+// =====================================================
+// PHI ENCRYPTION FOR COMPLEX NESTED OBJECTS
+// =====================================================
+// medicalHistory and ophthalmology are complex nested objects that cannot
+// be encrypted using the simple field-level plugin. Instead, we serialize
+// them to JSON and encrypt the entire JSON string.
+//
+// IMPORTANT: This ensures all sensitive clinical data is encrypted at rest.
+// =====================================================
+
+/**
+ * Helper to safely encrypt a complex object as JSON string
+ * @param {Object} obj - The object to encrypt
+ * @returns {string|null} - Encrypted JSON string or null if empty
+ */
+function encryptObjectField(obj) {
+  if (!obj || (typeof obj === 'object' && Object.keys(obj).length === 0)) {
+    return null;
+  }
+  try {
+    const jsonStr = JSON.stringify(obj);
+    return encrypt(jsonStr);
+  } catch (err) {
+    console.error('[PHI-ENCRYPT] Failed to encrypt object field:', err.message);
+    return obj; // Return original if encryption fails
+  }
+}
+
+/**
+ * Helper to safely decrypt a JSON string back to object
+ * @param {string} encryptedStr - The encrypted JSON string
+ * @returns {Object|null} - Decrypted object or null
+ */
+function decryptObjectField(encryptedStr) {
+  if (!encryptedStr) {
+    return null;
+  }
+  // If it's already an object (not encrypted), return as-is
+  if (typeof encryptedStr === 'object') {
+    return encryptedStr;
+  }
+  // If not encrypted (legacy data), return parsed JSON or original
+  if (!isEncrypted(encryptedStr)) {
+    try {
+      return JSON.parse(encryptedStr);
+    } catch {
+      return encryptedStr;
+    }
+  }
+  try {
+    const jsonStr = decrypt(encryptedStr);
+    return JSON.parse(jsonStr);
+  } catch (err) {
+    console.error('[PHI-DECRYPT] Failed to decrypt object field:', err.message);
+    return null;
+  }
+}
+
+// =====================================================
+// PRE-SAVE HOOK: Encrypt medicalHistory and ophthalmology
+// HIPAA-PROTECTED: These fields contain sensitive health information
+// =====================================================
+patientSchema.pre('save', function(next) {
+  // Encrypt medicalHistory if modified
+  // Contains: allergies, chronicConditions, surgeries, familyHistory, socialHistory
+  if (this.isModified('medicalHistory') && this.medicalHistory) {
+    const medHistory = this.medicalHistory;
+    // Only encrypt if it's an object (not already encrypted string)
+    if (typeof medHistory === 'object' && !isEncrypted(medHistory)) {
+      this.set('medicalHistory', encryptObjectField(medHistory), { strict: false });
+    }
+  }
+
+  // Encrypt ophthalmology if modified
+  // Contains: visualAcuity, currentPrescription, eyeConditions, surgicalHistory, IOP
+  if (this.isModified('ophthalmology') && this.ophthalmology) {
+    const ophthal = this.ophthalmology;
+    // Only encrypt if it's an object (not already encrypted string)
+    if (typeof ophthal === 'object' && !isEncrypted(ophthal)) {
+      this.set('ophthalmology', encryptObjectField(ophthal), { strict: false });
+    }
+  }
+
+  next();
+});
+
+// =====================================================
+// POST-FIND HOOKS: Decrypt medicalHistory and ophthalmology
+// Ensures data is decrypted when reading from database
+// =====================================================
+
+/**
+ * Decrypt PHI fields on a single document
+ */
+function decryptPatientPHI(doc) {
+  if (!doc) return doc;
+
+  // Handle both Mongoose documents and plain objects (from .lean())
+  const isMongooseDoc = doc.constructor && doc.constructor.name === 'model';
+
+  // Decrypt medicalHistory
+  if (doc.medicalHistory && typeof doc.medicalHistory === 'string' && isEncrypted(doc.medicalHistory)) {
+    const decrypted = decryptObjectField(doc.medicalHistory);
+    if (isMongooseDoc) {
+      doc.set('medicalHistory', decrypted, { strict: false });
+    } else {
+      doc.medicalHistory = decrypted;
+    }
+  }
+
+  // Decrypt ophthalmology
+  if (doc.ophthalmology && typeof doc.ophthalmology === 'string' && isEncrypted(doc.ophthalmology)) {
+    const decrypted = decryptObjectField(doc.ophthalmology);
+    if (isMongooseDoc) {
+      doc.set('ophthalmology', decrypted, { strict: false });
+    } else {
+      doc.ophthalmology = decrypted;
+    }
+  }
+
+  return doc;
+}
+
+// Post-find hook for single document queries
+patientSchema.post('findOne', function(doc) {
+  return decryptPatientPHI(doc);
+});
+
+// Post-find hook for findById
+patientSchema.post('findById', function(doc) {
+  return decryptPatientPHI(doc);
+});
+
+// Post-find hook for multiple document queries
+patientSchema.post('find', function(docs) {
+  if (!docs || !Array.isArray(docs)) return docs;
+  docs.forEach(doc => decryptPatientPHI(doc));
+  return docs;
+});
+
+// Post-findOneAndUpdate hook
+patientSchema.post('findOneAndUpdate', function(doc) {
+  return decryptPatientPHI(doc);
+});
+
+// Post-save hook to ensure the returned document is decrypted
+patientSchema.post('save', function(doc) {
+  return decryptPatientPHI(doc);
 });
 
 module.exports = mongoose.model('Patient', patientSchema);

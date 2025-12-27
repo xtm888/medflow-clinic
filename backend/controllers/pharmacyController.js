@@ -4,6 +4,7 @@ const { success, error, notFound, paginated } = require('../utils/apiResponse');
 const { findPatientByIdOrCode } = require('../utils/patientLookup');
 const { pharmacy: pharmacyLogger } = require('../utils/structuredLogger');
 const { INVENTORY, PAGINATION } = require('../config/constants');
+const { withTransactionRetry } = require('../utils/transactions');
 
 // Get all pharmacy inventory with filtering and pagination
 // MULTI-CLINIC: Filters by clinic from X-Clinic-ID header
@@ -1032,24 +1033,48 @@ exports.dispensePrescription = async (req, res) => {
       return success(res, { data: result, message: 'Medication dispensed successfully' });
     }
 
-    // Otherwise, dispense all reserved medications
-    const results = [];
-    const dispensedMeds = [];
-
+    // Otherwise, dispense all reserved medications atomically
+    // CRITICAL: Wrap in transaction to prevent partial dispensing
+    const medicationsToDispenseAll = [];
     for (let i = 0; i < prescription.medications.length; i++) {
       const med = prescription.medications[i];
       if (med.reservation?.status === 'reserved' && !med.dispensing?.dispensed) {
-        try {
-          const result = await prescription.dispenseMedication(i, req.user._id, pharmacyNotes);
-          results.push(result);
-          dispensedMeds.push(med);
-        } catch (err) {
-          results.push({
-            success: false,
-            medication: med.name,
-            error: err.message
-          });
-        }
+        medicationsToDispenseAll.push({ index: i, medication: med });
+      }
+    }
+
+    let results = [];
+    let dispensedMeds = [];
+
+    if (medicationsToDispenseAll.length > 0) {
+      try {
+        // Use transaction to ensure all medications dispense atomically or none
+        const transactionResult = await withTransactionRetry(async (session) => {
+          const txResults = [];
+          const txDispensedMeds = [];
+
+          for (const { index, medication } of medicationsToDispenseAll) {
+            // Pass session to dispenseMedication for transaction support
+            const result = await prescription.dispenseMedication(index, req.user._id, pharmacyNotes, session);
+            txResults.push(result);
+            txDispensedMeds.push(medication);
+          }
+
+          return { results: txResults, dispensedMeds: txDispensedMeds };
+        }, { maxRetries: 3 });
+
+        results = transactionResult.results;
+        dispensedMeds = transactionResult.dispensedMeds;
+      } catch (txError) {
+        // Transaction failed - no medications were dispensed
+        pharmacyLogger.error('Transaction failed during batch dispensing', {
+          prescriptionId: prescription.prescriptionId,
+          error: txError.message,
+          stack: txError.stack
+        });
+
+        // Return error indicating complete rollback
+        return error(res, `Dispensing annule: ${txError.message}. Aucun medicament n'a ete dispense.`, 400);
       }
     }
 

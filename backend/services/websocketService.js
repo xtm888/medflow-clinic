@@ -356,6 +356,20 @@ class WebSocketService {
         socket.join(`department:${socket.user.department}`);
       }
 
+      // Store clinic context on socket for clinic-scoped operations
+      socket.clinicId = socket.user.currentClinicId?.toString() || null;
+
+      // Join user to clinic-scoped rooms for real-time updates
+      if (socket.clinicId) {
+        socket.join(`clinic:${socket.clinicId}`);
+        socket.join(`queue:updates:${socket.clinicId}`);
+        socket.join(`appointments:updates:${socket.clinicId}`);
+        socket.join(`patients:updates:${socket.clinicId}`);
+        socket.join(`pharmacy:updates:${socket.clinicId}`);
+        socket.join(`inventory:updates:${socket.clinicId}`);
+        log.info(`User ${socket.userId} joined clinic-scoped rooms for clinic ${socket.clinicId}`);
+      }
+
       // Send any missed notifications on reconnect
       if (lastSeen) {
         const missedMessages = this.getMissedUserMessages(socket.userId, lastSeen);
@@ -371,14 +385,21 @@ class WebSocketService {
 
       // Handle custom events
       socket.on('subscribe:queue', (data) => {
-        socket.join('queue:updates');
+        // Use clinic-scoped room if clinicId available, fallback to socket's clinic
+        const clinicId = data?.clinicId || socket.clinicId;
+        if (clinicId) {
+          socket.join(`queue:updates:${clinicId}`);
+          log.info(`User ${socket.userId} subscribed to queue:updates:${clinicId}`);
 
-        // Send missed queue updates if client provides lastSeen
-        if (data?.lastSeen) {
-          const missedQueue = this.getMissedMessages('queue:updates', data.lastSeen);
-          if (missedQueue.length > 0) {
-            socket.emit('replay:queue', missedQueue);
+          // Send missed queue updates if client provides lastSeen
+          if (data?.lastSeen) {
+            const missedQueue = this.getMissedMessages(`queue:updates:${clinicId}`, data.lastSeen);
+            if (missedQueue.length > 0) {
+              socket.emit('replay:queue', missedQueue);
+            }
           }
+        } else {
+          log.warn(`User ${socket.userId} attempted to subscribe to queue without clinic context`);
         }
       });
 
@@ -388,6 +409,80 @@ class WebSocketService {
 
       socket.on('subscribe:notifications', () => {
         socket.join(`notifications:${socket.userId}`);
+      });
+
+      // Handle clinic-scoped room subscriptions
+      socket.on('subscribe:appointments', (data) => {
+        const clinicId = data?.clinicId || socket.clinicId;
+        if (clinicId) {
+          socket.join(`appointments:updates:${clinicId}`);
+          log.info(`User ${socket.userId} subscribed to appointments:updates:${clinicId}`);
+        }
+      });
+
+      socket.on('subscribe:patients', (data) => {
+        const clinicId = data?.clinicId || socket.clinicId;
+        if (clinicId) {
+          socket.join(`patients:updates:${clinicId}`);
+          log.info(`User ${socket.userId} subscribed to patients:updates:${clinicId}`);
+        }
+      });
+
+      socket.on('subscribe:pharmacy', (data) => {
+        const clinicId = data?.clinicId || socket.clinicId;
+        if (clinicId) {
+          socket.join(`pharmacy:updates:${clinicId}`);
+          log.info(`User ${socket.userId} subscribed to pharmacy:updates:${clinicId}`);
+        }
+      });
+
+      socket.on('subscribe:inventory', (data) => {
+        const clinicId = data?.clinicId || socket.clinicId;
+        if (clinicId) {
+          socket.join(`inventory:updates:${clinicId}`);
+          log.info(`User ${socket.userId} subscribed to inventory:updates:${clinicId}`);
+        }
+      });
+
+      // Handle clinic switch - leave old clinic rooms and join new ones
+      socket.on('switch:clinic', (data) => {
+        const newClinicId = data?.clinicId?.toString();
+        const oldClinicId = socket.clinicId;
+
+        if (!newClinicId) {
+          log.warn(`User ${socket.userId} attempted clinic switch without new clinic ID`);
+          return;
+        }
+
+        if (oldClinicId === newClinicId) {
+          return; // No change needed
+        }
+
+        // Leave old clinic-scoped rooms
+        if (oldClinicId) {
+          socket.leave(`clinic:${oldClinicId}`);
+          socket.leave(`queue:updates:${oldClinicId}`);
+          socket.leave(`appointments:updates:${oldClinicId}`);
+          socket.leave(`patients:updates:${oldClinicId}`);
+          socket.leave(`pharmacy:updates:${oldClinicId}`);
+          socket.leave(`inventory:updates:${oldClinicId}`);
+          log.info(`User ${socket.userId} left clinic-scoped rooms for clinic ${oldClinicId}`);
+        }
+
+        // Update socket's clinic context
+        socket.clinicId = newClinicId;
+
+        // Join new clinic-scoped rooms
+        socket.join(`clinic:${newClinicId}`);
+        socket.join(`queue:updates:${newClinicId}`);
+        socket.join(`appointments:updates:${newClinicId}`);
+        socket.join(`patients:updates:${newClinicId}`);
+        socket.join(`pharmacy:updates:${newClinicId}`);
+        socket.join(`inventory:updates:${newClinicId}`);
+        log.info(`User ${socket.userId} switched to clinic ${newClinicId}`);
+
+        // Acknowledge the switch
+        socket.emit('clinic:switched', { clinicId: newClinicId });
       });
 
       // Handle replay request from client
@@ -444,31 +539,48 @@ class WebSocketService {
         }
       });
 
-      // Handle patient called notification
+      // Handle patient called notification (clinic-scoped)
       socket.on('patient_called', (data) => {
         if (data.patientId) {
-          this.io.emit('patient_called', {
+          const clinicId = data.clinicId?.toString() || socket.clinicId;
+          const payload = {
             ...data,
+            clinicId,
             calledBy: socket.userId,
             timestamp: new Date()
-          });
+          };
+
+          if (clinicId) {
+            // Emit only to the specific clinic's queue room
+            this.io.to(`queue:updates:${clinicId}`).emit('patient_called', payload);
+            log.info(`Patient called notification emitted to clinic ${clinicId}`);
+          } else {
+            log.warn('patient_called event without clinic context - not broadcast');
+          }
         }
       });
 
-      // Handle assistance request
+      // Handle assistance request (clinic-scoped)
       socket.on('assistance_request', (data) => {
-        this.io.to('role:admin').emit('assistance_requested', {
+        const clinicId = data.clinicId?.toString() || socket.clinicId;
+        const payload = {
           ...data,
+          clinicId,
           requestedBy: socket.userId,
           userName: `${socket.user.firstName} ${socket.user.lastName}`,
           timestamp: new Date()
-        });
-        this.io.to('role:nurse').emit('assistance_requested', {
-          ...data,
-          requestedBy: socket.userId,
-          userName: `${socket.user.firstName} ${socket.user.lastName}`,
-          timestamp: new Date()
-        });
+        };
+
+        if (clinicId) {
+          // Emit to clinic-scoped room so only staff at the same clinic receive it
+          this.io.to(`clinic:${clinicId}`).emit('assistance_requested', payload);
+          log.info(`Assistance request emitted to clinic ${clinicId}`);
+        } else {
+          // Fallback to role-based rooms if no clinic context
+          this.io.to('role:admin').emit('assistance_requested', payload);
+          this.io.to('role:nurse').emit('assistance_requested', payload);
+          log.warn('assistance_request without clinic context - using role-based fallback');
+        }
       });
 
       socket.on('disconnect', (reason) => {
@@ -478,17 +590,25 @@ class WebSocketService {
     });
   }
 
-  // Emit queue update to all subscribed clients
+  // Emit queue update to all subscribed clients (clinic-scoped)
   emitQueueUpdate(queueData) {
     if (this.io) {
       const data = { ...queueData, timestamp: Date.now() };
-      // Buffer for replay
-      this.bufferMessage('queue:updates', 'queue_update', data);
+      const clinicId = queueData.clinicId?.toString() || queueData.clinic?.toString();
 
-      // OPTIMIZED: Emit only the event format frontend listens to (queue_update)
-      // Removed duplicate queue:update and queue:updated emissions
-      this.io.to('queue:updates').emit('queue_update', data);
-      this.io.emit('queue_update', data); // Global broadcast for all clients
+      if (clinicId) {
+        // Buffer for replay (clinic-scoped)
+        this.bufferMessage(`queue:updates:${clinicId}`, 'queue_update', data);
+
+        // Emit to clinic-scoped room only to prevent cross-clinic data leakage
+        this.io.to(`queue:updates:${clinicId}`).emit('queue_update', data);
+        log.info(`Queue update emitted to clinic ${clinicId}`);
+      } else {
+        // Fallback: If no clinicId provided, log warning but don't broadcast globally
+        log.warn('emitQueueUpdate called without clinicId - update not broadcast', {
+          dataKeys: Object.keys(queueData)
+        });
+      }
     }
   }
 
@@ -523,66 +643,101 @@ class WebSocketService {
     }
   }
 
-  // Emit patient update
+  // Emit patient update (clinic-scoped)
   emitPatientUpdate(patientId, updateData) {
     if (this.io) {
-      // OPTIMIZED: Emit only 'patient_update' (frontend listens to this)
-      this.io.to(`patient:${patientId}`).emit('patient_update', updateData);
-      this.io.emit('patient_update', updateData); // Global for patient list views
+      const data = { ...updateData, patientId, timestamp: Date.now() };
+      const clinicId = updateData.clinicId?.toString() || updateData.homeClinic?.toString() || updateData.clinic?.toString();
+
+      // Always emit to patient-specific room for those viewing this patient
+      this.io.to(`patient:${patientId}`).emit('patient_update', data);
+
+      // Emit to clinic-scoped room for patient list views
+      if (clinicId) {
+        this.io.to(`patients:updates:${clinicId}`).emit('patient_update', data);
+        log.info(`Patient update emitted to clinic ${clinicId} for patient ${patientId}`);
+      } else {
+        log.warn('emitPatientUpdate called without clinicId - only patient-specific room notified', {
+          patientId
+        });
+      }
     }
   }
 
-  // Emit appointment update
+  // Emit appointment update (clinic-scoped)
   emitAppointmentUpdate(appointmentData) {
     if (this.io) {
       const data = { ...appointmentData, timestamp: Date.now() };
-      // Buffer for replay
-      this.bufferMessage('appointments', 'appointment_update', data);
+      const clinicId = appointmentData.clinicId?.toString() || appointmentData.clinic?.toString();
 
-      // OPTIMIZED: Emit only 'appointment_update' (frontend listens to this)
-      this.io.emit('appointment_update', data);
+      if (clinicId) {
+        // Buffer for replay (clinic-scoped)
+        this.bufferMessage(`appointments:updates:${clinicId}`, 'appointment_update', data);
+
+        // Emit to clinic-scoped room only
+        this.io.to(`appointments:updates:${clinicId}`).emit('appointment_update', data);
+        log.info(`Appointment update emitted to clinic ${clinicId}`);
+      } else {
+        log.warn('emitAppointmentUpdate called without clinicId - update not broadcast', {
+          appointmentId: appointmentData._id || appointmentData.id
+        });
+      }
     }
   }
 
-  // Emit billing/invoice update (NEW: frontend hooks listen to billing_update)
+  // Emit billing/invoice update (clinic-scoped)
   emitBillingUpdate(billingData) {
     if (this.io) {
       const data = { ...billingData, timestamp: Date.now() };
       const { patientId, invoiceId, event } = billingData;
+      const clinicId = billingData.clinicId?.toString() || billingData.clinic?.toString();
 
-      // Notify patient
+      // Notify patient-specific room
       if (patientId) {
         this.io.to(`patient:${patientId}`).emit('billing_update', data);
       }
 
-      // Notify accountants and billing staff
-      this.io.to('role:accountant').emit('billing_update', data);
-      this.io.to('role:receptionist').emit('billing_update', data);
-
-      // Global broadcast for billing dashboards
-      this.io.emit('billing_update', data);
-
-      log.info(`Billing update emitted: ${event || 'update'} for invoice ${invoiceId}`);
+      // Emit to clinic-scoped room for billing dashboards
+      if (clinicId) {
+        this.io.to(`clinic:${clinicId}`).emit('billing_update', data);
+        log.info(`Billing update emitted to clinic ${clinicId}: ${event || 'update'} for invoice ${invoiceId}`);
+      } else {
+        // Fallback to role-based rooms if no clinic context (not recommended)
+        this.io.to('role:accountant').emit('billing_update', data);
+        this.io.to('role:receptionist').emit('billing_update', data);
+        log.warn('emitBillingUpdate called without clinicId - using role-based fallback', {
+          invoiceId
+        });
+      }
     }
   }
 
-  // Emit prescription update
+  // Emit prescription update (clinic-scoped)
   emitPrescriptionUpdate(prescriptionData) {
     if (this.io) {
       const { patientId, prescriberId } = prescriptionData;
+      const data = { ...prescriptionData, timestamp: Date.now() };
+      const clinicId = prescriptionData.clinicId?.toString() || prescriptionData.clinic?.toString();
 
-      // Notify patient
+      // Notify patient-specific room
       if (patientId) {
-        this.io.to(`patient:${patientId}`).emit('prescription:updated', prescriptionData);
+        this.io.to(`patient:${patientId}`).emit('prescription:updated', data);
       }
 
       // Notify prescriber
       if (prescriberId) {
-        this.io.to(`user:${prescriberId}`).emit('prescription:updated', prescriptionData);
+        this.io.to(`user:${prescriberId}`).emit('prescription:updated', data);
       }
 
-      // Notify pharmacy
-      this.io.to('role:pharmacist').emit('prescription:new', prescriptionData);
+      // Notify pharmacy (clinic-scoped)
+      if (clinicId) {
+        this.io.to(`pharmacy:updates:${clinicId}`).emit('prescription:new', data);
+        log.info(`Prescription update emitted to pharmacy at clinic ${clinicId}`);
+      } else {
+        // Fallback to role-based room (not recommended - potential cross-clinic leak)
+        this.io.to('role:pharmacist').emit('prescription:new', data);
+        log.warn('emitPrescriptionUpdate called without clinicId - using role-based fallback');
+      }
     }
   }
 
@@ -605,36 +760,84 @@ class WebSocketService {
     }
   }
 
-  // Emit critical alert
+  // Emit critical alert (clinic-scoped for most alerts)
   emitCriticalAlert(alertData) {
     if (this.io) {
-      // Send to all connected users based on urgency
+      const data = { ...alertData, timestamp: Date.now() };
+      const clinicId = alertData.clinicId?.toString() || alertData.clinic?.toString();
+
+      // Critical urgency alerts still go clinic-wide but only to that clinic
       if (alertData.urgency === 'critical') {
-        this.io.emit('alert:critical', alertData);
+        if (clinicId) {
+          this.io.to(`clinic:${clinicId}`).emit('alert:critical', data);
+          log.info(`Critical alert emitted to clinic ${clinicId}`);
+        } else {
+          // Without clinic context, restrict to admin only
+          this.io.to('role:admin').emit('alert:critical', data);
+          log.warn('emitCriticalAlert (critical) called without clinicId - restricted to admin');
+        }
       } else if (alertData.department) {
-        this.io.to(`department:${alertData.department}`).emit('alert:department', alertData);
+        // Department alerts are scoped to clinic + department
+        if (clinicId) {
+          // Note: We don't have clinic-scoped department rooms, so use clinic room
+          this.io.to(`clinic:${clinicId}`).emit('alert:department', data);
+        } else {
+          this.io.to(`department:${alertData.department}`).emit('alert:department', data);
+        }
       } else if (alertData.role) {
-        this.io.to(`role:${alertData.role}`).emit('alert:role', alertData);
+        // Role alerts should also be clinic-scoped when possible
+        if (clinicId) {
+          this.io.to(`clinic:${clinicId}`).emit('alert:role', data);
+        } else {
+          this.io.to(`role:${alertData.role}`).emit('alert:role', data);
+        }
       }
     }
   }
 
-  // Emit inventory alert
+  // Emit inventory alert (clinic-scoped)
   emitInventoryAlert(alertData) {
     if (this.io) {
-      this.io.to('role:pharmacist').emit('inventory:alert', alertData);
-      this.io.to('role:admin').emit('inventory:alert', alertData);
+      const data = { ...alertData, timestamp: Date.now() };
+      const clinicId = alertData.clinicId?.toString() || alertData.clinic?.toString();
+
+      if (clinicId) {
+        // Emit to clinic-scoped inventory room
+        this.io.to(`inventory:updates:${clinicId}`).emit('inventory:alert', data);
+        // Also notify clinic-scoped pharmacy room for drug-related alerts
+        this.io.to(`pharmacy:updates:${clinicId}`).emit('inventory:alert', data);
+        log.info(`Inventory alert emitted to clinic ${clinicId}: ${alertData.type || 'alert'}`);
+      } else {
+        // Fallback to role-based rooms (not recommended)
+        this.io.to('role:pharmacist').emit('inventory:alert', data);
+        this.io.to('role:admin').emit('inventory:alert', data);
+        log.warn('emitInventoryAlert called without clinicId - using role-based fallback');
+      }
     }
   }
 
-  // Emit dashboard update
-  emitDashboardUpdate(updateType, data) {
+  // Emit dashboard update (clinic-scoped)
+  emitDashboardUpdate(updateType, data, clinicId = null) {
     if (this.io) {
-      this.io.emit('dashboard:update', {
+      const payload = {
         type: updateType,
         data: data,
         timestamp: new Date()
-      });
+      };
+
+      // Extract clinicId from data if not provided directly
+      const targetClinicId = clinicId?.toString() || data?.clinicId?.toString() || data?.clinic?.toString();
+
+      if (targetClinicId) {
+        // Emit to clinic-scoped room
+        this.io.to(`clinic:${targetClinicId}`).emit('dashboard:update', payload);
+        log.info(`Dashboard update emitted to clinic ${targetClinicId}: ${updateType}`);
+      } else {
+        // For truly global dashboard updates (e.g., system-wide metrics for admins)
+        // Only emit to admin role to prevent cross-clinic data exposure
+        this.io.to('role:admin').emit('dashboard:update', payload);
+        log.warn('emitDashboardUpdate called without clinicId - restricted to admin role');
+      }
     }
   }
 
@@ -659,24 +862,84 @@ class WebSocketService {
     }
   }
 
-  // Generic broadcast to all connected clients
+  // Generic broadcast - CLINIC-SCOPED by default to prevent data leakage
+  // For truly global broadcasts (e.g., system maintenance), use broadcastGlobal()
   broadcast(payload) {
+    if (this.io && payload) {
+      const event = payload.type || 'system:notification';
+      const clinicId = payload.clinicId?.toString() || payload.clinic?.toString();
+      const data = {
+        ...payload,
+        timestamp: new Date()
+      };
+
+      if (clinicId) {
+        // Clinic-scoped broadcast
+        this.io.to(`clinic:${clinicId}`).emit(event, data);
+        log.info(`Broadcast emitted to clinic ${clinicId}: ${event}`);
+      } else {
+        // Without clinicId, restrict to admin only to prevent cross-clinic exposure
+        this.io.to('role:admin').emit(event, data);
+        log.warn(`broadcast() called without clinicId - restricted to admin: ${event}`);
+      }
+    }
+  }
+
+  // Truly global broadcast - USE SPARINGLY, only for system-wide notifications
+  // Examples: system maintenance, server shutdown, global announcements
+  broadcastGlobal(payload) {
     if (this.io && payload) {
       const event = payload.type || 'system:notification';
       this.io.emit(event, {
         ...payload,
         timestamp: new Date()
       });
+      log.info(`Global broadcast emitted: ${event}`);
     }
   }
 
-  // Emit device-related events
-  emitDeviceUpdate(eventType, data) {
-    if (this.io) {
-      this.io.emit(eventType, {
+  // Emit to a specific clinic room
+  emitToClinic(clinicId, event, data) {
+    if (this.io && clinicId) {
+      this.io.to(`clinic:${clinicId}`).emit(event, {
         ...data,
+        clinicId,
         timestamp: new Date()
       });
+      return true;
+    }
+    return false;
+  }
+
+  // Emit to multiple clinics (for multi-clinic users or admin views)
+  emitToMultipleClinics(clinicIds, event, data) {
+    if (this.io && Array.isArray(clinicIds) && clinicIds.length > 0) {
+      clinicIds.forEach(clinicId => {
+        this.emitToClinic(clinicId.toString(), event, data);
+      });
+      return true;
+    }
+    return false;
+  }
+
+  // Emit device-related events (clinic-scoped)
+  emitDeviceUpdate(eventType, data) {
+    if (this.io) {
+      const clinicId = data.clinicId?.toString() || data.clinic?.toString();
+      const payload = {
+        ...data,
+        timestamp: new Date()
+      };
+
+      if (clinicId) {
+        // Device updates should only go to the clinic where the device is located
+        this.io.to(`clinic:${clinicId}`).emit(eventType, payload);
+        log.info(`Device update emitted to clinic ${clinicId}: ${eventType}`);
+      } else {
+        // Fallback: emit only to admin for device events without clinic context
+        this.io.to('role:admin').emit(eventType, payload);
+        log.warn(`emitDeviceUpdate called without clinicId: ${eventType}`);
+      }
     }
   }
 
@@ -684,28 +947,34 @@ class WebSocketService {
   // LABORATORY WORKLIST UPDATES
   // ============================================
 
-  // Emit lab worklist update (for real-time lab dashboard)
+  // Emit lab worklist update (clinic-scoped for real-time lab dashboard)
   emitLabWorklistUpdate(updateData) {
     if (this.io) {
       const data = {
         ...updateData,
         timestamp: new Date()
       };
+      const clinicId = updateData.clinicId?.toString() || updateData.clinic?.toString();
 
-      // Broadcast to all lab technicians
-      // OPTIMIZED: Emit only 'lab_worklist_update' (frontend listens to this)
-      this.io.to('role:lab_technician').emit('lab_worklist_update', data);
+      if (clinicId) {
+        // Emit to clinic-scoped room for lab dashboard
+        this.io.to(`clinic:${clinicId}`).emit('lab_worklist_update', data);
 
-      // Also broadcast to doctors if they have the lab view open
-      this.io.to('role:doctor').emit('lab_worklist_update', data);
-      this.io.to('role:ophthalmologist').emit('lab_worklist_update', data);
+        // Buffer for replay (clinic-scoped)
+        this.bufferMessage(`lab:worklist:${clinicId}`, 'lab_worklist_update', data);
 
-      // Buffer for replay
-      this.bufferMessage('lab:worklist', 'lab_worklist_update', data);
+        log.info(`Lab worklist update emitted to clinic ${clinicId}`);
+      } else {
+        // Fallback to role-based rooms (not recommended)
+        this.io.to('role:lab_technician').emit('lab_worklist_update', data);
+        this.io.to('role:doctor').emit('lab_worklist_update', data);
+        this.io.to('role:ophthalmologist').emit('lab_worklist_update', data);
+        log.warn('emitLabWorklistUpdate called without clinicId - using role-based fallback');
+      }
     }
   }
 
-  // Emit specific lab order status change
+  // Emit specific lab order status change (clinic-scoped)
   emitLabOrderStatusChange(orderId, oldStatus, newStatus, additionalData = {}) {
     if (this.io) {
       const data = {
@@ -715,46 +984,64 @@ class WebSocketService {
         ...additionalData,
         timestamp: new Date()
       };
+      const clinicId = additionalData.clinicId?.toString() || additionalData.clinic?.toString();
 
-      // Broadcast to lab staff
-      this.io.to('role:lab_technician').emit('lab:order:status', data);
+      if (clinicId) {
+        // Broadcast to clinic-scoped room
+        this.io.to(`clinic:${clinicId}`).emit('lab:order:status', data);
+      } else {
+        // Fallback to role-based room
+        this.io.to('role:lab_technician').emit('lab:order:status', data);
+        log.warn('emitLabOrderStatusChange called without clinicId');
+      }
 
-      // Notify ordering provider if result is ready
+      // Notify ordering provider if result is ready (user-specific, not clinic-scoped)
       if (newStatus === 'completed' && additionalData.orderedBy) {
         this.io.to(`user:${additionalData.orderedBy}`).emit('lab:results:ready', data);
       }
 
-      // Critical value alert
+      // Critical value alert - user-specific notifications are safe
       if (additionalData.hasCritical) {
-        this.io.to('role:doctor').emit('lab:critical', data);
-        this.io.to('role:ophthalmologist').emit('lab:critical', data);
+        // Notify ordering provider directly
         if (additionalData.orderedBy) {
           this.io.to(`user:${additionalData.orderedBy}`).emit('lab:critical', data);
+        }
+        // For clinic-wide critical alerts, use clinic-scoped room
+        if (clinicId) {
+          this.io.to(`clinic:${clinicId}`).emit('lab:critical', data);
         }
       }
     }
   }
 
-  // Emit specimen collection event
+  // Emit specimen collection event (clinic-scoped)
   emitSpecimenCollected(specimenData) {
     if (this.io) {
       const data = {
         ...specimenData,
         timestamp: new Date()
       };
+      const clinicId = specimenData.clinicId?.toString() || specimenData.clinic?.toString();
 
-      // Notify lab to expect specimen
-      this.io.to('role:lab_technician').emit('lab:specimen:collected', data);
+      if (clinicId) {
+        // Notify lab at specific clinic to expect specimen
+        this.io.to(`clinic:${clinicId}`).emit('lab:specimen:collected', data);
+      } else {
+        // Fallback to role-based room
+        this.io.to('role:lab_technician').emit('lab:specimen:collected', data);
+        log.warn('emitSpecimenCollected called without clinicId');
+      }
 
-      // Update worklist
+      // Update worklist (already clinic-scoped)
       this.emitLabWorklistUpdate({
         action: 'specimen_collected',
+        clinicId, // Pass clinicId through
         ...data
       });
     }
   }
 
-  // Emit QC failure alert
+  // Emit QC failure alert (clinic-scoped)
   emitQCFailure(qcData) {
     if (this.io) {
       const data = {
@@ -762,12 +1049,18 @@ class WebSocketService {
         priority: 'urgent',
         timestamp: new Date()
       };
+      const clinicId = qcData.clinicId?.toString() || qcData.clinic?.toString();
 
-      // Alert all lab technicians
-      this.safeEmit('role:lab_technician', 'lab:qc:failure', data);
-
-      // Alert lab supervisor/admin
-      this.safeEmit('role:admin', 'lab:qc:failure', data);
+      if (clinicId) {
+        // Alert clinic-specific lab staff
+        this.safeEmit(`clinic:${clinicId}`, 'lab:qc:failure', data);
+        log.info(`QC failure alert emitted to clinic ${clinicId}`);
+      } else {
+        // Fallback to role-based rooms (not recommended - potential cross-clinic leak)
+        this.safeEmit('role:lab_technician', 'lab:qc:failure', data);
+        this.safeEmit('role:admin', 'lab:qc:failure', data);
+        log.warn('emitQCFailure called without clinicId - using role-based fallback');
+      }
     }
   }
 
@@ -778,6 +1071,7 @@ class WebSocketService {
   /**
    * Safe emit with error handling
    * Wraps socket.io emit with try-catch and statistics tracking
+   * IMPORTANT: Always provide a room to prevent cross-clinic data leakage
    */
   safeEmit(room, event, data) {
     if (!this.io) {
@@ -789,6 +1083,8 @@ class WebSocketService {
       if (room) {
         this.io.to(room).emit(event, data);
       } else {
+        // Log warning for global emits - these should be avoided in multi-clinic environments
+        log.warn(`safeEmit called without room for event ${event} - potential cross-clinic leak`);
         this.io.emit(event, data);
       }
       this.stats.totalMessagesEmitted++;

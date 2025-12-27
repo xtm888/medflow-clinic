@@ -1199,13 +1199,21 @@ exports.generateInvoice = async (req, res) => {
       }
     }
 
-    const invoice = await Invoice.create(invoiceData);
+    // Use transaction to ensure invoice creation and order update are atomic
+    const { withTransactionRetry } = require('../utils/transactions');
 
-    // Link invoice to order
-    order.invoice = invoice._id;
-    await order.save();
+    const invoice = await withTransactionRetry(async (session) => {
+      // Create invoice within transaction (array syntax for session support)
+      const [createdInvoice] = await Invoice.create([invoiceData], { session });
 
-    // Audit log
+      // Link invoice to order within same transaction
+      order.invoice = createdInvoice._id;
+      await order.save({ session });
+
+      return createdInvoice;
+    });
+
+    // Audit log (outside transaction - non-critical)
     await AuditLog.create({
       user: req.user._id,
       action: 'INVOICE_CREATE',

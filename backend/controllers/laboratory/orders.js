@@ -171,40 +171,47 @@ exports.createOrder = asyncHandler(async (req, res) => {
         totalAmount += price;
       }
 
-      // Create invoice first with basic amounts
-      // Note: dueDate is auto-set by Invoice pre-save hook (30 days from now)
-      invoice = await Invoice.create({
-        patient: patientId,
-        visit: req.body.visitId,
-        labOrder: order._id,
-        items: invoiceItems,
-        summary: {
-          subtotal: totalAmount,
-          total: totalAmount,
-          amountDue: totalAmount,
-          amountPaid: 0
-        },
-        status: 'draft',  // Valid enum value (not 'pending')
-        type: 'laboratory',
-        notes: `Analyses de laboratoire - ${processedTests.length} test(s)`,
-        createdBy: req.user.id
-      });
+      // Use transaction to ensure invoice creation and order update are atomic
+      const { withTransactionRetry } = require('../../utils/transactions');
 
-      // CRITICAL FIX: Apply proper convention billing using Invoice model method
-      // This respects company rules, coverage limits, waiting periods, approval workflows
-      if (patient?.convention?.company) {
-        try {
-          await invoice.applyCompanyBilling(patient.convention.company, req.user.id, null, { bypassWaitingPeriod: false });
-          log.info(`Applied convention billing for invoice ${invoice.invoiceNumber}`);
-        } catch (conventionError) {
-          log.warn(`[LabOrder] Convention billing failed: ${conventionError.message}, invoice remains as patient-pay`);
+      invoice = await withTransactionRetry(async (session) => {
+        // Create invoice within transaction (array syntax for session support)
+        // Note: dueDate is auto-set by Invoice pre-save hook (30 days from now)
+        const [createdInvoice] = await Invoice.create([{
+          patient: patientId,
+          visit: req.body.visitId,
+          labOrder: order._id,
+          items: invoiceItems,
+          summary: {
+            subtotal: totalAmount,
+            total: totalAmount,
+            amountDue: totalAmount,
+            amountPaid: 0
+          },
+          status: 'draft',  // Valid enum value (not 'pending')
+          type: 'laboratory',
+          notes: `Analyses de laboratoire - ${processedTests.length} test(s)`,
+          createdBy: req.user.id
+        }], { session });
+
+        // CRITICAL FIX: Apply proper convention billing using Invoice model method
+        // This respects company rules, coverage limits, waiting periods, approval workflows
+        if (patient?.convention?.company) {
+          try {
+            await createdInvoice.applyCompanyBilling(patient.convention.company, req.user.id, session, { bypassWaitingPeriod: false });
+            log.info(`Applied convention billing for invoice ${createdInvoice.invoiceNumber}`);
+          } catch (conventionError) {
+            log.warn(`[LabOrder] Convention billing failed: ${conventionError.message}, invoice remains as patient-pay`);
+          }
         }
-      }
 
-      // Update lab order with invoice reference
-      order.billing.invoice = invoice._id;
-      order.billing.estimatedCost = totalAmount;
-      await order.save();
+        // Update lab order with invoice reference within same transaction
+        order.billing.invoice = createdInvoice._id;
+        order.billing.estimatedCost = totalAmount;
+        await order.save({ session });
+
+        return createdInvoice;
+      });
 
       log.info(`Auto-created invoice ${invoice.invoiceNumber} for lab order ${order.orderId}`);
     } catch (invoiceError) {

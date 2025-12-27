@@ -409,6 +409,7 @@ class FolderSyncService {
     });
 
     // Notify via websocket
+    // SECURITY: Do not broadcast patient names - use IDs only to prevent PHI exposure
     websocketService.broadcast({
       type: 'DEVICE_FILE_PROCESSED',
       data: {
@@ -416,12 +417,14 @@ class FolderSyncService {
         deviceName: device.name,
         fileName,
         patientMatched: true,
-        patientName: `${matchedPatient.firstName} ${matchedPatient.lastName}`
+        patientId: matchedPatient._id,
+        patientDisplayId: matchedPatient.patientId
       }
     });
 
     this.stats.patientsMatched++;
-    log.info(`Matched to patient: ${matchedPatient.firstName} ${matchedPatient.lastName}`);
+    // SECURITY: Log patient ID only, not name (PHI protection)
+    log.info(`Matched to patient ID: ${matchedPatient._id} (${matchedPatient.patientId})`);
 
     return document;
   }

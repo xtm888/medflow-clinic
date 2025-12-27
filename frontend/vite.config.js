@@ -46,6 +46,8 @@ export default defineConfig({
     },
   },
   build: {
+    // CRITICAL: Disable source maps in production to prevent code exposure
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks: {

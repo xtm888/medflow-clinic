@@ -8,6 +8,7 @@ const { Inventory, PharmacyInventory } = require('../models/Inventory');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { createContextLogger } = require('../utils/structuredLogger');
+const { withTransactionRetry } = require('../utils/transactions');
 const log = createContextLogger('IVTController');
 
 // @desc    Validate IVT injection before creation
@@ -51,6 +52,11 @@ exports.createIVTInjection = async (req, res) => {
   try {
     const { patientId, forceCreate, autoGenerateInvoice = true, ...injectionData } = req.body;
 
+    // ========================================================================
+    // VALIDATION PHASE (before transaction)
+    // All read-only validation happens outside the transaction
+    // ========================================================================
+
     // Validate patient exists (with convention for billing)
     const patient = await Patient.findById(patientId).populate('convention');
     if (!patient) {
@@ -79,90 +85,127 @@ exports.createIVTInjection = async (req, res) => {
       seriesInfo.intervalFromLast = Math.round(daysDiff / 7); // weeks
     }
 
-    // Create IVT injection document
-    const ivtInjection = new IVTInjection({
-      patient: patientId,
-      ...injectionData,
-      series: {
-        ...injectionData.series,
-        ...seriesInfo
-      },
-      performedBy: req.user._id,
-      status: 'scheduled'
-    });
+    // Pre-fetch fee schedules for invoice creation (read-only, before transaction)
+    let procedureFeeSchedule = null;
+    let medicationFeeSchedule = null;
+    const medicationName = injectionData.medication?.name || 'Anti-VEGF';
 
-    // Set force flag if bypassing validation
-    if (forceCreate) {
-      ivtInjection._forceCreate = true;
+    if (autoGenerateInvoice) {
+      procedureFeeSchedule = await FeeSchedule.findOne({
+        $or: [
+          { code: 'IVT' },
+          { aliases: 'IVT' },
+          { name: { $regex: /IVT|injection.*intravitréenne/i } }
+        ],
+        isActive: true
+      });
+
+      medicationFeeSchedule = await FeeSchedule.findOne({
+        $or: [
+          { name: { $regex: new RegExp(medicationName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } },
+          { aliases: { $regex: new RegExp(medicationName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } }
+        ],
+        isActive: true
+      });
     }
 
-    await ivtInjection.save();
-
-    // CRITICAL FIX: Consume medication from inventory
-    let inventoryConsumption = null;
-    if (ivtInjection.medication?.inventoryItem || ivtInjection.medication?.name) {
-      try {
-        // Try to find the medication in inventory
-        let inventoryItem = null;
-
-        if (ivtInjection.medication.inventoryItem) {
-          inventoryItem = await PharmacyInventory.findById(ivtInjection.medication.inventoryItem);
-        } else if (ivtInjection.medication.name) {
-          // Search by medication name
-          inventoryItem = await PharmacyInventory.findOne({
-            $or: [
-              { 'medication.genericName': { $regex: new RegExp(ivtInjection.medication.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } },
-              { 'medication.brandName': { $regex: new RegExp(ivtInjection.medication.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } }
-            ],
-            active: true,
-            'inventory.currentStock': { $gt: 0 }
-          });
-        }
-
-        if (inventoryItem) {
-          // Consume 1 unit of the medication
-          await inventoryItem.dispenseMedication(
-            1, // IVT uses 1 vial/unit per injection
-            ivtInjection._id,
-            patientId,
-            req.user._id,
-            ivtInjection.medication.lotNumber || null
-          );
-
-          inventoryConsumption = {
-            item: inventoryItem.medication?.genericName || inventoryItem.medication?.brandName,
-            quantity: 1,
-            lotNumber: ivtInjection.medication.lotNumber
-          };
-
-          log.info('Consumed medication from inventory', { medication: inventoryItem.medication?.genericName });
-        } else {
-          log.warn('Medication not found in inventory', { medication: ivtInjection.medication?.name });
-        }
-      } catch (invError) {
-        log.error('Error consuming medication from inventory', { error: invError.message, stack: invError.stack });
-        // Continue without failing - log the error but don't block IVT creation
+    // Pre-locate inventory item for medication consumption (read-only, before transaction)
+    let inventoryItemId = null;
+    if (injectionData.medication?.inventoryItem || injectionData.medication?.name) {
+      if (injectionData.medication.inventoryItem) {
+        const item = await PharmacyInventory.findById(injectionData.medication.inventoryItem);
+        if (item) inventoryItemId = item._id;
+      } else if (injectionData.medication.name) {
+        const item = await PharmacyInventory.findOne({
+          $or: [
+            { 'medication.genericName': { $regex: new RegExp(injectionData.medication.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } },
+            { 'medication.brandName': { $regex: new RegExp(injectionData.medication.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } }
+          ],
+          active: true,
+          'inventory.currentStock': { $gt: 0 }
+        });
+        if (item) inventoryItemId = item._id;
       }
     }
 
-    // AUTO-GENERATE INVOICE for IVT
-    let invoice = null;
-    if (autoGenerateInvoice) {
-      try {
-        // Get medication and procedure pricing
-        const medicationName = ivtInjection.medication?.name || 'Anti-VEGF';
+    // ========================================================================
+    // TRANSACTION PHASE
+    // All database write operations are wrapped in a transaction for atomicity
+    // ========================================================================
+
+    const transactionResult = await withTransactionRetry(async (session) => {
+      // 1. Create and save IVT injection record
+      const ivtInjection = new IVTInjection({
+        patient: patientId,
+        ...injectionData,
+        series: {
+          ...injectionData.series,
+          ...seriesInfo
+        },
+        performedBy: req.user._id,
+        status: 'scheduled'
+      });
+
+      // Set force flag if bypassing validation
+      if (forceCreate) {
+        ivtInjection._forceCreate = true;
+      }
+
+      await ivtInjection.save({ session });
+
+      // 2. Consume medication from inventory (within transaction)
+      let inventoryConsumption = null;
+      if (inventoryItemId) {
+        // Re-fetch inventory item within session for transaction isolation
+        const inventoryItem = await PharmacyInventory.findById(inventoryItemId).session(session);
+
+        if (inventoryItem && inventoryItem.inventory.currentStock > 0) {
+          // Use adjustStock method which supports session via save()
+          const previousQuantity = inventoryItem.inventory.currentStock;
+          inventoryItem.inventory.currentStock = Math.max(0, previousQuantity - 1);
+          inventoryItem.inventory.available = Math.max(0, inventoryItem.inventory.currentStock - (inventoryItem.inventory.reserved || 0));
+
+          // Update status based on new stock level
+          inventoryItem.updateInventoryStatus();
+
+          // Add transaction record
+          inventoryItem.transactions.push({
+            type: 'dispensed',
+            quantity: -1,
+            previousQuantity,
+            newQuantity: inventoryItem.inventory.currentStock,
+            reason: 'IVT injection consumption',
+            reference: ivtInjection._id.toString(),
+            referenceType: 'ivt_injection',
+            performedBy: req.user._id,
+            notes: `IVT ${ivtInjection.eye} - ${injectionData.medication?.name || 'medication'}`
+          });
+
+          // Update usage stats
+          inventoryItem.usage.totalDispensed = (inventoryItem.usage.totalDispensed || 0) + 1;
+          inventoryItem.usage.lastUsedDate = new Date();
+          inventoryItem.updatedBy = req.user._id;
+          inventoryItem.version += 1;
+
+          await inventoryItem.save({ session });
+
+          inventoryConsumption = {
+            item: inventoryItem.medication?.genericName || inventoryItem.medication?.brandName || inventoryItem.name,
+            quantity: 1,
+            lotNumber: injectionData.medication?.lotNumber
+          };
+
+          log.info('Consumed medication from inventory', { medication: inventoryConsumption.item, ivtId: ivtInjection._id });
+        } else {
+          log.warn('Medication not found in inventory or out of stock', { medication: injectionData.medication?.name });
+        }
+      }
+
+      // 3. Auto-generate invoice (within transaction)
+      let invoice = null;
+      if (autoGenerateInvoice) {
         const invoiceItems = [];
         let totalAmount = 0;
-
-        // Find fee schedule for IVT procedure
-        const procedureFeeSchedule = await FeeSchedule.findOne({
-          $or: [
-            { code: 'IVT' },
-            { aliases: 'IVT' },
-            { name: { $regex: /IVT|injection.*intravitréenne/i } }
-          ],
-          isActive: true
-        });
 
         // Procedure fee
         const procedurePrice = procedureFeeSchedule?.price || injectionData.procedurePrice || 0;
@@ -179,33 +222,24 @@ exports.createIVTInjection = async (req, res) => {
           totalAmount += procedurePrice;
         }
 
-        // Find fee schedule for the medication
-        const medicationFeeSchedule = await FeeSchedule.findOne({
-          $or: [
-            { name: { $regex: new RegExp(medicationName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } },
-            { aliases: { $regex: new RegExp(medicationName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') } }
-          ],
-          isActive: true
-        });
-
         // Medication cost
-        const medicationPrice = medicationFeeSchedule?.price || ivtInjection.medication?.price || 0;
+        const medicationPrice = medicationFeeSchedule?.price || injectionData.medication?.price || 0;
         if (medicationPrice > 0) {
           invoiceItems.push({
             service: medicationFeeSchedule?._id,
-            description: `Médicament: ${medicationName} ${ivtInjection.medication?.dose || ''}`,
+            description: `Médicament: ${medicationName} ${injectionData.medication?.dose || ''}`,
             category: 'medication',
             quantity: 1,
             unitPrice: medicationPrice,
             amount: medicationPrice,
-            code: ivtInjection.medication?.code
+            code: injectionData.medication?.code
           });
           totalAmount += medicationPrice;
         }
 
         if (invoiceItems.length > 0) {
-          // Create invoice first with basic info
-          invoice = await Invoice.create({
+          // Create invoice within transaction
+          const invoiceDoc = new Invoice({
             patient: patientId,
             ivtInjection: ivtInjection._id,
             items: invoiceItems,
@@ -217,20 +251,22 @@ exports.createIVTInjection = async (req, res) => {
             },
             status: 'pending',
             type: 'procedure',
-            notes: `IVT ${medicationName} - Œil: ${ivtInjection.eye} - ${ivtInjection.indication?.primary || ''}`,
+            notes: `IVT ${medicationName} - Œil: ${ivtInjection.eye} - ${injectionData.indication?.primary || ''}`,
             createdBy: req.user._id
           });
 
-          // CRITICAL FIX: Apply proper convention billing if patient has company/convention
-          // This uses the full convention billing logic with contract validation,
-          // waiting periods, category coverage, and approval requirements
+          await invoiceDoc.save({ session });
+          invoice = invoiceDoc;
+
+          // Apply convention billing if patient has company/convention
+          // Note: This may involve additional reads, so we handle errors gracefully
           if (patient.convention?.company) {
             try {
               await invoice.applyCompanyBilling(
                 patient.convention.company,
                 req.user._id,
                 null, // exchangeRateUSD
-                { bypassWaitingPeriod: false }
+                { bypassWaitingPeriod: false, session }
               );
               log.info('Applied convention billing', { company: patient.convention.company });
             } catch (conventionError) {
@@ -242,43 +278,55 @@ exports.createIVTInjection = async (req, res) => {
 
           // Update IVT with invoice reference
           ivtInjection.invoice = invoice._id;
-          await ivtInjection.save();
+          await ivtInjection.save({ session });
 
           log.info('Auto-created invoice for IVT', { invoiceNumber: invoice.invoiceNumber || invoice._id, injectionId: ivtInjection.injectionId });
         }
-      } catch (invoiceError) {
-        log.error('Error auto-generating invoice', { error: invoiceError.message, stack: invoiceError.stack });
-        // Continue without failing - invoice can be created manually
       }
-    }
 
-    // Log the action
+      // Return all results from the transaction
+      return {
+        ivtInjection,
+        invoice,
+        inventoryConsumption,
+        validationWarnings: ivtInjection._validationWarnings
+      };
+    }, { maxRetries: 3 });
+
+    // ========================================================================
+    // POST-TRANSACTION PHASE
+    // Operations that can happen after commit (audit logging, population)
+    // ========================================================================
+
+    const { ivtInjection, invoice, validationWarnings } = transactionResult;
+
+    // Log the action (audit logging can happen after transaction)
     await logCriticalOperation(req, 'CREATE_IVT_INJECTION', {
       injectionId: ivtInjection.injectionId,
       patientId: patient._id,
       eye: ivtInjection.eye,
-      medication: ivtInjection.medication.name,
+      medication: ivtInjection.medication?.name,
       invoiceId: invoice?._id
     });
 
-    // Populate references
+    // Populate references for response
     await ivtInjection.populate('performedBy', 'firstName lastName role');
     await ivtInjection.populate('patient', 'firstName lastName patientId');
 
-    // Include validation warnings in response if any
+    // Build response
     const response = {
       success: true,
       data: ivtInjection,
       invoice: invoice ? {
         _id: invoice._id,
         invoiceNumber: invoice.invoiceNumber,
-        total: invoice.total,
+        total: invoice.summary?.total,
         status: invoice.status
       } : null
     };
 
-    if (ivtInjection._validationWarnings && ivtInjection._validationWarnings.length > 0) {
-      response.warnings = ivtInjection._validationWarnings;
+    if (validationWarnings && validationWarnings.length > 0) {
+      response.warnings = validationWarnings;
     }
 
     res.status(201).json(response);

@@ -377,7 +377,8 @@ class AlertScheduler {
 
       await alert.save();
       await alert.deliver();
-      log.info(`✅ Created patient waiting alert for ${patient.firstName} ${patient.lastName}`);
+      // SECURITY: Log patient ID only, not name (PHI protection)
+      log.info(`✅ Created patient waiting alert for patient ID: ${patient._id}`);
       return alert;
     } catch (error) {
       log.error('❌ Error creating patient waiting alert:', error.message);

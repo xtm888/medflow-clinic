@@ -1,5 +1,139 @@
 const mongoose = require('mongoose');
 
+// =====================================================
+// CLINICAL VALIDATION CONSTANTS
+// French Medical Standards for Ophthalmology
+// =====================================================
+
+/**
+ * Monoyer Scale - French standard for distance visual acuity measurement
+ * Scale: 10/10 (normal) to 1/10, then 1/20, 1/50 for very low vision
+ * Special notations:
+ *   - CLD (Compte Les Doigts / Counts Fingers)
+ *   - VBLM (Voit Bouger La Main / Sees Hand Movement)
+ *   - PL+ (Perception Lumineuse Positive / Light Perception Positive)
+ *   - PL- (Perception Lumineuse Negative / No Light Perception)
+ */
+const MONOYER_DISTANCE_VALUES = [
+  '10/10', '9/10', '8/10', '7/10', '6/10', '5/10', '4/10', '3/10', '2/10', '1/10',
+  '1/20', '1/50',
+  'CLD', 'VBLM', 'PL+', 'PL-'
+];
+
+/**
+ * Parinaud Scale - French standard for near vision measurement
+ * P1.5 (excellent) to P20 (very poor near vision)
+ * Measured at standard reading distance (typically 33-40 cm)
+ */
+const PARINAUD_NEAR_VALUES = [
+  'P1.5', 'P2', 'P3', 'P4', 'P5', 'P6', 'P8', 'P10', 'P14', 'P20'
+];
+
+/**
+ * Refraction limits based on clinical standards
+ * Sphere: -25.00 to +25.00 diopters (covers high myopia/hyperopia)
+ * Cylinder: -10.00 to +10.00 diopters (covers high astigmatism)
+ * Axis: 0 to 180 degrees
+ * Addition: +0.25 to +4.00 diopters (presbyopia correction)
+ */
+const REFRACTION_LIMITS = {
+  sphere: { min: -25, max: 25 },
+  cylinder: { min: -10, max: 10 },
+  axis: { min: 0, max: 180 },
+  addition: { min: 0.25, max: 4.00 }
+};
+
+/**
+ * IOP (Intraocular Pressure) limits
+ * Normal range: 10-21 mmHg
+ * Extended range for pathological cases: 0-80 mmHg
+ */
+const IOP_LIMITS = {
+  min: 0,
+  max: 80
+};
+
+// =====================================================
+// CUSTOM VALIDATOR FUNCTIONS
+// Allow empty/null values but validate when present
+// =====================================================
+
+/**
+ * Creates a validator that allows empty values but validates against enum when present
+ * @param {Array} validValues - Array of valid enum values
+ * @param {String} fieldName - Name of the field for error messages
+ */
+function createOptionalEnumValidator(validValues, fieldName) {
+  return {
+    validator: function(value) {
+      // Allow null, undefined, or empty string
+      if (value === null || value === undefined || value === '') {
+        return true;
+      }
+      return validValues.includes(value);
+    },
+    message: props => `${props.value} n'est pas une valeur valide pour ${fieldName}. Valeurs acceptees: ${validValues.join(', ')}`
+  };
+}
+
+/**
+ * Creates a validator for numeric range that allows empty values
+ * @param {Number} min - Minimum value
+ * @param {Number} max - Maximum value
+ * @param {String} fieldName - Name of the field for error messages
+ */
+function createOptionalRangeValidator(min, max, fieldName) {
+  return {
+    validator: function(value) {
+      // Allow null or undefined
+      if (value === null || value === undefined) {
+        return true;
+      }
+      return value >= min && value <= max;
+    },
+    message: props => `${props.value} est hors limites pour ${fieldName}. Plage acceptee: ${min} a ${max}`
+  };
+}
+
+// Visual acuity field schema with Monoyer validation
+const distanceVAFieldSchema = {
+  type: String,
+  validate: createOptionalEnumValidator(MONOYER_DISTANCE_VALUES, 'acuite visuelle de loin (echelle Monoyer)')
+};
+
+// Near vision field schema with Parinaud validation
+const nearVAFieldSchema = {
+  type: String,
+  validate: createOptionalEnumValidator(PARINAUD_NEAR_VALUES, 'acuite visuelle de pres (echelle Parinaud)')
+};
+
+// Refraction field schemas with range validation
+const sphereFieldSchema = {
+  type: Number,
+  validate: createOptionalRangeValidator(REFRACTION_LIMITS.sphere.min, REFRACTION_LIMITS.sphere.max, 'sphere')
+};
+
+const cylinderFieldSchema = {
+  type: Number,
+  validate: createOptionalRangeValidator(REFRACTION_LIMITS.cylinder.min, REFRACTION_LIMITS.cylinder.max, 'cylindre')
+};
+
+const axisFieldSchema = {
+  type: Number,
+  validate: createOptionalRangeValidator(REFRACTION_LIMITS.axis.min, REFRACTION_LIMITS.axis.max, 'axe')
+};
+
+const additionFieldSchema = {
+  type: Number,
+  validate: createOptionalRangeValidator(REFRACTION_LIMITS.addition.min, REFRACTION_LIMITS.addition.max, 'addition')
+};
+
+// IOP field schema with range validation
+const iopValueFieldSchema = {
+  type: Number,
+  validate: createOptionalRangeValidator(IOP_LIMITS.min, IOP_LIMITS.max, 'pression intraoculaire (mmHg)')
+};
+
 const ophthalmologyExamSchema = new mongoose.Schema({
   // Identification
   examId: {
@@ -101,41 +235,44 @@ const ophthalmologyExamSchema = new mongoose.Schema({
   },
 
   // Visual Acuity
+  // Uses French Monoyer scale for distance vision and Parinaud scale for near vision
   visualAcuity: {
+    // Distance visual acuity - Monoyer scale (10/10 to 1/50, CLD, VBLM, PL+, PL-)
     distance: {
       OD: {
-        uncorrected: String,
-        corrected: String,
-        pinhole: String
+        uncorrected: distanceVAFieldSchema,
+        corrected: distanceVAFieldSchema,
+        pinhole: distanceVAFieldSchema
       },
       OS: {
-        uncorrected: String,
-        corrected: String,
-        pinhole: String
+        uncorrected: distanceVAFieldSchema,
+        corrected: distanceVAFieldSchema,
+        pinhole: distanceVAFieldSchema
       },
       OU: {
-        uncorrected: String,
-        corrected: String
+        uncorrected: distanceVAFieldSchema,
+        corrected: distanceVAFieldSchema
       }
     },
+    // Near visual acuity - Parinaud scale (P1.5 to P20)
     near: {
       OD: {
-        uncorrected: String,
-        corrected: String
+        uncorrected: nearVAFieldSchema,
+        corrected: nearVAFieldSchema
       },
       OS: {
-        uncorrected: String,
-        corrected: String
+        uncorrected: nearVAFieldSchema,
+        corrected: nearVAFieldSchema
       },
       OU: {
-        uncorrected: String,
-        corrected: String
+        uncorrected: nearVAFieldSchema,
+        corrected: nearVAFieldSchema
       },
-      testDistance: String // e.g., "40cm", "14 inches"
+      testDistance: String // e.g., "40cm", "33cm" (standard French reading distance)
     },
     method: {
       type: String,
-      enum: ['snellen', 'etdrs', 'logmar', 'decimal', 'metric']
+      enum: ['snellen', 'etdrs', 'logmar', 'decimal', 'metric', 'monoyer']
     }
   },
 
@@ -186,19 +323,20 @@ const ophthalmologyExamSchema = new mongoose.Schema({
   },
 
   // Refraction
+  // Sphere: -25 to +25 D, Cylinder: -10 to +10 D, Axis: 0-180 degrees, Addition: 0.25 to 4.00 D
   refraction: {
     objective: {
       autorefractor: {
         OD: {
-          sphere: Number,
-          cylinder: Number,
-          axis: Number,
+          sphere: sphereFieldSchema,
+          cylinder: cylinderFieldSchema,
+          axis: axisFieldSchema,
           confidence: Number
         },
         OS: {
-          sphere: Number,
-          cylinder: Number,
-          axis: Number,
+          sphere: sphereFieldSchema,
+          cylinder: cylinderFieldSchema,
+          axis: axisFieldSchema,
           confidence: Number
         },
         // Device source tracking
@@ -218,14 +356,14 @@ const ophthalmologyExamSchema = new mongoose.Schema({
       },
       retinoscopy: {
         OD: {
-          sphere: Number,
-          cylinder: Number,
-          axis: Number
+          sphere: sphereFieldSchema,
+          cylinder: cylinderFieldSchema,
+          axis: axisFieldSchema
         },
         OS: {
-          sphere: Number,
-          cylinder: Number,
-          axis: Number
+          sphere: sphereFieldSchema,
+          cylinder: cylinderFieldSchema,
+          axis: axisFieldSchema
         },
         workingDistance: Number,
         cycloplegic: Boolean
@@ -233,43 +371,43 @@ const ophthalmologyExamSchema = new mongoose.Schema({
     },
     subjective: {
       OD: {
-        sphere: Number,
-        cylinder: Number,
-        axis: Number,
-        va: String,
-        parinaud: String  // Near vision (P2, P3, etc.)
+        sphere: sphereFieldSchema,
+        cylinder: cylinderFieldSchema,
+        axis: axisFieldSchema,
+        va: distanceVAFieldSchema,  // Visual acuity with correction (Monoyer scale)
+        parinaud: nearVAFieldSchema  // Near vision (Parinaud scale: P2, P3, etc.)
       },
       OS: {
-        sphere: Number,
-        cylinder: Number,
-        axis: Number,
-        va: String,
-        parinaud: String
+        sphere: sphereFieldSchema,
+        cylinder: cylinderFieldSchema,
+        axis: axisFieldSchema,
+        va: distanceVAFieldSchema,
+        parinaud: nearVAFieldSchema
       },
-      add: Number,
+      add: additionFieldSchema,
       vertexDistance: Number,
       balanceMethod: String
     },
     finalPrescription: {
       OD: {
-        sphere: Number,
-        cylinder: Number,
-        axis: Number,
-        add: Number,
+        sphere: sphereFieldSchema,
+        cylinder: cylinderFieldSchema,
+        axis: axisFieldSchema,
+        add: additionFieldSchema,
         prism: String,
         base: String,
-        va: String,
-        parinaud: String
+        va: distanceVAFieldSchema,
+        parinaud: nearVAFieldSchema
       },
       OS: {
-        sphere: Number,
-        cylinder: Number,
-        axis: Number,
-        add: Number,
+        sphere: sphereFieldSchema,
+        cylinder: cylinderFieldSchema,
+        axis: axisFieldSchema,
+        add: additionFieldSchema,
         prism: String,
         base: String,
-        va: String,
-        parinaud: String
+        va: distanceVAFieldSchema,
+        parinaud: nearVAFieldSchema
       },
       pd: {
         distance: Number,
@@ -449,10 +587,12 @@ const ophthalmologyExamSchema = new mongoose.Schema({
     }
   },
 
-  // Intraocular Pressure
+  // Intraocular Pressure (IOP / Tension Oculaire)
+  // Normal range: 10-21 mmHg, pathological values can reach higher
+  // Extended validation range: 0-80 mmHg
   iop: {
     OD: {
-      value: Number,
+      value: iopValueFieldSchema,
       time: String,
       method: {
         type: String,
@@ -460,7 +600,7 @@ const ophthalmologyExamSchema = new mongoose.Schema({
       }
     },
     OS: {
-      value: Number,
+      value: iopValueFieldSchema,
       time: String,
       method: {
         type: String,

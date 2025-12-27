@@ -146,7 +146,8 @@ class NotificationService {
 
     // Validate format (basic check)
     if (!/^\+243\d{9}$/.test(formatted)) {
-      log.warn(`Invalid DRC phone number format: ${phoneNumber}`);
+      // SECURITY: Log redacted phone number only (PHI protection)
+      log.warn(`Invalid DRC phone number format: ***${phoneNumber.slice(-4)}`);
       return null;
     }
 
@@ -208,7 +209,8 @@ class NotificationService {
         // Success
         this.smsCount++;
         this.stats.totalSMSSent++;
-        log.info(`✅ SMS sent to ${formattedPhone} (attempt ${attempt + 1})`);
+        // SECURITY: Log redacted phone number only (PHI protection)
+        log.info(`✅ SMS sent to ***${formattedPhone.slice(-4)} (attempt ${attempt + 1})`);
         return result;
 
       } catch (error) {
@@ -270,7 +272,8 @@ class NotificationService {
    * Simulate SMS (no provider configured)
    */
   simulateSMS(phoneNumber, message) {
-    log.info(`[SMS SIMULATED] To: ${phoneNumber}, Message: ${message}`);
+    // SECURITY: Log redacted phone number and message length only (PHI protection)
+    log.info(`[SMS SIMULATED] To: ***${phoneNumber.slice(-4)}, Message length: ${message.length} chars`);
     return {
       success: true,
       provider: 'simulated',

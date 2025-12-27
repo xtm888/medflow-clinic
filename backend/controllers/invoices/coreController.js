@@ -29,6 +29,9 @@ const {
   PAGINATION
 } = require('./shared');
 
+// SECURITY: Clinic verification for multi-tenant data isolation
+const { verifyClinicOwnership } = require('../../middleware/clinicVerification');
+
 // =====================================================
 // HELPER FUNCTIONS
 // =====================================================
@@ -379,6 +382,23 @@ const getInvoice = asyncHandler(async (req, res, next) => {
 
   if (!invoice) {
     return notFound(res, 'Invoice');
+  }
+
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(invoice, req.clinicId, 'clinic')) {
+      invoiceLogger.warn('SECURITY: Cross-clinic invoice access attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        invoiceId: invoice._id,
+        invoiceClinicId: invoice.clinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - invoice belongs to a different clinic'
+      });
+    }
   }
 
   return success(res, { data: invoice });
@@ -844,6 +864,23 @@ const updateInvoice = asyncHandler(async (req, res, next) => {
     return notFound(res, 'Invoice');
   }
 
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(invoice, req.clinicId, 'clinic')) {
+      invoiceLogger.warn('SECURITY: Cross-clinic invoice update attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        invoiceId: invoice._id,
+        invoiceClinicId: invoice.clinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - invoice belongs to a different clinic'
+      });
+    }
+  }
+
   // Don't allow updating paid or cancelled invoices
   if (['paid', 'cancelled', 'refunded'].includes(invoice.status)) {
     return badRequest(res, `Cannot update invoice with status: ${invoice.status}`);
@@ -897,6 +934,23 @@ const deleteInvoice = asyncHandler(async (req, res, next) => {
     return notFound(res, 'Facture');
   }
 
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(invoice, req.clinicId, 'clinic')) {
+      invoiceLogger.warn('SECURITY: Cross-clinic invoice delete attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        invoiceId: invoice._id,
+        invoiceClinicId: invoice.clinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - invoice belongs to a different clinic'
+      });
+    }
+  }
+
   // Only allow deletion of draft invoices or voided invoices
   if (!['draft', 'cancelled', 'voided'].includes(invoice.status)) {
     return badRequest(res, 'Seules les factures en brouillon, annulées ou annulées peuvent être supprimées');
@@ -948,6 +1002,23 @@ const markAsSent = asyncHandler(async (req, res, next) => {
 
   if (!invoice) {
     return notFound(res, 'Invoice');
+  }
+
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(invoice, req.clinicId, 'clinic')) {
+      invoiceLogger.warn('SECURITY: Cross-clinic invoice markAsSent attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        invoiceId: invoice._id,
+        invoiceClinicId: invoice.clinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - invoice belongs to a different clinic'
+      });
+    }
   }
 
   if (invoice.status === 'draft') {

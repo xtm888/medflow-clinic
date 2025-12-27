@@ -543,9 +543,11 @@ connectWithRetry(mongoUri, mongoOptions, retryOptions)
     process.exit(1);
   });
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down gracefully...');
+// Graceful shutdown helper function
+const gracefulShutdown = async (signal) => {
+  console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+
+  // Stop all schedulers
   alertScheduler.stop();
   deviceSyncScheduler.stop();
   reservationCleanupScheduler.stop();
@@ -571,9 +573,17 @@ process.on('SIGINT', async () => {
   // Close Redis connection
   await closeRedis();
 
+  // Close MongoDB connection
   await mongoose.connection.close();
+  console.log('✅ All connections closed');
   process.exit(0);
-});
+};
+
+// Handle SIGINT (Ctrl+C in terminal)
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// Handle SIGTERM (Docker/Kubernetes container stop signal)
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 
 // =====================================================
 // PROCESS ERROR HANDLERS

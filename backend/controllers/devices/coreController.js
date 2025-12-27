@@ -343,3 +343,72 @@ exports.getDeviceLogs = asyncHandler(async (req, res, next) => {
     data: logs
   });
 });
+
+// @desc    Import measurements manually from device
+// @route   POST /api/devices/:id/import-measurements
+// @access  Private
+exports.importMeasurements = asyncHandler(async (req, res, next) => {
+  const { measurements, patientId, visitId } = req.body;
+
+  const device = await Device.findById(req.params.id);
+
+  if (!device) {
+    return notFound(res, 'Device');
+  }
+
+  if (!measurements || !Array.isArray(measurements) || measurements.length === 0) {
+    return error(res, 'Measurements array is required', 400);
+  }
+
+  // Get the appropriate adapter for this device type
+  const adapter = AdapterFactory.getAdapter(device.type);
+
+  if (!adapter) {
+    return error(res, `No adapter available for device type: ${device.type}`, 400);
+  }
+
+  // Log the import attempt
+  const importLog = await DeviceIntegrationLog.create({
+    device: device._id,
+    eventType: 'manual_import',
+    status: 'processing',
+    rawData: measurements,
+    metadata: {
+      patientId,
+      visitId,
+      importedBy: req.user._id,
+      measurementCount: measurements.length
+    }
+  });
+
+  try {
+    // Process each measurement through the adapter
+    const processedMeasurements = [];
+    for (const measurement of measurements) {
+      const processed = adapter.processData(measurement);
+      processedMeasurements.push(processed);
+    }
+
+    // Update log with success
+    importLog.status = 'success';
+    importLog.processedData = processedMeasurements;
+    await importLog.save();
+
+    // Update device last sync time
+    device.integration.lastSyncTime = new Date();
+    await device.save();
+
+    return success(res, {
+      imported: processedMeasurements.length,
+      logId: importLog._id,
+      measurements: processedMeasurements
+    }, 'Measurements imported successfully');
+  } catch (importError) {
+    // Update log with failure
+    importLog.status = 'error';
+    importLog.errorMessage = importError.message;
+    await importLog.save();
+
+    return error(res, `Import failed: ${importError.message}`, 500);
+  }
+});

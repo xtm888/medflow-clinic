@@ -51,12 +51,16 @@ exports.getPatientAppointments = asyncHandler(async (req, res, next) => {
     return notFound(res, 'Patient');
   }
 
+  // Limit results to prevent DoS - use pagination for more
+  const limit = Math.min(parseInt(req.query.limit) || 100, 100);
   const appointments = await Appointment.find({ patient: patient._id })
     .populate('provider', 'firstName lastName specialization')
-    .sort('-date');
+    .sort('-date')
+    .limit(limit);
 
   return success(res, {
-    data: appointments
+    data: appointments,
+    meta: { limited: appointments.length === limit }
   });
 });
 
@@ -72,12 +76,16 @@ exports.getPatientPrescriptions = asyncHandler(async (req, res, next) => {
     return notFound(res, 'Patient');
   }
 
+  // Limit results to prevent DoS - use pagination for more
+  const limit = Math.min(parseInt(req.query.limit) || 100, 100);
   const prescriptions = await Prescription.find({ patient: patient._id })
     .populate('prescriber', 'firstName lastName')
-    .sort('-dateIssued');
+    .sort('-dateIssued')
+    .limit(limit);
 
   return success(res, {
-    data: prescriptions
+    data: prescriptions,
+    meta: { limited: prescriptions.length === limit }
   });
 });
 
@@ -542,12 +550,18 @@ exports.getPatientDocuments = asyncHandler(async (req, res, next) => {
   }
 
   const Document = require('../../models/Document');
+  // Limit results to prevent DoS - use pagination for more
+  const limit = Math.min(parseInt(req.query.limit) || 100, 100);
   const documents = await Document.find({ patient: patient._id, deleted: false })
     .populate('createdBy', 'firstName lastName')
     .sort({ createdAt: -1 })
+    .limit(limit)
     .select('title type category createdAt file.originalName file.size');
 
-  return success(res, { data: documents });
+  return success(res, {
+    data: documents,
+    meta: { limited: documents.length === limit }
+  });
 });
 
 // @desc    Get complete patient profile
@@ -1004,11 +1018,17 @@ exports.getPatientCorrespondence = asyncHandler(async (req, res, next) => {
 
   try {
     const Correspondence = require('../../models/Correspondence');
+    // Limit results to prevent DoS - use pagination for more
+    const limit = Math.min(parseInt(req.query.limit) || 100, 100);
     const correspondence = await Correspondence.find({ patient: patient._id })
       .populate('createdBy', 'firstName lastName')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .limit(limit);
 
-    return success(res, { data: correspondence });
+    return success(res, {
+      data: correspondence,
+      meta: { limited: correspondence.length === limit }
+    });
   } catch (err) {
     return success(res, { data: [] });
   }

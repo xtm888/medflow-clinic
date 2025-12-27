@@ -34,6 +34,9 @@ module.exports = {
   getDeviceStats: coreController.getDeviceStats,
   getDeviceLogs: coreController.getDeviceLogs,
 
+  // Manual Import
+  importMeasurements: coreController.importMeasurements,
+
   // =====================================================
   // Folder Controller Functions
   // =====================================================

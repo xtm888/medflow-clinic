@@ -20,6 +20,12 @@ const {
   findPatientById
 } = require('./shared');
 
+// SECURITY: Clinic verification for multi-tenant data isolation
+const {
+  verifyClinicOwnership,
+  findByIdOrCodeWithClinic
+} = require('../../middleware/clinicVerification');
+
 // @desc    Get all patients
 // @route   GET /api/patients
 // @access  Private
@@ -122,6 +128,23 @@ exports.getPatient = asyncHandler(async (req, res, next) => {
 
   if (!patient) {
     return notFound(res, 'Patient');
+  }
+
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(patient, req.clinicId, 'homeClinic')) {
+      patientLogger.warn('SECURITY: Cross-clinic patient access attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        patientId: patient._id,
+        patientClinicId: patient.homeClinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - patient belongs to a different clinic'
+      });
+    }
   }
 
   // Convert to plain object for modification
@@ -229,6 +252,23 @@ exports.updatePatient = asyncHandler(async (req, res, next) => {
 
   if (!existingPatient) {
     return notFound(res, 'Patient');
+  }
+
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(existingPatient, req.clinicId, 'homeClinic')) {
+      patientLogger.warn('SECURITY: Cross-clinic patient update attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        patientId: existingPatient._id,
+        patientClinicId: existingPatient.homeClinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - patient belongs to a different clinic'
+      });
+    }
   }
 
   // Auto-update dataStatus when placeholder fields are filled in
@@ -363,6 +403,23 @@ exports.deletePatient = asyncHandler(async (req, res, next) => {
 
   if (!patient) {
     return notFound(res, 'Patient');
+  }
+
+  // SECURITY: Verify clinic ownership for multi-tenant data isolation
+  // Skip verification for users with accessAllClinics privilege (admins)
+  if (!req.accessAllClinics && req.clinicId) {
+    if (!verifyClinicOwnership(patient, req.clinicId, 'homeClinic')) {
+      patientLogger.warn('SECURITY: Cross-clinic patient delete attempt', {
+        userId: req.user?._id,
+        userClinicId: req.clinicId,
+        patientId: patient._id,
+        patientClinicId: patient.homeClinic
+      });
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied - patient belongs to a different clinic'
+      });
+    }
   }
 
   // Check if already deleted
