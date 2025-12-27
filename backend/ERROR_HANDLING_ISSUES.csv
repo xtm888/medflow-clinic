@@ -1,0 +1,56 @@
+File,Line,Category,Severity,Issue,Recommended Fix,Estimated Hours
+services/centralServerClient.js,46,Async without try-catch,HIGH,"getDashboard() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,57,Async without try-catch,HIGH,"searchPatients() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,66,Async without try-catch,HIGH,"getPatientHistory() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,75,Async without try-catch,HIGH,"getFullPatient() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,84,Async without try-catch,HIGH,"getPatientAllClinics() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,93,Async without try-catch,HIGH,"checkPatientExists() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,104,Async without try-catch,HIGH,"getConsolidatedInventory() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,113,Async without try-catch,HIGH,"getInventorySummary() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,122,Async without try-catch,HIGH,"getInventoryAlerts() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,131,Async without try-catch,HIGH,"getTransferRecommendations() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,140,Async without try-catch,HIGH,"getInventoryCategories() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,149,Async without try-catch,HIGH,"getExpiringItems() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,158,Async without try-catch,HIGH,"getProductStock() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,169,Async without try-catch,HIGH,"getFinancialDashboard() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,178,Async without try-catch,HIGH,"getConsolidatedRevenue() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,187,Async without try-catch,HIGH,"getClinicComparison() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,196,Async without try-catch,HIGH,"getRevenueByCategory() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,205,Async without try-catch,HIGH,"getPaymentMethodDistribution() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,214,Async without try-catch,HIGH,"getOutstanding() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,225,Async without try-catch,HIGH,"getClinics() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,234,Async without try-catch,HIGH,"getClinic() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/centralServerClient.js,245,Async without try-catch,HIGH,"getSyncStatus() has no error handling","Wrap in try-catch, add timeout, log errors",0.25
+services/autoSyncService.js,19,EventEmitter without error handler,HIGH,"AutoSyncService extends EventEmitter but has no error handler","Add this.on('error', handler) in constructor",0.5
+services/deviceSyncQueue.js,17,EventEmitter without error handler,HIGH,"DeviceSyncQueue extends EventEmitter but has no error handler","Add this.on('error', handler) in constructor",0.5
+services/smb2ClientService.js,17,EventEmitter without error handler,HIGH,"SMB2ClientService extends EventEmitter but has no error handler","Add this.on('error', handler) in constructor",0.5
+services/deviceSyncQueue.js,238,JSON.parse without try-catch,HIGH,"const job = JSON.parse(jobData) - no error handling","Wrap in try-catch, handle corrupted data gracefully",0.25
+services/deviceSyncQueue.js,377,JSON.parse without try-catch,HIGH,"return data ? JSON.parse(data) : null - no error handling","Wrap in try-catch, return null on parse error",0.25
+services/lisIntegrationService.js,895,JSON.parse without try-catch,HIGH,"parsed = JSON.parse(message) - HL7 message parsing","Wrap in try-catch, log malformed messages",0.25
+services/appointmentValidationService.js,91,Async without try-catch,HIGH,"checkProviderConflicts() - DB query without error handling","Wrap in try-catch, handle DB errors",0.5
+services/appointmentValidationService.js,139,Async without try-catch,HIGH,"checkRoomConflicts() - DB query without error handling","Wrap in try-catch, handle DB errors",0.5
+services/appointmentValidationService.js,188,Async without try-catch,HIGH,"checkEquipmentConflicts() - DB query without error handling","Wrap in try-catch, handle DB errors",0.5
+services/appointmentValidationService.js,235,Async without try-catch,HIGH,"checkBufferTimeViolations() - DB query without error handling","Wrap in try-catch, handle DB errors",0.5
+services/appointmentValidationService.js,329,Async without try-catch,HIGH,"validateAppointment() - validation logic without error handling","Wrap in try-catch, provide clear validation errors",1
+services/appointmentValidationService.js,413,Async without try-catch,HIGH,"findNextAvailableSlot() - complex logic without error handling","Wrap in try-catch, handle edge cases",1
+services/appointmentValidationService.js,490,Async without try-catch,HIGH,"getAvailableSlots() - DB operations without error handling","Wrap in try-catch, handle DB failures",1
+services/folderSyncService.js,281,Async without try-catch,HIGH,"processFile() - complex file processing without comprehensive error handling","Add try-catch around entire function, handle partial failures",2
+services/folderSyncService.js,702,Async without try-catch,HIGH,"performFullSync() - sync operation without error handling","Wrap in try-catch, handle mount failures",1
+services/smb2ClientService.js,268,File operation without error handling,HIGH,"fs.writeFile().then() - cleanup in setTimeout not properly handled","Ensure cleanup errors don't accumulate temp files",0.5
+middleware/fileUpload.js,242,File operation without error handling,MEDIUM,"fs.unlink() callback - error logged but not propagated","Decide if errors should propagate or be silently handled",0.25
+middleware/fileUpload.js,269,File operation without error handling,MEDIUM,"fs.unlink() callback - error logged but not propagated","Decide if errors should propagate or be silently handled",0.25
+middleware/fileUpload.js,291,File operation without error handling,MEDIUM,"fs.stat() callback - error logged but not propagated","Decide if errors should propagate or be silently handled",0.25
+services/calendarIntegrationService.js,355,External API without timeout,MEDIUM,"fetch(tokenUrl) - calendar token refresh without timeout","Add AbortController with 10s timeout",0.5
+services/calendarIntegrationService.js,434,External API without timeout,MEDIUM,"fetch(tokenUrl) - calendar token refresh without timeout","Add AbortController with 10s timeout",0.5
+services/paymentGateway.js,242,External API without timeout,MEDIUM,"axios.post() - payment API without timeout","Add timeout: 15000 to config",0.25
+services/lisIntegrationService.js,283,External API without timeout,MEDIUM,"axios.get() - LIS metadata fetch without timeout","Add timeout to config",0.25
+services/lisIntegrationService.js,297,External API without timeout,MEDIUM,"axios.get() - LIS data fetch without timeout","Add timeout to config",0.25
+services/drugSafetyService.js,774,External API without timeout,MEDIUM,"axios.get() - RxNorm API without timeout","Add timeout: 5000 to config",0.25
+services/drugSafetyService.js,884,External API without timeout,MEDIUM,"axios.get() - drug interaction check without timeout","Add timeout: 5000 to config",0.25
+services/drugSafetyService.js,1002,External API without timeout,MEDIUM,"axios.get() - RxCUI lookup without timeout","Add timeout: 5000 to config",0.25
+services/invoiceReminderScheduler.js,351,Promise without catch,MEDIUM,"updateOverdueStatuses().then() - no error handling","Add .catch() to log scheduler errors",0.25
+services/networkDiscoveryService.js,247,Promise without catch,MEDIUM,"checkSMBPort().then() - no error handling in promise array","Add .catch() to handle port check failures",0.25
+controllers/surgeryController.js,72,Promise without catch,MEDIUM,"SurgeryCase.findOverdue().then() - no error handling","Add .catch() or use async/await with try-catch",0.25
+services/emailService.js,29,Async without try-catch,MEDIUM,"init() - email transporter initialization","Wrap verify() in try-catch (already done), ensure errors logged",0
+services/smb2ClientService.js,108,Async without try-catch,MEDIUM,"testConnection() - SMB connection test","Already has try-catch, review return value handling",0
+services/smb2ClientService.js,136,Async without try-catch,MEDIUM,"listDirectory() - complex SMB directory listing","Has error handling in promises, review async/await patterns",0

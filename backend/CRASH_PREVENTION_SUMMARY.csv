@@ -1,0 +1,11 @@
+Priority,Issue,Status,Files Affected,Impact,Effort (hrs),Risk if Not Fixed
+P0,Error Message Exposure,CRITICAL,125 instances in controllers,Security - Information Disclosure,4-6,Attackers learn internal details
+P0,Unprotected Async Functions,CRITICAL,"977 functions (45.4% coverage)",Server crashes on errors,8-12,Production downtime
+P1,JSON.parse Without Try-Catch,HIGH,config/redis.js (2 locations),Cache service crashes,0.5,Service degradation
+P1,Missing External API Timeouts,HIGH,7 service files,Hung requests / resource exhaustion,2-3,Performance issues
+P2,Synchronous File System Calls,MEDIUM,"18 instances (pdfGenerator, DeviceIntegrationService)",Event loop blocking,3-4,Poor performance
+P2,No Error Mapping Service,MEDIUM,N/A - new feature,Inconsistent UX,2,User confusion
+✅,EventEmitter Error Handlers,PASS,3 services (all protected),N/A,0,N/A
+✅,Global Process Handlers,PASS,server.js (2 handlers),N/A,0,N/A
+✅,Database Error Handling,PASS,All controllers use asyncHandler,N/A,0,N/A
+✅,Redis Circuit Breaker,PASS,config/redis.js,N/A,0,N/A
