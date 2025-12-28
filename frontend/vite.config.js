@@ -3,8 +3,14 @@ import react from '@vitejs/plugin-react'
 import path from 'path'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
+  // Strip console.log/debug/warn in production to prevent PHI leakage
+  // console.error is kept for critical error tracking
+  esbuild: mode === 'production' ? {
+    drop: ['debugger'],
+    pure: ['console.log', 'console.debug', 'console.warn', 'console.info', 'console.trace'],
+  } : undefined,
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './src'),
@@ -170,4 +176,4 @@ export default defineConfig({
     // Increase limit slightly since we have many small chunks now
     chunkSizeWarningLimit: 600,
   },
-})
+}))

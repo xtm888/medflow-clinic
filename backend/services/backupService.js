@@ -1,8 +1,8 @@
-const { exec } = require('child_process');
+const { execFile, spawn } = require('child_process');
 const path = require('path');
 const fs = require('fs').promises;
 const { promisify } = require('util');
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const crypto = require('crypto');
 const CONSTANTS = require('../config/constants');
 
@@ -142,6 +142,7 @@ class BackupService {
 
   /**
    * Create MongoDB dump
+   * SECURITY: Uses execFile with argument array to prevent command injection
    */
   async createMongoDump(backupPath) {
     const mongoUri = process.env.MONGODB_URI;
@@ -150,11 +151,11 @@ class BackupService {
       throw new Error('MONGODB_URI not configured');
     }
 
-    // Create dump using mongodump
-    const command = `mongodump --uri="${mongoUri}" --out="${backupPath}"`;
+    // SECURITY: Use execFile with argument array - prevents command injection
+    const args = ['--uri', mongoUri, '--out', backupPath];
 
     try {
-      const { stdout, stderr } = await execAsync(command, {
+      const { stdout, stderr } = await execFileAsync('mongodump', args, {
         maxBuffer: 10 * 1024 * 1024 // 10MB buffer
       });
 
@@ -171,15 +172,21 @@ class BackupService {
 
   /**
    * Compress backup
+   * SECURITY: Uses execFile with argument array to prevent command injection
    */
   async compressBackup(backupPath) {
-    const tarCommand = `tar -czf "${backupPath}.tar.gz" -C "${path.dirname(backupPath)}" "${path.basename(backupPath)}"`;
-
     try {
-      await execAsync(tarCommand);
+      // SECURITY: Use execFile with argument array - prevents command injection
+      await execFileAsync('tar', [
+        '-czf',
+        `${backupPath}.tar.gz`,
+        '-C',
+        path.dirname(backupPath),
+        path.basename(backupPath)
+      ]);
 
-      // Remove uncompressed directory
-      await execAsync(`rm -rf "${backupPath}"`);
+      // Remove uncompressed directory using fs instead of shell command
+      await fs.rm(backupPath, { recursive: true, force: true });
     } catch (error) {
       throw new Error(`Backup compression failed: ${error.message}`);
     }
@@ -419,9 +426,10 @@ class BackupService {
       }
 
       // Decompress
+      // SECURITY: Use execFile with argument array - prevents command injection
       log.info('Decompressing backup...');
       const extractPath = backupPath.replace('.tar.gz', '');
-      await execAsync(`tar -xzf "${backupPath}" -C "${path.dirname(backupPath)}"`);
+      await execFileAsync('tar', ['-xzf', backupPath, '-C', path.dirname(backupPath)]);
 
       // Restore MongoDB
       log.info('Restoring MongoDB...');
@@ -432,11 +440,11 @@ class BackupService {
         throw new Error('Production restore requires --force flag');
       }
 
-      const restoreCommand = `mongorestore --uri="${mongoUri}" --drop "${extractPath}"`;
-      await execAsync(restoreCommand);
+      // SECURITY: Use execFile with argument array - prevents command injection
+      await execFileAsync('mongorestore', ['--uri', mongoUri, '--drop', extractPath]);
 
-      // Cleanup
-      await execAsync(`rm -rf "${extractPath}"`);
+      // Cleanup using fs instead of shell commands
+      await fs.rm(extractPath, { recursive: true, force: true });
       if (!backupPath.endsWith('.enc')) {
         await fs.unlink(backupPath);
       }

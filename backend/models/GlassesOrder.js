@@ -1034,4 +1034,25 @@ glassesOrderSchema.index({ status: 1 });
 glassesOrderSchema.index({ orderNumber: 1 });
 glassesOrderSchema.index({ 'frameTryOnPhotos.frameId': 1 });
 
+// =====================================================
+// SOFT DELETE MIDDLEWARE
+// Automatically filter out deleted documents on queries
+// Use { includeSoftDeleted: true } to include deleted docs
+// =====================================================
+glassesOrderSchema.pre(/^find/, function(next) {
+  if (this.getOptions().includeSoftDeleted) {
+    return next();
+  }
+  this.where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  next();
+});
+
+glassesOrderSchema.pre('countDocuments', function(next) {
+  if (this.getOptions().includeSoftDeleted) {
+    return next();
+  }
+  this.where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  next();
+});
+
 module.exports = mongoose.model('GlassesOrder', glassesOrderSchema);

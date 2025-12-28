@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Counter = require('./Counter');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Visit');
 
 const visitSchema = new mongoose.Schema({
   visitId: {
@@ -935,12 +937,12 @@ visitSchema.pre('save', async function(next) {
             act.feeScheduleRef = fee._id;
             act.priceCapturedAt = new Date();
             act.priceSource = 'fee-schedule';
-            console.log(`[Visit.pre('save')] Auto-populated price for act ${act.actCode}: ${fee.price} CFA from FeeSchedule`);
+            log.info('Auto-populated price for clinical act', { actCode: act.actCode, price: fee.price });
           } else {
-            console.warn(`[Visit.pre('save')] No FeeSchedule entry found for actCode: ${act.actCode}`);
+            log.warn('No FeeSchedule entry found for actCode', { actCode: act.actCode });
           }
         } catch (err) {
-          console.error(`[Visit.pre('save')] Error looking up FeeSchedule for actCode ${act.actCode}:`, err.message);
+          log.error('Error looking up FeeSchedule for actCode', { actCode: act.actCode, error: err.message });
           // Don't block save on FeeSchedule lookup errors
         }
       }
@@ -1010,11 +1012,11 @@ visitSchema.methods.captureConventionSnapshot = async function() {
     // CRITICAL FIX: Also check validity dates
     const now = new Date();
     if (convention.validUntil && new Date(convention.validUntil) < now) {
-      console.log(`[VISIT] Convention expired (validUntil: ${convention.validUntil})`);
+      log.info('Convention expired', { validUntil: convention.validUntil });
       return null;
     }
     if (convention.validFrom && new Date(convention.validFrom) > now) {
-      console.log(`[VISIT] Convention not yet active (validFrom: ${convention.validFrom})`);
+      log.info('Convention not yet active', { validFrom: convention.validFrom });
       return null;
     }
 
@@ -1038,11 +1040,11 @@ visitSchema.methods.captureConventionSnapshot = async function() {
 
     await this.save();
 
-    console.log(`[VISIT] Convention snapshot captured for visit ${this.visitId}: ${company.name} (${company.companyId})`);
+    log.info('Convention snapshot captured', { visitId: this.visitId, companyName: company.name, companyId: company.companyId });
 
     return this.billing.conventionSnapshot;
   } catch (error) {
-    console.error('[VISIT] Error capturing convention snapshot:', error.message);
+    log.error('[VISIT] Error capturing convention snapshot:', error.message);
     return null;
   }
 };
@@ -1112,7 +1114,7 @@ visitSchema.methods.completeVisit = async function(userId) {
 
   // CRITICAL: Idempotency check - prevent double completion
   if (this.status === 'completed') {
-    console.log(`Visit ${this.visitId} already completed at ${this.completedAt}`);
+    log.info(`Visit ${this.visitId} already completed at ${this.completedAt}`);
     return {
       success: true,
       visit: this,
@@ -1143,20 +1145,20 @@ visitSchema.methods.completeVisit = async function(userId) {
       session = await mongoose.startSession();
       await session.startTransaction();
       useTransaction = true;
-      console.log('[VISIT COMPLETION] Using MongoDB transaction for data consistency');
+      log.info('[VISIT COMPLETION] Using MongoDB transaction for data consistency');
     } else {
-      console.log('[VISIT COMPLETION] Standalone MongoDB detected, proceeding without transaction support');
+      log.info('[VISIT COMPLETION] Standalone MongoDB detected, proceeding without transaction support');
     }
   } catch (transactionError) {
-    console.warn('[VISIT COMPLETION] Transactions not available, proceeding without transaction:', transactionError.message);
+    log.warn('[VISIT COMPLETION] Transactions not available, proceeding without transaction:', transactionError.message);
     if (session) {
       try { session.endSession(); } catch (e) { /* ignore session cleanup errors */ }
       session = null;
     }
   }
 
-  console.log(`[VISIT COMPLETION] Starting completion for Visit ${this.visitId} (${this._id}) - Patient: ${this.patient}`);
-  console.log(`[VISIT COMPLETION] Visit has ${this.prescriptions.length} prescriptions to process`);
+  log.info('Starting visit completion', { visitId: this.visitId, objectId: this._id, patient: this.patient });
+  log.info('Processing prescriptions', { visitId: this.visitId, prescriptionCount: this.prescriptions.length });
 
   // Track operations for compensating rollback (used when transactions unavailable)
   const rollbackStack = [];
@@ -1165,7 +1167,7 @@ visitSchema.methods.completeVisit = async function(userId) {
     // 0. AUTO-CREATE PRESCRIPTIONS from plan.medications if not already linked
     // This ensures medications added during consultation become proper Prescription records
     if (this.plan?.medications && this.plan.medications.length > 0) {
-      console.log(`[VISIT COMPLETION] Found ${this.plan.medications.length} medications in plan - creating Prescription records`);
+      log.info(`[VISIT COMPLETION] Found ${this.plan.medications.length} medications in plan - creating Prescription records`);
 
       // Group all medications into a single prescription
       // If no inventory link is provided, mark as external item to allow dispensing elsewhere
@@ -1220,12 +1222,12 @@ visitSchema.methods.completeVisit = async function(userId) {
           prescriptionId: createdPrescription._id
         });
 
-        console.log(`[VISIT COMPLETION] Created Prescription ${createdPrescription.prescriptionId || createdPrescription._id} with ${medicationsForPrescription.length} medications`);
+        log.info(`[VISIT COMPLETION] Created Prescription ${createdPrescription.prescriptionId || createdPrescription._id} with ${medicationsForPrescription.length} medications`);
 
         // Clear plan.medications since they're now in a proper Prescription
         this.plan.medications = [];
       } catch (prescriptionError) {
-        console.error('[VISIT COMPLETION] Error creating prescription from plan.medications:', prescriptionError.message);
+        log.error('[VISIT COMPLETION] Error creating prescription from plan.medications:', prescriptionError.message);
         // Continue - don't fail visit completion for this
       }
     }
@@ -1276,16 +1278,16 @@ visitSchema.methods.completeVisit = async function(userId) {
     // Log inventory reservation results
     const successfulReservations = reservationResults.filter(r => r.success).length;
     const failedReservations = reservationResults.filter(r => !r.success).length;
-    console.log(`[VISIT COMPLETION] Inventory reservation complete: ${successfulReservations} successful, ${failedReservations} failed`);
+    log.info(`[VISIT COMPLETION] Inventory reservation complete: ${successfulReservations} successful, ${failedReservations} failed`);
     if (failedReservations > 0) {
       const failures = reservationResults.filter(r => !r.success);
-      console.warn('[VISIT COMPLETION] Failed reservations:', failures);
+      log.warn('[VISIT COMPLETION] Failed reservations:', failures);
     }
 
     // 2. Generate invoice if not already created
     let invoiceData = null;
     if (!this.billing.invoice) {
-      console.log(`[VISIT COMPLETION] Generating invoice for Visit ${this.visitId}`);
+      log.info(`[VISIT COMPLETION] Generating invoice for Visit ${this.visitId}`);
       try {
         invoiceData = await this.generateInvoice(userId, useTransaction ? { session } : {});
         if (invoiceData.invoice) {
@@ -1297,14 +1299,14 @@ visitSchema.methods.completeVisit = async function(userId) {
             invoiceId: invoiceData.invoice._id
           });
 
-          console.log(`[VISIT COMPLETION] Invoice ${invoiceData.invoice.invoiceId || invoiceData.invoice._id} generated successfully`);
+          log.info(`[VISIT COMPLETION] Invoice ${invoiceData.invoice.invoiceId || invoiceData.invoice._id} generated successfully`);
         }
       } catch (error) {
-        console.error(`[VISIT COMPLETION] Error generating invoice for Visit ${this.visitId}:`, error);
+        log.error(`[VISIT COMPLETION] Error generating invoice for Visit ${this.visitId}:`, error);
         // Continue without invoice if it fails
       }
     } else {
-      console.log(`[VISIT COMPLETION] Visit ${this.visitId} already has invoice ${this.billing.invoice}`);
+      log.info(`[VISIT COMPLETION] Visit ${this.visitId} already has invoice ${this.billing.invoice}`);
     }
 
     // 3. Update appointment status if linked
@@ -1327,7 +1329,7 @@ visitSchema.methods.completeVisit = async function(userId) {
           });
         }
       } catch (error) {
-        console.error('Error updating appointment:', error);
+        log.error('Error updating appointment:', error);
         // Continue without appointment update if it fails
       }
     }
@@ -1355,7 +1357,7 @@ visitSchema.methods.completeVisit = async function(userId) {
           updateOptions
         );
       } catch (patientErr) {
-        console.error('Error updating patient lastVisit:', patientErr);
+        log.error('Error updating patient lastVisit:', patientErr);
         // Continue - don't fail visit completion if patient update fails
       }
     }
@@ -1365,8 +1367,8 @@ visitSchema.methods.completeVisit = async function(userId) {
       await session.commitTransaction();
     }
 
-    console.log(`[VISIT COMPLETION] ✅ Visit ${this.visitId} completed successfully`);
-    console.log(`[VISIT COMPLETION] Summary: ${reservationResults.length} prescriptions processed, Invoice: ${this.billing.invoice ? 'Generated' : 'None'}`);
+    log.info(`[VISIT COMPLETION] ✅ Visit ${this.visitId} completed successfully`);
+    log.info(`[VISIT COMPLETION] Summary: ${reservationResults.length} prescriptions processed, Invoice: ${this.billing.invoice ? 'Generated' : 'None'}`);
 
     return {
       success: true,
@@ -1376,15 +1378,15 @@ visitSchema.methods.completeVisit = async function(userId) {
     };
 
   } catch (error) {
-    console.error('[VISIT COMPLETION] Error during visit completion:', error);
+    log.error('[VISIT COMPLETION] Error during visit completion:', error);
 
     // Rollback if using transactions
     if (useTransaction && session) {
       await session.abortTransaction();
-      console.log(`[VISIT COMPLETION] Transaction aborted for visit ${this.visitId}`);
+      log.info('Transaction aborted for visit completion', { visitId: this.visitId });
     } else if (rollbackStack.length > 0) {
       // Execute compensating rollback for non-transaction mode
-      console.log(`[VISIT COMPLETION] Executing compensating rollback for visit ${this.visitId} (${rollbackStack.length} operations)`);
+      log.info('Executing compensating rollback', { visitId: this.visitId, operationCount: rollbackStack.length });
       await this._executeCompensatingRollback(rollbackStack);
     }
 
@@ -1403,7 +1405,7 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
   const Invoice = require('./Invoice');
   const Appointment = require('./Appointment');
 
-  console.log(`[COMPENSATING ROLLBACK] Rolling back ${rollbackStack.length} operations for visit ${this.visitId}`);
+  log.info(`[COMPENSATING ROLLBACK] Rolling back ${rollbackStack.length} operations for visit ${this.visitId}`);
 
   // Reverse order (LIFO - Last In First Out)
   while (rollbackStack.length > 0) {
@@ -1420,7 +1422,7 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
               cancellationReason: 'Visit completion failed - compensating rollback'
             }
           });
-          console.log(`[COMPENSATING ROLLBACK] Cancelled prescription: ${operation.prescriptionId}`);
+          log.info(`[COMPENSATING ROLLBACK] Cancelled prescription: ${operation.prescriptionId}`);
           break;
 
         case 'inventory_reservation':
@@ -1428,7 +1430,7 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
           const prescription = await Prescription.findById(operation.prescriptionId);
           if (prescription) {
             await prescription.releaseInventoryReservations();
-            console.log(`[COMPENSATING ROLLBACK] Released inventory for prescription: ${operation.prescriptionId}`);
+            log.info(`[COMPENSATING ROLLBACK] Released inventory for prescription: ${operation.prescriptionId}`);
           }
           break;
 
@@ -1441,7 +1443,7 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
               cancellationReason: 'Visit completion failed - compensating rollback'
             }
           });
-          console.log(`[COMPENSATING ROLLBACK] Cancelled invoice: ${operation.invoiceId}`);
+          log.info(`[COMPENSATING ROLLBACK] Cancelled invoice: ${operation.invoiceId}`);
           break;
 
         case 'appointment_update':
@@ -1452,14 +1454,14 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
               completedAt: null
             }
           });
-          console.log(`[COMPENSATING ROLLBACK] Reverted appointment: ${operation.appointmentId} to ${operation.previousStatus}`);
+          log.info(`[COMPENSATING ROLLBACK] Reverted appointment: ${operation.appointmentId} to ${operation.previousStatus}`);
           break;
 
         default:
-          console.warn(`[COMPENSATING ROLLBACK] Unknown operation type: ${operation.type}`);
+          log.warn(`[COMPENSATING ROLLBACK] Unknown operation type: ${operation.type}`);
       }
     } catch (rollbackError) {
-      console.error(`[COMPENSATING ROLLBACK] Failed to rollback ${operation.type}:`, rollbackError);
+      log.error(`[COMPENSATING ROLLBACK] Failed to rollback ${operation.type}:`, rollbackError);
 
       // Create critical alert for failed rollback
       await this._createCriticalAlert(
@@ -1476,7 +1478,7 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
     }
   }
 
-  console.log(`[COMPENSATING ROLLBACK] Rollback complete for visit ${this.visitId}`);
+  log.info(`[COMPENSATING ROLLBACK] Rollback complete for visit ${this.visitId}`);
 };
 
 // Helper method to create critical alerts for system issues
@@ -1492,9 +1494,9 @@ visitSchema.methods._createCriticalAlert = async function(message, details) {
       requiresAcknowledgment: true,
       createdAt: new Date()
     });
-    console.error(`[CRITICAL ALERT] ${message}`, details);
+    log.error(`[CRITICAL ALERT] ${message}`, details);
   } catch (alertError) {
-    console.error('[CRITICAL ALERT] Failed to create alert:', alertError);
+    log.error('[CRITICAL ALERT] Failed to create alert:', alertError);
   }
 };
 
@@ -1577,7 +1579,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
       // HIGH PRIORITY FIX: Validate that price is captured at service time
       // If act.price is missing, look it up from FeeSchedule and save it with audit trail
       if (act.price === undefined || act.price === null || act.price === 0) {
-        console.warn(`[Visit.generateInvoice] Clinical act ${act.actCode || act.actType} missing price, looking up from FeeSchedule`);
+        log.warn(`[Visit.generateInvoice] Clinical act ${act.actCode || act.actType} missing price, looking up from FeeSchedule`);
 
         if (act.actCode) {
           const feeInfo = await getFeeFromSchedule(act.actCode, 5000, act.category || 'procedure');
@@ -1600,18 +1602,18 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
               act.feeScheduleRef = fee._id;
             }
           } catch (err) {
-            console.error('[Visit.generateInvoice] Error looking up FeeSchedule reference:', err.message);
+            log.error('[Visit.generateInvoice] Error looking up FeeSchedule reference:', err.message);
           }
 
           visitModified = true;
-          console.log(`[Visit.generateInvoice] Set fallback price for act ${act.actCode}: ${act.price} CFA`);
+          log.info(`[Visit.generateInvoice] Set fallback price for act ${act.actCode}: ${act.price} CFA`);
         } else {
           // No actCode, use default
           act.price = 5000;
           act.priceSource = 'fee-schedule-fallback';
           act.priceCapturedAt = new Date();
           visitModified = true;
-          console.warn(`[Visit.generateInvoice] No actCode for act ${act.actType}, using default price: 5000 CFA`);
+          log.warn(`[Visit.generateInvoice] No actCode for act ${act.actType}, using default price: 5000 CFA`);
         }
       }
 
@@ -1638,7 +1640,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
   // Save the visit if we added any fallback prices
   if (visitModified) {
     await this.save();
-    console.log('[Visit.generateInvoice] Saved visit with updated clinical act prices');
+    log.info('[Visit.generateInvoice] Saved visit with updated clinical act prices');
   }
 
   // 2.5 Add device/diagnostic charges (OCT, tonometry, autorefractor, etc.)
@@ -1725,7 +1727,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
       }
     }
   } catch (examError) {
-    console.error('Error adding device charges to invoice:', examError);
+    log.error('Error adding device charges to invoice:', examError);
     // Continue without device charges if exam lookup fails
   }
 
@@ -1772,7 +1774,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
         }
       }
     } catch (ivtError) {
-      console.error('Error adding IVT charges to invoice:', ivtError);
+      log.error('Error adding IVT charges to invoice:', ivtError);
       // Continue without IVT charges if lookup fails
     }
   }
@@ -1812,7 +1814,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
         }
       }
     } catch (labError) {
-      console.error('Error adding laboratory charges to invoice:', labError);
+      log.error('Error adding laboratory charges to invoice:', labError);
       // Continue without lab charges if lookup fails
     }
   }
@@ -1842,7 +1844,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
         subtotal += examData.price;
       }
     } catch (examOrderError) {
-      console.error('Error adding examination order charges to invoice:', examOrderError);
+      log.error('Error adding examination order charges to invoice:', examOrderError);
     }
   }
 
@@ -1889,7 +1891,7 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
         }
       }
     } catch (surgeryError) {
-      console.error('Error adding surgery charges to invoice:', surgeryError);
+      log.error('Error adding surgery charges to invoice:', surgeryError);
     }
   }
 
@@ -1927,13 +1929,13 @@ visitSchema.methods.generateInvoice = async function(userId, options = {}) {
                 reference: `Prescription:${prescriptionId}`
               });
               subtotal += total;
-              console.log(`[INVOICE] Added medication: ${med.name} x${quantity} @ ${unitPrice} = ${total} CDF`);
+              log.info(`[INVOICE] Added medication: ${med.name} x${quantity} @ ${unitPrice} = ${total} CDF`);
             }
           }
         }
       }
     } catch (medError) {
-      console.error('Error adding medications to invoice:', medError);
+      log.error('Error adding medications to invoice:', medError);
     }
   }
 
@@ -2025,7 +2027,7 @@ visitSchema.post('save', async (doc) => {
           }
         }
       );
-      console.log(`[VISIT] Auto-updated lastVisit for patient ${doc.patient} to visit ${doc.visitId || doc._id} (atomic)`);
+      log.info('Auto-updated lastVisit for patient', { patientId: doc.patient, visitId: doc.visitId || doc._id });
     }
 
     // Handle cancelled visits - recalculate lastVisit if needed
@@ -2047,18 +2049,18 @@ visitSchema.post('save', async (doc) => {
             lastVisitDate: mostRecentVisit.visitDate,
             lastConsultationDate: mostRecentVisit.completedAt || mostRecentVisit.visitDate
           });
-          console.log(`[VISIT] Recalculated lastVisit for patient ${doc.patient} after cancellation - new lastVisit: ${mostRecentVisit.visitId || mostRecentVisit._id}`);
+          log.info(`[VISIT] Recalculated lastVisit for patient ${doc.patient} after cancellation - new lastVisit: ${mostRecentVisit.visitId || mostRecentVisit._id}`);
         } else {
           // No other completed visits - clear lastVisit fields
           await Patient.findByIdAndUpdate(doc.patient, {
             $unset: { lastVisit: 1, lastVisitDate: 1, lastConsultationDate: 1 }
           });
-          console.log(`[VISIT] Cleared lastVisit for patient ${doc.patient} - no other completed visits found`);
+          log.info(`[VISIT] Cleared lastVisit for patient ${doc.patient} - no other completed visits found`);
         }
       }
     }
   } catch (error) {
-    console.error('[VISIT] Error auto-updating patient lastVisit:', error);
+    log.error('[VISIT] Error auto-updating patient lastVisit:', error);
     // Don't throw - this is a non-critical operation
   }
 });

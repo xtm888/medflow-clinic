@@ -1,6 +1,8 @@
 const mongoose = require('mongoose');
 const Counter = require('./Counter');
 const { phiEncryptionPlugin, PHI_FIELDS, encrypt, decrypt, isEncrypted } = require('../utils/phiEncryption');
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('Patient');
 
 const patientSchema = new mongoose.Schema({
   // Identification
@@ -1206,7 +1208,7 @@ patientSchema.methods.softDelete = async function(deletedBy, reason = null) {
   if (this.biometric) {
     this.biometric.faceEncoding = null;
     this.biometric.faceEncodingVersion = null;
-    console.log(`[PATIENT-DELETE] Cleared biometric data for patient ${this.patientId}`);
+    log.info('Cleared biometric data for patient deletion', { patientId: this.patientId });
   }
 
   await this.save({ validateBeforeSave: false });
@@ -1338,11 +1340,11 @@ patientSchema.methods.softDelete = async function(deletedBy, reason = null) {
     }
 
   } catch (cascadeError) {
-    console.error('Error during cascade soft-delete:', cascadeError);
+    log.error('Error during cascade soft-delete', { error: cascadeError.message, patientId: this.patientId });
     // Log but don't fail - patient is already marked deleted
   }
 
-  console.log(`[SOFT DELETE] Patient ${this.patientId} deleted by user ${deletedBy}. Cascade results:`, cascadeResults);
+  log.info('Patient soft deleted', { patientId: this.patientId, deletedBy, cascadeResults });
 
   return {
     success: true,
@@ -1385,7 +1387,7 @@ patientSchema.methods.restore = async function(restoredBy) {
 
   await this.save({ validateBeforeSave: false });
 
-  console.log(`[RESTORE] Patient ${this.patientId} restored by user ${restoredBy}`);
+  log.info('Patient restored', { patientId: this.patientId, restoredBy });
 
   return {
     success: true,
@@ -1886,7 +1888,7 @@ patientSchema.statics.addCredit = async function(patientId, amount, reason, user
       }
     });
   } catch (err) {
-    console.error('Failed to log credit addition:', err.message);
+    log.error('Failed to log credit addition', { error: err.message });
   }
 
   await patient.save({ validateBeforeSave: false });
@@ -1925,7 +1927,7 @@ patientSchema.statics.useCredit = async function(patientId, amount, invoiceId, u
       }
     });
   } catch (err) {
-    console.error('Failed to log credit usage:', err.message);
+    log.error('Failed to log credit usage', { error: err.message });
   }
 
   await patient.save({ validateBeforeSave: false });
@@ -2083,7 +2085,7 @@ patientSchema.methods.addPaymentMethod = async function(paymentMethodData, userI
       }
     });
   } catch (err) {
-    console.error('Failed to log payment method addition:', err.message);
+    log.error('Failed to log payment method addition', { error: err.message });
   }
 
   return newPaymentMethod;
@@ -2123,7 +2125,7 @@ patientSchema.methods.removePaymentMethod = async function(paymentMethodId, user
       }
     });
   } catch (err) {
-    console.error('Failed to log payment method removal:', err.message);
+    log.error('Failed to log payment method removal', { error: err.message });
   }
 
   return { success: true, removed };
@@ -2461,7 +2463,7 @@ function encryptObjectField(obj) {
     const jsonStr = JSON.stringify(obj);
     return encrypt(jsonStr);
   } catch (err) {
-    console.error('[PHI-ENCRYPT] Failed to encrypt object field:', err.message);
+    log.error('Failed to encrypt PHI object field', { error: err.message });
     return obj; // Return original if encryption fails
   }
 }
@@ -2491,7 +2493,7 @@ function decryptObjectField(encryptedStr) {
     const jsonStr = decrypt(encryptedStr);
     return JSON.parse(jsonStr);
   } catch (err) {
-    console.error('[PHI-DECRYPT] Failed to decrypt object field:', err.message);
+    log.error('Failed to decrypt PHI object field', { error: err.message });
     return null;
   }
 }

@@ -215,7 +215,7 @@ router.get('/clinic/:visitId', validateVisitIdParam, authorize('admin', 'recepti
 router
   .route('/')
   .get(authorize('admin', 'receptionist', 'accountant', 'doctor', 'ophthalmologist', 'nurse'), getInvoices)
-  .post(authorize('admin', 'receptionist', 'accountant'), createInvoice);
+  .post(authorize('admin', 'receptionist', 'accountant'), validateInvoiceCreate, logCriticalOperation('INVOICE_CREATE'), createInvoice);
 
 router
   .route('/:id')

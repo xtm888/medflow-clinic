@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MedFlow EMR - Architecture Complete | 78 Modeles | 78 Routes | 309 Pages</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+      color: #e2e8f0;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* Hero Section */
+    .hero {
+      background: linear-gradient(135deg, #1e3a8a 0%, #7c3aed 40%, #db2777 70%, #f59e0b 100%);
+      padding: 50px 30px;
+      text-align: center;
+    }
+    .hero h1 { font-size: 2.8rem; font-weight: 900; margin-bottom: 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.4); }
+    .hero .subtitle { font-size: 1.2rem; opacity: 0.95; margin-bottom: 20px; }
+    .hero .stats {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .hero .stat {
+      background: rgba(255,255,255,0.15);
+      padding: 12px 20px;
+      border-radius: 25px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .hero .stat strong { font-size: 1.4rem; color: #fbbf24; }
+    .hero .stat span { font-size: 0.85rem; opacity: 0.9; }
+
+    /* Navigation */
+    .nav {
+      position: sticky;
+      top: 0;
+      background: rgba(15, 23, 42, 0.98);
+      backdrop-filter: blur(20px);
+      padding: 10px 20px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: center;
+      z-index: 1000;
+      border-bottom: 1px solid #334155;
+    }
+    .nav a {
+      color: #94a3b8;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+    .nav a:hover { background: #334155; color: #f1f5f9; }
+    .nav a.active { background: #3b82f6; color: white; }
+
+    /* Container */
+    .container { max-width: 1800px; margin: 0 auto; padding: 30px; }
+
+    /* Section */
+    .section {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-radius: 16px;
+      margin-bottom: 30px;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+    .section-header {
+      background: linear-gradient(90deg, #334155 0%, #1e293b 100%);
+      padding: 20px 25px;
+      border-bottom: 1px solid #475569;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .section-header .icon {
+      width: 45px;
+      height: 45px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+    }
+    .section-header h2 { font-size: 1.4rem; color: #f1f5f9; font-weight: 700; }
+    .section-header .badge {
+      margin-left: auto;
+      background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      color: white;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .section-content { padding: 25px; }
+
+    /* Grid Layouts */
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 15px; }
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(400px, 1fr)); gap: 20px; }
+
+    /* Cards */
+    .card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 15px;
+      transition: all 0.2s;
+    }
+    .card:hover { border-color: #3b82f6; transform: translateY(-2px); }
+    .card-title { font-weight: 600; color: #f1f5f9; margin-bottom: 8px; font-size: 0.95rem; }
+    .card-subtitle { font-size: 0.8rem; color: #94a3b8; }
+
+    /* Item Lists */
+    .item-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .item {
+      background: rgba(51, 65, 85, 0.5);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .item:hover { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); }
+
+    /* Color Tags */
+    .tag { padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+    .tag-blue { background: #1e40af; color: #93c5fd; }
+    .tag-green { background: #166534; color: #86efac; }
+    .tag-purple { background: #6b21a8; color: #d8b4fe; }
+    .tag-orange { background: #c2410c; color: #fed7aa; }
+    .tag-pink { background: #9d174d; color: #fbcfe8; }
+    .tag-teal { background: #115e59; color: #5eead4; }
+    .tag-red { background: #991b1b; color: #fecaca; }
+
+    /* Category Headers */
+    .category {
+      background: linear-gradient(90deg, rgba(59, 130, 246, 0.2) 0%, transparent 100%);
+      padding: 12px 15px;
+      border-left: 3px solid #3b82f6;
+      margin: 20px 0 15px;
+      font-weight: 600;
+      color: #93c5fd;
+      border-radius: 0 8px 8px 0;
+    }
+    .category:first-child { margin-top: 0; }
+
+    /* Data Flow Diagram */
+    .flow-container {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 15px 0;
+    }
+    .flow-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+    .flow-box {
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      text-align: center;
+      min-width: 140px;
+    }
+    .flow-arrow { color: #60a5fa; font-size: 1.5rem; }
+    .flow-frontend { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+    .flow-api { background: linear-gradient(135deg, #f59e0b, #d97706); }
+    .flow-service { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+    .flow-db { background: linear-gradient(135deg, #10b981, #059669); }
+    .flow-external { background: linear-gradient(135deg, #ec4899, #db2777); }
+
+    /* Relationship Diagram */
+    .rel-card {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 15px;
+    }
+    .rel-card h4 { color: #60a5fa; margin-bottom: 10px; font-size: 0.95rem; }
+    .rel-list { font-size: 0.85rem; }
+    .rel-item {
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(51, 65, 85, 0.5);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .rel-item:last-child { border-bottom: none; }
+    .rel-arrow { color: #f59e0b; }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .stat-card .number { font-size: 2rem; font-weight: 800; color: #60a5fa; }
+    .stat-card .label { font-size: 0.85rem; color: #94a3b8; margin-top: 5px; }
+
+    /* Tables */
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #1e293b; color: #93c5fd; font-weight: 600; position: sticky; top: 0; }
+    tr:hover { background: rgba(59, 130, 246, 0.05); }
+    .route { color: #4ade80; font-family: monospace; }
+    .method {
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      display: inline-block;
+      min-width: 50px;
+      text-align: center;
+    }
+    .method-get { background: #166534; color: #86efac; }
+    .method-post { background: #1e40af; color: #93c5fd; }
+    .method-put { background: #c2410c; color: #fed7aa; }
+    .method-delete { background: #991b1b; color: #fecaca; }
+
+    /* Collapsible */
+    .collapsible {
+      background: rgba(51, 65, 85, 0.3);
+      border: none;
+      color: #e2e8f0;
+      padding: 12px 15px;
+      width: 100%;
+      text-align: left;
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 5px 0;
+      font-size: 0.9rem;
+      font-weight: 500;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s;
+    }
+    .collapsible:hover { background: rgba(59, 130, 246, 0.2); }
+    .collapsible::after { content: '+'; font-size: 1.2rem; color: #60a5fa; }
+    .collapsible.active::after { content: '-'; }
+    .coll-content {
+      display: none;
+      padding: 15px;
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 0 0 8px 8px;
+      margin-top: -5px;
+      margin-bottom: 10px;
+    }
+    .coll-content.show { display: block; }
+
+    /* Search */
+    .search-box {
+      background: rgba(30, 41, 59, 0.6);
+      border: 1px solid #334155;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+    .search-box input {
+      width: 100%;
+      padding: 12px 15px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+    }
+    .search-box input:focus { outline: none; border-color: #3b82f6; }
+    .search-box input::placeholder { color: #64748b; }
+
+    /* Print Styles */
+    @media print {
+      body { background: white; color: black; }
+      .nav { display: none; }
+      .section { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero -->
+  <div class="hero">
+    <h1>MedFlow EMR</h1>
+    <p class="subtitle">Systeme de Gestion de Cabinet Ophtalmologique - Architecture Complete</p>
+    <div class="stats">
+      <div class="stat"><strong>78</strong> <span>Modeles</span></div>
+      <div class="stat"><strong>78</strong> <span>Routes API</span></div>
+      <div class="stat"><strong>107</strong> <span>Controleurs</span></div>
+      <div class="stat"><strong>62</strong> <span>Services Backend</span></div>
+      <div class="stat"><strong>309</strong> <span>Pages Frontend</span></div>
+      <div class="stat"><strong>78</strong> <span>Services Frontend</span></div>
+      <div class="stat"><strong>22</strong> <span>Hooks React</span></div>
+      <div class="stat"><strong>10</strong> <span>Redux Slices</span></div>
+      <div class="stat"><strong>146</strong> <span>Scripts</span></div>
+      <div class="stat"><strong>2</strong> <span>Microservices IA</span></div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <a href="#overview" class="active">Vue d'Ensemble</a>
+    <a href="#dataflow">Flux de Donnees</a>
+    <a href="#models">Modeles (78)</a>
+    <a href="#routes">Routes API (78)</a>
+    <a href="#controllers">Controleurs (107)</a>
+    <a href="#services">Services (62)</a>
+    <a href="#frontend">Frontend (309)</a>
+    <a href="#websocket">WebSocket</a>
+    <a href="#security">Securite</a>
+    <a href="#clinical">Standards Cliniques</a>
+  </nav>
+
+  <div class="container">
+    <!-- Overview Section -->
+    <section id="overview" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #3b82f6, #8b5cf6);">📊</div>
+        <h2>Vue d'Ensemble du Systeme</h2>
+        <span class="badge">Architecture Complete</span>
+      </div>
+      <div class="section-content">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="number">78</div><div class="label">Modeles MongoDB</div></div>
+          <div class="stat-card"><div class="number">78</div><div class="label">Routes Express</div></div>
+          <div class="stat-card"><div class="number">107</div><div class="label">Controleurs</div></div>
+          <div class="stat-card"><div class="number">62</div><div class="label">Services Backend</div></div>
+          <div class="stat-card"><div class="number">309</div><div class="label">Pages React</div></div>
+          <div class="stat-card"><div class="number">32</div><div class="label">Dossiers Composants</div></div>
+          <div class="stat-card"><div class="number">78</div><div class="label">Services Frontend</div></div>
+          <div class="stat-card"><div class="number">22</div><div class="label">Hooks Personnalises</div></div>
+          <div class="stat-card"><div class="number">10</div><div class="label">Redux Slices</div></div>
+          <div class="stat-card"><div class="number">6</div><div class="label">React Contexts</div></div>
+          <div class="stat-card"><div class="number">15</div><div class="label">Middlewares</div></div>
+          <div class="stat-card"><div class="number">21</div><div class="label">Utilitaires</div></div>
+        </div>
+
+        <div class="category">Stack Technique</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Backend</div>
+            <div class="item-list">
+              <span class="item">Node.js 18+</span>
+              <span class="item">Express.js</span>
+              <span class="item">MongoDB + Mongoose</span>
+              <span class="item">Redis</span>
+              <span class="item">Socket.io</span>
+              <span class="item">JWT + 2FA</span>
+              <span class="item">PDFKit</span>
+              <span class="item">Sharp</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Frontend</div>
+            <div class="item-list">
+              <span class="item">React 19</span>
+              <span class="item">Vite</span>
+              <span class="item">Tailwind CSS</span>
+              <span class="item">Redux Toolkit</span>
+              <span class="item">React Query</span>
+              <span class="item">React Router v6</span>
+              <span class="item">Dexie (IndexedDB)</span>
+              <span class="item">Socket.io-client</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Microservices IA</div>
+            <div class="item-list">
+              <span class="item">Python FastAPI</span>
+              <span class="item">DeepFace</span>
+              <span class="item">PaddleOCR</span>
+              <span class="item">Celery</span>
+              <span class="item">TensorFlow</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="category">Modules Fonctionnels</div>
+        <div class="grid-4">
+          <div class="card"><div class="card-title">Patients</div><div class="card-subtitle">Gestion complete des dossiers patients</div></div>
+          <div class="card"><div class="card-title">Rendez-vous</div><div class="card-subtitle">Calendrier et planification</div></div>
+          <div class="card"><div class="card-title">File d'attente</div><div class="card-subtitle">Gestion temps reel</div></div>
+          <div class="card"><div class="card-title">StudioVision</div><div class="card-subtitle">Consultation ophtalmologique</div></div>
+          <div class="card"><div class="card-title">Orthoptie</div><div class="card-subtitle">Examens orthoptiques</div></div>
+          <div class="card"><div class="card-title">Prescriptions</div><div class="card-subtitle">Medicaments et lunettes</div></div>
+          <div class="card"><div class="card-title">Pharmacie</div><div class="card-subtitle">Stock et dispensation</div></div>
+          <div class="card"><div class="card-title">Laboratoire</div><div class="card-subtitle">Analyses et resultats</div></div>
+          <div class="card"><div class="card-title">Imagerie</div><div class="card-subtitle">DICOM et integration</div></div>
+          <div class="card"><div class="card-title">Optique</div><div class="card-subtitle">Montures et verres</div></div>
+          <div class="card"><div class="card-title">Chirurgie</div><div class="card-subtitle">Bloc operatoire</div></div>
+          <div class="card"><div class="card-title">IVT</div><div class="card-subtitle">Injections intravitreennes</div></div>
+          <div class="card"><div class="card-title">Facturation</div><div class="card-subtitle">CDF/USD/EUR</div></div>
+          <div class="card"><div class="card-title">Conventions</div><div class="card-subtitle">Assurances et entreprises</div></div>
+          <div class="card"><div class="card-title">Multi-Clinique</div><div class="card-subtitle">Gestion multi-sites</div></div>
+          <div class="card"><div class="card-title">Appareils</div><div class="card-subtitle">Integration SMB2</div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Data Flow Section -->
+    <section id="dataflow" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #10b981, #059669);">🔄</div>
+        <h2>Flux de Donnees</h2>
+        <span class="badge">Architecture</span>
+      </div>
+      <div class="section-content">
+        <div class="flow-container">
+          <h3 style="text-align:center; margin-bottom:20px; color:#60a5fa;">Flux Principal de l'Application</h3>
+          <div class="flow-row">
+            <div class="flow-box flow-frontend">React 19<br><small>309 Pages</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flow-api">Express API<br><small>78 Routes</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flow-service">Services<br><small>62 Services</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flow-db">MongoDB<br><small>78 Modeles</small></div>
+          </div>
+          <div class="flow-row">
+            <div class="flow-box flow-frontend">Redux/Query<br><small>10 Slices</small></div>
+            <div class="flow-arrow">↔</div>
+            <div class="flow-box flow-api">WebSocket<br><small>30+ Events</small></div>
+            <div class="flow-arrow">↔</div>
+            <div class="flow-box flow-service">Redis<br><small>Cache/Sessions</small></div>
+            <div class="flow-arrow">↔</div>
+            <div class="flow-box flow-external">Appareils<br><small>SMB2/DICOM</small></div>
+          </div>
+          <div class="flow-row">
+            <div class="flow-box flow-external">Face Service<br><small>DeepFace</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flow-api">REST API<br><small>Reconnaissance</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flow-external">OCR Service<br><small>PaddleOCR</small></div>
+            <div class="flow-arrow">→</div>
+            <div class="flow-box flow-api">Import Legacy<br><small>Celery</small></div>
+          </div>
+        </div>
+
+        <div class="category">Relations entre Modeles (Top 10)</div>
+        <div class="grid-3">
+          <div class="rel-card">
+            <h4>User (425 refs)</h4>
+            <div class="rel-list">
+              <div class="rel-item"><span class="rel-arrow">→</span> createdBy, updatedBy dans tous modeles</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> examiner dans OphthalmologyExam</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> prescriber dans Prescription</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> surgeon dans SurgeryCase</div>
+            </div>
+          </div>
+          <div class="rel-card">
+            <h4>Clinic (53 refs)</h4>
+            <div class="rel-list">
+              <div class="rel-item"><span class="rel-arrow">→</span> Isolation multi-tenant</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> Patient.homeClinic</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> Tous les modeles transactionnels</div>
+            </div>
+          </div>
+          <div class="rel-card">
+            <h4>Patient (43 refs)</h4>
+            <div class="rel-list">
+              <div class="rel-item"><span class="rel-arrow">→</span> Visit, Appointment</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> Invoice, Prescription</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> OphthalmologyExam</div>
+              <div class="rel-item"><span class="rel-arrow">→</span> IVTInjection, SurgeryCase</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Models Section -->
+    <section id="models" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">🗃️</div>
+        <h2>Modeles MongoDB</h2>
+        <span class="badge">78 Modeles</span>
+      </div>
+      <div class="section-content">
+        <div class="search-box">
+          <input type="text" id="modelSearch" placeholder="Rechercher un modele..." onkeyup="filterItems('models-list', this.value)">
+        </div>
+
+        <div class="category">Gestion des Patients (8)</div>
+        <div class="item-list" id="models-list">
+          <span class="item">Patient</span>
+          <span class="item">Visit</span>
+          <span class="item">Appointment</span>
+          <span class="item">AppointmentType</span>
+          <span class="item">WaitingList</span>
+          <span class="item">PatientHistory (via Visit)</span>
+          <span class="item">Referrer</span>
+          <span class="item">Document</span>
+        </div>
+
+        <div class="category">Clinique & Utilisateurs (7)</div>
+        <div class="item-list">
+          <span class="item">Clinic</span>
+          <span class="item">User</span>
+          <span class="item">RolePermission</span>
+          <span class="item">Room</span>
+          <span class="item">Settings</span>
+          <span class="item">ProviderAvailability</span>
+          <span class="item">CalendarIntegration</span>
+        </div>
+
+        <div class="category">Ophtalmologie (9)</div>
+        <div class="item-list">
+          <span class="item">OphthalmologyExam</span>
+          <span class="item">OrthopticExam</span>
+          <span class="item">IVTInjection</span>
+          <span class="item">IVTVial</span>
+          <span class="item">SurgeryCase</span>
+          <span class="item">SurgeryReport</span>
+          <span class="item">GlassesOrder</span>
+          <span class="item">ImagingStudy</span>
+          <span class="item">ImagingOrder</span>
+        </div>
+
+        <div class="category">Prescriptions & Medicaments (6)</div>
+        <div class="item-list">
+          <span class="item">Prescription</span>
+          <span class="item">Drug</span>
+          <span class="item">DoseTemplate</span>
+          <span class="item">TreatmentProtocol</span>
+          <span class="item">MedicationTemplate</span>
+          <span class="item">UnitConversion</span>
+        </div>
+
+        <div class="category">Inventaire (9)</div>
+        <div class="item-list">
+          <span class="item">Inventory (base + discriminateurs)</span>
+          <span class="item">→ PharmacyInventory</span>
+          <span class="item">→ FrameInventory</span>
+          <span class="item">→ ContactLensInventory</span>
+          <span class="item">→ OpticalLensInventory</span>
+          <span class="item">→ ReagentInventory</span>
+          <span class="item">→ LabConsumableInventory</span>
+          <span class="item">→ SurgicalSupplyInventory</span>
+          <span class="item">InventoryTransfer</span>
+        </div>
+
+        <div class="category">Laboratoire (7)</div>
+        <div class="item-list">
+          <span class="item">LabOrder</span>
+          <span class="item">LabResult</span>
+          <span class="item">LabAnalyzer</span>
+          <span class="item">LaboratoryTemplate</span>
+          <span class="item">ReagentLot</span>
+          <span class="item">LISIntegration</span>
+          <span class="item">StockReconciliation</span>
+        </div>
+
+        <div class="category">Facturation & Finance (10)</div>
+        <div class="item-list">
+          <span class="item">Invoice</span>
+          <span class="item">Company</span>
+          <span class="item">CompanyUsage</span>
+          <span class="item">ConventionFeeSchedule</span>
+          <span class="item">FeeSchedule</span>
+          <span class="item">InsuranceClaim</span>
+          <span class="item">PaymentPlan</span>
+          <span class="item">FiscalYear</span>
+          <span class="item">TaxConfig</span>
+          <span class="item">Service</span>
+        </div>
+
+        <div class="category">Appareils & Integration (8)</div>
+        <div class="item-list">
+          <span class="item">Device</span>
+          <span class="item">DeviceImage</span>
+          <span class="item">DeviceMeasurement</span>
+          <span class="item">DeviceIntegrationLog</span>
+          <span class="item">EquipmentCatalog</span>
+          <span class="item">ExternalFacility</span>
+          <span class="item">FulfillmentDispatch</span>
+          <span class="item">SyncQueue</span>
+        </div>
+
+        <div class="category">Templates & Documents (9)</div>
+        <div class="item-list">
+          <span class="item">DocumentTemplate</span>
+          <span class="item">ConsultationTemplate</span>
+          <span class="item">ExaminationTemplate</span>
+          <span class="item">LetterTemplate</span>
+          <span class="item">PathologyTemplate</span>
+          <span class="item">CommentTemplate</span>
+          <span class="item">ClinicalTemplate</span>
+          <span class="item">ConsultationSession</span>
+          <span class="item">Correspondence</span>
+        </div>
+
+        <div class="category">Systeme & Audit (5)</div>
+        <div class="item-list">
+          <span class="item">AuditLog</span>
+          <span class="item">Alert</span>
+          <span class="item">ClinicalAlert</span>
+          <span class="item">Notification</span>
+          <span class="item">EmailQueue</span>
+        </div>
+
+        <div class="category">Autres (5)</div>
+        <div class="item-list">
+          <span class="item">Approval</span>
+          <span class="item">Counter</span>
+          <span class="item">LegacyMapping</span>
+          <span class="item">PurchaseOrder</span>
+          <span class="item">Supplier</span>
+          <span class="item">RepairTracking</span>
+          <span class="item">WarrantyTracking</span>
+          <span class="item">ClinicalAct</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Routes Section -->
+    <section id="routes" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #22c55e, #16a34a);">🛣️</div>
+        <h2>Routes API Express</h2>
+        <span class="badge">78 Fichiers</span>
+      </div>
+      <div class="section-content">
+        <div class="search-box">
+          <input type="text" id="routeSearch" placeholder="Rechercher une route..." onkeyup="filterItems('routes-list', this.value)">
+        </div>
+
+        <div class="category">Authentification & Utilisateurs</div>
+        <div class="item-list" id="routes-list">
+          <span class="item">/api/auth</span>
+          <span class="item">/api/users</span>
+          <span class="item">/api/role-permissions</span>
+          <span class="item">/api/settings</span>
+        </div>
+
+        <div class="category">Patients & Rendez-vous</div>
+        <div class="item-list">
+          <span class="item">/api/patients</span>
+          <span class="item">/api/patient-history</span>
+          <span class="item">/api/appointments</span>
+          <span class="item">/api/queue</span>
+          <span class="item">/api/visits</span>
+          <span class="item">/api/referrers</span>
+        </div>
+
+        <div class="category">Clinique & Multi-Site</div>
+        <div class="item-list">
+          <span class="item">/api/clinics</span>
+          <span class="item">/api/rooms</span>
+          <span class="item">/api/central</span>
+          <span class="item">/api/dashboard</span>
+        </div>
+
+        <div class="category">Ophtalmologie</div>
+        <div class="item-list">
+          <span class="item">/api/ophthalmology</span>
+          <span class="item">/api/orthoptic</span>
+          <span class="item">/api/ivt</span>
+          <span class="item">/api/ivt-vials</span>
+          <span class="item">/api/surgery</span>
+          <span class="item">/api/glasses-orders</span>
+          <span class="item">/api/contact-lens-fitting</span>
+          <span class="item">/api/imaging</span>
+        </div>
+
+        <div class="category">Prescriptions & Medicaments</div>
+        <div class="item-list">
+          <span class="item">/api/prescriptions</span>
+          <span class="item">/api/pharmacy</span>
+          <span class="item">/api/drug-safety</span>
+          <span class="item">/api/treatment-protocols</span>
+        </div>
+
+        <div class="category">Inventaire</div>
+        <div class="item-list">
+          <span class="item">/api/unified-inventory</span>
+          <span class="item">/api/pharmacy (inventaire)</span>
+          <span class="item">/api/frame-inventory</span>
+          <span class="item">/api/contact-lens-inventory</span>
+          <span class="item">/api/optical-lens-inventory</span>
+          <span class="item">/api/reagent-inventory</span>
+          <span class="item">/api/lab-consumable-inventory</span>
+          <span class="item">/api/surgical-supply-inventory</span>
+          <span class="item">/api/inventory-transfers</span>
+          <span class="item">/api/cross-clinic-inventory</span>
+          <span class="item">/api/stock-reconciliations</span>
+          <span class="item">/api/purchase-orders</span>
+        </div>
+
+        <div class="category">Laboratoire</div>
+        <div class="item-list">
+          <span class="item">/api/laboratory</span>
+          <span class="item">/api/lab-orders</span>
+          <span class="item">/api/lab-results</span>
+          <span class="item">/api/lab-analyzers</span>
+          <span class="item">/api/lab-qc</span>
+          <span class="item">/api/reagent-lots</span>
+          <span class="item">/api/lis</span>
+        </div>
+
+        <div class="category">Facturation</div>
+        <div class="item-list">
+          <span class="item">/api/invoices</span>
+          <span class="item">/api/billing</span>
+          <span class="item">/api/companies</span>
+          <span class="item">/api/fee-schedules</span>
+          <span class="item">/api/fiscal-year</span>
+          <span class="item">/api/approvals</span>
+        </div>
+
+        <div class="category">Appareils & Documents</div>
+        <div class="item-list">
+          <span class="item">/api/devices</span>
+          <span class="item">/api/documents</span>
+          <span class="item">/api/document-generation</span>
+          <span class="item">/api/uploads</span>
+          <span class="item">/api/external-facilities</span>
+          <span class="item">/api/fulfillment-dispatches</span>
+        </div>
+
+        <div class="category">Templates & Autres</div>
+        <div class="item-list">
+          <span class="item">/api/consultation-templates</span>
+          <span class="item">/api/consultation-sessions</span>
+          <span class="item">/api/template-catalog</span>
+          <span class="item">/api/correspondence</span>
+          <span class="item">/api/optical-shop</span>
+          <span class="item">/api/repairs</span>
+          <span class="item">/api/warranties</span>
+          <span class="item">/api/unit-conversions</span>
+        </div>
+
+        <div class="category">Systeme & Monitoring</div>
+        <div class="item-list">
+          <span class="item">/api/health</span>
+          <span class="item">/api/alerts</span>
+          <span class="item">/api/clinical-alerts</span>
+          <span class="item">/api/notifications</span>
+          <span class="item">/api/audit</span>
+          <span class="item">/api/backup</span>
+          <span class="item">/api/sync</span>
+          <span class="item">/api/calendar</span>
+        </div>
+
+        <div class="category">IA & Import</div>
+        <div class="item-list">
+          <span class="item">/api/face-recognition</span>
+          <span class="item">/api/ocr-import</span>
+          <span class="item">/api/migration</span>
+          <span class="item">/api/clinical-trends</span>
+          <span class="item">/api/clinical-decision-support</span>
+        </div>
+
+        <div class="category">Portail Patient</div>
+        <div class="item-list">
+          <span class="item">/api/portal</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controllers Section -->
+    <section id="controllers" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">⚙️</div>
+        <h2>Controleurs Backend</h2>
+        <span class="badge">107 Fichiers</span>
+      </div>
+      <div class="section-content">
+        <div class="category">Controleurs Modulaires (7 modules restructures)</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">prescriptions/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">drugController</span>
+              <span class="item">opticalController</span>
+              <span class="item">ePrescribingController</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">patients/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">recordsController</span>
+              <span class="item">advancedController</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">invoices/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">paymentController</span>
+              <span class="item">billingController</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">devices/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">discoveryController</span>
+              <span class="item">folderController</span>
+              <span class="item">syncController</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">glassesOrders/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">inventoryController</span>
+              <span class="item">qcLabController</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">ophthalmology/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">clinicalTestsController</span>
+              <span class="item">analyticsController</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">companies/</div>
+            <div class="item-list">
+              <span class="item">coreController</span>
+              <span class="item">billingController</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="category">Inventaire (7 types)</div>
+        <div class="item-list">
+          <span class="item">UnifiedInventoryController</span>
+          <span class="item">InventoryControllerFactory</span>
+          <span class="item">frameInventory</span>
+          <span class="item">contactLensInventory</span>
+          <span class="item">opticalLensInventory</span>
+          <span class="item">reagentInventory</span>
+          <span class="item">labConsumableInventory</span>
+          <span class="item">surgicalSupplyInventory</span>
+        </div>
+
+        <div class="category">Laboratoire</div>
+        <div class="item-list">
+          <span class="item">orders</span>
+          <span class="item">results</span>
+          <span class="item">specimens</span>
+          <span class="item">analyzers</span>
+          <span class="item">templates</span>
+          <span class="item">statistics</span>
+        </div>
+
+        <div class="category">Autres Controleurs</div>
+        <div class="item-list">
+          <span class="item">authController</span>
+          <span class="item">userController</span>
+          <span class="item">clinicController</span>
+          <span class="item">appointmentController</span>
+          <span class="item">queueController</span>
+          <span class="item">visitController</span>
+          <span class="item">pharmacyController</span>
+          <span class="item">ivtController</span>
+          <span class="item">surgeryController</span>
+          <span class="item">orthopticController</span>
+          <span class="item">imagingController</span>
+          <span class="item">alertController</span>
+          <span class="item">notificationController</span>
+          <span class="item">documentController</span>
+          <span class="item">settingsController</span>
+          <span class="item">approvalController</span>
+          <span class="item">portalController</span>
+          <span class="item">ocrImportController</span>
+          <span class="item">repairController</span>
+          <span class="item">warrantyController</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">🔧</div>
+        <h2>Services Backend</h2>
+        <span class="badge">62 Services</span>
+      </div>
+      <div class="section-content">
+        <div class="category">Services Metier Principaux</div>
+        <div class="item-list">
+          <span class="item">appointmentValidationService</span>
+          <span class="item">approvalValidationService</span>
+          <span class="item">clinicalAlertService</span>
+          <span class="item">cumulativeDoseService</span>
+          <span class="item">doseCalculationService</span>
+          <span class="item">drugSafetyService</span>
+          <span class="item">ePrescribingService</span>
+          <span class="item">ivtComplianceService</span>
+          <span class="item">surgeonAnalyticsService</span>
+          <span class="item">therapeuticClassService</span>
+        </div>
+
+        <div class="category">Services d'Integration</div>
+        <div class="item-list">
+          <span class="item">autoSyncService</span>
+          <span class="item">folderSyncService</span>
+          <span class="item">smb2ClientService</span>
+          <span class="item">smbStreamService</span>
+          <span class="item">deviceSyncQueue</span>
+          <span class="item">networkDiscoveryService</span>
+          <span class="item">lisIntegrationService</span>
+          <span class="item">hl7ParserService</span>
+          <span class="item">fhirService</span>
+          <span class="item">calendarIntegrationService</span>
+          <span class="item">centralServerClient</span>
+          <span class="item">cloudSyncService</span>
+        </div>
+
+        <div class="category">Services de Communication</div>
+        <div class="item-list">
+          <span class="item">websocketService</span>
+          <span class="item">emailService</span>
+          <span class="item">emailQueueService</span>
+          <span class="item">smsService</span>
+          <span class="item">enhancedNotificationService</span>
+          <span class="item">notificationFacade</span>
+        </div>
+
+        <div class="category">Services de Generation</div>
+        <div class="item-list">
+          <span class="item">pdfGenerator</span>
+          <span class="item">cerfaGenerator</span>
+          <span class="item">labelPrintingService</span>
+          <span class="item">barcodeGenerator</span>
+        </div>
+
+        <div class="category">Services Analytiques</div>
+        <div class="item-list">
+          <span class="item">drGradingService</span>
+          <span class="item">gpaService</span>
+          <span class="item">rnflAnalysisService</span>
+          <span class="item">westgardQCService</span>
+          <span class="item">labAutoVerificationService</span>
+        </div>
+
+        <div class="category">Services Systeme</div>
+        <div class="item-list">
+          <span class="item">cacheService</span>
+          <span class="item">sessionService</span>
+          <span class="item">distributedLock</span>
+          <span class="item">paginationService</span>
+          <span class="item">dataSyncService</span>
+          <span class="item">backupService</span>
+          <span class="item">sentryService</span>
+          <span class="item">unifiedInventoryService</span>
+          <span class="item">patientFolderIndexer</span>
+          <span class="item">universalFileProcessor</span>
+          <span class="item">legacyPatientMapper</span>
+          <span class="item">currencyService</span>
+          <span class="item">paymentGateway</span>
+          <span class="item">coldChainService</span>
+          <span class="item">autoReorderService</span>
+        </div>
+
+        <div class="category">Schedulers (Taches Planifiees)</div>
+        <div class="item-list">
+          <span class="item">alertScheduler</span>
+          <span class="item">backupScheduler</span>
+          <span class="item">calendarSyncScheduler</span>
+          <span class="item">deviceSyncScheduler</span>
+          <span class="item">invoiceReminderScheduler</span>
+          <span class="item">reminderScheduler</span>
+          <span class="item">reservationCleanupScheduler</span>
+          <span class="item">visitCleanupScheduler</span>
+          <span class="item">paymentPlanAutoChargeService</span>
+          <span class="item">referralTriggerService</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Frontend Section -->
+    <section id="frontend" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #0ea5e9, #0284c7);">💻</div>
+        <h2>Frontend React</h2>
+        <span class="badge">309 Pages | 78 Services | 22 Hooks</span>
+      </div>
+      <div class="section-content">
+        <div class="stats-grid">
+          <div class="stat-card"><div class="number">309</div><div class="label">Fichiers Pages</div></div>
+          <div class="stat-card"><div class="number">32</div><div class="label">Dossiers Composants</div></div>
+          <div class="stat-card"><div class="number">78</div><div class="label">Services API</div></div>
+          <div class="stat-card"><div class="number">22</div><div class="label">Hooks</div></div>
+          <div class="stat-card"><div class="number">10</div><div class="label">Redux Slices</div></div>
+          <div class="stat-card"><div class="number">6</div><div class="label">Contexts</div></div>
+        </div>
+
+        <div class="category">Pages Principales</div>
+        <div class="grid-4">
+          <div class="card"><div class="card-title">Dashboard</div><div class="card-subtitle">Tableau de bord principal</div></div>
+          <div class="card"><div class="card-title">Patients</div><div class="card-subtitle">Liste et gestion patients</div></div>
+          <div class="card"><div class="card-title">PatientDetail</div><div class="card-subtitle">9 sections detaillees</div></div>
+          <div class="card"><div class="card-title">PatientEdit</div><div class="card-subtitle">7 sections formulaire</div></div>
+          <div class="card"><div class="card-title">Appointments</div><div class="card-subtitle">Calendrier RDV</div></div>
+          <div class="card"><div class="card-title">Queue</div><div class="card-subtitle">File d'attente temps reel</div></div>
+          <div class="card"><div class="card-title">StudioVisionConsultation</div><div class="card-subtitle">Consultation ophtalmo</div></div>
+          <div class="card"><div class="card-title">OphthalmologyDashboard</div><div class="card-subtitle">Vue d'ensemble ophtalmo</div></div>
+        </div>
+
+        <div class="category">Module Ophtalmologie (50+ composants)</div>
+        <div class="item-list">
+          <span class="item">StudioVisionConsultation</span>
+          <span class="item">NewConsultation</span>
+          <span class="item">OphthalmologyDashboard</span>
+          <span class="item">GlassesOrder (module complet)</span>
+          <span class="item">ConsultationDashboard</span>
+          <span class="item">VisualAcuityStep</span>
+          <span class="item">ObjectiveRefractionStep</span>
+          <span class="item">SubjectiveRefractionStep</span>
+          <span class="item">KeratometryStep</span>
+          <span class="item">OphthalmologyExamStep</span>
+          <span class="item">DiagnosisStep</span>
+          <span class="item">PrescriptionStep</span>
+          <span class="item">ContactLensFittingStep</span>
+          <span class="item">IOLCalculator</span>
+          <span class="item">GlaucomaPanel</span>
+          <span class="item">GonioscopyPanel</span>
+          <span class="item">ImageComparisonViewer</span>
+          <span class="item">RefractionTrends</span>
+          <span class="item">IOPTrendChart</span>
+          <span class="item">VisualAcuityTrendChart</span>
+          <span class="item">CupDiscTrendChart</span>
+          <span class="item">AmblyopiaRiskCalculator</span>
+          <span class="item">VisualDevelopmentStep</span>
+        </div>
+
+        <div class="category">Inventaires (6 modules)</div>
+        <div class="item-list">
+          <span class="item">UnifiedInventory</span>
+          <span class="item">PharmacyDashboard (5 sections)</span>
+          <span class="item">FrameInventory</span>
+          <span class="item">ContactLensInventory</span>
+          <span class="item">OpticalLensInventory</span>
+          <span class="item">ReagentInventory</span>
+          <span class="item">LabConsumableInventory</span>
+          <span class="item">CrossClinicInventory</span>
+        </div>
+
+        <div class="category">Laboratoire (sections)</div>
+        <div class="item-list">
+          <span class="item">Laboratory (index)</span>
+          <span class="item">LabPendingSection</span>
+          <span class="item">LabCompletedSection</span>
+          <span class="item">LabSpecimensSection</span>
+          <span class="item">LabTemplatesSection</span>
+          <span class="item">LabOrderDetail</span>
+          <span class="item">LabResultEntry</span>
+          <span class="item">LabConfiguration</span>
+        </div>
+
+        <div class="category">Facturation</div>
+        <div class="item-list">
+          <span class="item">Invoicing (index)</span>
+          <span class="item">InvoiceList</span>
+          <span class="item">InvoiceDetail</span>
+          <span class="item">PaymentModal</span>
+          <span class="item">Companies (index)</span>
+          <span class="item">CompanyDetail</span>
+          <span class="item">Financial (6 sections)</span>
+        </div>
+
+        <div class="category">Redux Slices (10)</div>
+        <div class="item-list">
+          <span class="item">authSlice</span>
+          <span class="item">patientSlice</span>
+          <span class="item">appointmentSlice</span>
+          <span class="item">queueSlice</span>
+          <span class="item">visitSlice</span>
+          <span class="item">prescriptionSlice</span>
+          <span class="item">billingSlice</span>
+          <span class="item">documentSlice</span>
+          <span class="item">notificationSlice</span>
+          <span class="item">uiSlice</span>
+        </div>
+
+        <div class="category">React Contexts (6)</div>
+        <div class="item-list">
+          <span class="item">AuthContext</span>
+          <span class="item">ClinicContext</span>
+          <span class="item">PatientContext</span>
+          <span class="item">PatientCacheContext</span>
+          <span class="item">HistoryContext</span>
+          <span class="item">StudioVisionModeContext</span>
+        </div>
+
+        <div class="category">Hooks Personnalises (22)</div>
+        <div class="item-list">
+          <span class="item">useApi</span>
+          <span class="item">useWebSocket</span>
+          <span class="item">useOffline</span>
+          <span class="item">useOfflineData</span>
+          <span class="item">usePatientAlerts</span>
+          <span class="item">useAlertEvaluation</span>
+          <span class="item">useDeviceSync</span>
+          <span class="item">useInventory</span>
+          <span class="item">usePreviousExamData</span>
+          <span class="item">useTrendData</span>
+          <span class="item">useTreatmentProtocols</span>
+          <span class="item">useFavoriteMedications</span>
+          <span class="item">useAutoSave</span>
+          <span class="item">useFileUpload</span>
+          <span class="item">useKeyboardShortcuts</span>
+          <span class="item">usePermissions</span>
+          <span class="item">useTabProgression</span>
+          <span class="item">useViewPreference</span>
+          <span class="item">useAbortController</span>
+          <span class="item">usePreviousData</span>
+          <span class="item">useRedux</span>
+        </div>
+
+        <div class="category">Dossiers Composants (32)</div>
+        <div class="item-list">
+          <span class="item">PatientRegistration</span>
+          <span class="item">alerts</span>
+          <span class="item">biometric</span>
+          <span class="item">common</span>
+          <span class="item">consultation</span>
+          <span class="item">contactLens</span>
+          <span class="item">dashboard</span>
+          <span class="item">documents</span>
+          <span class="item">financial</span>
+          <span class="item">imaging</span>
+          <span class="item">inventory</span>
+          <span class="item">laboratory</span>
+          <span class="item">layout</span>
+          <span class="item">notifications</span>
+          <span class="item">ophthalmology</span>
+          <span class="item">optical</span>
+          <span class="item">panels</span>
+          <span class="item">pathology</span>
+          <span class="item">patient</span>
+          <span class="item">patients</span>
+          <span class="item">pharmacy</span>
+          <span class="item">prescription</span>
+          <span class="item">prescriptions</span>
+          <span class="item">queue</span>
+          <span class="item">refraction</span>
+          <span class="item">settings</span>
+          <span class="item">shared</span>
+          <span class="item">templates</span>
+          <span class="item">treatment</span>
+          <span class="item">ui</span>
+          <span class="item">virtualized</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- WebSocket Section -->
+    <section id="websocket" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #ec4899, #db2777);">📡</div>
+        <h2>Evenements WebSocket</h2>
+        <span class="badge">30+ Evenements</span>
+      </div>
+      <div class="section-content">
+        <div class="category">Connexion & Systeme</div>
+        <div class="item-list">
+          <span class="item">connect</span>
+          <span class="item">disconnect</span>
+          <span class="item">connect_error</span>
+          <span class="item">reconnect_attempt</span>
+          <span class="item">reconnect_failed</span>
+          <span class="item">heartbeat</span>
+          <span class="item">ping / pong</span>
+          <span class="item">server:shutdown</span>
+        </div>
+
+        <div class="category">Abonnements</div>
+        <div class="item-list">
+          <span class="item">subscribe:queue</span>
+          <span class="item">subscribe:appointments</span>
+          <span class="item">subscribe:patients</span>
+          <span class="item">subscribe:patient</span>
+          <span class="item">subscribe:pharmacy</span>
+          <span class="item">subscribe:inventory</span>
+          <span class="item">subscribe:notifications</span>
+        </div>
+
+        <div class="category">Actions Temps Reel</div>
+        <div class="item-list">
+          <span class="item">patient_called</span>
+          <span class="item">assistance_request</span>
+          <span class="item">clinic:switched</span>
+          <span class="item">switch:clinic</span>
+          <span class="item">join_room</span>
+          <span class="item">leave_room</span>
+          <span class="item">private_message</span>
+        </div>
+
+        <div class="category">Replay (Resilience)</div>
+        <div class="item-list">
+          <span class="item">replay:request</span>
+          <span class="item">replay:queue</span>
+          <span class="item">replay:start</span>
+          <span class="item">replay:response</span>
+          <span class="item">replay:complete</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security Section -->
+    <section id="security" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">🔒</div>
+        <h2>Securite & Conformite</h2>
+        <span class="badge">15 Middlewares</span>
+      </div>
+      <div class="section-content">
+        <div class="category">Middlewares de Securite</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">auth.js</div>
+            <div class="card-subtitle">JWT + Refresh tokens, 2FA optionnel</div>
+          </div>
+          <div class="card">
+            <div class="card-title">clinicAuth.js</div>
+            <div class="card-subtitle">Isolation multi-tenant</div>
+          </div>
+          <div class="card">
+            <div class="card-title">clinicVerification.js</div>
+            <div class="card-subtitle">Verification X-Clinic-ID</div>
+          </div>
+          <div class="card">
+            <div class="card-title">csrf.js</div>
+            <div class="card-subtitle">Protection CSRF</div>
+          </div>
+          <div class="card">
+            <div class="card-title">rateLimiter.js</div>
+            <div class="card-subtitle">Limitation requetes</div>
+          </div>
+          <div class="card">
+            <div class="card-title">noSqlInjectionProtection.js</div>
+            <div class="card-subtitle">Protection injection NoSQL</div>
+          </div>
+          <div class="card">
+            <div class="card-title">auditLogger.js</div>
+            <div class="card-subtitle">Journal d'audit automatique</div>
+          </div>
+          <div class="card">
+            <div class="card-title">validation.js</div>
+            <div class="card-subtitle">Validation express-validator</div>
+          </div>
+          <div class="card">
+            <div class="card-title">fileUpload.js</div>
+            <div class="card-subtitle">Upload securise (multer)</div>
+          </div>
+        </div>
+
+        <div class="category">Utilitaires de Securite</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">phiEncryption.js</div>
+            <div class="card-subtitle">Chiffrement PHI (AES-256-GCM)</div>
+          </div>
+          <div class="card">
+            <div class="card-title">passwordValidator.js</div>
+            <div class="card-subtitle">Politique mots de passe (12+ chars)</div>
+          </div>
+          <div class="card">
+            <div class="card-title">tokenUtils.js</div>
+            <div class="card-subtitle">Gestion JWT access/refresh</div>
+          </div>
+          <div class="card">
+            <div class="card-title">sanitize.js</div>
+            <div class="card-subtitle">Nettoyage donnees</div>
+          </div>
+          <div class="card">
+            <div class="card-title">shellSecurity.js</div>
+            <div class="card-subtitle">Protection injection shell</div>
+          </div>
+          <div class="card">
+            <div class="card-title">financialValidation.js</div>
+            <div class="card-subtitle">Validation montants CDF/USD/EUR</div>
+          </div>
+        </div>
+
+        <div class="category">Conformite</div>
+        <div class="item-list">
+          <span class="item">Audit logs avec TTL 6 ans (HIPAA)</span>
+          <span class="item">Chiffrement PHI au repos</span>
+          <span class="item">Soft delete pour tracabilite</span>
+          <span class="item">Roles: admin, doctor, nurse, optician, pharmacist, cashier</span>
+          <span class="item">Permissions granulaires par module</span>
+          <span class="item">Sessions Redis avec expiration</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clinical Standards Section -->
+    <section id="clinical" class="section">
+      <div class="section-header">
+        <div class="icon" style="background: linear-gradient(135deg, #10b981, #059669);">🏥</div>
+        <h2>Standards Cliniques Francais</h2>
+        <span class="badge">Ophtalmologie</span>
+      </div>
+      <div class="section-content">
+        <div class="category">Acuite Visuelle</div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Echelle Monoyer (Vision de Loin)</div>
+            <div class="item-list">
+              <span class="item">10/10</span>
+              <span class="item">9/10</span>
+              <span class="item">8/10</span>
+              <span class="item">7/10</span>
+              <span class="item">6/10</span>
+              <span class="item">5/10</span>
+              <span class="item">4/10</span>
+              <span class="item">3/10</span>
+              <span class="item">2/10</span>
+              <span class="item">1/10</span>
+              <span class="item">1/20</span>
+              <span class="item">1/50</span>
+              <span class="item">CLD (Compte les Doigts)</span>
+              <span class="item">VBLM (Voit Bouger la Main)</span>
+              <span class="item">PL+ (Perception Lumineuse)</span>
+              <span class="item">PL- (Pas de Perception)</span>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-title">Echelle Parinaud (Vision de Pres)</div>
+            <div class="item-list">
+              <span class="item">P1.5</span>
+              <span class="item">P2</span>
+              <span class="item">P3</span>
+              <span class="item">P4</span>
+              <span class="item">P5</span>
+              <span class="item">P6</span>
+              <span class="item">P8</span>
+              <span class="item">P10</span>
+              <span class="item">P14</span>
+              <span class="item">P20</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="category">Refraction</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">Sphere</div>
+            <div class="card-subtitle">-25.00 a +25.00 dioptries (pas 0.25)</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Cylindre</div>
+            <div class="card-subtitle">-10.00 a +10.00 dioptries (pas 0.25)</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Axe</div>
+            <div class="card-subtitle">0 a 180 degres</div>
+          </div>
+        </div>
+
+        <div class="category">Pression Intraoculaire (PIO)</div>
+        <div class="card">
+          <div class="card-title">Valeurs de Reference</div>
+          <div class="item-list">
+            <span class="item">Plage: 0-80 mmHg</span>
+            <span class="item">Normal: 10-21 mmHg</span>
+            <span class="item">Methodes: Goldmann, Air, NCT, Tonopen, iCare</span>
+          </div>
+        </div>
+
+        <div class="category">Devises Supportees</div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="card-title">CDF</div>
+            <div class="card-subtitle">Franc Congolais (principal) - 0 decimales</div>
+          </div>
+          <div class="card">
+            <div class="card-title">USD</div>
+            <div class="card-subtitle">Dollar US - 2 decimales</div>
+          </div>
+          <div class="card">
+            <div class="card-title">EUR</div>
+            <div class="card-subtitle">Euro - 2 decimales</div>
+          </div>
+        </div>
+
+        <div class="category">Localisation</div>
+        <div class="item-list">
+          <span class="item">Langue: Francais</span>
+          <span class="item">Format date: JJ/MM/AAAA</span>
+          <span class="item">Format heure: 24h (ex: 14:30)</span>
+          <span class="item">Region: Congo (RDC)</span>
+          <span class="item">Standards medicaux francais</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Footer -->
+  <footer style="text-align:center; padding:30px; color:#64748b; border-top:1px solid #334155;">
+    <p>MedFlow EMR - Architecture Complete</p>
+    <p style="font-size:0.85rem;">78 Modeles | 78 Routes | 107 Controleurs | 62 Services | 309 Pages</p>
+    <p style="font-size:0.8rem; margin-top:10px;">Genere le 27/12/2025</p>
+  </footer>
+
+  <script>
+    // Smooth scroll for navigation
+    document.querySelectorAll('.nav a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          document.querySelectorAll('.nav a').forEach(l => l.classList.remove('active'));
+          this.classList.add('active');
+        }
+      });
+    });
+
+    // Update active nav on scroll
+    window.addEventListener('scroll', () => {
+      const sections = document.querySelectorAll('section[id]');
+      let current = '';
+      sections.forEach(section => {
+        const top = section.offsetTop - 150;
+        if (pageYOffset >= top) current = section.getAttribute('id');
+      });
+      document.querySelectorAll('.nav a').forEach(link => {
+        link.classList.remove('active');
+        if (link.getAttribute('href') === '#' + current) link.classList.add('active');
+      });
+    });
+
+    // Filter function for search
+    function filterItems(listId, query) {
+      const items = document.querySelectorAll('.item-list .item');
+      const lowerQuery = query.toLowerCase();
+      items.forEach(item => {
+        if (item.textContent.toLowerCase().includes(lowerQuery)) {
+          item.style.display = '';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    }
+
+    // Collapsible sections
+    document.querySelectorAll('.collapsible').forEach(btn => {
+      btn.addEventListener('click', function() {
+        this.classList.toggle('active');
+        const content = this.nextElementSibling;
+        content.classList.toggle('show');
+      });
+    });
+  </script>
+</body>
+</html>

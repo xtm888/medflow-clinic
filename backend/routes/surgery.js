@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const surgeryController = require('../controllers/surgeryController');
-const { protect, authorize } = require('../middleware/auth');
+const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { optionalClinic } = require('../middleware/clinicAuth');
 const { logAction, logCriticalOperation, logPatientDataAccess } = require('../middleware/auditLogger');
 
@@ -18,11 +18,15 @@ const { logAction, logCriticalOperation, logPatientDataAccess } = require('../mi
  * - Surgery Execution
  * - Reports
  * - Patient History
+ *
+ * SECURITY: All routes require authentication + surgery permission
  */
 
 // All routes require authentication and clinic context
 router.use(protect);
 router.use(optionalClinic);
+// SECURITY: Require surgery permission for all routes in this module
+router.use(requirePermission('manage_surgery', 'view_surgery'));
 
 // ============================================
 // DASHBOARD & STATISTICS

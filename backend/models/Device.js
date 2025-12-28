@@ -586,4 +586,25 @@ deviceSchema.statics.getMaintenanceDue = async function() {
   });
 };
 
+// =====================================================
+// SOFT DELETE MIDDLEWARE
+// Automatically filter out deleted documents on queries
+// Use { includeSoftDeleted: true } to include deleted docs
+// =====================================================
+deviceSchema.pre(/^find/, function(next) {
+  if (this.getOptions().includeSoftDeleted) {
+    return next();
+  }
+  this.where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  next();
+});
+
+deviceSchema.pre('countDocuments', function(next) {
+  if (this.getOptions().includeSoftDeleted) {
+    return next();
+  }
+  this.where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  next();
+});
+
 module.exports = mongoose.model('Device', deviceSchema);

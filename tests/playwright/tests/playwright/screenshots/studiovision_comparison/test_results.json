@@ -1,0 +1,67 @@
+{
+  "screenshots": [
+    {
+      "name": "00_logged_in",
+      "status": "captured"
+    },
+    {
+      "name": "01_patients_list",
+      "status": "captured"
+    },
+    {
+      "name": "02_patient_detail",
+      "status": "captured"
+    },
+    {
+      "name": "04_studiovision_initial",
+      "status": "captured"
+    },
+    {
+      "name": "05_resume_tab",
+      "status": "not_found",
+      "description": "Main patient summary (corresponds to oph1.jpg)"
+    },
+    {
+      "name": "05_refraction_tab",
+      "status": "not_found",
+      "description": "Refraction measurements (corresponds to oph2.jpg)"
+    },
+    {
+      "name": "05_lentilles_tab",
+      "status": "not_found",
+      "description": "Contact lens fitting (corresponds to oph3.jpg)"
+    },
+    {
+      "name": "05_pathologies_tab",
+      "status": "not_found",
+      "description": "Diagnosis and pathologies (corresponds to oph4.jpg)"
+    },
+    {
+      "name": "05_orthoptie_tab",
+      "status": "not_found",
+      "description": "Orthoptic examination (MedFlow addition)"
+    },
+    {
+      "name": "05_examen_tab",
+      "status": "not_found",
+      "description": "Clinical examination (LAF, FO, IOP)"
+    },
+    {
+      "name": "05_traitement_tab",
+      "status": "not_found",
+      "description": "Treatment and prescriptions (corresponds to oph5.jpg)"
+    },
+    {
+      "name": "05_reglement_tab",
+      "status": "not_found",
+      "description": "Billing and payments (MedFlow addition)"
+    },
+    {
+      "name": "08_final_state",
+      "status": "captured"
+    }
+  ],
+  "timestamp": "2025-12-28T18:22:52.669966",
+  "total_screenshots": 5,
+  "patient_id": null
+}

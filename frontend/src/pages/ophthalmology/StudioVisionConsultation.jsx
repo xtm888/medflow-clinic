@@ -165,6 +165,9 @@ export default function StudioVisionConsultation() {
   const [loadingLastVisit, setLoadingLastVisit] = useState(false);
   const [showDeviceBanner, setShowDeviceBanner] = useState(true);
   const [showSchemaModal, setShowSchemaModal] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completionResult, setCompletionResult] = useState(null);
+  const [showCompletionSummary, setShowCompletionSummary] = useState(false);
 
   // Previous exam data hook
   const {
@@ -274,12 +277,95 @@ export default function StudioVisionConsultation() {
     }
   };
 
-  // Complete consultation
+  // Complete consultation - creates lab orders, prescriptions, invoice
   const handleComplete = async () => {
-    const saved = await handleSave();
-    if (saved) {
-      navigate(`/patients/${patientId}`);
+    // First check if we're online (required for completion)
+    if (!ophthalmologyService.canCompleteConsultation()) {
+      logger.warn('Cannot complete consultation offline');
+      setError('La complétion de consultation nécessite une connexion internet.');
+      return;
     }
+
+    try {
+      setCompleting(true);
+      setError(null);
+
+      // Build exam data for backend integration
+      const examData = {
+        // Core exam data
+        chiefComplaint: data.chiefComplaint,
+        vitals: data.vitals,
+        refraction: data.refraction,
+        examination: data.examination,
+
+        // Diagnostic data (lab orders, procedures, surgery)
+        diagnostic: data.diagnostic,
+
+        // Prescription data (medications, ordonnances, glasses)
+        prescription: data.prescription,
+
+        // Orthoptics
+        orthoptie: data.orthoptie,
+
+        // Contact lens fitting
+        contactLens: data.contactLens,
+
+        // Billing items
+        billing: data.billing,
+
+        // Healthcare options
+        healthcareOptions: data.healthcareOptions,
+
+        // Consultation metadata
+        consultationDuration: data.consultationDuration,
+        completedAt: new Date().toISOString()
+      };
+
+      // Call the backend consultation completion service
+      const result = await ophthalmologyService.completeConsultation({
+        visitId,
+        examId: null, // Will be created if new
+        examData,
+        options: {
+          generateInvoice: true,
+          createLabOrders: data.diagnostic?.laboratory?.length > 0,
+          createPrescriptions: data.prescription?.medications?.length > 0 ||
+                              data.prescription?.ordonnances?.some(o => o.items?.length > 0),
+          createOpticalPrescription: !!(data.refraction?.subjective?.OD?.sphere ||
+                                       data.refraction?.subjective?.OS?.sphere)
+        }
+      });
+
+      if (result.success) {
+        setCompletionResult(result.data);
+        setShowCompletionSummary(true);
+        setLastSaved(new Date());
+        setHasChanges({});
+
+        logger.info('Consultation completed successfully:', {
+          exam: result.data?.exam?._id,
+          labOrders: result.data?.labOrders?.length || 0,
+          prescriptions: result.data?.prescriptions?.length || 0,
+          invoice: result.data?.invoice?._id
+        });
+      } else if (result.offline) {
+        // User went offline during completion
+        setError('Connexion perdue. Veuillez réessayer quand vous êtes en ligne.');
+      } else {
+        setError(result.message || 'Erreur lors de la complétion de la consultation');
+      }
+    } catch (err) {
+      logger.error('Consultation completion failed:', err);
+      setError(err.message || 'Erreur lors de la complétion de la consultation');
+    } finally {
+      setCompleting(false);
+    }
+  };
+
+  // Handle closing the completion summary and navigating
+  const handleCloseCompletionSummary = () => {
+    setShowCompletionSummary(false);
+    navigate(`/patients/${patientId}`);
   };
 
   // Renouvellement handlers
@@ -853,10 +939,19 @@ export default function StudioVisionConsultation() {
 
               <button
                 onClick={handleComplete}
-                className="flex items-center gap-1.5 px-4 py-1.5 bg-green-500 hover:bg-green-600 rounded-lg transition font-medium"
+                disabled={completing}
+                className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg transition font-medium ${
+                  completing
+                    ? 'bg-green-400 cursor-wait'
+                    : 'bg-green-500 hover:bg-green-600'
+                }`}
               >
-                <Check className="h-4 w-4" />
-                Terminer
+                {completing ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="h-4 w-4" />
+                )}
+                {completing ? 'Finalisation...' : 'Terminer'}
               </button>
             </div>
           </div>
@@ -901,10 +996,203 @@ export default function StudioVisionConsultation() {
         initialEye="OD"
         onSave={(schemaData) => {
           // Update exam data with schema
-          updateField('schemas', [...(data.schemas || []), schemaData]);
+          updateSection('schemas', [...(data.schemas || []), schemaData]);
           logger.debug('Schema saved:', schemaData);
         }}
       />
+
+      {/* Completion Summary Modal */}
+      {showCompletionSummary && completionResult && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-4">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2 rounded-full">
+                  <Check className="h-6 w-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Consultation terminée</h3>
+                  <p className="text-sm text-white/80">Les éléments suivants ont été créés</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-4">
+              {/* Exam saved */}
+              {completionResult.exam && (
+                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="bg-blue-500 text-white p-1.5 rounded-full">
+                    <User className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-blue-900">Examen sauvegardé</p>
+                    <p className="text-sm text-blue-600">
+                      Examen #{completionResult.exam._id?.slice(-6)}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Lab Orders */}
+              {completionResult.labOrders?.length > 0 && (
+                <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="bg-purple-500 text-white p-1.5 rounded-full">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-purple-900">
+                      {completionResult.labOrders.length} Demande{completionResult.labOrders.length > 1 ? 's' : ''} de laboratoire
+                    </p>
+                    <p className="text-sm text-purple-600">
+                      Envoyé{completionResult.labOrders.length > 1 ? 'es' : 'e'} au laboratoire
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Prescriptions */}
+              {completionResult.prescriptions?.length > 0 && (
+                <div className="flex items-center gap-3 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="bg-amber-500 text-white p-1.5 rounded-full">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-amber-900">
+                      {completionResult.prescriptions.length} Ordonnance{completionResult.prescriptions.length > 1 ? 's' : ''}
+                    </p>
+                    <p className="text-sm text-amber-600">
+                      Envoyé{completionResult.prescriptions.length > 1 ? 'es' : 'e'} à la pharmacie
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Optical Prescription */}
+              {completionResult.opticalPrescription && (
+                <div className="flex items-center gap-3 p-3 bg-pink-50 rounded-lg border border-pink-200">
+                  <div className="bg-pink-500 text-white p-1.5 rounded-full">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="font-medium text-pink-900">Ordonnance lunettes</p>
+                    <p className="text-sm text-pink-600">Prête pour l'optique</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Invoice */}
+              {completionResult.invoice && (
+                <div className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <div className="bg-emerald-500 text-white p-1.5 rounded-full">
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-emerald-900">Facture générée</p>
+                    <p className="text-sm text-emerald-600">
+                      {completionResult.invoice.invoiceNumber} • {completionResult.invoice.summary?.total?.toLocaleString()} {completionResult.invoice.billing?.currency || 'CDF'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Convention Billing Info */}
+              {completionResult.conventionBilling && (
+                <div className="p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Briefcase className="h-4 w-4 text-indigo-500" />
+                    <p className="font-medium text-indigo-900">
+                      Convention: {completionResult.conventionBilling.companyName}
+                    </p>
+                    <span className="text-xs bg-indigo-200 text-indigo-800 px-2 py-0.5 rounded-full">
+                      {completionResult.conventionBilling.coveragePercentage}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="bg-white/50 px-2 py-1 rounded">
+                      <span className="text-indigo-600">Part entreprise:</span>
+                      <span className="font-medium text-indigo-900 ml-1">
+                        {completionResult.conventionBilling.companyShare?.toLocaleString()} CDF
+                      </span>
+                    </div>
+                    <div className="bg-white/50 px-2 py-1 rounded">
+                      <span className="text-indigo-600">Part patient:</span>
+                      <span className="font-medium text-indigo-900 ml-1">
+                        {completionResult.conventionBilling.patientShare?.toLocaleString()} CDF
+                      </span>
+                    </div>
+                  </div>
+                  {completionResult.conventionBilling.isWaitingPeriod && (
+                    <p className="text-xs text-amber-600 mt-2">
+                      ⚠️ Période d'attente active - patient responsable à 100%
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Approval Issues */}
+              {completionResult.approvalIssues?.length > 0 && (
+                <div className="p-3 bg-orange-50 rounded-lg border border-orange-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-orange-500" />
+                    <p className="font-medium text-orange-900">Approbations requises</p>
+                  </div>
+                  <ul className="text-sm text-orange-700 space-y-1">
+                    {completionResult.approvalIssues.map((issue, idx) => (
+                      <li key={idx}>• {issue.description} ({issue.code})</li>
+                    ))}
+                  </ul>
+                  <p className="text-xs text-orange-600 mt-2">
+                    Ces actes nécessitent une approbation préalable de l'entreprise
+                  </p>
+                </div>
+              )}
+
+              {/* Drug Safety Warnings */}
+              {completionResult.drugSafetyWarnings?.length > 0 && (
+                <div className="p-3 bg-red-50 rounded-lg border border-red-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-red-500" />
+                    <p className="font-medium text-red-900">Alertes médicamenteuses</p>
+                  </div>
+                  <ul className="text-sm text-red-700 space-y-1">
+                    {completionResult.drugSafetyWarnings.map((warning, idx) => (
+                      <li key={idx}>• {warning.message}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 bg-gray-50 border-t flex justify-between items-center">
+              <button
+                onClick={() => navigate(`/invoicing/${completionResult.invoice?._id}`)}
+                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                disabled={!completionResult.invoice}
+              >
+                Voir la facture →
+              </button>
+              <button
+                onClick={handleCloseCompletionSummary}
+                className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium transition"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

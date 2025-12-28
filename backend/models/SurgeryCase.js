@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const { createContextLogger } = require('../utils/structuredLogger');
+const log = createContextLogger('SurgeryCase');
 
 /**
  * SurgeryCase Model
@@ -263,6 +265,11 @@ const SurgeryCaseSchema = new Schema({
   // === AUDIT TRAIL ===
 
   createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+
+  updatedBy: {
     type: Schema.Types.ObjectId,
     ref: 'User'
   },
@@ -596,6 +603,32 @@ SurgeryCaseSchema.statics.findSurgeonSchedule = function(surgeonId, date) {
 SurgeryCaseSchema.set('toJSON', { virtuals: true });
 SurgeryCaseSchema.set('toObject', { virtuals: true });
 
+// Add index for updatedBy
+SurgeryCaseSchema.index({ updatedBy: 1, updatedAt: -1 });
+
+// =====================================================
+// SOFT DELETE MIDDLEWARE
+// Automatically filter out deleted documents on queries
+// Use { includeSoftDeleted: true } to include deleted docs
+// =====================================================
+SurgeryCaseSchema.pre(/^find/, function(next) {
+  // Skip if explicitly including soft deleted
+  if (this.getOptions().includeSoftDeleted) {
+    return next();
+  }
+  // Filter out soft-deleted documents by default
+  this.where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  next();
+});
+
+SurgeryCaseSchema.pre('countDocuments', function(next) {
+  if (this.getOptions().includeSoftDeleted) {
+    return next();
+  }
+  this.where({ $or: [{ isDeleted: false }, { isDeleted: { $exists: false } }] });
+  next();
+});
+
 // POST-SAVE HOOK: Maintain bidirectional link with Visit
 SurgeryCaseSchema.post('save', async (doc) => {
   try {
@@ -603,10 +636,10 @@ SurgeryCaseSchema.post('save', async (doc) => {
     if (doc.visit) {
       const Visit = require('./Visit');
       await Visit.findByIdAndUpdate(doc.visit, { surgeryCase: doc._id });
-      console.log(`[SURGERY_CASE] Synced bidirectional link: Visit ${doc.visit} ↔ SurgeryCase ${doc._id}`);
+      log.info('Synced bidirectional link with Visit', { visitId: doc.visit, surgeryCaseId: doc._id });
     }
   } catch (error) {
-    console.error('[SURGERY_CASE] Error syncing visit link:', error.message);
+    log.error('Error syncing visit link', { error: error.message, surgeryCaseId: doc._id });
   }
 });
 

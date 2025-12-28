@@ -653,3 +653,116 @@ exports.getDashboardStats = asyncHandler(async (req, res, next) => {
     queueCount
   });
 });
+
+// @desc    Complete consultation with all integrations (lab orders, prescriptions, invoice)
+// @route   POST /api/ophthalmology/consultations/:visitId/complete
+// @access  Private (doctor, ophthalmologist)
+// MULTI-CLINIC: Uses current clinic context
+exports.completeConsultation = asyncHandler(async (req, res, next) => {
+  const { visitId } = req.params;
+  const {
+    examId,
+    examData,
+    options = {}
+  } = req.body;
+
+  // Validate required fields
+  if (!examData) {
+    return error(res, 'Les données de consultation sont requises', 400);
+  }
+
+  // Get visit to extract patient and clinic
+  const Visit = require('../../models/Visit');
+  const Patient = require('../../models/Patient');
+  const visit = await Visit.findById(visitId);
+  if (!visit) {
+    return notFound(res, 'Visite non trouvée');
+  }
+
+  // MULTI-CLINIC: Resolve clinic ID with fallback chain
+  let clinicId = req.clinicId || visit.clinic?.toString();
+  if (!clinicId) {
+    // Fallback to patient's homeClinic if visit doesn't have clinic
+    const patient = await Patient.findById(visit.patient).select('homeClinic clinic');
+    clinicId = patient?.homeClinic?.toString() || patient?.clinic?.toString();
+  }
+
+  if (!clinicId) {
+    return error(res, 'Impossible de déterminer la clinique pour cette consultation', 400);
+  }
+
+  // Use consultation completion service
+  const consultationCompletionService = require('../../services/consultationCompletionService');
+
+  const result = await consultationCompletionService.completeConsultation({
+    examId: examId || visit.ophthalmologyExam,
+    patientId: visit.patient.toString(),
+    visitId: visitId,
+    clinicId,
+    userId: req.user._id.toString(),
+    examData,
+    options
+  });
+
+  if (!result.success) {
+    return error(res, result.error || 'Échec de la complétion de la consultation', 500);
+  }
+
+  // Log the action
+  ophthalmologyLogger.info('Consultation completed with full integration', {
+    visitId,
+    examId: result.data.exam?._id,
+    labOrderCount: result.data.labOrders?.length || 0,
+    prescriptionCount: result.data.prescriptions?.length || 0,
+    invoiceId: result.data.invoice?._id,
+    userId: req.user._id
+  });
+
+  return success(res, { data: result.data, message: 'Consultation complétée avec succès' });
+});
+
+// @desc    Save exam data (create or update)
+// @route   POST /api/ophthalmology/exams/save
+// @access  Private
+// MULTI-CLINIC: Uses current clinic context
+exports.saveExam = asyncHandler(async (req, res, next) => {
+  const { patientId, visitId, examId, data } = req.body;
+
+  if (!patientId) {
+    return error(res, 'Patient ID requis', 400);
+  }
+
+  const examPayload = {
+    patient: patientId,
+    visit: visitId,
+    clinic: req.clinicId,
+    examiner: req.user._id,
+    ...sanitizeForAssign(data),
+    updatedAt: new Date()
+  };
+
+  let exam;
+  if (examId) {
+    // Update existing exam
+    exam = await OphthalmologyExam.findByIdAndUpdate(
+      examId,
+      { $set: examPayload },
+      { new: true, runValidators: true }
+    );
+    if (!exam) {
+      return notFound(res, 'Examen non trouvé');
+    }
+  } else {
+    // Create new exam
+    exam = await OphthalmologyExam.create(examPayload);
+  }
+
+  // Auto-evaluate clinical alerts if diagnoses present
+  if (data.diagnostic?.diagnoses?.length > 0) {
+    autoEvaluateAlerts(exam, data.diagnostic.diagnoses).catch(err => {
+      ophthalmologyLogger.warn('Alert evaluation failed', { error: err.message });
+    });
+  }
+
+  return success(res, exam, examId ? 'Examen mis à jour' : 'Examen créé');
+});

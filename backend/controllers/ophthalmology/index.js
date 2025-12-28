@@ -44,6 +44,10 @@ module.exports = {
   // Dashboard
   getDashboardStats: coreController.getDashboardStats,
 
+  // Consultation Integration (new)
+  completeConsultation: coreController.completeConsultation,
+  saveExam: coreController.saveExam,
+
   // =====================================================
   // Clinical Tests Controller Functions
   // =====================================================

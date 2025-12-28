@@ -386,3 +386,59 @@ Optional Variables:
 **Report Generated:** December 27, 2025
 **Status:** Production Ready
 **Next Audit:** Post-launch +7 days
+
+---
+
+## Addendum: Security Fixes Applied (December 28, 2025)
+
+The following additional fixes were implemented based on a comprehensive security audit:
+
+### Critical Fixes Applied ✅
+
+| Issue | File(s) | Fix Applied |
+|-------|---------|-------------|
+| Command Injection | `backend/services/backupService.js` | Replaced `exec()` with `execFile()` using argument arrays to prevent shell injection |
+| Missing Authorization | `backend/routes/surgery.js` | Added `requirePermission('manage_surgery', 'view_surgery')` to all surgery routes |
+| PHI Console Leakage | `backend/models/Patient.js` | Replaced 10 console.log statements with structured logging |
+| PHI Console Leakage | `backend/models/Visit.js` | Replaced 56+ console.log statements with structured logging |
+| Console Stripping | `frontend/vite.config.js` | Added esbuild config to strip console.log/warn/debug in production builds |
+
+### High Priority Fixes Applied ✅
+
+| Issue | File(s) | Fix Applied |
+|-------|---------|-------------|
+| Missing Soft Delete Middleware | `backend/models/Device.js` | Added pre-find middleware to auto-filter soft-deleted documents |
+| Missing Soft Delete Middleware | `backend/models/SurgeryCase.js` | Added pre-find middleware to auto-filter soft-deleted documents |
+| Missing Soft Delete Middleware | `backend/models/GlassesOrder.js` | Added pre-find middleware to auto-filter soft-deleted documents |
+| Missing `updatedBy` Field | `backend/models/SurgeryCase.js` | Added `updatedBy` field with ObjectId ref to User |
+| Missing Permission Checks | `backend/routes/prescriptions.js` | Added `requirePermission('view_prescriptions')` to 15+ GET routes |
+| Missing Permission Checks | `backend/routes/appointments.js` | Added `requirePermission('view_appointments')` to all GET routes |
+| Missing Validation | `backend/routes/invoices.js` | Added validation and audit logging to invoice creation |
+
+### Frontend Console Log Strategy ✅
+
+Instead of manually removing 800+ console statements, implemented automatic stripping:
+
+```javascript
+// vite.config.js - Production console stripping
+esbuild: mode === 'production' ? {
+  drop: ['debugger'],
+  pure: ['console.log', 'console.debug', 'console.warn', 'console.info', 'console.trace'],
+} : undefined,
+```
+
+**Note:** `console.error` is preserved for critical error tracking via Sentry.
+
+### Verification Status
+
+- ✅ All critical security issues resolved
+- ✅ All high-priority issues resolved
+- ✅ Backend structured logging implemented
+- ✅ Frontend production console stripping configured
+- ✅ Route authorization comprehensive
+- ✅ Soft delete patterns consistent across models
+
+---
+
+**Addendum Generated:** December 28, 2025
+**Status:** Enhanced Security Posture

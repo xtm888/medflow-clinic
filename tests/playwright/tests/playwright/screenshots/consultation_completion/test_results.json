@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-12-28T18:26:18.662991",
+  "steps": [
+    {
+      "name": "login",
+      "success": true
+    },
+    {
+      "name": "find_patient",
+      "success": true,
+      "patientId": "69441d7af3feff49134d2b49"
+    },
+    {
+      "name": "open_studiovision",
+      "success": true
+    },
+    {
+      "name": "fill_data",
+      "success": true
+    },
+    {
+      "name": "complete_consultation",
+      "success": false
+    }
+  ],
+  "success": false
+}

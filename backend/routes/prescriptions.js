@@ -49,6 +49,7 @@ router.get(
 // ============================================
 router.get(
   '/templates',
+  requirePermission('view_prescriptions'),
   prescriptionController.getTemplates
 );
 
@@ -60,6 +61,7 @@ router.post(
 
 router.get(
   '/templates/:templateId',
+  requirePermission('view_prescriptions'),
   prescriptionController.getTemplate
 );
 
@@ -86,6 +88,7 @@ router.get(
 
 router.get(
   '/expired',
+  requirePermission('view_prescriptions'),
   prescriptionController.getExpiredPrescriptions
 );
 
@@ -94,6 +97,7 @@ router.get(
 // ============================================
 router.get(
   '/optical',
+  requirePermission('view_prescriptions'),
   prescriptionController.getOpticalPrescriptions
 );
 
@@ -106,6 +110,7 @@ router.post(
 
 router.get(
   '/drug',
+  requirePermission('view_prescriptions'),
   prescriptionController.getDrugPrescriptions
 );
 
@@ -128,6 +133,7 @@ router.post(
 // ============================================
 router.get(
   '/patient/:patientId/active',
+  requirePermission('view_prescriptions'),
   prescriptionController.getActivePrescriptions
 );
 
@@ -136,6 +142,7 @@ router.get(
 // ============================================
 router.get(
   '/provider/:providerId',
+  requirePermission('view_prescriptions'),
   prescriptionController.getProviderPrescriptions
 );
 
@@ -144,7 +151,7 @@ router.get(
 // ============================================
 router
   .route('/')
-  .get(prescriptionController.getPrescriptions)
+  .get(requirePermission('view_prescriptions'), prescriptionController.getPrescriptions)
   .post(
     requirePermission('create_prescriptions'),
     logPrescriptionActivity,
@@ -153,7 +160,7 @@ router
 
 router
   .route('/:id')
-  .get(logPrescriptionActivity, prescriptionController.getPrescription)
+  .get(requirePermission('view_prescriptions'), logPrescriptionActivity, prescriptionController.getPrescription)
   .put(
     requirePermission('create_prescriptions'),
     logPrescriptionActivity,
@@ -241,6 +248,7 @@ router.post(
 
 router.get(
   '/:id/refill-history',
+  requirePermission('view_prescriptions'),
   prescriptionController.getRefillHistory
 );
 
@@ -264,6 +272,7 @@ router.post(
 // ============================================
 router.get(
   '/:id/history',
+  requirePermission('view_prescriptions'),
   prescriptionController.getPrescriptionHistory
 );
 
@@ -279,6 +288,7 @@ router.put(
 
 router.get(
   '/optical/:id/lens-options',
+  requirePermission('view_prescriptions'),
   prescriptionController.getLensOptions
 );
 
@@ -290,6 +300,7 @@ router.post(
 
 router.get(
   '/optical/:id/frame-recommendations',
+  requirePermission('view_prescriptions'),
   prescriptionController.getFrameRecommendations
 );
 
@@ -298,6 +309,7 @@ router.get(
 // ============================================
 router.get(
   '/:id/qr-code',
+  requirePermission('view_prescriptions'),
   prescriptionController.generateQRCode
 );
 
@@ -312,6 +324,7 @@ router.post(
 // ============================================
 router.get(
   '/:id/check-coverage',
+  requirePermission('view_prescriptions'),
   prescriptionController.checkInsuranceCoverage
 );
 
@@ -336,6 +349,7 @@ router.post(
 
 router.get(
   '/:id/e-prescribe/status',
+  requirePermission('view_prescriptions'),
   prescriptionController.getEPrescriptionStatus
 );
 
@@ -387,6 +401,7 @@ router.put(
 
 router.get(
   '/:id/prior-auth/status',
+  requirePermission('view_prescriptions'),
   prescriptionController.getPriorAuthorizationStatus
 );
 

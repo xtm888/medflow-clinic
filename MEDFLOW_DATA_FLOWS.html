@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MedFlow EMR - Flux de Donnees Detailles</title>
+    <style>
+        :root {
+            --primary: #1e40af;
+            --secondary: #7c3aed;
+            --success: #059669;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --info: #0891b2;
+            --pink: #db2777;
+            --orange: #ea580c;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); color: #e2e8f0; min-height: 100vh; }
+        .container { max-width: 1600px; margin: 0 auto; padding: 20px; }
+        h1 { text-align: center; font-size: 2.5rem; margin-bottom: 10px; background: linear-gradient(90deg, #60a5fa, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .subtitle { text-align: center; color: #94a3b8; margin-bottom: 30px; font-size: 1.1rem; }
+        .nav { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 30px; }
+        .nav button { padding: 12px 24px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
+        .nav button.active { background: linear-gradient(135deg, var(--primary), var(--secondary)); color: white; }
+        .nav button:not(.active) { background: #334155; color: #94a3b8; }
+        .nav button:hover:not(.active) { background: #475569; color: white; }
+        .section { display: none; background: #1e293b; border-radius: 16px; padding: 30px; margin-bottom: 20px; border: 1px solid #334155; }
+        .section.active { display: block; }
+        .section h2 { font-size: 1.8rem; margin-bottom: 20px; color: #60a5fa; border-bottom: 2px solid #334155; padding-bottom: 10px; }
+        .section h3 { font-size: 1.3rem; margin: 20px 0 15px; color: #a78bfa; }
+        .flow-container { display: flex; flex-direction: column; gap: 20px; }
+        .flow-step { display: flex; align-items: flex-start; gap: 20px; }
+        .step-number { width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.2rem; flex-shrink: 0; }
+        .step-content { flex: 1; background: #0f172a; border-radius: 12px; padding: 20px; border-left: 4px solid; }
+        .step-title { font-weight: 600; font-size: 1.1rem; margin-bottom: 10px; }
+        .step-details { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; }
+        .step-code { background: #1e293b; padding: 12px; border-radius: 8px; margin-top: 10px; font-family: 'Consolas', monospace; font-size: 0.85rem; overflow-x: auto; border: 1px solid #334155; }
+        .arrow { text-align: center; font-size: 1.5rem; color: #475569; margin: 5px 0; margin-left: 25px; }
+
+        /* Color coding for different flow types */
+        .billing { --flow-color: var(--success); }
+        .billing .step-number { background: var(--success); color: white; }
+        .billing .step-content { border-color: var(--success); }
+
+        .surgery { --flow-color: var(--danger); }
+        .surgery .step-number { background: var(--danger); color: white; }
+        .surgery .step-content { border-color: var(--danger); }
+
+        .lab { --flow-color: var(--info); }
+        .lab .step-number { background: var(--info); color: white; }
+        .lab .step-content { border-color: var(--info); }
+
+        .pharmacy { --flow-color: var(--pink); }
+        .pharmacy .step-number { background: var(--pink); color: white; }
+        .pharmacy .step-content { border-color: var(--pink); }
+
+        .inventory { --flow-color: var(--orange); }
+        .inventory .step-number { background: var(--orange); color: white; }
+        .inventory .step-content { border-color: var(--orange); }
+
+        .convention { --flow-color: var(--secondary); }
+        .convention .step-number { background: var(--secondary); color: white; }
+        .convention .step-content { border-color: var(--secondary); }
+
+        .diagram-box { background: #0f172a; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #334155; }
+        .diagram-title { font-weight: 600; color: #60a5fa; margin-bottom: 15px; }
+        .diagram-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+        .diagram-item { background: #1e293b; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #475569; }
+        .diagram-item.highlight { border-color: var(--primary); background: linear-gradient(135deg, #1e3a5f 0%, #1e293b 100%); }
+        .diagram-arrow { display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #60a5fa; }
+
+        .model-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-top: 15px; }
+        .model-item { background: #0f172a; padding: 10px; border-radius: 6px; font-size: 0.9rem; border-left: 3px solid; }
+        .model-item.green { border-color: var(--success); }
+        .model-item.blue { border-color: var(--primary); }
+        .model-item.purple { border-color: var(--secondary); }
+        .model-item.pink { border-color: var(--pink); }
+        .model-item.orange { border-color: var(--orange); }
+
+        .data-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+        .data-table th, .data-table td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        .data-table th { background: #0f172a; color: #60a5fa; font-weight: 600; }
+        .data-table tr:hover { background: #0f172a; }
+
+        .highlight-box { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border: 1px solid #3b82f6; border-radius: 12px; padding: 20px; margin: 20px 0; }
+        .highlight-box h4 { color: #60a5fa; margin-bottom: 10px; }
+
+        .formula { background: #0f172a; padding: 15px; border-radius: 8px; font-family: 'Consolas', monospace; margin: 10px 0; border: 1px solid #334155; }
+        .formula-var { color: #a78bfa; }
+        .formula-op { color: #f472b6; }
+        .formula-func { color: #34d399; }
+
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; margin: 2px; }
+        .badge-success { background: #059669; color: white; }
+        .badge-warning { background: #d97706; color: white; }
+        .badge-danger { background: #dc2626; color: white; }
+        .badge-info { background: #0891b2; color: white; }
+        .badge-primary { background: #1e40af; color: white; }
+
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>MedFlow EMR</h1>
+        <p class="subtitle">Flux de Donnees Detailles - Logique Metier Complexe</p>
+
+        <nav class="nav">
+            <button class="active" onclick="showSection('invoice')">Facturation & Calculs</button>
+            <button onclick="showSection('convention')">Conventions & Plafonds</button>
+            <button onclick="showSection('surgery')">Chirurgie Auto</button>
+            <button onclick="showSection('lab')">Labo Auto</button>
+            <button onclick="showSection('pharmacy')">Pharmacie & Ordonnances</button>
+            <button onclick="showSection('inventory')">Inventaire & Stock</button>
+            <button onclick="showSection('realtime')">Temps Reel</button>
+        </nav>
+
+        <!-- SECTION 1: INVOICE CALCULATIONS -->
+        <section id="invoice" class="section active">
+            <h2>1. Flux de Facturation & Calculs</h2>
+
+            <div class="highlight-box">
+                <h4>Vue d'Ensemble: Creation de Facture</h4>
+                <p>La facture peut etre generee automatiquement depuis: Visite, Pharmacie, Laboratoire, IVT, Chirurgie</p>
+            </div>
+
+            <h3>A. Structure de la Facture (Invoice)</h3>
+            <div class="diagram-box">
+                <div class="diagram-title">Champs Principaux</div>
+                <table class="data-table">
+                    <tr><th>Champ</th><th>Type</th><th>Description</th></tr>
+                    <tr><td>invoiceId</td><td>String</td><td>ID unique auto-genere (FAC-2025-00001)</td></tr>
+                    <tr><td>patient</td><td>ObjectId</td><td>Reference au patient</td></tr>
+                    <tr><td>clinic</td><td>ObjectId</td><td>Clinique emettrice (isolation multi-clinique)</td></tr>
+                    <tr><td>items[]</td><td>Array</td><td>Lignes de facture avec details</td></tr>
+                    <tr><td>summary</td><td>Object</td><td>Totaux calcules: subtotal, tax, companyShare, patientShare</td></tr>
+                    <tr><td>payments[]</td><td>Array</td><td>Paiements recus (multi-devise)</td></tr>
+                    <tr><td>source</td><td>Enum</td><td>manual | visit | pharmacy | laboratory | optical | ivt | surgery</td></tr>
+                </table>
+            </div>
+
+            <h3>B. Calcul des Montants par Item</h3>
+            <div class="flow-container">
+                <div class="flow-step billing">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Calcul du Sous-total Item</div>
+                        <div class="step-details">Chaque ligne de facture calcule son propre sous-total</div>
+                        <div class="formula">
+                            <span class="formula-var">item.subtotal</span> <span class="formula-op">=</span>
+                            <span class="formula-var">item.quantity</span> <span class="formula-op">*</span>
+                            <span class="formula-var">item.unitPrice</span> <span class="formula-op">-</span>
+                            <span class="formula-var">item.discount</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step billing">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Application de la Taxe</div>
+                        <div class="step-details">Taxe calculee sur le sous-total apres remise</div>
+                        <div class="formula">
+                            <span class="formula-var">item.tax</span> <span class="formula-op">=</span>
+                            <span class="formula-var">item.subtotal</span> <span class="formula-op">*</span>
+                            (<span class="formula-var">taxRate</span> <span class="formula-op">/</span> 100)
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step billing">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Total Item</div>
+                        <div class="formula">
+                            <span class="formula-var">item.total</span> <span class="formula-op">=</span>
+                            <span class="formula-var">item.subtotal</span> <span class="formula-op">+</span>
+                            <span class="formula-var">item.tax</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>C. Calcul du Split Convention (Entreprise/Patient)</h3>
+            <div class="flow-container">
+                <div class="flow-step convention">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Verification Convention Patient</div>
+                        <div class="step-details">
+                            Verifier si le patient a une convention active avec une entreprise/assurance
+                        </div>
+                        <div class="step-code">
+const patient = await Patient.findById(patientId).populate('convention.company');<br>
+const company = patient.convention?.company;<br>
+const coverageConfig = company?.defaultCoverage;
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Recuperation du Taux de Couverture par Categorie</div>
+                        <div class="step-details">
+                            Chaque categorie peut avoir un taux different: consultation (100%), medication (80%), surgery (70%), etc.
+                        </div>
+                        <div class="step-code">
+// Taux par categorie depuis ConventionFeeSchedule ou Company<br>
+const categoryRate = coverageConfig.categoryRates[item.category] || coverageConfig.defaultRate;<br>
+// Exemple: { consultation: 100, medication: 80, surgery: 70, optical: 50 }
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Verification Approbation Prealable (Deliberation)</div>
+                        <div class="step-details">
+                            Certains actes necessitent une approbation prealable. Sans approbation, couverture = 0%
+                        </div>
+                        <div class="step-code">
+if (item.approvalRequired && !item.hasApproval) {<br>
+&nbsp;&nbsp;item.coveragePercentage = 0;<br>
+&nbsp;&nbsp;item.notCovered = true;<br>
+&nbsp;&nbsp;item.companyShare = 0;<br>
+&nbsp;&nbsp;item.patientShare = item.total;<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Verification Plafond Annuel (Annual Cap)</div>
+                        <div class="step-details">
+                            Verifier l'utilisation YTD du patient via CompanyUsage. Si plafond atteint, reduire la couverture.
+                        </div>
+                        <div class="step-code">
+const usage = await CompanyUsage.getOrCreate(patientId, companyId, fiscalYear);<br>
+const categoryUsage = usage.categories.find(c => c.category === item.category);<br>
+const remaining = categoryLimit - (categoryUsage?.totalCovered || 0);<br>
+<br>
+if (remaining <= 0) {<br>
+&nbsp;&nbsp;item.companyShare = 0; // Plafond atteint<br>
+} else if (remaining < calculatedCompanyShare) {<br>
+&nbsp;&nbsp;item.companyShare = remaining; // Couverture partielle<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Calcul Final des Parts</div>
+                        <div class="formula">
+                            <span class="formula-var">item.companyShare</span> <span class="formula-op">=</span>
+                            <span class="formula-func">min</span>(<span class="formula-var">item.total</span> <span class="formula-op">*</span>
+                            <span class="formula-var">coverageRate</span>, <span class="formula-var">remainingBudget</span>)<br><br>
+                            <span class="formula-var">item.patientShare</span> <span class="formula-op">=</span>
+                            <span class="formula-var">item.total</span> <span class="formula-op">-</span>
+                            <span class="formula-var">item.companyShare</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>D. Agregation des Totaux Facture</h3>
+            <div class="formula">
+<span class="formula-var">summary.subtotal</span> <span class="formula-op">=</span> <span class="formula-func">SUM</span>(<span class="formula-var">items[].subtotal</span>)<br>
+<span class="formula-var">summary.taxTotal</span> <span class="formula-op">=</span> <span class="formula-func">SUM</span>(<span class="formula-var">items[].tax</span>)<br>
+<span class="formula-var">summary.total</span> <span class="formula-op">=</span> <span class="formula-func">SUM</span>(<span class="formula-var">items[].total</span>)<br>
+<span class="formula-var">summary.companyShare</span> <span class="formula-op">=</span> <span class="formula-func">SUM</span>(<span class="formula-var">items[].companyShare</span>)<br>
+<span class="formula-var">summary.patientShare</span> <span class="formula-op">=</span> <span class="formula-func">SUM</span>(<span class="formula-var">items[].patientShare</span>)<br>
+<span class="formula-var">summary.amountDue</span> <span class="formula-op">=</span> <span class="formula-var">summary.total</span> <span class="formula-op">-</span> <span class="formula-var">summary.amountPaid</span>
+            </div>
+
+            <h3>E. Gestion Multi-Devise</h3>
+            <div class="diagram-box">
+                <div class="diagram-title">Devises Supportees</div>
+                <div class="model-list">
+                    <div class="model-item green"><strong>CDF</strong> - Franc Congolais (0 decimales)</div>
+                    <div class="model-item blue"><strong>USD</strong> - Dollar US (2 decimales)</div>
+                    <div class="model-item purple"><strong>EUR</strong> - Euro (2 decimales)</div>
+                </div>
+                <div class="step-code" style="margin-top: 15px;">
+// Paiement avec conversion<br>
+payment.amount = 100; // USD<br>
+payment.currency = 'USD';<br>
+payment.exchangeRate = 2750; // 1 USD = 2750 CDF<br>
+payment.amountInBaseCurrency = 100 * 2750; // = 275000 CDF
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 2: CONVENTIONS -->
+        <section id="convention" class="section">
+            <h2>2. Conventions & Suivi des Plafonds</h2>
+
+            <h3>A. Modele CompanyUsage</h3>
+            <div class="highlight-box">
+                <h4>Tracking Cumulatif par Patient/Entreprise/Annee</h4>
+                <p>Mise a jour atomique lors de la finalisation de facture. Reversion lors d'annulation/remboursement.</p>
+            </div>
+
+            <div class="flow-container">
+                <div class="flow-step convention">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Finalisation Facture Convention</div>
+                        <div class="step-details">Quand une facture convention est finalisee (draft → issued)</div>
+                        <div class="step-code">
+await CompanyUsage.recordInvoiceUsage(invoice);
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Mise a Jour Atomique</div>
+                        <div class="step-details">Incrementation des totaux par categorie et globaux</div>
+                        <div class="step-code">
+// Pour chaque item de la facture:<br>
+categoryTotals[cat].totalBilled += itemTotal;<br>
+categoryTotals[cat].totalCovered += companyShare;<br>
+categoryTotals[cat].totalPatientShare += patientShare;<br>
+<br>
+// Mise a jour atomique MongoDB:<br>
+$inc: {<br>
+&nbsp;&nbsp;'totals.totalBilled': totalBilled,<br>
+&nbsp;&nbsp;'totals.totalCovered': totalCovered,<br>
+&nbsp;&nbsp;'totals.invoiceCount': 1<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Verification Plafond en Temps Reel</div>
+                        <div class="step-details">Lors de la creation d'une nouvelle facture</div>
+                        <div class="step-code">
+const usage = await CompanyUsage.getOrCreate(patientId, companyId, year);<br>
+const remaining = usage.getRemainingBudget('surgery', 5000000); // Plafond chirurgie 5M CDF<br>
+<br>
+if (usage.isCapExceeded('surgery', 5000000)) {<br>
+&nbsp;&nbsp;// Alerte: plafond chirurgie atteint<br>
+}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>B. Flux d'Approbation (Deliberation)</h3>
+            <div class="flow-container">
+                <div class="flow-step convention">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Detection Actes Necessitant Approbation</div>
+                        <div class="step-code">
+// Dans ConventionFeeSchedule ou Company settings:<br>
+requiresApproval: {<br>
+&nbsp;&nbsp;surgery: true,<br>
+&nbsp;&nbsp;imaging: true,<br>
+&nbsp;&nbsp;hospitalisation: true,<br>
+&nbsp;&nbsp;amountThreshold: 500000 // Tout acte > 500K CDF<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Soumission Demande d'Approbation</div>
+                        <div class="step-code">
+const approval = await Approval.create({<br>
+&nbsp;&nbsp;patient, company, items: [{ code, description, amount }],<br>
+&nbsp;&nbsp;status: 'pending',<br>
+&nbsp;&nbsp;requestedBy: userId<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Validation par l'Entreprise</div>
+                        <div class="step-details">L'entreprise approuve ou rejette via portail ou API</div>
+                        <div class="step-code">
+approval.status = 'approved'; // ou 'rejected'<br>
+approval.approvedBy = 'HR Manager';<br>
+approval.approvedAt = new Date();<br>
+approval.validUntil = addDays(new Date(), 30);
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step convention">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Liaison a la Facture</div>
+                        <div class="step-code">
+// Dans invoice.items[x]:<br>
+item.approval = approvalId;<br>
+item.hasApproval = true;<br>
+item.approvalStatus = 'approved';<br>
+// Maintenant l'item est couvert par la convention
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 3: SURGERY AUTO -->
+        <section id="surgery" class="section">
+            <h2>3. Chirurgie Automatique (Paiement → Planning)</h2>
+
+            <div class="highlight-box">
+                <h4>Declencheur: Paiement Complet d'un Item Chirurgical</h4>
+                <p>Quand un item de type "surgery" est 100% paye, un SurgeryCase est automatiquement cree pour le planning bloc.</p>
+            </div>
+
+            <div class="flow-container">
+                <div class="flow-step billing">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Paiement Recu</div>
+                        <div class="step-details">Via BillingService.processPayment()</div>
+                        <div class="step-code">
+const result = await BillingService.processPayment(invoiceId, {<br>
+&nbsp;&nbsp;amount: 500000,<br>
+&nbsp;&nbsp;method: 'cash',<br>
+&nbsp;&nbsp;itemAllocations: [{ itemId: 'xyz', amount: 500000 }]<br>
+}, userId);
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step surgery">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Detection Items Chirurgicaux Payes</div>
+                        <div class="step-details">SurgeryService verifie si l'item est de type chirurgie</div>
+                        <div class="step-code">
+// Criteres de detection:<br>
+// 1. item.category === 'surgery'<br>
+// 2. item.code in surgeryActCodes<br>
+// 3. item.description contient keywords chirurgicaux<br>
+<br>
+const SURGERY_KEYWORDS = [<br>
+&nbsp;&nbsp;'phaco', 'phacoémulsification', 'cataracte',<br>
+&nbsp;&nbsp;'vitrectomie', 'trabéculectomie', 'kératoplastie',<br>
+&nbsp;&nbsp;'implant', 'chirurgie', 'ivt'<br>
+];
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step surgery">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Detection Oeil (Lateralite)</div>
+                        <div class="step-code">
+// Detection automatique depuis la description:<br>
+detectEye(description) {<br>
+&nbsp;&nbsp;if (desc.includes('OD') || desc.includes('œil droit')) return 'OD';<br>
+&nbsp;&nbsp;if (desc.includes('OS') || desc.includes('œil gauche')) return 'OS';<br>
+&nbsp;&nbsp;if (desc.includes('OU') || desc.includes('bilatéral')) return 'OU';<br>
+&nbsp;&nbsp;return 'N/A';<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step surgery">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Creation SurgeryCase</div>
+                        <div class="step-code">
+const surgeryCase = await SurgeryCase.create({<br>
+&nbsp;&nbsp;patient: invoice.patient,<br>
+&nbsp;&nbsp;clinic: invoice.clinic,<br>
+&nbsp;&nbsp;invoice: invoice._id,<br>
+&nbsp;&nbsp;surgeryType: surgeryTypeId, // ClinicalAct chirurgical<br>
+&nbsp;&nbsp;eye: 'OD', // detecte automatiquement<br>
+&nbsp;&nbsp;status: 'awaiting_scheduling',<br>
+&nbsp;&nbsp;paymentDate: new Date(),<br>
+&nbsp;&nbsp;statusHistory: [{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;status: 'awaiting_scheduling',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;notes: 'Créé après paiement facture ' + invoiceId<br>
+&nbsp;&nbsp;}]<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step surgery">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Mise a Jour Facture</div>
+                        <div class="step-code">
+// Marquer l'item comme traite:<br>
+invoice.items[idx].surgeryCaseCreated = true;<br>
+invoice.items[idx].surgeryCaseId = surgeryCase._id;<br>
+await invoice.save();
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step surgery">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Workflow Planning Bloc</div>
+                        <div class="step-details">Le SurgeryCase apparait dans le planning bloc pour programmation</div>
+                        <div class="step-code">
+// Statuts possibles:<br>
+'awaiting_scheduling' → 'scheduled' → 'pre_op' → 'in_surgery' → 'post_op' → 'completed'<br>
+// ou → 'cancelled'
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>Notifications WebSocket</h3>
+            <div class="diagram-box">
+                <div class="step-code">
+websocketService.emitBillingUpdate({<br>
+&nbsp;&nbsp;event: 'surgery_case_created',<br>
+&nbsp;&nbsp;invoiceId: invoice._id,<br>
+&nbsp;&nbsp;surgeryCase: surgeryCase._id,<br>
+&nbsp;&nbsp;patientId: invoice.patient<br>
+});
+                </div>
+            </div>
+        </section>
+
+        <!-- SECTION 4: LAB AUTO -->
+        <section id="lab" class="section">
+            <h2>4. Laboratoire Automatique</h2>
+
+            <h3>A. Flux de Commande Labo</h3>
+            <div class="flow-container">
+                <div class="flow-step lab">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Prescription d'Examens</div>
+                        <div class="step-details">Le medecin prescrit des examens depuis StudioVision</div>
+                        <div class="step-code">
+const labOrder = await LabOrder.create({<br>
+&nbsp;&nbsp;patient, clinic, orderedBy: doctorId,<br>
+&nbsp;&nbsp;tests: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ template: glycemieId, testName: 'Glycémie à jeun' },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ template: nfsId, testName: 'NFS' }<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;priority: 'routine',<br>
+&nbsp;&nbsp;fasting: { required: true, hours: 12 }<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Generation Facture Labo</div>
+                        <div class="step-code">
+const invoice = await Invoice.create({<br>
+&nbsp;&nbsp;patient, clinic,<br>
+&nbsp;&nbsp;labOrder: labOrder._id,<br>
+&nbsp;&nbsp;source: 'laboratory',<br>
+&nbsp;&nbsp;items: labOrder.tests.map(test => ({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;description: test.testName,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;category: 'laboratory',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;code: test.testCode,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;unitPrice: getTestPrice(test.template)<br>
+&nbsp;&nbsp;}))<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Paiement</div>
+                        <div class="step-details">Quand la facture est payee, le labo peut proceder</div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Prelevement & Reception</div>
+                        <div class="step-code">
+labOrder.specimen = {<br>
+&nbsp;&nbsp;collectedAt: new Date(),<br>
+&nbsp;&nbsp;collectedBy: technicianId,<br>
+&nbsp;&nbsp;specimenType: 'sang veineux',<br>
+&nbsp;&nbsp;barcode: 'LAB-2025-00001-A',<br>
+&nbsp;&nbsp;quality: 'acceptable'<br>
+};<br>
+labOrder.status = 'collected';
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Saisie Resultats</div>
+                        <div class="step-code">
+const labResult = await LabResult.create({<br>
+&nbsp;&nbsp;labOrder: labOrder._id,<br>
+&nbsp;&nbsp;test: testId,<br>
+&nbsp;&nbsp;results: [<br>
+&nbsp;&nbsp;&nbsp;&nbsp;{ parameter: 'Glucose', value: 1.05, unit: 'g/L', normalRange: '0.70-1.10' }<br>
+&nbsp;&nbsp;],<br>
+&nbsp;&nbsp;interpretation: 'Normal',<br>
+&nbsp;&nbsp;validatedBy: biologistId<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Notification Medecin</div>
+                        <div class="step-code">
+// WebSocket notification<br>
+websocketService.emit('lab_results', {<br>
+&nbsp;&nbsp;event: 'results_ready',<br>
+&nbsp;&nbsp;patientId, labOrderId,<br>
+&nbsp;&nbsp;critical: hasCriticalValues<br>
+});
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>B. Gestion des Rejets</h3>
+            <div class="diagram-box">
+                <div class="diagram-title">Raisons de Rejet</div>
+                <table class="data-table">
+                    <tr><th>Code</th><th>Description</th><th>Penalite</th></tr>
+                    <tr><td>patient_ate</td><td>Patient a mange (jeune non respecte)</td><td>Frais de re-prelevement</td></tr>
+                    <tr><td>medication_taken</td><td>Medicaments pris</td><td>Selon protocole</td></tr>
+                    <tr><td>no_show</td><td>Patient absent</td><td>Frais d'absence</td></tr>
+                    <tr><td>insufficient_fasting</td><td>Jeune insuffisant</td><td>Re-programmation</td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 5: PHARMACY -->
+        <section id="pharmacy" class="section">
+            <h2>5. Pharmacie & Ordonnances</h2>
+
+            <h3>A. Flux de Prescription</h3>
+            <div class="flow-container">
+                <div class="flow-step pharmacy">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Creation Ordonnance</div>
+                        <div class="step-code">
+const prescription = await Prescription.create({<br>
+&nbsp;&nbsp;patient, prescriber: doctorId, clinic,<br>
+&nbsp;&nbsp;type: 'medication',<br>
+&nbsp;&nbsp;medications: [{<br>
+&nbsp;&nbsp;&nbsp;&nbsp;drug: drugId,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;inventoryItem: inventoryId,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;name: 'Dexaméthasone 0.1%',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;route: 'ophthalmic',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;applicationLocation: { eye: 'OU' },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;dosage: { amount: 1, unit: 'goutte', frequency: { times: 4, period: 'day' } },<br>
+&nbsp;&nbsp;&nbsp;&nbsp;quantity: 1,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;tapering: { enabled: true, schedule: [...] } // Protocole sevrage<br>
+&nbsp;&nbsp;}]<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step pharmacy">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Verifications de Securite</div>
+                        <div class="step-details">Allergies, Interactions, Contre-indications</div>
+                        <div class="step-code">
+// Verification automatique via drugSafetyService<br>
+medication.safetyChecks = {<br>
+&nbsp;&nbsp;allergies: [{ allergen: 'Pénicilline', severity: 'high', matched: false }],<br>
+&nbsp;&nbsp;interactions: [{ withDrug: 'Warfarine', severity: 'moderate' }],<br>
+&nbsp;&nbsp;contraindications: [],<br>
+&nbsp;&nbsp;checksPerformedAt: new Date()<br>
+};
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step pharmacy">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Reservation Stock</div>
+                        <div class="step-code">
+// Reserve le stock pour cette ordonnance<br>
+await inventoryItem.reserveStock(quantity, prescriptionId, userId);<br>
+<br>
+medication.reservation = {<br>
+&nbsp;&nbsp;reservationId: uuid(),<br>
+&nbsp;&nbsp;reservedQuantity: 1,<br>
+&nbsp;&nbsp;reservedBatches: [{ lotNumber: 'LOT-123', quantity: 1 }],<br>
+&nbsp;&nbsp;status: 'reserved'<br>
+};
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step pharmacy">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <div class="step-title">Workflow Pharmacie</div>
+                        <div class="step-code">
+// Statuts pharmacie:<br>
+'pending' → 'reviewing' → 'preparing' → 'ready' → 'dispensed'<br>
+<br>
+// ou si probleme:<br>
+'pending' → 'issue' // Rupture stock, interaction severe, etc.
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step pharmacy">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <div class="step-title">Generation Facture Pharmacie</div>
+                        <div class="step-code">
+const invoice = await Invoice.create({<br>
+&nbsp;&nbsp;patient, clinic,<br>
+&nbsp;&nbsp;prescription: prescription._id,<br>
+&nbsp;&nbsp;source: 'pharmacy',<br>
+&nbsp;&nbsp;requiresReview: true, // Brouillon pour validation<br>
+&nbsp;&nbsp;items: prescription.medications.map(med => ({<br>
+&nbsp;&nbsp;&nbsp;&nbsp;description: med.name,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;category: 'medication',<br>
+&nbsp;&nbsp;&nbsp;&nbsp;quantity: med.quantity,<br>
+&nbsp;&nbsp;&nbsp;&nbsp;unitPrice: med.pricing.sellingPrice<br>
+&nbsp;&nbsp;}))<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step pharmacy">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <div class="step-title">Dispensation & Deduction Stock</div>
+                        <div class="step-code">
+// Lors de la dispensation:<br>
+medication.dispensing = {<br>
+&nbsp;&nbsp;dispensed: true,<br>
+&nbsp;&nbsp;dispensedQuantity: 1,<br>
+&nbsp;&nbsp;dispensedBatches: [{ lotNumber: 'LOT-123', quantity: 1 }],<br>
+&nbsp;&nbsp;dispensedBy: pharmacistId,<br>
+&nbsp;&nbsp;dispensedAt: new Date()<br>
+};<br>
+<br>
+// Deduction stock:<br>
+await inventoryItem.adjustStock(-1, 'dispensed', 'Ordonnance ' + prescriptionId, userId, {<br>
+&nbsp;&nbsp;reference: prescriptionId,<br>
+&nbsp;&nbsp;referenceType: 'prescription'<br>
+});
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>B. Protocoles de Sevrage (Tapering)</h3>
+            <div class="diagram-box">
+                <div class="diagram-title">Exemple: Sevrage Corticoide</div>
+                <table class="data-table">
+                    <tr><th>Etape</th><th>Dose</th><th>Frequence</th><th>Duree</th></tr>
+                    <tr><td>1</td><td>1 goutte</td><td>4x/jour</td><td>7 jours</td></tr>
+                    <tr><td>2</td><td>1 goutte</td><td>3x/jour</td><td>7 jours</td></tr>
+                    <tr><td>3</td><td>1 goutte</td><td>2x/jour</td><td>7 jours</td></tr>
+                    <tr><td>4</td><td>1 goutte</td><td>1x/jour</td><td>7 jours</td></tr>
+                    <tr><td colspan="4"><strong>Total: 28 jours</strong></td></tr>
+                </table>
+            </div>
+        </section>
+
+        <!-- SECTION 6: INVENTORY -->
+        <section id="inventory" class="section">
+            <h2>6. Inventaire & Mouvements de Stock</h2>
+
+            <h3>A. Types d'Inventaire (Discriminators)</h3>
+            <div class="model-list">
+                <div class="model-item pink"><strong>pharmacy</strong> - Medicaments</div>
+                <div class="model-item blue"><strong>frame</strong> - Montures</div>
+                <div class="model-item purple"><strong>contact_lens</strong> - Lentilles de contact</div>
+                <div class="model-item green"><strong>optical_lens</strong> - Verres optiques</div>
+                <div class="model-item orange"><strong>reagent</strong> - Reactifs labo</div>
+                <div class="model-item pink"><strong>lab_consumable</strong> - Consommables labo</div>
+                <div class="model-item blue"><strong>surgical_supply</strong> - Fournitures chirurgicales</div>
+            </div>
+
+            <h3>B. Structure de Base</h3>
+            <div class="flow-container">
+                <div class="flow-step inventory">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Identification Produit</div>
+                        <div class="step-code">
+{<br>
+&nbsp;&nbsp;sku: 'DEXA-01-10ML',<br>
+&nbsp;&nbsp;barcode: '3400930123456',<br>
+&nbsp;&nbsp;name: 'Dexaméthasone 0.1% collyre',<br>
+&nbsp;&nbsp;brand: 'Maxidex',<br>
+&nbsp;&nbsp;manufacturer: 'Alcon'<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step inventory">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Suivi de Stock</div>
+                        <div class="step-code">
+inventory: {<br>
+&nbsp;&nbsp;currentStock: 50,<br>
+&nbsp;&nbsp;reserved: 5,<br>
+&nbsp;&nbsp;available: 45, // currentStock - reserved<br>
+&nbsp;&nbsp;unit: 'flacon',<br>
+&nbsp;&nbsp;minimumStock: 10,<br>
+&nbsp;&nbsp;reorderPoint: 20,<br>
+&nbsp;&nbsp;status: 'in_stock' // in_stock | low_stock | out_of_stock<br>
+}
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step inventory">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Gestion des Lots (Batches)</div>
+                        <div class="step-code">
+batches: [{<br>
+&nbsp;&nbsp;lotNumber: 'LOT-2025-A001',<br>
+&nbsp;&nbsp;quantity: 30,<br>
+&nbsp;&nbsp;expirationDate: '2026-06-30',<br>
+&nbsp;&nbsp;receivedDate: '2025-01-15',<br>
+&nbsp;&nbsp;cost: 5000, // Prix d'achat<br>
+&nbsp;&nbsp;supplier: supplierId,<br>
+&nbsp;&nbsp;status: 'available' // available | reserved | expired | recalled<br>
+}]
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>C. Types de Transactions</h3>
+            <div class="diagram-box">
+                <table class="data-table">
+                    <tr><th>Type</th><th>Description</th><th>Impact Stock</th></tr>
+                    <tr><td><span class="badge badge-success">received</span></td><td>Reception fournisseur</td><td>+quantity</td></tr>
+                    <tr><td><span class="badge badge-danger">dispensed</span></td><td>Dispensation patient</td><td>-quantity</td></tr>
+                    <tr><td><span class="badge badge-warning">adjusted</span></td><td>Ajustement inventaire</td><td>+/- quantity</td></tr>
+                    <tr><td><span class="badge badge-info">transferred</span></td><td>Transfert inter-clinique</td><td>-quantity (origine)</td></tr>
+                    <tr><td><span class="badge badge-primary">reserved</span></td><td>Reservation ordonnance</td><td>reserved +</td></tr>
+                    <tr><td><span class="badge badge-success">released</span></td><td>Liberation reservation</td><td>reserved -</td></tr>
+                    <tr><td><span class="badge badge-danger">expired</span></td><td>Peremption</td><td>-quantity</td></tr>
+                </table>
+            </div>
+
+            <h3>D. Flux de Reservation</h3>
+            <div class="flow-container">
+                <div class="flow-step inventory">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Reservation (Ordonnance creee)</div>
+                        <div class="step-code">
+await item.reserveStock(quantity, prescriptionId, userId);<br>
+// currentStock: 50, reserved: 5 → reserved: 10<br>
+// available: 50 - 10 = 40
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step inventory">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Dispensation (Ordonnance delivree)</div>
+                        <div class="step-code">
+await item.releaseReservation(quantity, prescriptionId, userId);<br>
+await item.adjustStock(-quantity, 'dispensed', 'Prescription', userId);<br>
+// currentStock: 50 → 45, reserved: 10 → 5
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step inventory">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Annulation (si ordonnance annulee)</div>
+                        <div class="step-code">
+await item.releaseReservation(quantity, prescriptionId, userId);<br>
+// currentStock: 50, reserved: 10 → 5 (stock restore)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3>E. Alertes Automatiques</h3>
+            <div class="model-list">
+                <div class="model-item orange"><strong>low_stock</strong> - Stock < minimum</div>
+                <div class="model-item pink"><strong>expiring</strong> - Peremption < 30 jours</div>
+                <div class="model-item green"><strong>expired</strong> - Produit perime</div>
+                <div class="model-item blue"><strong>reorder</strong> - Stock < point de commande</div>
+            </div>
+        </section>
+
+        <!-- SECTION 7: REAL-TIME -->
+        <section id="realtime" class="section">
+            <h2>7. Temps Reel (WebSocket)</h2>
+
+            <h3>A. Evenements Emis par le Backend</h3>
+            <div class="diagram-box">
+                <table class="data-table">
+                    <tr><th>Evenement</th><th>Declencheur</th><th>Donnees</th></tr>
+                    <tr><td>notification</td><td>Nouvelle notification</td><td>{ type, title, message, priority }</td></tr>
+                    <tr><td>queue_update</td><td>Changement file d'attente</td><td>{ patients, stats }</td></tr>
+                    <tr><td>patient_update</td><td>Modification patient</td><td>{ patientId, changes }</td></tr>
+                    <tr><td>visit_update</td><td>Changement visite</td><td>{ visitId, status }</td></tr>
+                    <tr><td>appointment_update</td><td>Modification RDV</td><td>{ appointmentId, status }</td></tr>
+                    <tr><td>billing_update</td><td>Paiement/Facture</td><td>{ event, invoiceId, amount }</td></tr>
+                    <tr><td>lab_results</td><td>Resultats labo prets</td><td>{ patientId, orderId, critical }</td></tr>
+                    <tr><td>prescription_ready</td><td>Ordonnance prete</td><td>{ prescriptionId }</td></tr>
+                    <tr><td>emergency_alert</td><td>Alerte urgente</td><td>{ type, patient, message }</td></tr>
+                </table>
+            </div>
+
+            <h3>B. Integration Redux</h3>
+            <div class="step-code">
+// websocketService.js<br>
+socket.on('queue_update', (data) => {<br>
+&nbsp;&nbsp;store.dispatch(updateQueueRealtime(data));<br>
+});<br>
+<br>
+socket.on('notification', (data) => {<br>
+&nbsp;&nbsp;store.dispatch(addNotification(data));<br>
+});<br>
+<br>
+socket.on('patient_update', (data) => {<br>
+&nbsp;&nbsp;store.dispatch(updatePatientInList(data));<br>
+});<br>
+<br>
+socket.on('visit_update', (data) => {<br>
+&nbsp;&nbsp;store.dispatch(updateVisitInList(data));<br>
+});
+            </div>
+
+            <h3>C. Rooms par Clinique</h3>
+            <div class="diagram-box">
+                <div class="diagram-title">Isolation Multi-Clinique</div>
+                <div class="step-code">
+// Cote serveur - emission<br>
+io.to(`clinic:${clinicId}`).emit('queue_update', data);<br>
+io.to(`queue:updates:${clinicId}`).emit('queue_update', data);<br>
+<br>
+// Cote client - abonnement<br>
+socket.emit('subscribe:queue', { clinicId });<br>
+socket.emit('join_room', `clinic:${clinicId}`);
+                </div>
+            </div>
+
+            <h3>D. Replay de Messages (Resilience)</h3>
+            <div class="flow-container">
+                <div class="flow-step lab">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <div class="step-title">Deconnexion Detectee</div>
+                        <div class="step-code">
+socket.on('disconnect', () => {<br>
+&nbsp;&nbsp;lastMessageTimestamp = Date.now();<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <div class="step-title">Reconnexion</div>
+                        <div class="step-code">
+socket.on('connect', () => {<br>
+&nbsp;&nbsp;socket.emit('replay:request', { since: lastMessageTimestamp });<br>
+});
+                        </div>
+                    </div>
+                </div>
+                <div class="arrow">↓</div>
+
+                <div class="flow-step lab">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <div class="step-title">Replay des Messages Manques</div>
+                        <div class="step-code">
+// Serveur envoie les messages manques<br>
+socket.on('replay:response', (messages) => {<br>
+&nbsp;&nbsp;messages.forEach(msg => processMessage(msg));<br>
+});
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        function showSection(sectionId) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            // Show selected section
+            document.getElementById(sectionId).classList.add('active');
+            // Update nav buttons
+            document.querySelectorAll('.nav button').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>

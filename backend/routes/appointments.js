@@ -212,12 +212,12 @@ router.post(
 
 router
   .route('/')
-  .get(getAppointments)
+  .get(requirePermission('view_appointments'), getAppointments)
   .post(requirePermission('manage_appointments'), logAction('APPOINTMENT_CREATE'), createAppointment);
 
 router
   .route('/:id')
-  .get(getAppointment)
+  .get(requirePermission('view_appointments'), getAppointment)
   .put(requirePermission('manage_appointments'), logAction('APPOINTMENT_UPDATE'), updateAppointment);
 
 // =====================================================

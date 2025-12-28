@@ -68,6 +68,44 @@ const ophthalmologyService = {
   },
 
   /**
+   * Save exam (create or update) - WORKS OFFLINE
+   * This method handles both creation and update of exams
+   * @param {Object} params - Save parameters
+   * @param {string} params.patientId - Patient ID (required)
+   * @param {string} params.visitId - Visit ID (optional)
+   * @param {string} params.examId - Exam ID (if updating)
+   * @param {Object} params.data - Exam data
+   * @returns {Promise} Saved exam
+   */
+  async saveExam({ patientId, visitId, examId, data }) {
+    const payload = {
+      patientId,
+      visitId,
+      examId,
+      data: {
+        ...data,
+        savedAt: new Date().toISOString()
+      }
+    };
+
+    const localData = {
+      ...payload.data,
+      _tempId: examId || `temp_${Date.now()}`,
+      patientId,
+      visitId,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.post('/ophthalmology/exams/save', payload),
+      examId ? 'UPDATE' : 'CREATE',
+      'ophthalmologyExams',
+      localData,
+      examId
+    );
+  },
+
+  /**
    * Update exam - WORKS OFFLINE
    * @param {string} id - Exam ID
    * @param {Object} examData - Updated data
@@ -987,6 +1025,104 @@ const ophthalmologyService = {
       .where('patientId')
       .equals(patientId)
       .toArray();
+  },
+
+  // ============================================
+  // CONSULTATION INTEGRATION - NEW
+  // ============================================
+
+  /**
+   * Complete consultation with full backend integration
+   * Creates lab orders, prescriptions, and invoice from exam data
+   *
+   * IMPORTANT: This is ONLINE-ONLY because it involves:
+   * - Drug safety checks (must be verified)
+   * - Invoice generation (financial integrity)
+   * - Lab order creation (critical workflow)
+   *
+   * @param {Object} params - Completion parameters
+   * @param {string} params.visitId - Visit ID (required)
+   * @param {string} params.examId - Exam ID (optional, for update)
+   * @param {Object} params.examData - Full exam data from StudioVision
+   * @param {Object} params.options - Additional options
+   * @returns {Promise} Completion result with created records
+   */
+  async completeConsultation({ visitId, examId, examData, options = {} }) {
+    // This MUST be online for safety and financial integrity
+    if (!navigator.onLine) {
+      return {
+        success: false,
+        offline: true,
+        message: 'La complétion de consultation nécessite une connexion internet pour la sécurité des données.',
+        _mustVerifyOnline: true
+      };
+    }
+
+    try {
+      const response = await api.post(`/ophthalmology/consultations/${visitId}/complete`, {
+        examId,
+        examData,
+        options
+      });
+
+      // Cache the results locally for offline access
+      if (response.data?.data) {
+        const result = response.data.data;
+
+        // Cache the exam
+        if (result.exam) {
+          await db.ophthalmologyExams.put({
+            ...result.exam,
+            id: result.exam._id || result.exam.id,
+            lastSync: new Date().toISOString()
+          });
+        }
+
+        // Cache lab orders
+        if (result.labOrders?.length > 0) {
+          for (const order of result.labOrders) {
+            await db.labOrders.put({
+              ...order,
+              id: order._id || order.id,
+              lastSync: new Date().toISOString()
+            });
+          }
+        }
+
+        // Cache prescriptions
+        if (result.prescriptions?.length > 0) {
+          for (const rx of result.prescriptions) {
+            await db.prescriptions.put({
+              ...rx,
+              id: rx._id || rx.id,
+              lastSync: new Date().toISOString()
+            });
+          }
+        }
+
+        // Cache invoice
+        if (result.invoice) {
+          await db.invoices.put({
+            ...result.invoice,
+            id: result.invoice._id || result.invoice.id,
+            lastSync: new Date().toISOString()
+          });
+        }
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error('[OphthalmologyService] Consultation completion failed:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Check if consultation can be completed offline
+   * @returns {boolean} True if online, false otherwise
+   */
+  canCompleteConsultation() {
+    return navigator.onLine;
   }
 };
 

@@ -10,6 +10,10 @@ const {
   deleteExam,
   completeExam,
 
+  // Consultation Integration (new)
+  completeConsultation,
+  saveExam,
+
   // Prescription & Refraction
   generateOpticalPrescription,
   saveRefractionData,
@@ -80,6 +84,21 @@ router.use(requirePermission('perform_eye_exams'));
 
 // Dashboard stats
 router.get('/dashboard-stats', getDashboardStats);
+
+// =====================================================
+// CONSULTATION INTEGRATION ROUTES (NEW)
+// These routes connect StudioVision to all backend data flows
+// =====================================================
+
+// Complete consultation - creates lab orders, prescriptions, invoice
+router.post(
+  '/consultations/:visitId/complete',
+  logAction('CONSULTATION_COMPLETE'),
+  completeConsultation
+);
+
+// Save exam data (create or update) - replaces missing saveExam method
+router.post('/exams/save', logAction('OPHTHALMOLOGY_EXAM_SAVE'), saveExam);
 
 // Base route - API information
 router.get('/', (req, res) => {
