@@ -2,6 +2,19 @@
 node_modules/
 */node_modules/
 
+# Python virtual environments
+venv/
+*/venv/
+__pycache__/
+*/__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.so
+.eggs/
+*.egg-info/
+*.egg
+
 # Environment variables
 .env
 .env.*
