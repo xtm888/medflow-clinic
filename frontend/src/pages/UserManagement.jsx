@@ -16,38 +16,47 @@ const UserManagement = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
+    username: '',
     firstName: '',
     lastName: '',
     email: '',
-    role: 'staff',
+    password: '',
+    role: 'receptionist',
     department: '',
-    phone: '',
+    phoneNumber: '',
+    employeeId: '',
     isActive: true,
     permissions: []
   });
 
+  // Roles must match backend User model enum exactly
   const roles = [
-    { value: 'admin', label: 'Administrator' },
-    { value: 'doctor', label: 'Doctor' },
-    { value: 'nurse', label: 'Nurse' },
-    { value: 'receptionist', label: 'Receptionist' },
-    { value: 'pharmacist', label: 'Pharmacist' },
-    { value: 'optician', label: 'Optician' },
-    { value: 'lab_tech', label: 'Lab Technician' },
-    { value: 'billing', label: 'Billing Staff' },
-    { value: 'staff', label: 'General Staff' }
+    { value: 'admin', label: 'Administrateur' },
+    { value: 'doctor', label: 'Médecin' },
+    { value: 'ophthalmologist', label: 'Ophtalmologue' },
+    { value: 'optometrist', label: 'Optométriste' },
+    { value: 'orthoptist', label: 'Orthoptiste' },
+    { value: 'nurse', label: 'Infirmier(ère)' },
+    { value: 'receptionist', label: 'Réceptionniste' },
+    { value: 'pharmacist', label: 'Pharmacien(ne)' },
+    { value: 'lab_technician', label: 'Technicien Labo' },
+    { value: 'technician', label: 'Technicien' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'radiologist', label: 'Radiologue' },
+    { value: 'accountant', label: 'Comptable' }
   ];
 
+  // Departments must match backend User model enum exactly (lowercase)
   const departments = [
-    'Administration',
-    'Ophthalmology',
-    'Optometry',
-    'Pharmacy',
-    'Laboratory',
-    'Optical Shop',
-    'Billing',
-    'Reception',
-    'Surgery'
+    { value: 'general', label: 'Général' },
+    { value: 'ophthalmology', label: 'Ophtalmologie' },
+    { value: 'pharmacy', label: 'Pharmacie' },
+    { value: 'laboratory', label: 'Laboratoire' },
+    { value: 'radiology', label: 'Radiologie' },
+    { value: 'pediatrics', label: 'Pédiatrie' },
+    { value: 'cardiology', label: 'Cardiologie' },
+    { value: 'orthopedics', label: 'Orthopédie' },
+    { value: 'emergency', label: 'Urgences' }
   ];
 
   const permissionGroups = {
@@ -57,6 +66,41 @@ const UserManagement = () => {
     billing: ['view_invoices', 'create_invoices', 'process_payments', 'apply_discounts'],
     reports: ['view_reports', 'export_reports', 'financial_reports'],
     settings: ['manage_users', 'manage_settings', 'manage_roles', 'view_audit_logs']
+  };
+
+  // French labels for permission groups and individual permissions
+  const groupLabels = {
+    patients: 'Patients',
+    appointments: 'Rendez-vous',
+    prescriptions: 'Ordonnances',
+    billing: 'Facturation',
+    reports: 'Rapports',
+    settings: 'Paramètres'
+  };
+
+  const permissionLabels = {
+    view_patients: 'Voir les patients',
+    create_patients: 'Créer des patients',
+    edit_patients: 'Modifier les patients',
+    delete_patients: 'Supprimer les patients',
+    view_appointments: 'Voir les rendez-vous',
+    create_appointments: 'Créer des rendez-vous',
+    edit_appointments: 'Modifier les rendez-vous',
+    cancel_appointments: 'Annuler les rendez-vous',
+    view_prescriptions: 'Voir les ordonnances',
+    create_prescriptions: 'Créer des ordonnances',
+    dispense_prescriptions: 'Dispenser les ordonnances',
+    view_invoices: 'Voir les factures',
+    create_invoices: 'Créer des factures',
+    process_payments: 'Traiter les paiements',
+    apply_discounts: 'Appliquer des remises',
+    view_reports: 'Voir les rapports',
+    export_reports: 'Exporter les rapports',
+    financial_reports: 'Rapports financiers',
+    manage_users: 'Gérer les utilisateurs',
+    manage_settings: 'Gérer les paramètres',
+    manage_roles: 'Gérer les rôles',
+    view_audit_logs: 'Voir les journaux d\'audit'
   };
 
   useEffect(() => {
@@ -71,7 +115,7 @@ const UserManagement = () => {
       const usersData = response.data?.data || response.data?.users || response.data;
       setUsers(Array.isArray(usersData) ? usersData : []);
     } catch (err) {
-      setError('Failed to load users');
+      setError('Échec du chargement des utilisateurs');
       setUsers([]); // Ensure users is always an array even on error
       console.error('Error fetching users:', err);
     } finally {
@@ -99,27 +143,36 @@ const UserManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Prepare data - don't send empty password when editing
+      const submitData = { ...formData };
+      if (editingUser && !submitData.password) {
+        delete submitData.password;
+      }
+
       if (editingUser) {
-        await api.put(`/users/${editingUser._id}`, formData);
+        await api.put(`/users/${editingUser._id}`, submitData);
       } else {
-        await api.post('/users', formData);
+        await api.post('/users', submitData);
       }
       fetchUsers();
       closeModal();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save user');
+      setError(err.response?.data?.message || 'Échec de l\'enregistrement de l\'utilisateur');
     }
   };
 
   const handleEdit = (user) => {
     setEditingUser(user);
     setFormData({
+      username: user.username || '',
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
-      role: user.role || 'staff',
+      password: '', // Don't prefill password for security
+      role: user.role || 'receptionist',
       department: user.department || '',
-      phone: user.phone || '',
+      phoneNumber: user.phoneNumber || '',
+      employeeId: user.employeeId || '',
       isActive: user.isActive !== false,
       permissions: user.permissions || []
     });
@@ -131,17 +184,17 @@ const UserManagement = () => {
       await api.patch(`/users/${userId}/status`, { isActive: !currentStatus });
       fetchUsers();
     } catch (err) {
-      setError('Failed to update user status');
+      setError('Échec de la mise à jour du statut');
     }
   };
 
   const handleResetPassword = async (userId) => {
-    if (window.confirm('Send password reset email to this user?')) {
+    if (window.confirm('Envoyer un email de réinitialisation du mot de passe à cet utilisateur ?')) {
       try {
         await api.post(`/users/${userId}/reset-password`);
-        alert('Password reset email sent successfully');
+        alert('Email de réinitialisation du mot de passe envoyé avec succès');
       } catch (err) {
-        setError('Failed to send password reset');
+        setError('Échec de l\'envoi de l\'email de réinitialisation');
       }
     }
   };
@@ -150,12 +203,15 @@ const UserManagement = () => {
     setShowModal(false);
     setEditingUser(null);
     setFormData({
+      username: '',
       firstName: '',
       lastName: '',
       email: '',
-      role: 'staff',
+      password: '',
+      role: 'receptionist',
       department: '',
-      phone: '',
+      phoneNumber: '',
+      employeeId: '',
       isActive: true,
       permissions: []
     });
@@ -187,7 +243,7 @@ const UserManagement = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Gestion des Utilisateurs</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage system users, roles, and permissions
+            Gérer les utilisateurs, rôles et permissions du système
           </p>
         </div>
         <button
@@ -247,7 +303,7 @@ const UserManagement = () => {
           </div>
           <div className="flex items-end">
             <span className="text-sm text-gray-500">
-              {filteredUsers.length} of {users.length} users
+              {filteredUsers.length} sur {users.length} utilisateurs
             </span>
           </div>
         </div>
@@ -366,7 +422,31 @@ const UserManagement = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Prénom</label>
+                    <label className="block text-sm font-medium text-gray-700">Nom d'utilisateur *</label>
+                    <input
+                      type="text"
+                      name="username"
+                      value={formData.username}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="ex: jean.dupont"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">ID Employé *</label>
+                    <input
+                      type="text"
+                      name="employeeId"
+                      value={formData.employeeId}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="ex: EMP001"
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Prénom *</label>
                     <input
                       type="text"
                       name="firstName"
@@ -377,7 +457,7 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Nom</label>
+                    <label className="block text-sm font-medium text-gray-700">Nom *</label>
                     <input
                       type="text"
                       name="lastName"
@@ -388,7 +468,7 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Email</label>
+                    <label className="block text-sm font-medium text-gray-700">Email *</label>
                     <input
                       type="email"
                       name="email"
@@ -399,17 +479,37 @@ const UserManagement = () => {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Téléphone</label>
+                    <label className="block text-sm font-medium text-gray-700">
+                      Mot de passe {editingUser ? '' : '*'}
+                    </label>
+                    <input
+                      type="password"
+                      name="password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required={!editingUser}
+                      minLength={12}
+                      placeholder={editingUser ? 'Laisser vide pour conserver' : 'Min. 12 caractères'}
+                      className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    {!editingUser && (
+                      <p className="mt-1 text-xs text-gray-500">Minimum 12 caractères requis</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Téléphone *</label>
                     <input
                       type="tel"
-                      name="phone"
-                      value={formData.phone}
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
                       onChange={handleInputChange}
+                      required
+                      placeholder="+243 xxx xxx xxx"
                       className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">Rôle</label>
+                    <label className="block text-sm font-medium text-gray-700">Rôle *</label>
                     <select
                       name="role"
                       value={formData.role}
@@ -422,7 +522,7 @@ const UserManagement = () => {
                       ))}
                     </select>
                   </div>
-                  <div>
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700">Département</label>
                     <select
                       name="department"
@@ -432,7 +532,7 @@ const UserManagement = () => {
                     >
                       <option value="">Sélectionner un département</option>
                       {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
+                        <option key={dept.value} value={dept.value}>{dept.label}</option>
                       ))}
                     </select>
                   </div>
@@ -456,7 +556,7 @@ const UserManagement = () => {
                   <div className="grid grid-cols-2 gap-4">
                     {Object.entries(permissionGroups).map(([group, perms]) => (
                       <div key={group} className="border rounded-md p-3">
-                        <h5 className="text-sm font-medium text-gray-900 capitalize mb-2">{group}</h5>
+                        <h5 className="text-sm font-medium text-gray-900 mb-2">{groupLabels[group]}</h5>
                         {perms.map(perm => (
                           <label key={perm} className="flex items-center text-sm">
                             <input
@@ -466,7 +566,7 @@ const UserManagement = () => {
                               className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                             />
                             <span className="ml-2 text-gray-600">
-                              {perm.replace(/_/g, ' ')}
+                              {permissionLabels[perm]}
                             </span>
                           </label>
                         ))}
