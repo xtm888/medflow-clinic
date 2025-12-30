@@ -36,7 +36,9 @@ export default function EnhancedPrescription({ patientId }) {
     try {
       setLoading(true);
       const response = await api.get(`/api/prescriptions/patient/${patientId}`);
-      setPrescriptions(response.data.data);
+      // Safely extract array from response
+      const data = response?.data?.data || response?.data || [];
+      setPrescriptions(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
     } finally {
@@ -47,7 +49,9 @@ export default function EnhancedPrescription({ patientId }) {
   const fetchTemplates = async () => {
     try {
       const response = await api.get('/api/templates/category/prescription');
-      setTemplates(response.data.data);
+      // Safely extract array from response
+      const data = response?.data?.data || response?.data || [];
+      setTemplates(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error('Error fetching templates:', error);
     }

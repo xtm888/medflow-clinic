@@ -86,8 +86,10 @@ function NotificationBell() {
     try {
       const response = await alertService.getUnreadAlerts(20);
       if (response.success) {
-        setAlerts(response.data);
-        setUnreadCount(response.unreadCount);
+        // Safely extract array from response
+        const alertsData = Array.isArray(response.data) ? response.data : [];
+        setAlerts(alertsData);
+        setUnreadCount(response.unreadCount || alertsData.length);
       }
     } catch (err) {
       console.error('Error fetching alerts:', err);

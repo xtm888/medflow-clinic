@@ -55,7 +55,11 @@ export default function TemplateManager() {
       setLoading(true);
       const params = selectedCategory !== 'all' ? `?category=${selectedCategory}` : '';
       const response = await api.get(`/consultation-templates${params}`);
-      setTemplates(response.data.data);
+      // Safely extract array - handles {data: {data: []}}, {data: []}, and direct array
+      const templatesData = Array.isArray(response.data?.data)
+        ? response.data.data
+        : (Array.isArray(response.data) ? response.data : []);
+      setTemplates(templatesData);
     } catch (error) {
       console.error('Erreur lors du chargement des modèles:', error);
     } finally {

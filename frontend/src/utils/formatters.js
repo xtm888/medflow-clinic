@@ -455,4 +455,50 @@ const formatters = {
   fileSize: formatFileSize
 };
 
+// ============================================================================
+// SAFE DATA EXTRACTION
+// ============================================================================
+
+/**
+ * Safely extract an array from API response data
+ * Handles various response formats from online/offline/cached states:
+ * - Direct array: [...]
+ * - Wrapped: { data: [...] }
+ * - Double wrapped: { data: { data: [...] } }
+ * - Named: { items: [...] }, { results: [...] }, etc.
+ *
+ * @param {any} response - The API response
+ * @param {string[]} keys - Optional array of keys to check (default: ['data', 'items', 'results'])
+ * @returns {Array} - Extracted array or empty array
+ */
+export const extractArray = (response, keys = ['data', 'items', 'results']) => {
+  // Already an array
+  if (Array.isArray(response)) {
+    return response;
+  }
+
+  // Null/undefined
+  if (!response) {
+    return [];
+  }
+
+  // Check each key
+  for (const key of keys) {
+    const value = response[key];
+    if (Array.isArray(value)) {
+      return value;
+    }
+    // Check nested (e.g., response.data.data)
+    if (value && typeof value === 'object') {
+      for (const nestedKey of keys) {
+        if (Array.isArray(value[nestedKey])) {
+          return value[nestedKey];
+        }
+      }
+    }
+  }
+
+  return [];
+};
+
 export default formatters;

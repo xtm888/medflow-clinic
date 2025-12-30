@@ -98,7 +98,9 @@ function AlertDashboard() {
       const response = await alertService.getAllAlerts(params);
 
       if (response.success) {
-        setAlerts(response.data);
+        // Safely extract array from response - handles various offline/online formats
+        const alertsData = Array.isArray(response.data) ? response.data : [];
+        setAlerts(alertsData);
         setPagination(prev => ({
           ...prev,
           total: response.total,

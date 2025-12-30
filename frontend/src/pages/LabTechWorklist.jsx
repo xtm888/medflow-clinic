@@ -88,7 +88,16 @@ const LabTechWorklist = () => {
         response = await laboratoryService.getPending();
       }
 
-      const testsData = Array.isArray(response) ? response : (response.data || []);
+      // Safely extract array data from various possible response shapes
+      let testsData = [];
+      if (Array.isArray(response)) {
+        testsData = response;
+      } else if (response && Array.isArray(response.data)) {
+        testsData = response.data;
+      } else if (response && response.data && Array.isArray(response.data.tests)) {
+        // Handle paginated response { data: { tests: [], pagination: {} } }
+        testsData = response.data.tests;
+      }
       setTests(testsData);
 
       // Calculate stats
@@ -109,7 +118,13 @@ const LabTechWorklist = () => {
   const fetchCategories = async () => {
     try {
       const response = await laboratoryService.getTemplates();
-      const templates = Array.isArray(response) ? response : (response.data || []);
+      // Safely extract templates array
+      let templates = [];
+      if (Array.isArray(response)) {
+        templates = response;
+      } else if (response && Array.isArray(response.data)) {
+        templates = response.data;
+      }
       const uniqueCategories = [...new Set(templates.map(t => t.category).filter(Boolean))];
       setCategories(uniqueCategories);
     } catch (error) {

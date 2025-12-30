@@ -33,7 +33,9 @@ const ExternalOrders = () => {
       setLoading(true);
       const response = await opticalShopService.getExternalOrderQueue(activeTab);
       if (response.success) {
-        setOrders(response.data);
+        // Safely extract array from response
+        const ordersData = Array.isArray(response.data) ? response.data : [];
+        setOrders(ordersData);
       }
     } catch (error) {
       console.error('Error loading orders:', error);

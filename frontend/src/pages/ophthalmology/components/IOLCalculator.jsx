@@ -86,10 +86,12 @@ export default function IOLCalculator({ patientId, examId, biometryData, onCalcu
         : `/ophthalmology/patients/${patientId}/iol-calculation`;
 
       const response = await api.post(endpoint, payload);
-      setResults(response.data.data);
+      // Safely extract result object - handles various response formats
+      const resultData = response.data?.data || response.data || null;
+      setResults(resultData);
 
-      if (onCalculationComplete) {
-        onCalculationComplete(response.data.data);
+      if (onCalculationComplete && resultData) {
+        onCalculationComplete(resultData);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Erreur lors du calcul');

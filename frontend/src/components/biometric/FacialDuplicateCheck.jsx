@@ -69,11 +69,13 @@ export default function FacialDuplicateCheck({
         image: capturedImage
       });
 
-      setResults(response.data);
+      // Safely extract result - handles various response formats
+      const resultData = response.data || null;
+      setResults(resultData);
 
       // If no duplicates found, callback immediately
-      if (!response.data.hasPossibleDuplicates && onNoDuplicates) {
-        onNoDuplicates(response.data.newEncoding);
+      if (resultData && !resultData.hasPossibleDuplicates && onNoDuplicates) {
+        onNoDuplicates(resultData.newEncoding);
       }
     } catch (err) {
       console.error('Duplicate check error:', err);

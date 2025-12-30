@@ -806,6 +806,17 @@ exports.approveVerification = async (req, res) => {
       return error(res, 'Cette commande n\'est pas en attente de vérification');
     }
 
+    // Ensure opticalShop and nested objects are initialized
+    if (!order.opticalShop) {
+      order.opticalShop = {};
+    }
+    if (!order.opticalShop.verification) {
+      order.opticalShop.verification = { status: 'pending' };
+    }
+    if (!Array.isArray(order.opticalShop.verification.revisionHistory)) {
+      order.opticalShop.verification.revisionHistory = [];
+    }
+
     // Update verification status
     order.status = 'verified';
     order.opticalShop.technician = req.user._id;
@@ -823,7 +834,7 @@ exports.approveVerification = async (req, res) => {
     });
 
     // Reserve inventory if available
-    if (order.lensAvailability.allAvailable) {
+    if (order.lensAvailability && order.lensAvailability.allAvailable) {
       await reserveInventory(order);
       order.status = 'confirmed';
     }
@@ -856,6 +867,17 @@ exports.rejectVerification = async (req, res) => {
 
     if (order.status !== 'pending_verification') {
       return error(res, 'Cette commande n\'est pas en attente de vérification');
+    }
+
+    // Ensure opticalShop and nested objects are initialized
+    if (!order.opticalShop) {
+      order.opticalShop = {};
+    }
+    if (!order.opticalShop.verification) {
+      order.opticalShop.verification = { status: 'pending' };
+    }
+    if (!Array.isArray(order.opticalShop.verification.revisionHistory)) {
+      order.opticalShop.verification.revisionHistory = [];
     }
 
     // Update verification status

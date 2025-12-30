@@ -70,7 +70,15 @@ const DeviceStatusDashboard = () => {
     try {
       // Load all devices
       const devicesResponse = await deviceService.getDevices();
-      const devicesData = devicesResponse.data || [];
+      // Safely extract array from various response formats
+      let devicesData = [];
+      if (Array.isArray(devicesResponse)) {
+        devicesData = devicesResponse;
+      } else if (devicesResponse && Array.isArray(devicesResponse.data)) {
+        devicesData = devicesResponse.data;
+      } else if (devicesResponse && Array.isArray(devicesResponse.devices)) {
+        devicesData = devicesResponse.devices;
+      }
       setDevices(devicesData);
 
       // Calculate stats

@@ -24,7 +24,9 @@ const VerificationQueue = () => {
       setLoading(true);
       const response = await opticalShopService.getVerificationQueue({ page, limit: 20 });
       if (response.success) {
-        setOrders(response.data);
+        // Safely extract array from response
+        const ordersData = Array.isArray(response.data) ? response.data : [];
+        setOrders(ordersData);
         setPagination(response.pagination);
       }
     } catch (error) {
