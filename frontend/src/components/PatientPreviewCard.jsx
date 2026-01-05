@@ -179,7 +179,7 @@ export default function PatientPreviewCard({
   const allergies = patient.medicalHistory?.allergies || patient.allergies || [];
   const lastVisit = patient.lastVisit || patient.lastVisitDate;
   const nextAppointment = patient.nextAppointment || patient.nextAppointmentDate;
-  const insurance = patient.insurance?.provider || patient.insurance || null;
+  const insurance = patient.insurance?.provider || (typeof patient.insurance === 'string' ? patient.insurance : null);
   const hasAllergies = allergies.length > 0;
   const priority = patient.priority || patient.patientType || 'normal';
   const isVip = priority === 'vip' || patient.vip;

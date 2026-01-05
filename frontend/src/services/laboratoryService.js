@@ -1057,7 +1057,9 @@ const laboratoryService = {
       console.log('[LaboratoryService] Pre-caching lab orders...');
 
       const response = await api.get('/laboratory/tests', { params });
-      const orders = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawOrders = response?.data?.data ?? response?.data ?? [];
+      const orders = Array.isArray(rawOrders) ? rawOrders : [];
 
       if (orders.length > 0) {
         const timestamp = new Date().toISOString();

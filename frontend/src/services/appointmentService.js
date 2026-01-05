@@ -718,7 +718,9 @@ const appointmentService = {
 
       // Get upcoming appointments
       const response = await api.get('/appointments/upcoming', { params });
-      const appointments = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawAppointments = response?.data?.data ?? response?.data ?? [];
+      const appointments = Array.isArray(rawAppointments) ? rawAppointments : [];
 
       if (appointments.length > 0) {
         const timestamp = new Date().toISOString();

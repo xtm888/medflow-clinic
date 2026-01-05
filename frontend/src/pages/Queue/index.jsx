@@ -108,9 +108,16 @@ export default function Queue() {
     setLoadingRooms(true);
     try {
       const response = await api.get('/rooms/available');
-      setAvailableRooms(response.data?.data || response.data || []);
+      // Handle various API response formats defensively
+      const roomsData = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setAvailableRooms(roomsData);
     } catch (error) {
       logger.error('Failed to fetch rooms:', error);
+      setAvailableRooms([]);
     } finally {
       setLoadingRooms(false);
     }
@@ -122,7 +129,12 @@ export default function Queue() {
     try {
       const today = new Date().toISOString().split('T')[0];
       const response = await api.get(`/appointments?date=${today}&status=scheduled`);
-      const appointments = response.data?.data || response.data || [];
+      // Handle various API response formats defensively
+      const appointments = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
       setTodaysAppointments(appointments);
     } catch (error) {
       logger.error('Failed to fetch appointments:', error);
@@ -137,7 +149,15 @@ export default function Queue() {
     setLoadingRejectedLabs(true);
     try {
       const response = await getRejectedAwaitingReschedule();
-      setRejectedLabOrders(response.data || []);
+      // Handle various API response formats defensively
+      const ordersData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.orders)
+        ? response.data.orders
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setRejectedLabOrders(ordersData);
     } catch (error) {
       logger.error('Failed to fetch rejected lab orders:', error);
       setRejectedLabOrders([]);
@@ -506,24 +526,61 @@ export default function Queue() {
     });
   };
 
-  // Start visit
+  // Start visit - with validation BEFORE status update
   const handleStartVisit = async (queueEntry) => {
+    // === VALIDATION PHASE ===
+    // Validate all required data exists BEFORE changing queue status
+
+    if (!queueEntry) {
+      toast.error('Données de file d\'attente manquantes');
+      return;
+    }
+
+    const patientId = queueEntry.patient?._id || queueEntry.patient?.id;
+    const appointmentId = queueEntry.appointmentId || queueEntry._id;
+
+    // Validate patient ID exists
+    if (!patientId) {
+      toast.error('ID patient non disponible. Veuillez vérifier les données du patient.');
+      return;
+    }
+
+    // Validate appointment ID exists
+    if (!appointmentId) {
+      toast.error('ID rendez-vous non disponible. Le patient doit d\'abord être enregistré.');
+      return;
+    }
+
+    // Validate patient has minimum required info for consultation
+    const patient = queueEntry.patient;
+    if (!patient?.firstName || !patient?.lastName) {
+      toast.error('Informations patient incomplètes. Veuillez compléter le dossier patient d\'abord.');
+      return;
+    }
+
+    // === UPDATE PHASE ===
+    // Only update status after all validations pass
     try {
       await dispatch(updateQueueStatus({
-        id: queueEntry.appointmentId,
+        id: appointmentId,
         status: 'in-progress'
       })).unwrap();
 
-      const patientId = queueEntry.patient?._id || queueEntry.patient?.id;
-      const appointmentId = queueEntry.appointmentId || queueEntry._id;
+      // Navigate to visit creation
+      navigate(`/visits/new/${patientId}?appointmentId=${appointmentId}`);
 
-      if (patientId) {
-        navigate(`/visits/new/${patientId}?appointmentId=${appointmentId}`);
-      } else {
-        toast.error('ID patient non disponible');
-      }
     } catch (err) {
-      toast.error(err || 'Échec du démarrage de la visite');
+      // Provide specific error messages based on error type
+      const errorMessage = typeof err === 'string' ? err : err?.message;
+
+      if (errorMessage?.includes('not found') || errorMessage?.includes('introuvable')) {
+        toast.error('Rendez-vous introuvable. Le patient a peut-être déjà été traité.');
+      } else if (errorMessage?.includes('status') || errorMessage?.includes('transition')) {
+        toast.error('Transition de statut invalide. Actualisez la file d\'attente.');
+        dispatch(fetchQueue());
+      } else {
+        toast.error(errorMessage || 'Échec du démarrage de la visite. Veuillez réessayer.');
+      }
     }
   };
 

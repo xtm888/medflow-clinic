@@ -31,7 +31,9 @@ const DispenseDialog = ({
   const fetchBatches = async () => {
     try {
       const response = await pharmacyInventoryService.getBatches(medication._id);
-      const activeBatches = (response.data || [])
+      // Safely extract array from various API response formats
+      const rawBatches = response?.data?.data ?? response?.data ?? [];
+      const activeBatches = (Array.isArray(rawBatches) ? rawBatches : [])
         .filter(b => b.status === 'active' && b.quantity > 0)
         .sort((a, b) => new Date(a.expirationDate) - new Date(b.expirationDate));
       setBatches(activeBatches);

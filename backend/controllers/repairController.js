@@ -26,8 +26,8 @@ exports.getRepairs = async (req, res) => {
       const sanitizedSearch = escapeRegex(search);
       query.$or = [
         { repairNumber: { $regex: sanitizedSearch, $options: 'i' } },
-        { 'item.description': { $regex: sanitizedSearch, $options: 'i' } },
-        { 'customer.name': { $regex: sanitizedSearch, $options: 'i' } }
+        { itemDescription: { $regex: sanitizedSearch, $options: 'i' } },
+        { customerName: { $regex: sanitizedSearch, $options: 'i' } }
       ];
     }
 
@@ -40,12 +40,12 @@ exports.getRepairs = async (req, res) => {
     }
 
     if (itemType && itemType !== 'all') {
-      query['item.type'] = itemType;
+      query.itemType = itemType;
     }
 
     const [repairs, total] = await Promise.all([
       RepairTracking.find(query)
-        .populate('customer.patientId', 'firstName lastName')
+        .populate('customer', 'firstName lastName phone email')
         .populate('receivedBy', 'firstName lastName')
         .populate('assignedTo', 'firstName lastName')
         .sort({ createdAt: -1 })
@@ -72,9 +72,9 @@ exports.getRepairs = async (req, res) => {
 exports.getRepair = async (req, res) => {
   try {
     const repair = await RepairTracking.findById(req.params.id)
-      .populate('customer.patientId', 'firstName lastName email phone')
+      .populate('customer', 'firstName lastName email phone')
       .populate('receivedBy', 'firstName lastName')
-      .populate('assignedTechnician', 'firstName lastName')
+      .populate('assignedTo', 'firstName lastName')
       .populate('statusHistory.changedBy', 'firstName lastName');
 
     if (!repair) {
@@ -144,7 +144,7 @@ exports.updateStatus = async (req, res) => {
 
     const { status, notes } = req.body;
 
-    await repair.updateStatus(status, req.user._id, notes);
+    await repair.updateStatus(req.user._id, status, notes);
 
     res.json({ success: true, data: repair });
   } catch (error) {
@@ -307,7 +307,7 @@ exports.cancelRepair = async (req, res) => {
 exports.getCustomerRepairs = async (req, res) => {
   try {
     const repairs = await RepairTracking.find({
-      'customer.patientId': req.params.customerId
+      customer: req.params.customerId
     })
       .sort({ createdAt: -1 })
       .lean();
@@ -329,7 +329,7 @@ exports.getReadyForPickup = async (req, res) => {
     }
 
     const repairs = await RepairTracking.find(query)
-      .populate('customer.patientId', 'firstName lastName phone')
+      .populate('customer', 'firstName lastName phone')
       .sort({ updatedAt: 1 })
       .lean();
 

@@ -154,7 +154,9 @@ export function useDeviceSync(patientId, clinicId = null, options = {}) {
         status: 'active'
       });
 
-      const devices = devicesResponse?.data || [];
+      // Handle various API response formats defensively
+      const rawDevices = devicesResponse?.data?.data ?? devicesResponse?.data ?? [];
+      const devices = Array.isArray(rawDevices) ? rawDevices : [];
       const allMeasurements = [];
 
       // Calculate the cutoff time
@@ -173,7 +175,9 @@ export function useDeviceSync(patientId, clinicId = null, options = {}) {
             }
           );
 
-          const deviceMeasurements = measurementsResponse?.data || [];
+          // Handle various API response formats defensively
+          const rawMeasurements = measurementsResponse?.data?.data ?? measurementsResponse?.data ?? [];
+          const deviceMeasurements = Array.isArray(rawMeasurements) ? rawMeasurements : [];
 
           // Add device info to each measurement
           deviceMeasurements.forEach(m => {

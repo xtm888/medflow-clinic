@@ -977,7 +977,9 @@ const ophthalmologyService = {
       console.log('[OphthalmologyService] Pre-caching exams...');
 
       const response = await api.get('/ophthalmology/exams', { params });
-      const exams = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawExams = response?.data?.data ?? response?.data ?? [];
+      const exams = Array.isArray(rawExams) ? rawExams : [];
 
       if (exams.length > 0) {
         const timestamp = new Date().toISOString();

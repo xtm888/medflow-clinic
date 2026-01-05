@@ -68,7 +68,13 @@ const OCRReviewQueue = () => {
     setLoading(true);
     try {
       const result = await ocrImportService.getReviewQueue(pagination.page, pagination.limit);
-      setDocuments(result.data || []);
+      // Handle various API response formats defensively
+      const docs = Array.isArray(result?.data?.data)
+        ? result.data.data
+        : Array.isArray(result?.data)
+        ? result.data
+        : [];
+      setDocuments(docs);
       setPagination(prev => ({
         ...prev,
         total: result.pagination?.total || 0,
@@ -91,9 +97,16 @@ const OCRReviewQueue = () => {
     setSearching(true);
     try {
       const result = await ocrImportService.searchPatients(query, 10);
-      setSearchResults(result.data || []);
+      // Handle various API response formats defensively
+      const patients = Array.isArray(result?.data?.data)
+        ? result.data.data
+        : Array.isArray(result?.data)
+        ? result.data
+        : [];
+      setSearchResults(patients);
     } catch (err) {
       console.error('Search error:', err);
+      setSearchResults([]);
     } finally {
       setSearching(false);
     }

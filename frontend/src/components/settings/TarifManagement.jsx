@@ -3,7 +3,7 @@ import {
   DollarSign, Plus, Edit2, Trash2, Search, X, Save,
   Filter, ChevronLeft, ChevronRight, Calendar, RefreshCw,
   CheckCircle, XCircle, Tag, Building2, Copy, AlertTriangle,
-  FileText, ArrowRight
+  FileText, ArrowRight, RotateCcw
 } from 'lucide-react';
 import feeScheduleService from '../../services/feeScheduleService';
 import { getClinicsForDropdown } from '../../services/clinicService';
@@ -57,6 +57,10 @@ export default function TarifManagement() {
   const [copyOverwrite, setCopyOverwrite] = useState(false);
   const [copying, setCopying] = useState(false);
 
+  // Store templates and clinic prices separately for merging
+  const [templates, setTemplates] = useState([]);
+  const [clinicPrices, setClinicPrices] = useState([]);
+
   const [formData, setFormData] = useState({
     code: '',
     name: '',
@@ -95,9 +99,12 @@ export default function TarifManagement() {
   const loadClinics = async () => {
     try {
       const result = await getClinicsForDropdown();
-      setClinics(result || []);
+      // Handle both direct array and wrapped response { data: [...] } or { data: { data: [...] } }
+      const clinicsData = result?.data?.data || result?.data || result || [];
+      setClinics(Array.isArray(clinicsData) ? clinicsData : []);
     } catch (error) {
       console.error('Error loading clinics:', error);
+      setClinics([]);
     }
   };
 
@@ -113,22 +120,64 @@ export default function TarifManagement() {
   const loadFeeSchedules = async () => {
     setLoading(true);
     try {
-      let result;
+      // Always load templates first
+      const templatesData = await feeScheduleService.getFeeSchedules({
+        active: showInactive ? undefined : 'true',
+        all: 'true',
+        templates: 'true'
+      });
+      const loadedTemplates = Array.isArray(templatesData) ? templatesData : [];
+      setTemplates(loadedTemplates);
+
       if (selectedClinic === 'templates') {
-        // Load template fee schedules (isTemplate: true, no clinic)
-        result = await feeScheduleService.getTemplates({
-          active: showInactive ? undefined : true
-        });
+        // Template view: show templates directly
+        setClinicPrices([]);
+        setFeeSchedules(loadedTemplates);
       } else {
-        // Load clinic-specific fee schedules
-        result = await feeScheduleService.getForClinic(selectedClinic, {
-          active: showInactive ? undefined : true
+        // Clinic view: load clinic prices and merge with templates
+        const clinicResult = await feeScheduleService.getForClinic(selectedClinic, {
+          active: showInactive ? undefined : 'true',
+          all: 'true'
         });
+        const loadedClinicPrices = clinicResult?.data || clinicResult || [];
+        setClinicPrices(Array.isArray(loadedClinicPrices) ? loadedClinicPrices : []);
+
+        // Create a merged view: all templates with clinic prices overlaid
+        const clinicPriceByCode = {};
+        (Array.isArray(loadedClinicPrices) ? loadedClinicPrices : []).forEach(cp => {
+          clinicPriceByCode[cp.code] = cp;
+        });
+
+        // Merge: for each template, use clinic price if exists, otherwise template
+        const mergedData = loadedTemplates.map(template => {
+          const clinicPrice = clinicPriceByCode[template.code];
+          if (clinicPrice) {
+            // Clinic has custom price - mark it
+            return {
+              ...clinicPrice,
+              _isClinicOverride: true,
+              _templatePrice: template.price,
+              _templateCurrency: template.currency,
+              _templateId: template._id
+            };
+          } else {
+            // Using template default - mark it
+            return {
+              ...template,
+              _isClinicOverride: false,
+              _isTemplateDefault: true
+            };
+          }
+        });
+
+        setFeeSchedules(mergedData);
       }
-      setFeeSchedules(result.data || []);
     } catch (error) {
       console.error('Error loading fee schedules:', error);
       toast.error('Erreur lors du chargement des tarifs');
+      setFeeSchedules([]);
+      setTemplates([]);
+      setClinicPrices([]);
     } finally {
       setLoading(false);
     }
@@ -304,6 +353,48 @@ export default function TarifManagement() {
     }
   };
 
+  // Reset clinic price to template default (delete clinic override)
+  const handleResetToDefault = async (item) => {
+    if (!item._isClinicOverride) return;
+
+    if (!confirm(`Réinitialiser le prix de "${item.name}" au tarif par défaut (${formatPrice(item._templatePrice, item._templateCurrency)}) ?`)) {
+      return;
+    }
+
+    try {
+      await feeScheduleService.deleteFeeSchedule(item._id);
+      toast.success('Prix réinitialisé au tarif par défaut');
+      loadFeeSchedules();
+      loadClinicStatus();
+    } catch (error) {
+      console.error('Error resetting to default:', error);
+      toast.error('Erreur lors de la réinitialisation');
+    }
+  };
+
+  // Create clinic-specific price from template
+  const handleCreateClinicPrice = (templateItem) => {
+    setFormData({
+      code: templateItem.code,
+      name: templateItem.name,
+      description: templateItem.description || '',
+      category: templateItem.category || 'consultation',
+      displayCategory: templateItem.displayCategory || '',
+      department: templateItem.department || '',
+      price: templateItem.price || '',
+      currency: templateItem.currency || 'CDF',
+      unit: templateItem.unit || 'unit',
+      taxable: templateItem.taxable !== false,
+      taxRate: templateItem.taxRate || 0,
+      insuranceClaimable: templateItem.insuranceClaimable !== false,
+      effectiveFrom: '',
+      effectiveTo: '',
+      notes: ''
+    });
+    setEditingItem(null); // Creating new clinic price, not editing
+    setShowForm(true);
+  };
+
   const resetForm = () => {
     setFormData({
       code: '',
@@ -462,6 +553,38 @@ export default function TarifManagement() {
             </div>
           </div>
         )}
+
+        {/* Clinic view summary and legend */}
+        {selectedClinic !== 'templates' && feeSchedules.length > 0 && (
+          <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              {/* Stats */}
+              <div className="flex items-center gap-6 text-sm">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-purple-500"></span>
+                  <span className="text-gray-700">
+                    <strong>{feeSchedules.filter(f => f._isClinicOverride).length}</strong> prix personnalisés
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-gray-400"></span>
+                  <span className="text-gray-700">
+                    <strong>{feeSchedules.filter(f => f._isTemplateDefault).length}</strong> prix par défaut
+                  </span>
+                </div>
+              </div>
+              {/* Legend */}
+              <div className="flex items-center gap-4 text-xs text-gray-500">
+                <span className="flex items-center gap-1">
+                  <Plus className="h-3 w-3" /> Personnaliser
+                </span>
+                <span className="flex items-center gap-1">
+                  <RotateCcw className="h-3 w-3" /> Réinitialiser
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -511,9 +634,21 @@ export default function TarifManagement() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="p-6 border-b border-gray-200 flex items-center justify-between sticky top-0 bg-white">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingItem ? 'Modifier le tarif' : 'Nouveau tarif'}
-              </h3>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">
+                  {editingItem
+                    ? 'Modifier le tarif'
+                    : selectedClinic !== 'templates' && formData.code
+                      ? 'Définir un prix personnalisé'
+                      : 'Nouveau tarif'}
+                </h3>
+                {selectedClinic !== 'templates' && (
+                  <p className="text-sm text-purple-600 flex items-center gap-1 mt-1">
+                    <Building2 className="h-4 w-4" />
+                    {getClinicName(selectedClinic)}
+                  </p>
+                )}
+              </div>
               <button onClick={resetForm} className="p-2 hover:bg-gray-100 rounded-lg">
                 <X className="h-5 w-5" />
               </button>
@@ -530,13 +665,18 @@ export default function TarifManagement() {
                     type="text"
                     value={formData.code}
                     onChange={(e) => setFormData({...formData, code: e.target.value.toUpperCase()})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 uppercase"
+                    className={`w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 uppercase ${
+                      (editingItem || (selectedClinic !== 'templates' && formData.code)) ? 'bg-gray-100' : ''
+                    }`}
                     placeholder="CONSULT_GENERAL"
                     required
-                    disabled={!!editingItem}
+                    disabled={!!editingItem || (selectedClinic !== 'templates' && formData.code !== '')}
                   />
                   {editingItem && (
                     <p className="mt-1 text-xs text-gray-500">Le code ne peut pas être modifié</p>
+                  )}
+                  {!editingItem && selectedClinic !== 'templates' && formData.code && (
+                    <p className="mt-1 text-xs text-purple-600">Code hérité du modèle central</p>
                   )}
                 </div>
 
@@ -920,6 +1060,11 @@ export default function TarifManagement() {
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Prix
                   </th>
+                  {selectedClinic !== 'templates' && (
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Source
+                    </th>
+                  )}
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Statut
                   </th>
@@ -931,8 +1076,8 @@ export default function TarifManagement() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {paginatedItems.map((item) => (
                   <tr
-                    key={item._id}
-                    className={`hover:bg-gray-50 ${!item.active ? 'bg-gray-100 opacity-60' : ''}`}
+                    key={item._id || item.code}
+                    className={`hover:bg-gray-50 ${!item.active ? 'bg-gray-100 opacity-60' : ''} ${item._isTemplateDefault ? 'bg-blue-50/30' : ''}`}
                   >
                     <td className="px-4 py-3 whitespace-nowrap">
                       <code className="text-sm font-mono bg-gray-100 px-2 py-0.5 rounded">
@@ -952,12 +1097,35 @@ export default function TarifManagement() {
                       </span>
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <span className="text-sm font-semibold text-green-700">
-                        {formatPrice(item.price, item.currency)}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className={`text-sm font-semibold ${item._isClinicOverride ? 'text-purple-700' : 'text-green-700'}`}>
+                          {formatPrice(item.price, item.currency)}
+                        </span>
+                        {/* Show template price comparison for clinic overrides */}
+                        {item._isClinicOverride && item._templatePrice !== item.price && (
+                          <span className="text-xs text-gray-400 line-through">
+                            {formatPrice(item._templatePrice, item._templateCurrency)}
+                          </span>
+                        )}
+                      </div>
                     </td>
+                    {selectedClinic !== 'templates' && (
+                      <td className="px-4 py-3 whitespace-nowrap text-center">
+                        {item._isClinicOverride ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-700" title="Prix personnalisé pour cette clinique">
+                            <Building2 className="h-3 w-3" />
+                            Personnalisé
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600" title="Prix par défaut (modèle central)">
+                            <FileText className="h-3 w-3" />
+                            Par défaut
+                          </span>
+                        )}
+                      </td>
+                    )}
                     <td className="px-4 py-3 whitespace-nowrap text-center">
-                      {item.active ? (
+                      {item.active !== false ? (
                         <span className="inline-flex items-center gap-1 text-green-600">
                           <CheckCircle className="h-4 w-4" />
                           <span className="text-xs">Actif</span>
@@ -971,29 +1139,57 @@ export default function TarifManagement() {
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
-                          title="Modifier"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        {item.active ? (
+                        {/* For clinic view with template default: button to create clinic price */}
+                        {selectedClinic !== 'templates' && item._isTemplateDefault && (
                           <button
-                            onClick={() => handleDelete(item)}
-                            className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
-                            title="Désactiver"
+                            onClick={() => handleCreateClinicPrice(item)}
+                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg"
+                            title="Définir un prix personnalisé"
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Plus className="h-4 w-4" />
                           </button>
-                        ) : (
+                        )}
+                        {/* Edit button */}
+                        {(selectedClinic === 'templates' || item._isClinicOverride) && (
                           <button
-                            onClick={() => handleReactivate(item)}
-                            className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg"
-                            title="Réactiver"
+                            onClick={() => handleEdit(item)}
+                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg"
+                            title="Modifier"
                           >
-                            <RefreshCw className="h-4 w-4" />
+                            <Edit2 className="h-4 w-4" />
                           </button>
+                        )}
+                        {/* Reset to default button for clinic overrides */}
+                        {selectedClinic !== 'templates' && item._isClinicOverride && (
+                          <button
+                            onClick={() => handleResetToDefault(item)}
+                            className="p-2 text-gray-400 hover:text-orange-600 hover:bg-orange-50 rounded-lg"
+                            title="Réinitialiser au prix par défaut"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </button>
+                        )}
+                        {/* Delete/reactivate for templates or clinic prices */}
+                        {(selectedClinic === 'templates' || item._isClinicOverride) && (
+                          <>
+                            {item.active !== false ? (
+                              <button
+                                onClick={() => handleDelete(item)}
+                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                                title="Désactiver"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleReactivate(item)}
+                                className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg"
+                                title="Réactiver"
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </button>
+                            )}
+                          </>
                         )}
                       </div>
                     </td>

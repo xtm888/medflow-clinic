@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Activity,
   AlertCircle,
@@ -18,15 +18,27 @@ import {
   Upload,
   Wifi,
   WifiOff,
-  XCircle
+  XCircle,
+  Loader2,
+  Network
 } from 'lucide-react';
 import deviceService from '../services/deviceService';
 import { toast } from 'react-toastify';
 import logger from '../services/logger';
 
+// Lazy load tab content
+const DeviceStatusDashboardContent = lazy(() => import('./DeviceStatusDashboard'));
+const NetworkDiscoveryContent = lazy(() => import('./NetworkDiscovery'));
+
 const DeviceManager = () => {
   const navigate = useNavigate();
-  
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Tab state from URL
+  const activeTab = searchParams.get('tab') || 'devices';
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
 
   // State
   const [devices, setDevices] = useState([]);
@@ -203,13 +215,6 @@ const DeviceManager = () => {
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate('/devices/status')}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Activity className="w-4 h-4" />
-            Tableau de bord
-          </button>
-          <button
             onClick={() => setShowAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -218,6 +223,61 @@ const DeviceManager = () => {
           </button>
         </div>
       </div>
+
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('devices')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'devices'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <HardDrive className="h-5 w-5" />
+            Appareils
+          </button>
+          <button
+            onClick={() => setActiveTab('status')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'status'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Activity className="h-5 w-5" />
+            Tableau de Bord
+          </button>
+          <button
+            onClick={() => setActiveTab('discovery')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'discovery'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Network className="h-5 w-5" />
+            Découverte Réseau
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'status' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-blue-600" /></div>}>
+          <DeviceStatusDashboardContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'discovery' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-blue-600" /></div>}>
+          <NetworkDiscoveryContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'devices' && (
+      <>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -460,6 +520,8 @@ const DeviceManager = () => {
             </div>
           ))}
         </div>
+      )}
+      </>
       )}
 
       {/* Add Device Modal */}

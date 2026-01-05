@@ -12,7 +12,9 @@ const feeScheduleService = {
   async getFeeSchedules(params = {}) {
     try {
       const response = await api.get('/fee-schedules', { params });
-      return response.data.data || [];
+      // Safely extract array from various API response formats
+      const rawData = response?.data?.data ?? response?.data ?? [];
+      return Array.isArray(rawData) ? rawData : [];
     } catch (error) {
       console.error('Error fetching fee schedules:', error);
       throw error;
@@ -49,7 +51,9 @@ const feeScheduleService = {
         }
       });
 
-      const allServices = response.data.data || [];
+      // Safely extract array from various API response formats
+      const rawServices = response?.data?.data ?? response?.data ?? [];
+      const allServices = Array.isArray(rawServices) ? rawServices : [];
 
       // Filter for imaging and examination related services
       return allServices.filter(service =>
@@ -78,7 +82,9 @@ const feeScheduleService = {
         }
       });
 
-      const allServices = response.data.data || [];
+      // Safely extract array from various API response formats
+      const rawServices = response?.data?.data ?? response?.data ?? [];
+      const allServices = Array.isArray(rawServices) ? rawServices : [];
 
       // Filter for surgery services
       return allServices.filter(service =>
@@ -105,7 +111,9 @@ const feeScheduleService = {
         }
       });
 
-      const allServices = response.data.data || [];
+      // Safely extract array from various API response formats
+      const rawServices = response?.data?.data ?? response?.data ?? [];
+      const allServices = Array.isArray(rawServices) ? rawServices : [];
 
       // Filter for laboratory services
       return allServices.filter(service =>
@@ -140,7 +148,9 @@ const feeScheduleService = {
   async getCategories() {
     try {
       const response = await api.get('/fee-schedules/categories');
-      return response.data.data || [];
+      // Safely extract array from various API response formats
+      const rawCategories = response?.data?.data ?? response?.data ?? [];
+      return Array.isArray(rawCategories) ? rawCategories : [];
     } catch (error) {
       console.error('Error fetching categories:', error);
       throw error;

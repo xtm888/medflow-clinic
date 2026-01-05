@@ -39,11 +39,18 @@ export default function IVTAllSection({ totalCount }) {
       });
 
       const response = await api.get('/ivt', { params });
-      setInjections(response.data.data || []);
-      setTotalPages(response.data.pages || 1);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setInjections(data);
+      setTotalPages(response?.data?.pages || 1);
       setLoaded(true);
     } catch (err) {
       console.error('Error fetching injections:', err);
+      setInjections([]);
     } finally {
       setLoading(false);
     }

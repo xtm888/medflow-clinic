@@ -26,10 +26,21 @@ export default function SurgeryQueueSection({ count, onRefresh }) {
     try {
       setLoading(true);
       const response = await surgeryService.getAwaitingScheduling();
-      setCases(response.data || []);
+      // Handle various API response formats defensively
+      const casesData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.cases)
+        ? response.data.cases
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : Array.isArray(response)
+        ? response
+        : [];
+      setCases(casesData);
       setLoaded(true);
     } catch (err) {
       console.error('Error loading surgery queue:', err);
+      setCases([]);
     } finally {
       setLoading(false);
     }
@@ -39,9 +50,20 @@ export default function SurgeryQueueSection({ count, onRefresh }) {
     try {
       setLoadingRooms(true);
       const response = await surgeryService.getORRooms();
-      setOrRooms(response.data || []);
+      // Handle various API response formats defensively
+      const roomsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.rooms)
+        ? response.data.rooms
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : Array.isArray(response)
+        ? response
+        : [];
+      setOrRooms(roomsData);
     } catch (err) {
       console.error('Error loading OR rooms:', err);
+      setOrRooms([]);
     } finally {
       setLoadingRooms(false);
     }

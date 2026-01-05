@@ -90,9 +90,16 @@ export default function Approvals() {
     const fetchCompanies = async () => {
       try {
         const result = await companyService.getCompanies({ status: 'active', limit: 100 });
-        setCompanies(result.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setCompanies(data);
       } catch (err) {
         console.error('Error fetching companies:', err);
+        setCompanies([]);
       }
     };
     fetchCompanies();

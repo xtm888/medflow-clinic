@@ -38,8 +38,10 @@ export default function useFrameSearch() {
           limit: 20
         });
         if (response.success) {
-          // Sort: in-stock first, then out-of-stock
-          const sorted = (response.data || []).sort((a, b) => {
+          // Sort: in-stock first, then out-of-stock - handle various API response formats
+          const rawData = response?.data?.data ?? response?.data ?? [];
+          const frameData = Array.isArray(rawData) ? rawData : [];
+          const sorted = frameData.sort((a, b) => {
             const aStock = a.inventory?.currentStock || 0;
             const bStock = b.inventory?.currentStock || 0;
             return bStock - aStock;

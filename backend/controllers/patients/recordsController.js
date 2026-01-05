@@ -1033,3 +1033,149 @@ exports.getPatientCorrespondence = asyncHandler(async (req, res, next) => {
     return success(res, { data: [] });
   }
 });
+
+// @desc    Record patient vital signs
+// @route   POST /api/patients/:id/vitals
+// @access  Private (Nurse, Doctor)
+// @note    Finds or creates a visit for today and attaches vitals
+exports.recordVitals = asyncHandler(async (req, res, next) => {
+  const Visit = require('../../models/Visit');
+  const Appointment = require('../../models/Appointment');
+
+  const patient = await findPatientByIdOrCode(req.params.id);
+
+  if (!patient) {
+    return notFound(res, 'Patient');
+  }
+
+  const {
+    bloodPressure,
+    heartRate,
+    temperature,
+    weight,
+    height,
+    oxygenSaturation,
+    respiratoryRate,
+    notes
+  } = req.body;
+
+  // Validate at least one vital sign is provided
+  if (!bloodPressure && !heartRate && !temperature && !weight && !height && !oxygenSaturation && !respiratoryRate) {
+    return error(res, 'Au moins un signe vital est requis', 400);
+  }
+
+  const clinicId = req.clinicId;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  // Look for an existing visit today for this patient
+  let visit = await Visit.findOne({
+    patient: patient._id,
+    clinic: clinicId,
+    visitDate: { $gte: today, $lt: tomorrow },
+    status: { $in: ['checked-in', 'in-progress', 'with-nurse', 'pending'] }
+  }).sort({ visitDate: -1 });
+
+  let visitCreated = false;
+  let appointmentUsed = null;
+
+  // If no visit exists, check for today's appointment and create a quick visit
+  if (!visit) {
+    // Look for today's appointment
+    const appointment = await Appointment.findOne({
+      patient: patient._id,
+      clinic: clinicId,
+      date: { $gte: today, $lt: tomorrow },
+      status: { $in: ['scheduled', 'confirmed', 'checked-in'] }
+    }).sort({ startTime: 1 });
+
+    if (appointment) {
+      appointmentUsed = appointment;
+    }
+
+    // Create a new visit for vitals recording
+    visit = new Visit({
+      patient: patient._id,
+      clinic: clinicId,
+      visitDate: new Date(),
+      status: 'with-nurse',
+      visitType: appointment ? 'scheduled' : 'walk-in',
+      appointment: appointment?._id,
+      chiefComplaint: 'Enregistrement des signes vitaux',
+      createdBy: req.user._id || req.user.id,
+      physicalExamination: {
+        vitalSigns: {}
+      }
+    });
+    visitCreated = true;
+  }
+
+  // Ensure physicalExamination and vitalSigns exist
+  if (!visit.physicalExamination) {
+    visit.physicalExamination = {};
+  }
+  if (!visit.physicalExamination.vitalSigns) {
+    visit.physicalExamination.vitalSigns = {};
+  }
+
+  // Update vital signs
+  const vs = visit.physicalExamination.vitalSigns;
+  if (bloodPressure) vs.bloodPressure = bloodPressure;
+  if (heartRate) vs.heartRate = heartRate;
+  if (temperature) vs.temperature = temperature;
+  if (weight) vs.weight = weight;
+  if (height) vs.height = height;
+  if (oxygenSaturation) vs.oxygenSaturation = oxygenSaturation;
+  if (respiratoryRate) vs.respiratoryRate = respiratoryRate;
+  if (notes) vs.notes = notes;
+
+  // Calculate BMI if height and weight are available
+  if (vs.height && vs.weight) {
+    const heightInMeters = vs.height / 100;
+    vs.bmi = parseFloat((vs.weight / (heightInMeters * heightInMeters)).toFixed(1));
+  }
+
+  // Record who took the vitals
+  vs.recordedBy = req.user._id || req.user.id;
+  vs.recordedAt = new Date();
+
+  await visit.save();
+
+  // If we used an appointment, update its status
+  if (appointmentUsed && appointmentUsed.status === 'scheduled') {
+    appointmentUsed.status = 'checked-in';
+    await appointmentUsed.save();
+  }
+
+  // Build response message
+  let message = 'Signes vitaux enregistrés avec succès';
+  if (visitCreated) {
+    message += appointmentUsed
+      ? ` (visite créée pour le rendez-vous de ${appointmentUsed.startTime || 'aujourd\'hui'})`
+      : ' (nouvelle visite créée)';
+  }
+
+  patientLogger.info('Vitals recorded', {
+    patientId: patient._id,
+    visitId: visit._id,
+    visitCreated,
+    vitalSigns: vs,
+    recordedBy: req.user._id
+  });
+
+  return success(res, {
+    message,
+    data: {
+      visit: {
+        _id: visit._id,
+        status: visit.status,
+        visitDate: visit.visitDate,
+        visitType: visit.visitType
+      },
+      vitalSigns: vs,
+      visitCreated
+    }
+  }, 201);
+});

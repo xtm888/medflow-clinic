@@ -95,6 +95,30 @@ export default function MainLayout() {
   const { hasPatient } = usePatient();
   const { showSyncProgress, closeSyncProgress, openSyncProgress } = useClinic();
 
+  // Helper function to check if a menu path is active (handles query params)
+  const isPathActive = (menuPath) => {
+    if (!menuPath) return false;
+
+    // Parse the menu path to extract pathname and search params
+    const [menuPathname, menuSearch] = menuPath.split('?');
+
+    // First check: pathname must match
+    if (location.pathname !== menuPathname) return false;
+
+    // If menu path has no query params, pathname match is enough
+    if (!menuSearch) return true;
+
+    // If menu path has query params, check if they're present in current location
+    const menuParams = new URLSearchParams(menuSearch);
+    const currentParams = new URLSearchParams(location.search);
+
+    // Check if all menu params are present in current URL
+    for (const [key, value] of menuParams.entries()) {
+      if (currentParams.get(key) !== value) return false;
+    }
+    return true;
+  };
+
   // Toggle submenu expansion
   const toggleSubmenu = (menuName) => {
     setExpandedMenus(prev => ({
@@ -114,7 +138,7 @@ export default function MainLayout() {
     accessibleItems.forEach(itemKey => {
       const config = menuConfigurations[itemKey];
       if (config?.subItems?.length > 0) {
-        const hasActiveSubItem = config.subItems.some(sub => location.pathname === sub.path);
+        const hasActiveSubItem = config.subItems.some(sub => isPathActive(sub.path));
         if (hasActiveSubItem) {
           menusToExpand[itemKey] = true;
         }
@@ -131,9 +155,8 @@ export default function MainLayout() {
 
   // Keyboard shortcuts
   useKeyboardShortcuts({
-    // Navigation shortcuts
+    // Navigation shortcuts (all require modifier keys to prevent accidental triggers)
     'ctrl+h': () => navigate('/home'),
-    'h': () => navigate('/home'), // Quick home access
     'ctrl+p': () => navigate('/patients'),
     'ctrl+q': () => navigate('/queue'),
     'ctrl+a': () => navigate('/appointments'),
@@ -256,10 +279,10 @@ export default function MainLayout() {
           </div>
           <nav className="flex-1 px-3 space-y-1">
             {navigation.map((item) => {
-              const isActive = item.href && location.pathname === item.href;
+              const isActive = item.href && isPathActive(item.href);
               const hasSubItems = item.subItems && item.subItems.length > 0;
               const isExpanded = expandedMenus[item.key];
-              const isSubItemActive = hasSubItems && item.subItems.some(sub => location.pathname === sub.href);
+              const isSubItemActive = hasSubItems && item.subItems.some(sub => isPathActive(sub.href));
 
               if (hasSubItems) {
                 return (
@@ -289,7 +312,7 @@ export default function MainLayout() {
                     {isExpanded && (
                       <div className="mt-1 ml-4 space-y-1">
                         {item.subItems.map((subItem) => {
-                          const isSubActive = location.pathname === subItem.href;
+                          const isSubActive = isPathActive(subItem.href);
                           return (
                             <Link
                               key={subItem.name}
@@ -370,10 +393,10 @@ export default function MainLayout() {
           </div>
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = item.href && location.pathname === item.href;
+              const isActive = item.href && isPathActive(item.href);
               const hasSubItems = item.subItems && item.subItems.length > 0;
               const isExpanded = expandedMenus[item.key];
-              const isSubItemActive = hasSubItems && item.subItems.some(sub => location.pathname === sub.href);
+              const isSubItemActive = hasSubItems && item.subItems.some(sub => isPathActive(sub.href));
 
               if (hasSubItems) {
                 return (
@@ -399,7 +422,7 @@ export default function MainLayout() {
                     {isExpanded && (
                       <div className="mt-1 ml-4 space-y-1">
                         {item.subItems.map((subItem) => {
-                          const isSubActive = location.pathname === subItem.href;
+                          const isSubActive = isPathActive(subItem.href);
                           return (
                             <Link
                               key={subItem.name}
@@ -484,7 +507,7 @@ export default function MainLayout() {
               <button
                 onClick={() => navigate('/home')}
                 className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white rounded-lg hover:from-primary-700 hover:to-primary-800 transition-all shadow-sm hover:shadow-md"
-                title="Accueil - Menu principal (H)"
+                title="Accueil - Menu principal (Ctrl+H)"
               >
                 <LayoutGrid className="h-5 w-5" />
                 <span className="hidden sm:inline font-medium">Accueil</span>

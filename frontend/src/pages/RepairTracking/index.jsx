@@ -75,15 +75,22 @@ export default function RepairTracking() {
       if (params.itemType === 'all') delete params.itemType;
 
       const response = await repairService.getAll(params);
-      setRepairs(response.data || []);
+      // Handle various API response formats defensively
+      const repairData = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setRepairs(repairData);
       setPagination({
-        page: response.page || 1,
-        pages: response.pages || 1,
-        total: response.total || 0
+        page: response?.page || response?.data?.page || 1,
+        pages: response?.pages || response?.data?.pages || 1,
+        total: response?.total || response?.data?.total || 0
       });
     } catch (error) {
       toast.error('Erreur lors du chargement des réparations');
       console.error(error);
+      setRepairs([]);
     } finally {
       setLoading(false);
     }
@@ -294,23 +301,25 @@ export default function RepairTracking() {
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium">{repair.customer?.name}</p>
-                        {repair.customer?.phone && (
+                        <p className="font-medium">
+                          {repair.customerName || (repair.customer ? `${repair.customer.firstName} ${repair.customer.lastName}` : '-')}
+                        </p>
+                        {(repair.customerPhone || repair.customer?.phone) && (
                           <p className="text-sm text-gray-500 flex items-center gap-1">
                             <Phone className="w-3 h-3" />
-                            {repair.customer.phone}
+                            {repair.customerPhone || repair.customer.phone}
                           </p>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       <div>
-                        <p className="font-medium">{repair.item?.description}</p>
-                        <p className="text-sm text-gray-500 capitalize">{repair.item?.type}</p>
+                        <p className="font-medium">{repair.itemDescription || '-'}</p>
+                        <p className="text-sm text-gray-500 capitalize">{repair.itemType || '-'}</p>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
-                      {repair.problem?.description}
+                      {repair.problemReported || '-'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-600">
                       {formatDate(repair.createdAt)}

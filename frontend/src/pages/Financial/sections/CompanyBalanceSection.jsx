@@ -13,16 +13,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import CollapsibleSection from '../../../components/CollapsibleSection';
 import companyService from '../../../services/companyService';
-
-const formatCurrency = (amount, currency = 'CDF') => {
-  if (amount == null) return '-';
-  return new Intl.NumberFormat('fr-CD', {
-    style: 'currency',
-    currency: currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  }).format(amount);
-};
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function CompanyBalanceSection() {
   const navigate = useNavigate();
@@ -42,11 +33,24 @@ export default function CompanyBalanceSection() {
           companyService.getExpiringContracts(30)
         ]);
 
-        setCompanies(outstandingRes.data || []);
-        setExpiringContracts(expiringRes.data || []);
+        // Handle various API response formats defensively
+        const companiesData = Array.isArray(outstandingRes?.data?.data)
+          ? outstandingRes.data.data
+          : Array.isArray(outstandingRes?.data)
+          ? outstandingRes.data
+          : [];
+        const expiringData = Array.isArray(expiringRes?.data?.data)
+          ? expiringRes.data.data
+          : Array.isArray(expiringRes?.data)
+          ? expiringRes.data
+          : [];
+        setCompanies(companiesData);
+        setExpiringContracts(expiringData);
       } catch (err) {
         console.error('Error fetching company data:', err);
         setError('Erreur lors du chargement des données');
+        setCompanies([]);
+        setExpiringContracts([]);
       } finally {
         setLoading(false);
       }

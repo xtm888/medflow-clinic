@@ -29,7 +29,8 @@ export default function useTaxConfiguration(activeTab, canManageBilling) {
     try {
       setTaxesLoading(true);
       const response = await billingService.getTaxRates({ active: 'all' });
-      setTaxes(response.data || []);
+      const rawData = response?.data?.data ?? response?.data ?? [];
+      setTaxes(Array.isArray(rawData) ? rawData : []);
     } catch (error) {
       console.error('Error fetching taxes:', error);
       toast.error('Erreur lors du chargement des taux de taxe');

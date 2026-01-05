@@ -1,9 +1,11 @@
 /**
- * Backup Management Page
- * Administrative interface for managing database backups
+ * Gestion des Sauvegardes
+ * Interface d'administration pour la gestion des sauvegardes de base de données
  */
 
 import React, { useState, useEffect } from 'react';
+import { toast } from 'react-toastify';
+import { RefreshCw, AlertTriangle } from 'lucide-react';
 import api from '../services/apiConfig';
 
 const BackupManagement = () => {
@@ -33,6 +35,7 @@ const BackupManagement = () => {
   const fetchBackups = async () => {
     try {
       setLoading(true);
+      setError(null);
       const response = await api.get('/backups/list');
       // Backend returns { backups: { daily, monthly, yearly }, summary }
       const allBackups = response.data.data?.backups
@@ -40,8 +43,10 @@ const BackupManagement = () => {
         : (response.data.backups ? [...(response.data.backups.daily || []), ...(response.data.backups.monthly || []), ...(response.data.backups.yearly || [])] : []);
       setBackups(allBackups);
     } catch (err) {
-      setError('Failed to load backups');
+      const errorMessage = err.response?.data?.message || err.message || 'Impossible de charger les sauvegardes';
+      setError(errorMessage);
       console.error('Error fetching backups:', err);
+      toast.error(errorMessage, { icon: '⚠️' });
     } finally {
       setLoading(false);
     }
@@ -55,6 +60,11 @@ const BackupManagement = () => {
       }
     } catch (err) {
       console.error('Error fetching backup settings:', err);
+      // Non-blocking warning - settings are secondary info
+      toast.warning('Impossible de charger les paramètres de sauvegarde automatique', {
+        autoClose: 3000,
+        icon: '⚙️'
+      });
     }
   };
 
@@ -64,6 +74,11 @@ const BackupManagement = () => {
       setStats(response.data?.data?.stats || response.data?.stats || null);
     } catch (err) {
       console.error('Error fetching backup stats:', err);
+      // Non-blocking warning - stats are informational only
+      toast.warning('Impossible de charger les statistiques de sauvegarde', {
+        autoClose: 3000,
+        icon: '📊'
+      });
     }
   };
 
@@ -73,22 +88,28 @@ const BackupManagement = () => {
       setError(null);
       const response = await api.post('/backups/trigger', { type: 'manual' });
       await fetchBackups();
-      alert(`Backup created successfully: ${response.data?.data?.filename || 'Manual backup'}`);
+      const filename = response.data?.data?.filename || 'Sauvegarde manuelle';
+      toast.success(`Sauvegarde créée avec succès: ${filename}`, {
+        autoClose: 5000,
+        icon: '💾'
+      });
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create backup');
+      const errorMessage = err.response?.data?.message || 'Impossible de créer la sauvegarde';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setCreating(false);
     }
   };
 
   const restoreBackup = async (backupId, filename) => {
-    if (!window.confirm(`WARNING: Restoring backup will overwrite current data. Are you sure you want to restore from "${filename}"?`)) {
+    if (!window.confirm(`ATTENTION: La restauration écrasera les données actuelles. Êtes-vous sûr de vouloir restaurer depuis "${filename}" ?`)) {
       return;
     }
 
-    const confirmText = window.prompt('Type "RESTORE" to confirm:');
-    if (confirmText !== 'RESTORE') {
-      alert('Restore cancelled');
+    const confirmText = window.prompt('Tapez "RESTAURER" pour confirmer:');
+    if (confirmText !== 'RESTAURER') {
+      toast.info('Restauration annulée');
       return;
     }
 
@@ -96,10 +117,15 @@ const BackupManagement = () => {
       setRestoring(backupId);
       setError(null);
       await api.post('/backups/restore', { backupName: filename, force: true });
-      alert('Backup restored successfully. The system will reload.');
-      window.location.reload();
+      toast.success('Sauvegarde restaurée avec succès. Le système va se recharger.', {
+        autoClose: 3000,
+        icon: '✅'
+      });
+      setTimeout(() => window.location.reload(), 3000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to restore backup');
+      const errorMessage = err.response?.data?.message || 'Impossible de restaurer la sauvegarde';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setRestoring(null);
     }
@@ -107,12 +133,18 @@ const BackupManagement = () => {
 
   const downloadBackup = async (backupId, filename) => {
     // Note: Download endpoint not yet implemented in backend
-    setError('Download feature not yet available. Backups are stored in the server\'s backup directory.');
+    toast.info('Fonctionnalité de téléchargement pas encore disponible. Les sauvegardes sont stockées dans le répertoire de sauvegarde du serveur.', {
+      autoClose: 6000,
+      icon: 'ℹ️'
+    });
   };
 
   const deleteBackup = async (backupId, filename) => {
     // Note: Delete endpoint not yet implemented in backend
-    setError('Delete feature not yet available. Contact system administrator to manage backup files.');
+    toast.info('Fonctionnalité de suppression pas encore disponible. Contactez l\'administrateur système pour gérer les fichiers de sauvegarde.', {
+      autoClose: 6000,
+      icon: 'ℹ️'
+    });
   };
 
   const saveSettings = async () => {
@@ -123,10 +155,14 @@ const BackupManagement = () => {
       } else {
         await api.post('/backups/scheduler/stop');
       }
-      alert('Backup settings saved successfully');
+      toast.success('Paramètres de sauvegarde enregistrés avec succès', {
+        icon: '⚙️'
+      });
       setShowSettings(false);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save settings');
+      const errorMessage = err.response?.data?.message || 'Impossible d\'enregistrer les paramètres';
+      setError(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -159,9 +195,9 @@ const BackupManagement = () => {
     <div className="p-6">
       <div className="sm:flex sm:items-center sm:justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Backup Management</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Gestion des Sauvegardes</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage database backups and restore points
+            Gérer les sauvegardes de base de données et les points de restauration
           </p>
         </div>
         <div className="mt-4 sm:mt-0 flex space-x-3">
@@ -173,7 +209,7 @@ const BackupManagement = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
-            Settings
+            Paramètres
           </button>
           <button
             onClick={createBackup}
@@ -186,14 +222,14 @@ const BackupManagement = () => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Creating...
+                Création...
               </>
             ) : (
               <>
                 <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                Create Backup
+                Créer une Sauvegarde
               </>
             )}
           </button>
@@ -201,8 +237,23 @@ const BackupManagement = () => {
       </div>
 
       {error && (
-        <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4">
-          <p className="text-red-700">{error}</p>
+        <div className="mb-4 bg-red-50 border-l-4 border-red-400 p-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-red-500" />
+            <p className="text-red-700">{error}</p>
+          </div>
+          <button
+            onClick={() => {
+              setError(null);
+              fetchBackups();
+              fetchSettings();
+              fetchStats();
+            }}
+            className="flex items-center gap-2 px-3 py-1 bg-red-100 hover:bg-red-200 text-red-700 rounded-md transition-colors"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Réessayer
+          </button>
         </div>
       )}
 
@@ -210,23 +261,23 @@ const BackupManagement = () => {
       {stats && (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Total Backups</p>
+            <p className="text-sm text-gray-500">Sauvegardes Totales</p>
             <p className="text-2xl font-bold text-gray-900">{stats.totalBackups || backups.length}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Total Storage Used</p>
+            <p className="text-sm text-gray-500">Stockage Total Utilisé</p>
             <p className="text-2xl font-bold text-gray-900">{formatFileSize(stats.totalSize)}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Last Backup</p>
+            <p className="text-sm text-gray-500">Dernière Sauvegarde</p>
             <p className="text-lg font-bold text-gray-900">
-              {stats.lastBackup ? new Date(stats.lastBackup).toLocaleDateString() : 'Never'}
+              {stats.lastBackup ? new Date(stats.lastBackup).toLocaleDateString('fr-FR') : 'Jamais'}
             </p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Auto-Backup</p>
+            <p className="text-sm text-gray-500">Sauvegarde Auto</p>
             <p className={`text-lg font-bold ${settings.autoBackupEnabled ? 'text-green-600' : 'text-red-600'}`}>
-              {settings.autoBackupEnabled ? 'Enabled' : 'Disabled'}
+              {settings.autoBackupEnabled ? 'Activée' : 'Désactivée'}
             </p>
           </div>
         </div>
@@ -238,19 +289,19 @@ const BackupManagement = () => {
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Backup
+                Sauvegarde
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Type
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Size
+                Taille
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Status
+                Statut
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created
+                Créée
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -279,7 +330,7 @@ const BackupManagement = () => {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
                     backup.type === 'automatic' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
                   }`}>
-                    {backup.type || 'manual'}
+                    {backup.type === 'automatic' ? 'automatique' : 'manuel'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -287,17 +338,20 @@ const BackupManagement = () => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadge(backup.status)}`}>
-                    {backup.status || 'completed'}
+                    {backup.status === 'completed' ? 'terminé' :
+                     backup.status === 'in_progress' ? 'en cours' :
+                     backup.status === 'failed' ? 'échoué' :
+                     backup.status === 'pending' ? 'en attente' : 'terminé'}
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {new Date(backup.createdAt).toLocaleString()}
+                  {backup.createdAt ? new Date(backup.createdAt).toLocaleString('fr-FR') : 'N/A'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={() => downloadBackup(backup._id, backup.filename)}
                     className="text-blue-600 hover:text-blue-900 mr-3"
-                    title="Download"
+                    title="Télécharger"
                   >
                     <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -307,7 +361,7 @@ const BackupManagement = () => {
                     onClick={() => restoreBackup(backup._id, backup.filename)}
                     disabled={restoring === backup._id}
                     className="text-yellow-600 hover:text-yellow-900 mr-3 disabled:opacity-50"
-                    title="Restore"
+                    title="Restaurer"
                   >
                     {restoring === backup._id ? (
                       <svg className="animate-spin h-5 w-5 inline" fill="none" viewBox="0 0 24 24">
@@ -323,7 +377,7 @@ const BackupManagement = () => {
                   <button
                     onClick={() => deleteBackup(backup._id, backup.filename)}
                     className="text-red-600 hover:text-red-900"
-                    title="Delete"
+                    title="Supprimer"
                   >
                     <svg className="h-5 w-5 inline" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -340,8 +394,8 @@ const BackupManagement = () => {
             <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
             </svg>
-            <h3 className="mt-2 text-sm font-medium text-gray-900">No backups</h3>
-            <p className="mt-1 text-sm text-gray-500">Get started by creating a new backup.</p>
+            <h3 className="mt-2 text-sm font-medium text-gray-900">Aucune sauvegarde</h3>
+            <p className="mt-1 text-sm text-gray-500">Commencez par créer une nouvelle sauvegarde.</p>
           </div>
         )}
       </div>
@@ -355,11 +409,11 @@ const BackupManagement = () => {
             </div>
 
             <div className="inline-block align-bottom bg-white rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Backup Settings</h3>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">Paramètres de Sauvegarde</h3>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Automatic Backups</span>
+                  <span className="text-sm font-medium text-gray-700">Sauvegardes Automatiques</span>
                   <button
                     onClick={() => setSettings(prev => ({ ...prev, autoBackupEnabled: !prev.autoBackupEnabled }))}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full ${
@@ -373,21 +427,21 @@ const BackupManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Backup Frequency</label>
+                  <label className="block text-sm font-medium text-gray-700">Fréquence de Sauvegarde</label>
                   <select
                     value={settings.backupFrequency}
                     onChange={(e) => setSettings(prev => ({ ...prev, backupFrequency: e.target.value }))}
                     className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="hourly">Hourly</option>
-                    <option value="daily">Daily</option>
-                    <option value="weekly">Weekly</option>
-                    <option value="monthly">Monthly</option>
+                    <option value="hourly">Horaire</option>
+                    <option value="daily">Quotidien</option>
+                    <option value="weekly">Hebdomadaire</option>
+                    <option value="monthly">Mensuel</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Backup Time</label>
+                  <label className="block text-sm font-medium text-gray-700">Heure de Sauvegarde</label>
                   <input
                     type="time"
                     value={settings.backupTime}
@@ -397,7 +451,7 @@ const BackupManagement = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700">Retention Period (days)</label>
+                  <label className="block text-sm font-medium text-gray-700">Période de Rétention (jours)</label>
                   <input
                     type="number"
                     value={settings.retentionDays}
@@ -416,7 +470,7 @@ const BackupManagement = () => {
                       onChange={(e) => setSettings(prev => ({ ...prev, includeAttachments: e.target.checked }))}
                       className="rounded border-gray-300 text-blue-600"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Include file attachments</span>
+                    <span className="ml-2 text-sm text-gray-700">Inclure les pièces jointes</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -425,7 +479,7 @@ const BackupManagement = () => {
                       onChange={(e) => setSettings(prev => ({ ...prev, compressionEnabled: e.target.checked }))}
                       className="rounded border-gray-300 text-blue-600"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Enable compression</span>
+                    <span className="ml-2 text-sm text-gray-700">Activer la compression</span>
                   </label>
                   <label className="flex items-center">
                     <input
@@ -434,7 +488,7 @@ const BackupManagement = () => {
                       onChange={(e) => setSettings(prev => ({ ...prev, encryptionEnabled: e.target.checked }))}
                       className="rounded border-gray-300 text-blue-600"
                     />
-                    <span className="ml-2 text-sm text-gray-700">Enable encryption</span>
+                    <span className="ml-2 text-sm text-gray-700">Activer le chiffrement</span>
                   </label>
                 </div>
               </div>
@@ -444,13 +498,13 @@ const BackupManagement = () => {
                   onClick={() => setShowSettings(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={saveSettings}
                   className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
                 >
-                  Save Settings
+                  Enregistrer
                 </button>
               </div>
             </div>

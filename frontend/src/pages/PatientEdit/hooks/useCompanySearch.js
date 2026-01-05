@@ -25,7 +25,13 @@ export default function useCompanySearch() {
       setSearching(true);
       try {
         const result = await searchCompanies(searchTerm);
-        setResults(result.data || []);
+        // Handle various API response formats defensively
+        const companies = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setResults(companies);
         setShowDropdown(true);
       } catch (err) {
         console.error('Company search error:', err);

@@ -68,13 +68,14 @@ const AnalyticsDashboard = () => {
         api.get('/ophthalmology/dashboard-stats').catch(() => ({ data: {} }))
       ]);
 
-      // Extract data with safe defaults
-      const dashboard = dashboardStats.data?.data || dashboardStats.data || {};
-      const billing = billingStats.data?.data || billingStats.data || {};
-      const queue = queueStats.data?.data || queueStats.data || {};
-      const appointments = appointmentStats.data?.data || appointmentStats.data || {};
-      const revenueData = revenueTrends.data?.data || revenueTrends.data || [];
-      const ophthalmology = ophthalmologyStats.data?.data || ophthalmologyStats.data || {};
+      // Extract data with safe defaults - safely extract from various API response formats
+      const dashboard = dashboardStats.data?.data ?? dashboardStats.data ?? {};
+      const billing = billingStats.data?.data ?? billingStats.data ?? {};
+      const queue = queueStats.data?.data ?? queueStats.data ?? {};
+      const appointments = appointmentStats.data?.data ?? appointmentStats.data ?? {};
+      const rawRevenueData = revenueTrends.data?.data ?? revenueTrends.data ?? [];
+      const revenueData = Array.isArray(rawRevenueData) ? rawRevenueData : [];
+      const ophthalmology = ophthalmologyStats.data?.data ?? ophthalmologyStats.data ?? {};
 
       // Revenue data - use thisMonth from billing statistics
       const monthRevenue = billing.thisMonth?.revenue || 0; // Paid amount

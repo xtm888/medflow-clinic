@@ -261,8 +261,9 @@ export default function Invoicing() {
         api.get('/patients', { params: { limit: 100 } }).catch(() => ({ data: { data: [] } }))
       ]);
 
-      // Transform invoices
-      const invoiceData = invoicesRes.data?.data || invoicesRes.data || [];
+      // Transform invoices - handle various API response formats defensively
+      const rawInvoiceData = invoicesRes.data?.data ?? invoicesRes.data ?? [];
+      const invoiceData = Array.isArray(rawInvoiceData) ? rawInvoiceData : [];
       const transformedInvoices = invoiceData.map(inv => ({
         id: inv._id || inv.id,
         invoiceNumber: inv.invoiceNumber || inv.invoiceId || `INV-${inv._id?.slice(-6) || '000000'}`,
@@ -284,8 +285,9 @@ export default function Invoicing() {
         patientShare: inv.companyBilling?.patientShare ?? inv.summary?.patientShare ?? 0
       }));
 
-      // Transform patients
-      const patientData = patientsRes.data?.data || patientsRes.data || [];
+      // Transform patients - handle various API response formats defensively
+      const rawPatientData = patientsRes.data?.data ?? patientsRes.data ?? [];
+      const patientData = Array.isArray(rawPatientData) ? rawPatientData : [];
       const transformedPatients = patientData.map(p => ({
         id: p._id || p.id,
         firstName: p.firstName || '',

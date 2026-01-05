@@ -37,12 +37,18 @@ export default function PharmacyInventorySection({
       };
 
       const response = await api.get('/pharmacy/inventory', { params });
-      // API returns { success, data: [...], pagination: { total, page, limit, ... }, meta }
-      setMedications(response.data.data || []);
-      setTotalCount(response.data.pagination?.total || response.data.total || 0);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setMedications(data);
+      setTotalCount(response?.data?.pagination?.total || response?.data?.total || 0);
       setLoaded(true);
     } catch (err) {
       console.error('Error fetching inventory:', err);
+      setMedications([]);
     } finally {
       setLoading(false);
     }

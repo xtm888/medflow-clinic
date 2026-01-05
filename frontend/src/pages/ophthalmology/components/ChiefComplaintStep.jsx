@@ -69,7 +69,9 @@ export default function ChiefComplaintStep({ data = {}, onChange, readOnly = fal
         const response = await api.get('/template-catalog/pathologies', {
           params: { category: 'MOTIF DE CONSULTATION' }
         });
-        const data = response.data?.data || [];
+        // Safely extract array from various API response formats
+        const rawData = response?.data?.data ?? response?.data ?? [];
+        const data = Array.isArray(rawData) ? rawData : [];
 
         // Separate motifs (names) from duration options (descriptions)
         const motifNames = data.filter(item => item.fieldType !== 'description');

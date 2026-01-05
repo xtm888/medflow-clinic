@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/apiConfig';
+import { formatTime } from '../../utils/formatters';
 
 /**
  * LabTechView - Role-based dashboard for lab technicians
@@ -84,13 +85,7 @@ export default function LabTechView() {
     }
   };
 
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '--:--';
-    return new Date(dateStr).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // formatTime imported from utils/formatters
 
   const getStatusColor = (status) => {
     switch (status) {

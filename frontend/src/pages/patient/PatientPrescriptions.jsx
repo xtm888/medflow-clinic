@@ -27,7 +27,9 @@ export default function PatientPrescriptions() {
           params: { patient: patientId, limit: 50 }
         });
 
-        setPrescriptions(response.data?.data || response.data || []);
+        // Safely extract array from various API response formats
+        const rawPrescriptions = response?.data?.data ?? response?.data ?? [];
+        setPrescriptions(Array.isArray(rawPrescriptions) ? rawPrescriptions : []);
       }
     } catch (err) {
       console.error('Error fetching prescriptions:', err);

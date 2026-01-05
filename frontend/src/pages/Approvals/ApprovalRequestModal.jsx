@@ -49,9 +49,18 @@ export default function ApprovalRequestModal({ onClose, onCreated, prefilledPati
       setSearchingPatients(true);
       try {
         const result = await patientService.searchPatients(patientSearch);
-        setPatientResults(result.data || result || []);
+        // Handle various API response formats defensively
+        const patients = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : Array.isArray(result)
+          ? result
+          : [];
+        setPatientResults(patients);
       } catch (err) {
         console.error('Error searching patients:', err);
+        setPatientResults([]);
       } finally {
         setSearchingPatients(false);
       }
@@ -66,11 +75,17 @@ export default function ApprovalRequestModal({ onClose, onCreated, prefilledPati
     const loadCompanies = async () => {
       try {
         const result = await companyService.getCompanies({ status: 'active', limit: 100 });
-        setAvailableCompanies(result.data || []);
+        // Handle various API response formats defensively
+        const companies = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setAvailableCompanies(companies);
 
         // If patient has convention company, auto-select it
         if (formData.patient?.convention?.company) {
-          const patientCompany = (result.data || []).find(
+          const patientCompany = companies.find(
             c => c._id === formData.patient.convention.company ||
                  c._id === formData.patient.convention.company._id
           );

@@ -91,7 +91,8 @@ export default function DiagnosisStep({ data = [], onChange, readOnly = false })
           category: 'DIAGNOSTIC'
         }
       });
-      setSearchResults(response.data?.data || []);
+      const rawData = response?.data?.data ?? response?.data ?? [];
+      setSearchResults(Array.isArray(rawData) ? rawData : []);
     } catch (error) {
       console.error('Search failed:', error);
       // Fallback to common diagnoses filter

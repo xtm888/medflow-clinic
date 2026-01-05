@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/apiConfig';
+import { formatDate } from '../../utils/formatters';
 
 /**
  * OpticianView - Role-based dashboard for opticians
@@ -81,13 +82,7 @@ export default function OpticianView() {
     }
   };
 
-  const formatDate = (dateStr) => {
-    if (!dateStr) return '--/--';
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit'
-    });
-  };
+  // formatDate imported from utils/formatters
 
   const getStatusColor = (status) => {
     switch (status) {

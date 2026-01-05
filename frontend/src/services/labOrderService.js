@@ -382,10 +382,13 @@ export const preCacheForShift = async () => {
       api.get('/lab-orders/scheduled-today')
     ]);
 
-    const orders = [
-      ...(pendingResponse.data?.data || []),
-      ...(todayResponse.data?.data || [])
-    ];
+    // Safely extract arrays from various API response formats
+    const rawPending = pendingResponse?.data?.data ?? pendingResponse?.data ?? [];
+    const rawToday = todayResponse?.data?.data ?? todayResponse?.data ?? [];
+    const pendingOrders = Array.isArray(rawPending) ? rawPending : [];
+    const todayOrders = Array.isArray(rawToday) ? rawToday : [];
+
+    const orders = [...pendingOrders, ...todayOrders];
 
     if (orders.length > 0) {
       await db.labOrders.bulkPut(orders);

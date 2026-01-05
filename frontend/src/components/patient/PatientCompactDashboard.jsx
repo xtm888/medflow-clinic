@@ -393,7 +393,12 @@ export default function PatientCompactDashboard({
                   <Briefcase className="w-3 h-3 text-blue-400" />
                   <span className="text-gray-500">Convention:</span>
                   <span className="px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium">
-                    {patient.convention.name || patient.convention}
+                    {typeof patient.convention === 'string'
+                      ? patient.convention
+                      : patient.convention.name ||
+                        patient.convention.companyName ||
+                        patient.convention.company?.name ||
+                        (patient.convention.status ? `Actif (${patient.convention.beneficiaryType || 'Titulaire'})` : 'Convention')}
                   </span>
                 </div>
               )}

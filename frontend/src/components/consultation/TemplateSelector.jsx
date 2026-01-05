@@ -65,14 +65,22 @@ export default function TemplateSelector({
       try {
         setLoading(true);
         const response = await consultationTemplateService.getTemplates();
-        if (response.success) {
-          setTemplates(response.data || []);
+        if (response?.success) {
+          // Handle various API response formats defensively
+          const data = Array.isArray(response?.data?.data)
+            ? response.data.data
+            : Array.isArray(response?.data)
+            ? response.data
+            : [];
+          setTemplates(data);
         } else {
           setError('Impossible de charger les modèles');
+          setTemplates([]);
         }
       } catch (err) {
         console.error('Error fetching templates:', err);
         setError('Erreur de connexion');
+        setTemplates([]);
       } finally {
         setLoading(false);
       }

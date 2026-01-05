@@ -39,8 +39,11 @@ export default function RolePermissionsManager() {
         rolePermissionService.getAllRolePermissions(),
         rolePermissionService.getOptions()
       ]);
-      setRolePermissions(permissionsRes.data || []);
-      setOptions(optionsRes.data || { menuItems: [], permissions: [], roles: [] });
+      // Safely extract arrays from various API response formats
+      const rawPermissions = permissionsRes?.data?.data ?? permissionsRes?.data ?? [];
+      setRolePermissions(Array.isArray(rawPermissions) ? rawPermissions : []);
+      const rawOptions = optionsRes?.data?.data ?? optionsRes?.data ?? { menuItems: [], permissions: [], roles: [] };
+      setOptions(rawOptions && typeof rawOptions === 'object' ? rawOptions : { menuItems: [], permissions: [], roles: [] });
       setEditedRoles({});
       setHasChanges(false);
     } catch (error) {

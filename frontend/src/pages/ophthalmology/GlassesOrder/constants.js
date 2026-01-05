@@ -154,10 +154,10 @@ export const buildOpticalActCodes = (formState) => {
   return codes;
 };
 
-// Format currency
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('fr-CD').format(amount) + ' CDF';
-};
+// Re-export formatCurrency from central formatters for backward compatibility
+import { formatCurrency as centralFormatCurrency } from '../../../utils/formatters';
+
+export const formatCurrency = (amount) => centralFormatCurrency(amount, 'CDF');
 
 // Build order data for submission
 export const buildOrderData = (formState, examId, exam, coatingOptions) => {

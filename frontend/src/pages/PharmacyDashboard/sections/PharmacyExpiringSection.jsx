@@ -21,10 +21,17 @@ export default function PharmacyExpiringSection({
     setLoading(true);
     try {
       const response = await api.get('/pharmacy/expiring', { params: { days: 30 } });
-      setMedications(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setMedications(data);
       setLoaded(true);
     } catch (err) {
       console.error('Error fetching expiring:', err);
+      setMedications([]);
     } finally {
       setLoading(false);
     }

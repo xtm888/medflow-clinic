@@ -78,9 +78,16 @@ export default function NewSale() {
       setLoadingPhotos(true);
       try {
         const result = await tryOnPhotoService.getPhotos(orderId);
-        setTryOnPhotos(result.data || []);
+        // Handle various API response formats defensively
+        const photos = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setTryOnPhotos(photos);
       } catch (error) {
         console.error('Failed to load try-on photos:', error);
+        setTryOnPhotos([]);
       } finally {
         setLoadingPhotos(false);
       }

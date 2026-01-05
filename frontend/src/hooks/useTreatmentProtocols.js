@@ -57,11 +57,14 @@ export default function useTreatmentProtocols(options = {}) {
   const loadCategories = useCallback(async () => {
     try {
       const result = await treatmentProtocolService.getCategories();
-      if (mountedRef.current && result?.data) {
-        setCategories(result.data);
+      if (mountedRef.current) {
+        // Handle various API response formats defensively
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        setCategories(Array.isArray(rawData) ? rawData : []);
       }
     } catch (err) {
       console.error('Failed to load protocol categories:', err);
+      if (mountedRef.current) setCategories([]);
     }
   }, []);
 
@@ -69,11 +72,14 @@ export default function useTreatmentProtocols(options = {}) {
   const loadPopular = useCallback(async (limit = 10) => {
     try {
       const result = await treatmentProtocolService.getPopularProtocols(limit);
-      if (mountedRef.current && result?.data) {
-        setPopular(result.data);
+      if (mountedRef.current) {
+        // Handle various API response formats defensively
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        setPopular(Array.isArray(rawData) ? rawData : []);
       }
     } catch (err) {
       console.error('Failed to load popular protocols:', err);
+      if (mountedRef.current) setPopular([]);
     }
   }, []);
 
@@ -81,11 +87,14 @@ export default function useTreatmentProtocols(options = {}) {
   const loadFavorites = useCallback(async () => {
     try {
       const result = await treatmentProtocolService.getFavoriteProtocols();
-      if (mountedRef.current && result?.data) {
-        setFavorites(result.data);
+      if (mountedRef.current) {
+        // Handle various API response formats defensively
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        setFavorites(Array.isArray(rawData) ? rawData : []);
       }
     } catch (err) {
       console.error('Failed to load favorite protocols:', err);
+      if (mountedRef.current) setFavorites([]);
     }
   }, []);
 
@@ -100,13 +109,18 @@ export default function useTreatmentProtocols(options = {}) {
     try {
       const result = await treatmentProtocolService.getProtocolsByCategory(category, includePersonal);
       if (mountedRef.current) {
-        setProtocols(result?.data || []);
+        // Handle various API response formats defensively
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        const protocols = Array.isArray(rawData) ? rawData : [];
+        setProtocols(protocols);
         setLoading(false);
-        return result?.data || [];
+        return protocols;
       }
+      return [];
     } catch (err) {
       if (mountedRef.current) {
         setError(err.message);
+        setProtocols([]);
         setLoading(false);
       }
       throw err;
@@ -119,12 +133,17 @@ export default function useTreatmentProtocols(options = {}) {
     try {
       const result = await treatmentProtocolService.getSuggestedProtocols(context);
       if (mountedRef.current) {
-        setSuggested(result?.data || []);
+        // Handle various API response formats defensively
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        const suggested = Array.isArray(rawData) ? rawData : [];
+        setSuggested(suggested);
         setLoading(false);
-        return result?.data || [];
+        return suggested;
       }
+      return [];
     } catch (err) {
       if (mountedRef.current) {
+        setSuggested([]);
         setLoading(false);
       }
       throw err;
@@ -189,7 +208,9 @@ export default function useTreatmentProtocols(options = {}) {
 
     try {
       const result = await treatmentProtocolService.getTreatmentProtocols({ search: query });
-      return result?.data || [];
+      // Handle various API response formats defensively
+      const rawData = result?.data?.data ?? result?.data ?? [];
+      return Array.isArray(rawData) ? rawData : [];
     } catch (err) {
       console.error('Protocol search failed:', err);
       return [];
@@ -301,9 +322,12 @@ export function useProtocolSuggestions(diagnoses = [], options = {}) {
     setLoading(true);
     try {
       const result = await treatmentProtocolService.getSuggestedProtocols({ diagnoses });
-      setSuggestions(result?.data || []);
+      // Handle various API response formats defensively
+      const rawData = result?.data?.data ?? result?.data ?? [];
+      setSuggestions(Array.isArray(rawData) ? rawData : []);
     } catch (err) {
       console.error('Failed to fetch protocol suggestions:', err);
+      setSuggestions([]);
     } finally {
       setLoading(false);
     }

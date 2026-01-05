@@ -27,9 +27,16 @@ export default function RefractionTrends({ patientId }) {
     setLoading(true);
     try {
       const response = await api.get(`/ophthalmology/patients/${patientId}/refraction-history`);
-      setRefractionHistory(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setRefractionHistory(data);
     } catch (error) {
       console.error('Error fetching refraction history:', error);
+      setRefractionHistory([]);
     } finally {
       setLoading(false);
     }

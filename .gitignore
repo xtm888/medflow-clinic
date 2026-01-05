@@ -102,3 +102,8 @@ ssl/
 # Ignore test screenshots (artifacts)
 tests/playwright/screenshots/
 
+# Sensitive credentials (NEVER commit)
+CREDENTIALS*.md
+*_CREDENTIALS.md
+*.credentials
+

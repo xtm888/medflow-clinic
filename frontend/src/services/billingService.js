@@ -1475,7 +1475,9 @@ const billingService = {
       console.log('[BillingService] Pre-caching invoices...');
 
       const response = await api.get('/invoices', { params });
-      const invoices = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawInvoices = response?.data?.data ?? response?.data ?? [];
+      const invoices = Array.isArray(rawInvoices) ? rawInvoices : [];
 
       if (invoices.length > 0) {
         const timestamp = new Date().toISOString();

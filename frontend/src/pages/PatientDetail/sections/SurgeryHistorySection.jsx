@@ -21,10 +21,21 @@ export default function SurgeryHistorySection({ patientId }) {
     try {
       setLoading(true);
       const response = await surgeryService.getPatientSurgeries(patientId);
-      setSurgeries(response.data || []);
+      // Handle various API response formats defensively
+      const surgeriesData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.surgeries)
+        ? response.data.surgeries
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : Array.isArray(response)
+        ? response
+        : [];
+      setSurgeries(surgeriesData);
       setLoaded(true);
     } catch (err) {
       console.error('Error loading patient surgeries:', err);
+      setSurgeries([]);
     } finally {
       setLoading(false);
     }

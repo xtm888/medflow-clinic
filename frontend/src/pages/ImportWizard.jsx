@@ -104,13 +104,16 @@ const ImportWizard = () => {
       logger.debug('[ImportWizard] Loading network shares...');
       const result = await ocrImportService.getNetworkShares();
       logger.debug('[ImportWizard] API result:', result);
-      const shares = result.data || [];
+      // Handle various API response formats defensively
+      const rawData = result?.data?.data ?? result?.data ?? [];
+      const shares = Array.isArray(rawData) ? rawData : [];
       logger.debug('[ImportWizard] Setting shares:', shares);
       setNetworkShares(shares);
     } catch (err) {
       logger.error('[ImportWizard] Error loading shares:', err);
       logger.error('[ImportWizard] Error details:', err.response?.data || err.message);
       toast.error('Impossible de charger les partages réseau');
+      setNetworkShares([]);
     }
   };
 

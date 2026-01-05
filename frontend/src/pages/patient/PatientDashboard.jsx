@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import api from '../../services/apiConfig';
 import authService from '../../services/authService';
+import { formatCurrency } from '../../utils/formatters';
 
 export default function PatientDashboard() {
   const [loading, setLoading] = useState(true);
@@ -34,9 +35,13 @@ export default function PatientDashboard() {
           api.get('/invoices', { params: { patient: patientId, limit: 20 } }).catch(() => ({ data: { data: [] } }))
         ]);
 
-        setAppointments(appointmentsRes.data?.data || appointmentsRes.data || []);
-        setPrescriptions(prescriptionsRes.data?.data || prescriptionsRes.data || []);
-        setInvoices(invoicesRes.data?.data || invoicesRes.data || []);
+        // Safely extract arrays from various API response formats
+        const rawAppointments = appointmentsRes?.data?.data ?? appointmentsRes?.data ?? [];
+        setAppointments(Array.isArray(rawAppointments) ? rawAppointments : []);
+        const rawPrescriptions = prescriptionsRes?.data?.data ?? prescriptionsRes?.data ?? [];
+        setPrescriptions(Array.isArray(rawPrescriptions) ? rawPrescriptions : []);
+        const rawInvoices = invoicesRes?.data?.data ?? invoicesRes?.data ?? [];
+        setInvoices(Array.isArray(rawInvoices) ? rawInvoices : []);
       }
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
@@ -139,7 +144,7 @@ export default function PatientDashboard() {
             <div>
               <p className="text-sm font-medium text-gray-600">Solde</p>
               <p className={`text-3xl font-bold ${totalBalance > 0 ? 'text-orange-600' : 'text-green-600'}`}>
-                ${totalBalance.toFixed(2)}
+                {formatCurrency(totalBalance)}
               </p>
               <p className="text-xs text-gray-500 mt-1">À payer</p>
             </div>

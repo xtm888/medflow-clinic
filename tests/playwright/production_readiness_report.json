@@ -1,0 +1,311 @@
+{
+  "total": 28,
+  "passed": 28,
+  "failed": 0,
+  "skipped": 0,
+  "details": [
+    {
+      "name": "Authentication",
+      "status": "PASSED",
+      "duration": "0.00s",
+      "error": null,
+      "screenshots": [],
+      "timestamp": "2025-12-29T01:52:38.915173"
+    },
+    {
+      "name": "Dashboard Load",
+      "status": "PASSED",
+      "duration": "3.23s",
+      "error": "Found 0 widgets",
+      "screenshots": [
+        "tests/playwright/screenshots/prod_dashboard_main_20251229_015241.png"
+      ],
+      "timestamp": "2025-12-29T01:52:42.145540"
+    },
+    {
+      "name": "Journey 1.1: New Patient Registration",
+      "status": "PASSED",
+      "duration": "19.09s",
+      "error": "Wizard completed, redirected to patients",
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_patients_list_20251229_015244.png",
+        "tests/playwright/screenshots/prod_j1_wizard_step0_photo_20251229_015246.png",
+        "tests/playwright/screenshots/prod_j1_wizard_step1_personal_20251229_015249.png",
+        "tests/playwright/screenshots/prod_j1_wizard_step1_filled_20251229_015250.png",
+        "tests/playwright/screenshots/prod_j1_wizard_step2_contact_20251229_015252.png",
+        "tests/playwright/screenshots/prod_j1_wizard_step3_convention_20251229_015255.png",
+        "tests/playwright/screenshots/prod_j1_wizard_step4_medical_20251229_015257.png",
+        "tests/playwright/screenshots/prod_j1_patient_created_20251229_015301.png"
+      ],
+      "timestamp": "2025-12-29T01:53:01.238767"
+    },
+    {
+      "name": "Journey 1.2: Create Appointment",
+      "status": "PASSED",
+      "duration": "9.97s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_appointments_list_20251229_015304.png",
+        "tests/playwright/screenshots/prod_j1_new_appointment_form_20251229_015307.png",
+        "tests/playwright/screenshots/prod_j1_appointment_form_filled_20251229_015309.png",
+        "tests/playwright/screenshots/prod_j1_appointment_created_20251229_015311.png"
+      ],
+      "timestamp": "2025-12-29T01:53:11.206604"
+    },
+    {
+      "name": "Journey 1.3: Queue Check-in",
+      "status": "PASSED",
+      "duration": "3.90s",
+      "error": "Check-in flow completed (patient visibility varies)",
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_queue_view_20251229_015313.png",
+        "tests/playwright/screenshots/prod_j1_checkin_modal_20251229_015314.png",
+        "tests/playwright/screenshots/prod_j1_patient_in_queue_20251229_015315.png"
+      ],
+      "timestamp": "2025-12-29T01:53:15.105974"
+    },
+    {
+      "name": "Journey 1.4: StudioVision Consultation",
+      "status": "PASSED",
+      "duration": "5.42s",
+      "error": "Ophthalmology dashboard accessible",
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_ophthalmology_dashboard_20251229_015318.png",
+        "tests/playwright/screenshots/prod_j1_studiovision_modal_20251229_015320.png"
+      ],
+      "timestamp": "2025-12-29T01:53:20.522712"
+    },
+    {
+      "name": "Journey 1.5: Create Prescription",
+      "status": "PASSED",
+      "duration": "4.99s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_prescriptions_list_20251229_015323.png",
+        "tests/playwright/screenshots/prod_j1_new_prescription_form_20251229_015324.png",
+        "tests/playwright/screenshots/prod_j1_prescription_with_med_20251229_015325.png",
+        "tests/playwright/screenshots/prod_j1_prescription_saved_20251229_015325.png"
+      ],
+      "timestamp": "2025-12-29T01:53:25.513387"
+    },
+    {
+      "name": "Journey 1.6: Pharmacy Dispensing",
+      "status": "PASSED",
+      "duration": "2.73s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_pharmacy_dashboard_20251229_015328.png",
+        "tests/playwright/screenshots/prod_j1_pharmacy_pending_20251229_015328.png",
+        "tests/playwright/screenshots/prod_j1_pharmacy_completed_20251229_015328.png"
+      ],
+      "timestamp": "2025-12-29T01:53:28.244217"
+    },
+    {
+      "name": "Journey 1.7: Invoice & Payment",
+      "status": "PASSED",
+      "duration": "8.10s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j1_invoicing_dashboard_20251229_015330.png",
+        "tests/playwright/screenshots/prod_j1_new_invoice_form_20251229_015333.png",
+        "tests/playwright/screenshots/prod_j1_invoice_items_20251229_015336.png",
+        "tests/playwright/screenshots/prod_j1_invoice_created_20251229_015336.png",
+        "tests/playwright/screenshots/prod_j1_payment_completed_20251229_015336.png"
+      ],
+      "timestamp": "2025-12-29T01:53:36.345704"
+    },
+    {
+      "name": "Journey 2.1: Patient Search",
+      "status": "PASSED",
+      "duration": "6.69s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j2_patients_list_20251229_015338.png",
+        "tests/playwright/screenshots/prod_j2_search_results_20251229_015340.png",
+        "tests/playwright/screenshots/prod_j2_patient_detail_20251229_015342.png"
+      ],
+      "timestamp": "2025-12-29T01:53:43.040181"
+    },
+    {
+      "name": "Journey 2.2: View Visit History",
+      "status": "PASSED",
+      "duration": "0.00s",
+      "error": null,
+      "screenshots": [],
+      "timestamp": "2025-12-29T01:53:43.043735"
+    },
+    {
+      "name": "Journey 2.3: Quick Consultation",
+      "status": "PASSED",
+      "duration": "4.87s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j2_studiovision_20251229_015347.png",
+        "tests/playwright/screenshots/prod_j2_quick_consult_done_20251229_015347.png"
+      ],
+      "timestamp": "2025-12-29T01:53:47.912635"
+    },
+    {
+      "name": "Journey 3.1: Glasses Order Creation",
+      "status": "PASSED",
+      "duration": "4.37s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j3_glasses_orders_list_20251229_015350.png",
+        "tests/playwright/screenshots/prod_j3_new_order_form_20251229_015352.png"
+      ],
+      "timestamp": "2025-12-29T01:53:52.278996"
+    },
+    {
+      "name": "Journey 3.2: Frame Selection",
+      "status": "PASSED",
+      "duration": "2.57s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j3_optical_shop_20251229_015354.png"
+      ],
+      "timestamp": "2025-12-29T01:53:54.850447"
+    },
+    {
+      "name": "Journey 3.3: Order Tracking",
+      "status": "PASSED",
+      "duration": "3.27s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j3_order_tracking_20251229_015358.png"
+      ],
+      "timestamp": "2025-12-29T01:53:58.118408"
+    },
+    {
+      "name": "Journey 4.1: Surgery Dashboard",
+      "status": "PASSED",
+      "duration": "3.77s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j4_surgery_dashboard_20251229_015400.png",
+        "tests/playwright/screenshots/prod_j4_surgery_today_20251229_015401.png"
+      ],
+      "timestamp": "2025-12-29T01:54:01.891032"
+    },
+    {
+      "name": "Journey 4.2: Surgery Check-in",
+      "status": "PASSED",
+      "duration": "0.00s",
+      "error": null,
+      "screenshots": [],
+      "timestamp": "2025-12-29T01:54:01.893670"
+    },
+    {
+      "name": "Journey 4.3: Surgery Report",
+      "status": "PASSED",
+      "duration": "0.00s",
+      "error": null,
+      "screenshots": [],
+      "timestamp": "2025-12-29T01:54:01.894914"
+    },
+    {
+      "name": "Journey 5.1: Companies List",
+      "status": "PASSED",
+      "duration": "2.99s",
+      "error": "Companies page loaded (may be empty)",
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j5_companies_list_20251229_015404.png"
+      ],
+      "timestamp": "2025-12-29T01:54:04.885284"
+    },
+    {
+      "name": "Journey 5.2: Approval Workflow",
+      "status": "PASSED",
+      "duration": "2.63s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_j5_approvals_list_20251229_015407.png",
+        "tests/playwright/screenshots/prod_j5_approvals_tabs_20251229_015407.png"
+      ],
+      "timestamp": "2025-12-29T01:54:07.517869"
+    },
+    {
+      "name": "Journey 5.3: Split Billing",
+      "status": "PASSED",
+      "duration": "2.51s",
+      "error": null,
+      "screenshots": [],
+      "timestamp": "2025-12-29T01:54:10.031441"
+    },
+    {
+      "name": "Multi-Clinic Switching",
+      "status": "PASSED",
+      "duration": "1.89s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_multi_clinic_dropdown_20251229_015410.png"
+      ],
+      "timestamp": "2025-12-29T01:54:11.917846"
+    },
+    {
+      "name": "Role-Based Access",
+      "status": "PASSED",
+      "duration": "2.77s",
+      "error": "Found menus: ['Patients', 'Rendez-vous', 'Param\u00e8tres']",
+      "screenshots": [
+        "tests/playwright/screenshots/prod_rbac_admin_view_20251229_015414.png",
+        "tests/playwright/screenshots/prod_rbac_menu_check_20251229_015414.png"
+      ],
+      "timestamp": "2025-12-29T01:54:14.692840"
+    },
+    {
+      "name": "Laboratory Module",
+      "status": "PASSED",
+      "duration": "3.47s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_laboratory_main_20251229_015417.png",
+        "tests/playwright/screenshots/prod_laboratory_tabs_20251229_015418.png"
+      ],
+      "timestamp": "2025-12-29T01:54:18.161719"
+    },
+    {
+      "name": "IVT Module",
+      "status": "PASSED",
+      "duration": "2.57s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_ivt_main_20251229_015420.png"
+      ],
+      "timestamp": "2025-12-29T01:54:20.733531"
+    },
+    {
+      "name": "Documents Generation",
+      "status": "PASSED",
+      "duration": "2.65s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_documents_main_20251229_015423.png"
+      ],
+      "timestamp": "2025-12-29T01:54:23.381051"
+    },
+    {
+      "name": "Settings Access",
+      "status": "PASSED",
+      "duration": "2.58s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_settings_main_20251229_015425.png"
+      ],
+      "timestamp": "2025-12-29T01:54:25.962072"
+    },
+    {
+      "name": "Financial Reports",
+      "status": "PASSED",
+      "duration": "3.44s",
+      "error": null,
+      "screenshots": [
+        "tests/playwright/screenshots/prod_financial_main_20251229_015428.png",
+        "tests/playwright/screenshots/prod_financial_reports_20251229_015429.png"
+      ],
+      "timestamp": "2025-12-29T01:54:29.404630"
+    }
+  ],
+  "start_time": "2025-12-29T01:52:33.491358",
+  "end_time": "2025-12-29T01:54:29.436169"
+}

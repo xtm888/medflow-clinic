@@ -388,7 +388,7 @@ export default function PatientMedicalSummary({
                 <Shield className="h-3 w-3" />
                 Assurance:
               </span>
-              <span className="text-gray-700">{patientData.insurance.provider || patientData.insurance}</span>
+              <span className="text-gray-700">{patientData.insurance.provider || (typeof patientData.insurance === 'string' ? patientData.insurance : 'Assurance')}</span>
             </div>
           )}
         </SectionCard>

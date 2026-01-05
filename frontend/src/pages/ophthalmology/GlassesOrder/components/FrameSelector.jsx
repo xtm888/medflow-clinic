@@ -24,7 +24,9 @@ export default function FrameSelector({ selectedFrame, onSelect, onClear }) {
     try {
       setSearching(true);
       const response = await glassesOrderService.searchFrames(query);
-      setSearchResults(response.data || []);
+      // Safely extract array from various API response formats
+      const rawData = response?.data?.data ?? response?.data ?? response ?? [];
+      setSearchResults(Array.isArray(rawData) ? rawData : []);
       setShowDropdown(true);
     } catch (err) {
       console.error('Error searching frames:', err);

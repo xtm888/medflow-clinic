@@ -30,3 +30,6 @@ export { useDeviceSync } from './useDeviceSync';
 
 // Inventory Management
 export { default as useInventory } from './useInventory';
+
+// Navigation & Routing
+export { default as usePathMatch } from './usePathMatch';

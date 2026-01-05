@@ -16,7 +16,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { Save, Printer, X, Check, AlertTriangle, Loader2, User, Camera, Briefcase, UserCheck } from 'lucide-react';
+import { Save, Printer, X, Check, AlertTriangle, Loader2, User, Camera, Briefcase, UserCheck, WifiOff } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -57,6 +57,7 @@ import documentService from '../../services/documentService';
 import { usePreviousExamData } from '../../hooks/usePreviousExamData';
 import { useDeviceSync } from '../../hooks/useDeviceSync';
 import { useClinic } from '../../contexts/ClinicContext';
+import { useStudioVisionMode } from '../../contexts/StudioVisionModeContext';
 import logger from '../../services/logger';
 
 // Initial data structure
@@ -151,6 +152,9 @@ export default function StudioVisionConsultation() {
   // Clinic context
   const { currentClinic } = useClinic();
 
+  // Fix #2: StudioVision mode context for UI preferences
+  const { compactMode, animations } = useStudioVisionMode();
+
   // State
   const [patient, setPatient] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -168,6 +172,26 @@ export default function StudioVisionConsultation() {
   const [completing, setCompleting] = useState(false);
   const [completionResult, setCompletionResult] = useState(null);
   const [showCompletionSummary, setShowCompletionSummary] = useState(false);
+
+  // Fix #1: Track current visit ID (from query param or auto-created)
+  const [currentVisitId, setCurrentVisitId] = useState(visitId);
+
+  // Fix #3: Track online status for offline warning
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  // Listen for online/offline status changes
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Previous exam data hook
   const {
@@ -217,6 +241,7 @@ export default function StudioVisionConsultation() {
 
         // If visitId provided, load existing visit data
         if (visitId) {
+          setCurrentVisitId(visitId);
           try {
             const visitResponse = await visitService.getVisit(visitId);
             const visitData = visitResponse?.data || visitResponse;
@@ -229,6 +254,29 @@ export default function StudioVisionConsultation() {
           } catch {
             logger.debug('Could not load visit data, starting fresh');
           }
+        } else {
+          // Fix #1: Auto-create a visit when navigating without visitId
+          // This ensures the consultation completion will work
+          logger.info('No visitId provided, creating new visit for consultation');
+          try {
+            const newVisit = await visitService.createVisit({
+              patient: patientId,
+              clinic: currentClinic?._id || patientData?.clinic,
+              type: 'ophthalmology_consultation',
+              status: 'in_progress',
+              startTime: new Date().toISOString()
+            });
+            const newVisitId = newVisit?._id || newVisit?.data?._id;
+            if (newVisitId) {
+              setCurrentVisitId(newVisitId);
+              logger.info('Created new visit:', newVisitId);
+            } else {
+              logger.warn('Failed to get visit ID from response');
+            }
+          } catch (err) {
+            logger.warn('Could not create visit, completion may fail:', err);
+            // Continue without visit - user can still view/edit offline
+          }
         }
 
         setLoading(false);
@@ -240,7 +288,7 @@ export default function StudioVisionConsultation() {
     };
 
     loadData();
-  }, [patientId, visitId]);
+  }, [patientId, visitId, currentClinic?._id]);
 
   // Update section data
   const updateSection = useCallback((section, newData) => {
@@ -258,7 +306,7 @@ export default function StudioVisionConsultation() {
 
       await ophthalmologyService.saveExam({
         patientId,
-        visitId,
+        visitId: currentVisitId, // Use currentVisitId (may be auto-created)
         data: {
           ...data,
           savedAt: new Date().toISOString()
@@ -283,6 +331,13 @@ export default function StudioVisionConsultation() {
     if (!ophthalmologyService.canCompleteConsultation()) {
       logger.warn('Cannot complete consultation offline');
       setError('La complétion de consultation nécessite une connexion internet.');
+      return;
+    }
+
+    // Verify we have a visit ID
+    if (!currentVisitId) {
+      logger.error('Cannot complete consultation without a visit ID');
+      setError('Impossible de terminer la consultation: aucune visite associée. Veuillez recharger la page.');
       return;
     }
 
@@ -323,7 +378,7 @@ export default function StudioVisionConsultation() {
 
       // Call the backend consultation completion service
       const result = await ophthalmologyService.completeConsultation({
-        visitId,
+        visitId: currentVisitId, // Use currentVisitId (may be auto-created)
         examId: null, // Will be created if new
         examData,
         options: {
@@ -580,8 +635,8 @@ export default function StudioVisionConsultation() {
 
   // Open full orthoptic exam form
   const handleOpenFullOrthopticExam = useCallback(() => {
-    navigate(`/orthoptic/new?patientId=${patientId}&visitId=${visitId || ''}`);
-  }, [navigate, patientId, visitId]);
+    navigate(`/orthoptic/new?patientId=${patientId}&visitId=${currentVisitId || ''}`);
+  }, [navigate, patientId, currentVisitId]);
 
   // Tab change handler
   const handleTabChange = (tabId) => {
@@ -771,7 +826,7 @@ export default function StudioVisionConsultation() {
           <div className="p-4">
             <OrthoptieQuickPanel
               patientId={patientId}
-              visitId={visitId}
+              visitId={currentVisitId}
               value={data.orthoptie}
               onChange={(orthoptieData) => updateSection('orthoptie', orthoptieData)}
               onOpenFullExam={handleOpenFullOrthopticExam}
@@ -827,7 +882,18 @@ export default function StudioVisionConsultation() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className={`min-h-screen bg-gray-100 flex flex-col ${!animations ? 'transition-none' : ''}`}>
+      {/* Fix #3: Offline Warning Banner */}
+      {!isOnline && (
+        <div className="bg-amber-500 text-amber-950 px-4 py-2 flex items-center justify-center gap-2 shadow-md z-50">
+          <WifiOff className="h-4 w-4" />
+          <span className="font-medium">Mode hors ligne</span>
+          <span className="text-sm opacity-90">
+            - Les données sont sauvegardées localement. La finalisation nécessite une connexion internet.
+          </span>
+        </div>
+      )}
+
       {/* Fixed Header */}
       <header className="bg-white border-b border-gray-300 shadow-sm sticky top-0 z-50">
         {/* Patient Info Bar */}

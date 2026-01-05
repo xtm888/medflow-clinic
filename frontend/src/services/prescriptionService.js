@@ -1191,7 +1191,9 @@ const prescriptionService = {
       console.log('[PrescriptionService] Pre-caching prescriptions...');
 
       const response = await api.get('/prescriptions', { params });
-      const prescriptions = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawPrescriptions = response?.data?.data ?? response?.data ?? [];
+      const prescriptions = Array.isArray(rawPrescriptions) ? rawPrescriptions : [];
 
       if (prescriptions.length > 0) {
         const timestamp = new Date().toISOString();

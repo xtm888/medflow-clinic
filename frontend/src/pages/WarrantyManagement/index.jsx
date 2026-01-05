@@ -61,7 +61,8 @@ export default function WarrantyManagement() {
       if (params.productType === 'all') delete params.productType;
 
       const response = await warrantyService.getAll(params);
-      setWarranties(response.data || []);
+      const warrantiesData = response?.data?.data ?? response?.data ?? [];
+      setWarranties(Array.isArray(warrantiesData) ? warrantiesData : []);
       setPagination({
         page: response.page || 1,
         pages: response.pages || 1,

@@ -39,10 +39,17 @@ export default function ReferrerManagement() {
     setLoading(true);
     try {
       const result = await referrerService.getReferrers({ isActive: 'all' });
-      setReferrers(result.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(result?.data?.data)
+        ? result.data.data
+        : Array.isArray(result?.data)
+        ? result.data
+        : [];
+      setReferrers(data);
     } catch (error) {
       console.error('Error loading referrers:', error);
       toast.error('Erreur lors du chargement des référents');
+      setReferrers([]);
     } finally {
       setLoading(false);
     }

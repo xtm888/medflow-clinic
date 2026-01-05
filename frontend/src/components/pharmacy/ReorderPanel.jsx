@@ -28,9 +28,16 @@ const ReorderPanel = ({ isOpen, onClose, onOrderCreated }) => {
     try {
       setLoading(true);
       const response = await pharmacyInventoryService.getReorderSuggestions();
-      setSuggestions(response.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setSuggestions(data);
     } catch (err) {
       setError('Erreur lors du chargement des suggestions');
+      setSuggestions([]);
     } finally {
       setLoading(false);
     }

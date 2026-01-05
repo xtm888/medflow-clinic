@@ -120,11 +120,17 @@ export default function Companies() {
       if (viewMode === 'hierarchy' && !searchQuery && !filters.type && !filters.hasOutstanding) {
         // Use hierarchy view
         const result = await companyService.getCompaniesHierarchy({ includeStats: 'true' });
-        setHierarchyData(result.data || []);
+        // Handle various API response formats defensively
+        const hierarchyItems = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setHierarchyData(hierarchyItems);
         setCompanies([]);
 
         // Auto-expand parents with sub-companies
-        const parentsWithChildren = (result.data || [])
+        const parentsWithChildren = hierarchyItems
           .filter(c => c.isParent && c.subCompanyCount > 0)
           .map(c => c._id);
         setExpandedParents(new Set(parentsWithChildren));
@@ -145,7 +151,13 @@ export default function Companies() {
           result = await companyService.getCompanies(params);
         }
 
-        setCompanies(result.data || []);
+        // Handle various API response formats defensively
+        const companyItems = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setCompanies(companyItems);
         setHierarchyData([]);
         if (result.pagination) {
           setPagination(prev => ({ ...prev, ...result.pagination }));

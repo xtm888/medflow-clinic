@@ -207,15 +207,30 @@ export const extractStats = (response) => {
 };
 
 /**
- * Format currency safely
+ * Format currency safely for Congo/DRC context
  *
  * @param {*} value - Value to format
- * @param {string} currency - Currency symbol
+ * @param {string} currency - Currency code ('CDF', 'USD', 'EUR') or symbol
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (value, currency = '$') => {
-  const formatted = safeFormatNumber(value, 2, '0.00');
-  return `${currency}${formatted}`;
+export const formatCurrency = (value, currency = 'CDF') => {
+  const formatted = safeFormatNumber(value, currency === 'CDF' ? 0 : 2, '0');
+
+  // Map currency codes to symbols with proper positioning
+  const currencyConfig = {
+    CDF: { symbol: 'FC', position: 'after' },
+    FC: { symbol: 'FC', position: 'after' },
+    USD: { symbol: '$', position: 'before' },
+    '$': { symbol: '$', position: 'before' },
+    EUR: { symbol: '\u20AC', position: 'after' },
+    '\u20AC': { symbol: '\u20AC', position: 'after' }
+  };
+
+  const config = currencyConfig[currency] || { symbol: currency, position: 'after' };
+
+  return config.position === 'before'
+    ? `${config.symbol}${formatted}`
+    : `${formatted} ${config.symbol}`;
 };
 
 /**

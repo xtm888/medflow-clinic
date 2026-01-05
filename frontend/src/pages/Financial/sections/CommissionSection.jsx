@@ -39,8 +39,14 @@ export default function CommissionSection() {
       if (filters.referrerType) params.referrerType = filters.referrerType;
 
       const result = await referrerService.getCommissionsReport(params);
-      setReport(result.data || []);
-      setGrandTotals(result.grandTotals || {
+      // Handle various API response formats defensively
+      const reportData = Array.isArray(result?.data?.data)
+        ? result.data.data
+        : Array.isArray(result?.data)
+        ? result.data
+        : [];
+      setReport(reportData);
+      setGrandTotals(result?.grandTotals || result?.data?.grandTotals || {
         totalInvoiced: 0,
         totalCommission: 0,
         pendingCommission: 0,
@@ -49,6 +55,7 @@ export default function CommissionSection() {
     } catch (error) {
       console.error('Error loading commissions report:', error);
       toast.error('Erreur lors du chargement du rapport');
+      setReport([]);
     } finally {
       setLoading(false);
     }
@@ -63,12 +70,22 @@ export default function CommissionSection() {
 
     try {
       const result = await referrerService.getReferrerCommissions(referrerId, filters);
+      // Handle various API response formats defensively
+      const details = Array.isArray(result?.data?.data)
+        ? result.data.data
+        : Array.isArray(result?.data)
+        ? result.data
+        : [];
       setReferrerDetails(prev => ({
         ...prev,
-        [referrerId]: result.data || []
+        [referrerId]: details
       }));
     } catch (error) {
       console.error('Error loading referrer details:', error);
+      setReferrerDetails(prev => ({
+        ...prev,
+        [referrerId]: []
+      }));
     }
   };
 

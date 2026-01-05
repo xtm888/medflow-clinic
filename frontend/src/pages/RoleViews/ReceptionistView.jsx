@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-toastify';
 import api from '../../services/apiConfig';
+import { formatTime } from '../../utils/formatters';
 
 /**
  * ReceptionistView - Role-based dashboard for receptionists
@@ -77,16 +78,7 @@ export default function ReceptionistView() {
     }
   };
 
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '--:--';
-    const date = new Date(dateStr);
-    // Check for invalid date
-    if (isNaN(date.getTime())) return '--:--';
-    return date.toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // formatTime imported from utils/formatters
 
   const formatCurrency = (amount) => {
     if (!amount) return '0 CDF';

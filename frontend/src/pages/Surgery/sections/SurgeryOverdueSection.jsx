@@ -22,10 +22,21 @@ export default function SurgeryOverdueSection({ count, onRefresh }) {
     try {
       setLoading(true);
       const response = await surgeryService.getOverdueCases(30);
-      setCases(response.data || []);
+      // Handle various API response formats defensively
+      const casesData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.cases)
+        ? response.data.cases
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : Array.isArray(response)
+        ? response
+        : [];
+      setCases(casesData);
       setLoaded(true);
     } catch (err) {
       console.error('Error loading overdue cases:', err);
+      setCases([]);
     } finally {
       setLoading(false);
     }

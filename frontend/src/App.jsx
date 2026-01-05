@@ -27,6 +27,7 @@ import Login from './pages/Login';
 import NotFound from './pages/NotFound';
 import MainLayout from './layouts/MainLayout';
 import PatientLayout from './layouts/PatientLayout';
+import RoleBasedLanding from './components/RoleBasedLanding';
 
 // Lazy load all other pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -50,8 +51,8 @@ const OphthalmologyDashboard = lazy(() => import('./pages/ophthalmology/Ophthalm
 const GlassesOrder = lazy(() => import('./pages/ophthalmology/GlassesOrder'));
 const NewConsultation = lazy(() => import('./pages/ophthalmology/NewConsultation'));
 const StudioVisionConsultation = lazy(() => import('./pages/ophthalmology/StudioVisionConsultation'));
-// Glasses Orders Management Pages
-const GlassesOrderList = lazy(() => import('./pages/GlassesOrders/GlassesOrderList'));
+// Glasses Orders Management Pages - List is now a tab in OpticalShop
+// Route /glasses-orders redirects to /optical-shop?tab=orders
 const GlassesOrderDetail = lazy(() => import('./pages/GlassesOrders/GlassesOrderDetail'));
 const GlassesOrderDelivery = lazy(() => import('./pages/GlassesOrders/GlassesOrderDelivery'));
 // IVT Pages
@@ -67,12 +68,11 @@ const SurgeonView = lazy(() => import('./pages/Surgery/SurgeonView'));
 // Pharmacy Pages
 const PharmacyDashboard = lazy(() => import('./pages/PharmacyDashboard'));
 const PharmacyDetail = lazy(() => import('./pages/PharmacyDetail'));
-// Device Integration Pages
+// Device Integration Pages - Status and Discovery are now tabs in DeviceManager
+// Routes /devices/status and /devices/discovery redirect to tabs
 const DeviceManager = lazy(() => import('./pages/DeviceManager'));
 const DeviceDetail = lazy(() => import('./pages/DeviceDetail'));
 const DeviceImport = lazy(() => import('./pages/DeviceImport'));
-const DeviceStatusDashboard = lazy(() => import('./pages/DeviceStatusDashboard'));
-const NetworkDiscovery = lazy(() => import('./pages/NetworkDiscovery'));
 // OCR Import Pages
 const ImportWizard = lazy(() => import('./pages/ImportWizard'));
 const OCRReviewQueue = lazy(() => import('./pages/OCRReviewQueue'));
@@ -95,11 +95,10 @@ const QueueDisplayBoard = lazy(() => import('./pages/QueueDisplayBoard'));
 // Orthoptic Pages
 const OrthopticExams = lazy(() => import('./pages/OrthopticExams'));
 const OrthopticExamForm = lazy(() => import('./pages/OrthopticExamForm'));
-// Prescription Queue (Pharmacist)
-const PrescriptionQueue = lazy(() => import('./pages/PrescriptionQueue'));
-// Lab Tech Worklist & Check-in
-const LabTechWorklist = lazy(() => import('./pages/LabTechWorklist'));
-const LabCheckIn = lazy(() => import('./pages/LabCheckIn'));
+// Prescription Queue (Pharmacist) - Now a tab in PharmacyDashboard
+// Route redirects to /pharmacy?tab=prescriptions
+// Lab Tech Worklist & Check-in - Now tabs in Laboratory page
+// Routes redirect to /laboratory?tab=worklist and /laboratory?tab=checkin
 // Nurse Vitals Entry
 const NurseVitalsEntry = lazy(() => import('./pages/NurseVitalsEntry'));
 // Admin Pages
@@ -111,6 +110,8 @@ const PurchaseOrders = lazy(() => import('./pages/PurchaseOrders'));
 const StockReconciliation = lazy(() => import('./pages/StockReconciliation'));
 const WarrantyManagement = lazy(() => import('./pages/WarrantyManagement'));
 const RepairTracking = lazy(() => import('./pages/RepairTracking'));
+const RepairForm = lazy(() => import('./pages/RepairTracking/RepairForm'));
+const RepairDetail = lazy(() => import('./pages/RepairTracking/RepairDetail'));
 // Analytics Pages
 const AnalyticsDashboard = lazy(() => import('./pages/analytics/AnalyticsDashboard'));
 // Template Pages
@@ -127,24 +128,21 @@ const VisitTimeline = lazy(() => import('./pages/visits/VisitTimeline'));
 const VisitDetail = lazy(() => import('./pages/visits/VisitDetail'));
 // Home Dashboard (Full-screen navigation launcher)
 const HomeDashboard = lazy(() => import('./pages/HomeDashboard'));
-// Optical Inventory Pages
-const FrameInventory = lazy(() => import('./pages/FrameInventory'));
-const ContactLensInventory = lazy(() => import('./pages/ContactLensInventory'));
-const OpticalLensInventory = lazy(() => import('./pages/OpticalLensInventory'));
-// Optical Shop Pages
+// Optical Inventory Pages - REMOVED (use UnifiedInventory with type param)
+// Optical Shop Pages - Sub-pages are now tabs in OpticalShop main page
+// Routes /optical-shop/verification, /external-orders, /performance redirect to tabs
 const OpticalShopDashboard = lazy(() => import('./pages/OpticalShop'));
 const OpticalShopNewSale = lazy(() => import('./pages/OpticalShop/NewSale'));
+// Keep verification for detail route (/verification/:id)
 const OpticalShopVerification = lazy(() => import('./pages/OpticalShop/TechnicianVerification'));
-const OpticalShopExternalOrders = lazy(() => import('./pages/OpticalShop/ExternalOrders'));
-const OpticalShopPerformance = lazy(() => import('./pages/OpticalShop/OpticianPerformance'));
-// Lab Inventory Pages
-const ReagentInventory = lazy(() => import('./pages/ReagentInventory'));
-const LabConsumableInventory = lazy(() => import('./pages/LabConsumableInventory'));
-// Cross-Clinic Inventory Management
-const CrossClinicInventory = lazy(() => import('./pages/CrossClinicInventory'));
-// Cross-Clinic Dashboard and Reports (Central Server)
-const CrossClinicDashboard = lazy(() => import('./pages/CrossClinicDashboard'));
-const ConsolidatedReports = lazy(() => import('./pages/ConsolidatedReports'));
+// Lab Inventory Pages - REMOVED (use UnifiedInventory with type param)
+// Multi-Clinic Operations (Unified page with tabs)
+// Routes /cross-clinic-inventory, /cross-clinic-dashboard, /consolidated-reports redirect to tabs
+const MultiClinic = lazy(() => import('./pages/MultiClinic'));
+// Ophthalmology Hub (Unified page with tabs: dashboard, orthoptic, ivt, surgery)
+const OphthalmologyHub = lazy(() => import('./pages/OphthalmologyHub'));
+// Finance Hub (Unified page with tabs: invoicing, reports, conventions, approvals, services)
+const FinanceHub = lazy(() => import('./pages/FinanceHub'));
 // External Facilities & Fulfillment Dispatch (Pay & Dispatch Externally)
 const ExternalFacilities = lazy(() => import('./pages/ExternalFacilities'));
 const DispatchDashboard = lazy(() => import('./pages/DispatchDashboard'));
@@ -252,7 +250,7 @@ function App() {
             <Route path="/home" element={<HomeDashboard />} />
 
             <Route path="/" element={<MainLayout />}>
-              <Route index element={<Navigate to="/home" replace />} />
+              <Route index element={<RoleBasedLanding />} />
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="patients" element={<Patients />} />
               <Route path="patients/:patientId" element={<PatientDetail />} />
@@ -290,8 +288,8 @@ function App() {
               <Route path="ophthalmology/glasses-order/:examId" element={<GlassesOrder />} />
               {/* StudioVision Native Consultation (Tab-based) */}
               <Route path="ophthalmology/studio/:patientId" element={<StudioVisionConsultation />} />
-              {/* Glasses Orders Management Routes */}
-              <Route path="glasses-orders" element={<GlassesOrderList />} />
+              {/* Glasses Orders Management Routes - List redirects to Optical Shop tab */}
+              <Route path="glasses-orders" element={<Navigate to="/optical-shop?tab=orders" replace />} />
               <Route path="glasses-orders/:id" element={<GlassesOrderDetail />} />
               <Route path="glasses-orders/:id/delivery" element={<GlassesOrderDelivery />} />
               {/* IVT Routes */}
@@ -310,10 +308,10 @@ function App() {
               <Route path="pharmacy" element={<PharmacyDashboard />} />
               <Route path="pharmacy/new" element={<PharmacyDetail />} />
               <Route path="pharmacy/:id" element={<PharmacyDetail />} />
-              {/* Device Integration Routes */}
+              {/* Device Integration Routes - Status and Discovery redirect to tabs */}
               <Route path="devices" element={<DeviceManager />} />
-              <Route path="devices/status" element={<DeviceStatusDashboard />} />
-              <Route path="devices/discovery" element={<NetworkDiscovery />} />
+              <Route path="devices/status" element={<Navigate to="/devices?tab=status" replace />} />
+              <Route path="devices/discovery" element={<Navigate to="/devices?tab=discovery" replace />} />
               <Route path="devices/:id" element={<DeviceDetail />} />
               <Route path="devices/:id/import" element={<DeviceImport />} />
 
@@ -326,14 +324,14 @@ function App() {
               <Route path="orthoptic/new" element={<OrthopticExamForm />} />
               <Route path="orthoptic/:id" element={<OrthopticExamForm />} />
 
-              {/* Prescription Queue (Pharmacist) */}
-              <Route path="prescription-queue" element={<PrescriptionQueue />} />
+              {/* Prescription Queue - Redirect to Pharmacy page with tab */}
+              <Route path="prescription-queue" element={<Navigate to="/pharmacy?tab=prescriptions" replace />} />
 
-              {/* Lab Tech Worklist */}
-              <Route path="lab-worklist" element={<LabTechWorklist />} />
+              {/* Lab Tech Worklist - Redirect to Laboratory page with tab */}
+              <Route path="lab-worklist" element={<Navigate to="/laboratory?tab=worklist" replace />} />
 
-              {/* Lab Check-in (Reception prélèvements) */}
-              <Route path="lab-checkin" element={<LabCheckIn />} />
+              {/* Lab Check-in - Redirect to Laboratory page with tab */}
+              <Route path="lab-checkin" element={<Navigate to="/laboratory?tab=checkin" replace />} />
 
               {/* Nurse Vitals Entry */}
               <Route path="nurse-vitals" element={<NurseVitalsEntry />} />
@@ -372,9 +370,10 @@ function App() {
               <Route path="warranties/:id" element={<WarrantyManagement />} />
               <Route path="warranties/:id/claim" element={<WarrantyManagement />} />
               <Route path="repairs" element={<RepairTracking />} />
-              <Route path="repairs/new" element={<RepairTracking />} />
-              <Route path="repairs/:id" element={<RepairTracking />} />
-              <Route path="repairs/:id/pickup" element={<RepairTracking />} />
+              <Route path="repairs/new" element={<RepairForm />} />
+              <Route path="repairs/:id" element={<RepairDetail />} />
+              <Route path="repairs/:id/edit" element={<RepairForm />} />
+              <Route path="repairs/:id/pickup" element={<RepairDetail />} />
 
               {/* Analytics Routes */}
               <Route path="analytics" element={<AnalyticsDashboard />} />
@@ -396,29 +395,43 @@ function App() {
               {/* Approvals (Délibérations) */}
               <Route path="approvals" element={<Approvals />} />
 
-              {/* Optical Inventory Routes */}
-              <Route path="frame-inventory" element={<FrameInventory />} />
-              <Route path="contact-lens-inventory" element={<ContactLensInventory />} />
-              <Route path="optical-lens-inventory" element={<OpticalLensInventory />} />
+              {/* Audit Trail */}
+              <Route path="audit" element={<AuditTrail />} />
+              <Route path="audit-trail" element={<AuditTrail />} />
 
-              {/* Optical Shop Routes */}
+              {/* Financial Reports - alias for financial */}
+              <Route path="financial-reports" element={<Financial />} />
+
+              {/* Optical Inventory Routes - Redirect to UnifiedInventory */}
+              <Route path="frame-inventory" element={<Navigate to="/unified-inventory?type=frame" replace />} />
+              <Route path="contact-lens-inventory" element={<Navigate to="/unified-inventory?type=contact_lens" replace />} />
+              <Route path="optical-lens-inventory" element={<Navigate to="/unified-inventory?type=optical_lens" replace />} />
+
+              {/* Optical Shop Routes - Sub-pages redirect to tabs */}
               <Route path="optical-shop" element={<OpticalShopDashboard />} />
               <Route path="optical-shop/sale/:patientId" element={<OpticalShopNewSale />} />
-              <Route path="optical-shop/verification" element={<OpticalShopVerification />} />
+              <Route path="optical-shop/verification" element={<Navigate to="/optical-shop?tab=verification" replace />} />
               <Route path="optical-shop/verification/:id" element={<OpticalShopVerification />} />
-              <Route path="optical-shop/external-orders" element={<OpticalShopExternalOrders />} />
-              <Route path="optical-shop/performance" element={<OpticalShopPerformance />} />
+              <Route path="optical-shop/external-orders" element={<Navigate to="/optical-shop?tab=external" replace />} />
+              <Route path="optical-shop/performance" element={<Navigate to="/optical-shop?tab=performance" replace />} />
 
-              {/* Lab Inventory Routes */}
-              <Route path="reagent-inventory" element={<ReagentInventory />} />
-              <Route path="lab-consumable-inventory" element={<LabConsumableInventory />} />
+              {/* Lab Inventory Routes - Redirect to UnifiedInventory */}
+              <Route path="reagent-inventory" element={<Navigate to="/unified-inventory?type=reagent" replace />} />
+              <Route path="lab-consumable-inventory" element={<Navigate to="/unified-inventory?type=lab_consumable" replace />} />
 
-              {/* Cross-Clinic Inventory Management */}
-              <Route path="cross-clinic-inventory" element={<CrossClinicInventory />} />
+              {/* Multi-Clinic Operations (Unified page with tabs) */}
+              <Route path="multi-clinic" element={<MultiClinic />} />
 
-              {/* Cross-Clinic Dashboard and Reports (Central Server) */}
-              <Route path="cross-clinic-dashboard" element={<CrossClinicDashboard />} />
-              <Route path="consolidated-reports" element={<ConsolidatedReports />} />
+              {/* Ophthalmology Hub (Unified page with tabs) */}
+              <Route path="eye-clinic" element={<OphthalmologyHub />} />
+
+              {/* Finance Hub (Unified page with tabs) */}
+              <Route path="finance" element={<FinanceHub />} />
+
+              {/* Cross-Clinic Routes - Redirect to Multi-Clinic tabs */}
+              <Route path="cross-clinic-inventory" element={<Navigate to="/multi-clinic?tab=inventory" replace />} />
+              <Route path="cross-clinic-dashboard" element={<Navigate to="/multi-clinic?tab=dashboard" replace />} />
+              <Route path="consolidated-reports" element={<Navigate to="/multi-clinic?tab=reports" replace />} />
 
               {/* External Facilities & Fulfillment Dispatch (Pay & Dispatch Externally) */}
               <Route path="external-facilities" element={<ExternalFacilities />} />

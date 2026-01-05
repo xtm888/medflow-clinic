@@ -26,9 +26,16 @@ const PathologyFindingSelector = ({ category, onAddFinding }) => {
     const fetchCategories = async () => {
       try {
         const response = await api.get('/template-catalog/pathologies/categories');
-        setCategories(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setCategories(data);
       } catch (error) {
         console.error('Error fetching pathology categories:', error);
+        setCategories([]);
       }
     };
     fetchCategories();
@@ -44,9 +51,16 @@ const PathologyFindingSelector = ({ category, onAddFinding }) => {
     const fetchSubcategories = async () => {
       try {
         const response = await api.get(`/template-catalog/pathologies/subcategories?category=${selectedCategory}`);
-        setSubcategories(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setSubcategories(data);
       } catch (error) {
         console.error('Error fetching subcategories:', error);
+        setSubcategories([]);
       }
     };
     fetchSubcategories();
@@ -66,9 +80,16 @@ const PathologyFindingSelector = ({ category, onAddFinding }) => {
           url += `&subcategory=${selectedSubcategory}`;
         }
         const response = await api.get(url);
-        setFindings(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setFindings(data);
       } catch (error) {
         console.error('Error fetching findings:', error);
+        setFindings([]);
       }
     };
     fetchFindings();

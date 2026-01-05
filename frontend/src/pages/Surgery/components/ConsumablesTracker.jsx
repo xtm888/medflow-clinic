@@ -60,7 +60,9 @@ export default function ConsumablesTracker({ surgeryCase, onUpdate }) {
             limit: 10,
             category: 'surgical_supply'
           });
-          setSearchResults(results.data || []);
+          // Safely extract array from various API response formats
+          const rawData = results?.data?.data ?? results?.data ?? [];
+          setSearchResults(Array.isArray(rawData) ? rawData : []);
         } catch (err) {
           console.error('Search error:', err);
         } finally {

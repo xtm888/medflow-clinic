@@ -272,7 +272,10 @@ const LabTechWorklist = () => {
   };
 
   const formatDate = (date) => {
-    return new Date(date).toLocaleDateString('fr-FR', {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    if (isNaN(d.getTime())) return 'N/A';
+    return d.toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'short',
       hour: '2-digit',

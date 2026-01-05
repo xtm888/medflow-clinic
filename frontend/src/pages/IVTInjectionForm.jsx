@@ -214,9 +214,16 @@ const IVTInjectionForm = () => {
       const response = await api.get('/patients', {
         params: { limit: 100 }
       });
-      setPatients(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setPatients(data);
     } catch (err) {
       console.error('Error fetching patients:', err);
+      setPatients([]);
     }
   };
 

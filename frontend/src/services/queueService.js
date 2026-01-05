@@ -284,7 +284,9 @@ export const queueService = {
 
     try {
       const response = await api.get('/queue');
-      const queue = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawQueue = response?.data?.data ?? response?.data ?? [];
+      const queue = Array.isArray(rawQueue) ? rawQueue : [];
 
       if (queue.length > 0) {
         const timestamp = new Date().toISOString();

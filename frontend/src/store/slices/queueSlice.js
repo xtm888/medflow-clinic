@@ -104,7 +104,9 @@ const queueSlice = createSlice({
 
       // Clean priority values to lowercase
       const cleanedQueues = {};
-      const rawQueues = action.payload.data || {};
+      // Extract queues object - WebSocket may send { queues: {...} } or { data: { queues: {...} } }
+      const payloadData = action.payload.data || action.payload;
+      const rawQueues = payloadData?.queues || payloadData || {};
       console.log('🔴 WebSocket Raw Queues:', rawQueues);
 
       Object.keys(rawQueues).forEach(key => {
@@ -197,11 +199,12 @@ const queueSlice = createSlice({
 
         // Clean priority values to lowercase
         const cleanedQueues = {};
-        // Response structure from offlineWrapper: { data: { success, data: {general: [], ...}, stats: {...} } }
-        // Handle both nested (from offlineWrapper) and direct (from WebSocket) structures
+        // Response structure from backend: { success, data: { queues: {dept: [...]}, stats: {...} } }
+        // After offlineWrapper transform: { queues: {...}, stats: {...} }
         const responseData = action.payload?.data || action.payload;
         console.log('📊 responseData:', responseData);
-        const rawQueues = responseData?.data || responseData || {};
+        // Extract queues object - API returns { queues: {...}, stats: {...} }
+        const rawQueues = responseData?.queues || responseData?.data?.queues || responseData?.data || responseData || {};
         console.log('📋 Raw Queues:', rawQueues);
         console.log('📋 Raw Queues keys:', Object.keys(rawQueues));
 

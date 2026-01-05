@@ -205,7 +205,9 @@ const OrthopticExamForm = () => {
   const searchPatients = async () => {
     try {
       const response = await patientService.getPatients({ search: searchTerm, limit: 10 });
-      setPatients(response.data || []);
+      // Safely extract array from various API response formats
+      const rawPatients = response?.data?.data ?? response?.data ?? [];
+      setPatients(Array.isArray(rawPatients) ? rawPatients : []);
     } catch (error) {
       console.error('Error searching patients:', error);
     }

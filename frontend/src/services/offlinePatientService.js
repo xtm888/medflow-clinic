@@ -212,7 +212,9 @@ const offlinePatientService = {
         }
       });
 
-      const patients = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawPatients = response?.data?.data ?? response?.data ?? [];
+      const patients = Array.isArray(rawPatients) ? rawPatients : [];
 
       // Cache them
       if (patients.length > 0) {

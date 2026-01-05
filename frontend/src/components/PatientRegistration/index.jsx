@@ -108,7 +108,8 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
       setLoadingReferrers(true);
       try {
         const result = await referrerService.getReferrers({ isActive: 'true' });
-        setReferrers(result.data || []);
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        setReferrers(Array.isArray(rawData) ? rawData : []);
       } catch (error) {
         console.error('Error loading referrers:', error);
         setReferrers([]);
@@ -131,7 +132,8 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
       setSearchingMedications(true);
       try {
         const result = await medicationService.searchMedications(medicationSearch, { limit: 10 });
-        setMedicationResults(result.data || []);
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        setMedicationResults(Array.isArray(rawData) ? rawData : []);
         setShowMedicationDropdown(true);
       } catch (error) {
         console.error('Medication search error:', error);
@@ -156,7 +158,8 @@ const PatientRegistrationWizard = ({ onClose, onSubmit, onSelectExistingPatient 
       setSearchingCompanies(true);
       try {
         const result = await searchCompanies(companySearch);
-        setCompanyResults(result.data || []);
+        const rawData = result?.data?.data ?? result?.data ?? [];
+        setCompanyResults(Array.isArray(rawData) ? rawData : []);
         setShowCompanyDropdown(true);
       } catch (error) {
         console.error('Company search error:', error);

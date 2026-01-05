@@ -185,6 +185,16 @@ const NurseVitalsEntry = () => {
       return;
     }
 
+    // Validate at least one vital sign is provided
+    const hasVitals = vitals.bloodPressureSystolic || vitals.bloodPressureDiastolic ||
+      vitals.heartRate || vitals.temperature || vitals.respiratoryRate ||
+      vitals.oxygenSaturation || vitals.weight || vitals.height;
+
+    if (!hasVitals) {
+      toast.error('Veuillez saisir au moins un signe vital');
+      return;
+    }
+
     try {
       setSaving(true);
 
@@ -198,14 +208,20 @@ const NurseVitalsEntry = () => {
         oxygenSaturation: vitals.oxygenSaturation ? parseFloat(vitals.oxygenSaturation) : null,
         weight: vitals.weight ? parseFloat(vitals.weight) : null,
         height: vitals.height ? parseFloat(vitals.height) : null,
-        notes: vitals.notes,
-        recordedBy: user._id,
-        recordedAt: new Date()
+        notes: vitals.notes
       };
 
-      await api.post(`/patients/${selectedPatient._id}/vitals`, vitalsData);
+      const response = await api.post(`/patients/${selectedPatient._id}/vitals`, vitalsData);
 
-      toast.success('Signes vitaux enregistrés');
+      // Show success message with visit context
+      const message = response.data?.message || 'Signes vitaux enregistrés';
+      const visitCreated = response.data?.data?.visitCreated;
+
+      if (visitCreated) {
+        toast.success(message, { autoClose: 5000 });
+      } else {
+        toast.success(message);
+      }
 
       // Reset form and refresh history
       setVitals({
@@ -223,7 +239,25 @@ const NurseVitalsEntry = () => {
       fetchVitalsHistory();
     } catch (error) {
       console.error('Error saving vitals:', error);
-      toast.error('Erreur lors de l\'enregistrement');
+
+      // Provide specific error messages
+      const errorMessage = error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message;
+
+      if (error.response?.status === 400) {
+        toast.error(`Erreur de validation: ${errorMessage}`);
+      } else if (error.response?.status === 401) {
+        toast.error('Session expirée. Veuillez vous reconnecter.');
+      } else if (error.response?.status === 403) {
+        toast.error('Vous n\'avez pas la permission d\'enregistrer des signes vitaux.');
+      } else if (error.response?.status === 404) {
+        toast.error('Patient non trouvé. Veuillez actualiser la page.');
+      } else if (!navigator.onLine) {
+        toast.error('Pas de connexion internet. Vérifiez votre connexion et réessayez.');
+      } else {
+        toast.error(`Erreur lors de l'enregistrement: ${errorMessage || 'Veuillez réessayer'}`);
+      }
     } finally {
       setSaving(false);
     }

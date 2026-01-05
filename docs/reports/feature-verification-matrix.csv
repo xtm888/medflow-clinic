@@ -1,0 +1,103 @@
+Feature ID,Module,Feature Name,Requirement Source,Implementation Status,Test Status,Screenshot Evidence,Notes
+AUTH-001,Authentication,Login page with email/password,Part 1 - Core Auth,IMPLEMENTED,PASSED,auth/auth_valid_login_*.png,French localization complete
+AUTH-002,Authentication,Invalid credentials error handling,Part 1 - Core Auth,IMPLEMENTED,PASSED,auth/auth_invalid_password_*.png,Proper error messages in French
+AUTH-003,Authentication,Empty field validation,Part 1 - Core Auth,IMPLEMENTED,PASSED,auth/auth_empty_fields_*.png,Client-side validation working
+AUTH-004,Authentication,Session management (JWT),Part 1 - Core Auth,IMPLEMENTED,PASSED,N/A (backend),Access + refresh tokens
+AUTH-005,Authentication,Logout functionality,Part 1 - Core Auth,IMPLEMENTED,PASSED,auth/auth_logout_*.png,Session cleared properly
+AUTH-006,Authentication,Role-based access control,Part 1 - Security,IMPLEMENTED,PASSED,role_views/*.png,7+ roles implemented
+DASH-001,Dashboard,Main dashboard with module cards,Part 1 - Navigation,IMPLEMENTED,PASSED,dashboard/dashboard_main_*.png,8 module cards visible
+DASH-002,Dashboard,Quick actions bar,Part 1 - Navigation,IMPLEMENTED,PASSED,dashboard/dashboard_quick_actions_*.png,Nouveau Patient and Nouvelle Consultation
+DASH-003,Dashboard,French localization,Part 1 - i18n,IMPLEMENTED,PASSED,dashboard/*.png,All labels in French
+PAT-001,Patient Management,Patient list with search,Part 1 - Patients,IMPLEMENTED,PASSED,patients/patient_list_*.png,Search by name/ID/phone
+PAT-002,Patient Management,Patient registration wizard,Part 1 - Patients,IMPLEMENTED,PASSED,patients/wizard_step*.png,4-step wizard complete
+PAT-003,Patient Management,Gender selection (Homme/Femme),Part 1 - Patients,IMPLEMENTED,PASSED,patients/wizard_step1_*.png,French gender labels
+PAT-004,Patient Management,Contact information capture,Part 1 - Patients,IMPLEMENTED,PASSED,patients/wizard_step2_*.png,Phone and email fields
+PAT-005,Patient Management,Convention/insurance association,Part 1 - Patients,IMPLEMENTED,PASSED,patients/wizard_step3_*.png,Company selection dropdown
+PAT-006,Patient Management,Medical history capture,Part 1 - Patients,IMPLEMENTED,PASSED,patients/wizard_step4_*.png,Antecedents and allergies
+PAT-007,Patient Management,Patient detail view,Part 1 - Patients,IMPLEMENTED,PASSED,patients/patient_detail_*.png,Complete patient profile
+PAT-008,Patient Management,Face recognition check-in,Part 2 - AI,IMPLEMENTED,PASSED,N/A (service),DeepFace integration
+PAT-009,Patient Management,Duplicate detection,Part 2 - AI,IMPLEMENTED,PASSED,N/A (service),Face similarity check
+APT-001,Appointments,Calendar view (Day/Week/Month),Part 1 - Appointments,IMPLEMENTED,PASSED,appointments/appointments_*.png,All 3 views working
+APT-002,Appointments,New appointment form,Part 1 - Appointments,IMPLEMENTED,PASSED,appointments/appointment_form_*.png,Patient and time selection
+APT-003,Appointments,Appointment creation,Part 1 - Appointments,IMPLEMENTED,PASSED,appointments/appointment_created_*.png,Success confirmation
+APT-004,Appointments,Appointment type selection,Part 1 - Appointments,IMPLEMENTED,PASSED,appointments/appointment_form_*.png,Multiple types available
+QUE-001,Queue Management,Queue view with stats,Part 1 - Queue,IMPLEMENTED,PASSED,queue/queue_view_*.png,Real-time wait times
+QUE-002,Queue Management,Patient check-in,Part 1 - Queue,IMPLEMENTED,PASSED,queue/queue_checkin_*.png,Status transitions
+QUE-003,Queue Management,Real-time updates (WebSocket),Part 1 - Queue,IMPLEMENTED,PASSED,N/A (realtime),Socket.io integration
+OPH-001,Ophthalmology,Ophthalmology dashboard,Part 1 - StudioVision,IMPLEMENTED,PASSED,ophthalmology/ophthalmology_dashboard_*.png,Patient queue visible
+OPH-002,Ophthalmology,StudioVision consultation,Part 1 - StudioVision,IMPLEMENTED,PASSED,studiovision/*.png,Color-coded sections
+OPH-003,Ophthalmology,Visual acuity (Monoyer scale),Part 1 - Clinical,IMPLEMENTED,PASSED,studiovision_data/*.png,10/10 to PL- range
+OPH-004,Ophthalmology,Near vision (Parinaud scale),Part 1 - Clinical,IMPLEMENTED,PASSED,studiovision_data/*.png,P1.5 to P20 range
+OPH-005,Ophthalmology,Refraction data entry,Part 1 - Clinical,IMPLEMENTED,PASSED,studiovision_data/*.png,Sphere/Cyl/Axis fields
+OPH-006,Ophthalmology,IOP measurement entry,Part 1 - Clinical,IMPLEMENTED,PASSED,studiovision_data/*.png,Green section for tonometry
+OPH-007,Ophthalmology,OD/OS/OU laterality,Part 1 - Clinical,IMPLEMENTED,PASSED,studiovision_data/*.png,Per-eye data entry
+OPH-008,Ophthalmology,Device data sync,Part 2 - Devices,IMPLEMENTED,PASSED,devices/*.png,Auto-populate from devices
+OPH-009,Ophthalmology,Previous visit comparison,Part 1 - StudioVision,IMPLEMENTED,PASSED,studiovision_comparison/*.png,Side-by-side view
+ORT-001,Orthoptics,Orthoptics examination,Part 1 - Orthoptics,IMPLEMENTED,PASSED,orthoptics/*.png,Cover test and motility
+ORT-002,Orthoptics,OrthoptieQuickPanel,Part 1 - Orthoptics,IMPLEMENTED,PASSED,orthoptics/*.png,Simplified entry
+IVT-001,IVT Injections,IVT dashboard,Part 1 - IVT,IMPLEMENTED,PASSED,ivt/ivt_dashboard_*.png,Injection statistics
+IVT-002,IVT Injections,Protocol management,Part 1 - IVT,IMPLEMENTED,PASSED,ivt_detail/*.png,Vials and doses
+IVT-003,IVT Injections,Consent tracking,Part 1 - IVT,IMPLEMENTED,PASSED,ivt_detail/*.png,Consent forms
+IVT-004,IVT Injections,Cumulative dose tracking,Part 1 - IVT,IMPLEMENTED,PASSED,ivt_detail/*.png,Per-patient totals
+SUR-001,Surgery,Surgery dashboard,Part 1 - Surgery,IMPLEMENTED,PASSED,surgery/surgery_dashboard_*.png,OR scheduling view
+SUR-002,Surgery,New case creation,Part 1 - Surgery,IMPLEMENTED,PASSED,surgery/surgery_new_case_*.png,Case form modal
+SUR-003,Surgery,Pre-op checklist,Part 1 - Surgery,IMPLEMENTED,PASSED,surgery_detail/*.png,Required checks
+SUR-004,Surgery,Post-op follow-up,Part 1 - Surgery,IMPLEMENTED,PASSED,surgery_detail/*.png,Follow-up scheduling
+PHAR-001,Pharmacy,Pharmacy dashboard,Part 1 - Pharmacy,IMPLEMENTED,PASSED,pharmacy/pharmacy_dashboard_*.png,Inventory overview
+PHAR-002,Pharmacy,Drug inventory management,Part 1 - Pharmacy,IMPLEMENTED,PASSED,pharmacy/pharmacy_inventory_*.png,Stock levels visible
+PHAR-003,Pharmacy,Drug search,Part 1 - Pharmacy,IMPLEMENTED,PASSED,pharmacy/pharmacy_search_*.png,Name and category search
+PHAR-004,Pharmacy,Dispensing workflow,Part 1 - Pharmacy,IMPLEMENTED,PASSED,pharmacy/*.png,Prescription fulfillment
+PHAR-005,Pharmacy,French drug database,Part 2 - Seeding,IMPLEMENTED,PASSED,N/A (database),seedFrenchDrugs.js
+LAB-001,Laboratory,Laboratory dashboard,Part 1 - Laboratory,IMPLEMENTED,PASSED,laboratory/laboratory_dashboard_*.png,Test orders visible
+LAB-002,Laboratory,Test order creation,Part 1 - Laboratory,IMPLEMENTED,PASSED,laboratory/new_lab_order_*.png,Test selection form
+LAB-003,Laboratory,Results entry,Part 1 - Laboratory,IMPLEMENTED,PASSED,lab_operations/*.png,Value and range entry
+LAB-004,Laboratory,LIS integration (HL7),Part 2 - Integration,IMPLEMENTED,PASSED,N/A (backend),HL7 messaging
+OPT-001,Optical Shop,Optical shop dashboard,Part 1 - Optical,IMPLEMENTED,PASSED,optical/optical_shop_dashboard_*.png,Frames and lenses
+OPT-002,Optical Shop,Glasses orders list,Part 1 - Optical,IMPLEMENTED,PASSED,optical/glasses_orders_list_*.png,Order tracking
+OPT-003,Optical Shop,Frame inventory,Part 1 - Optical,IMPLEMENTED,PASSED,inventory/frame_*.png,Stock management
+OPT-004,Optical Shop,Contact lens inventory,Part 1 - Optical,IMPLEMENTED,PASSED,inventory/contact_lens_*.png,Lens stock
+OPT-005,Optical Shop,Order verification workflow,Part 1 - Optical,IMPLEMENTED,PASSED,glasses_orders/*.png,QC steps
+INV-001,Invoicing,Invoice list,Part 1 - Billing,IMPLEMENTED,PASSED,invoicing/invoicing_list_*.png,Color-coded status
+INV-002,Invoicing,Invoice creation,Part 1 - Billing,IMPLEMENTED,PASSED,invoicing/invoice_form_*.png,Service selection
+INV-003,Invoicing,Payment recording,Part 1 - Billing,IMPLEMENTED,PASSED,invoicing/*.png,Multiple methods
+INV-004,Invoicing,Multi-currency (CDF/USD/EUR),Part 1 - Billing,IMPLEMENTED,PASSED,invoicing/*.png,Currency selector
+INV-005,Invoicing,Convention billing,Part 1 - Billing,IMPLEMENTED,PASSED,invoicing/*.png,Company share calculation
+COM-001,Companies,Companies list,Part 1 - Conventions,IMPLEMENTED,PASSED,companies/companies_list_*.png,Insurance providers
+COM-002,Companies,Company creation,Part 1 - Conventions,IMPLEMENTED,PASSED,companies/company_form_*.png,Coverage settings
+COM-003,Companies,Approvals workflow,Part 1 - Conventions,IMPLEMENTED,PASSED,companies/approvals_list_*.png,Prior authorization
+COM-004,Companies,Coverage rules,Part 1 - Conventions,IMPLEMENTED,PASSED,company_detail/*.png,Per-category limits
+PRE-001,Prescriptions,Prescriptions list,Part 1 - Prescriptions,IMPLEMENTED,PASSED,prescriptions/prescriptions_list_*.png,All prescription types
+PRE-002,Prescriptions,Drug prescription,Part 1 - Prescriptions,IMPLEMENTED,PASSED,prescription/*.png,Medication orders
+PRE-003,Prescriptions,Optical prescription,Part 1 - Prescriptions,IMPLEMENTED,PASSED,prescription/*.png,Glasses orders
+PRE-004,Prescriptions,PDF generation,Part 1 - Documents,IMPLEMENTED,PASSED,N/A (PDF),PDFKit integration
+SET-001,Settings,Settings page,Part 1 - Settings,IMPLEMENTED,PASSED,settings/settings_main_*.png,Tab navigation
+SET-002,Settings,Profile settings,Part 1 - Settings,IMPLEMENTED,PASSED,settings/settings_profil_*.png,User profile edit
+SET-003,Settings,Notification settings,Part 1 - Settings,IMPLEMENTED,PASSED,settings/settings_notifications_*.png,Alert preferences
+SET-004,Settings,Clinic settings,Part 1 - Settings,IMPLEMENTED,PASSED,settings/settings_clinique_*.png,Clinic configuration
+SET-005,Settings,Fee schedules,Part 1 - Billing,IMPLEMENTED,PASSED,settings/settings_tarifs_*.png,Price management
+SET-006,Settings,Permissions management,Part 1 - Security,IMPLEMENTED,PASSED,settings/settings_permissions_*.png,Role configuration
+USR-001,User Management,Users list,Part 1 - Users,IMPLEMENTED,PASSED,users/users_list_*.png,Staff directory
+USR-002,User Management,User creation,Part 1 - Users,IMPLEMENTED,PASSED,users/user_form_*.png,Role assignment
+USR-003,User Management,Role assignment,Part 1 - Users,IMPLEMENTED,PASSED,users/*.png,Multi-role support
+MCL-001,Multi-Clinic,Clinic switcher,Part 1 - Multi-Clinic,IMPLEMENTED,PASSED,multi-clinic/clinic_switcher_*.png,Context switching
+MCL-002,Multi-Clinic,Clinic context isolation,Part 1 - Multi-Clinic,IMPLEMENTED,PASSED,N/A (backend),Query scoping
+MCL-003,Multi-Clinic,Cross-clinic inventory,Part 2 - Inventory,IMPLEMENTED,PASSED,inventory/*.png,Transfer workflows
+DOC-001,Documents,Documents page,Part 1 - Documents,IMPLEMENTED,PASSED,documents/documents_main_*.png,Template selection
+DOC-002,Documents,Fiche Ophta generation,Part 1 - Documents,IMPLEMENTED,PASSED,N/A (PDF),Clinical summary
+DOC-003,Documents,Prescription PDF,Part 1 - Documents,IMPLEMENTED,PASSED,N/A (PDF),Drug/optical prescriptions
+AUD-001,Audit Trail,Audit trail page,Part 1 - Security,IMPLEMENTED,PASSED,audit/audit_trail_*.png,Event log view
+AUD-002,Audit Trail,Event filtering,Part 1 - Security,IMPLEMENTED,PASSED,audit/*.png,Date and type filters
+AUD-003,Audit Trail,Export functionality,Part 1 - Security,IMPLEMENTED,PASSED,audit/*.png,CSV/PDF export
+DEV-001,Devices,Devices list,Part 2 - Devices,IMPLEMENTED,PASSED,devices/devices_main_*.png,12 registered devices
+DEV-002,Devices,Device configuration,Part 2 - Devices,IMPLEMENTED,PASSED,devices/add_device_*.png,SMB share setup
+DEV-003,Devices,File polling,Part 2 - Devices,IMPLEMENTED,PASSED,N/A (service),Auto-import
+DEV-004,Devices,DICOM support,Part 2 - Devices,IMPLEMENTED,PASSED,N/A (service),Imaging import
+FIN-001,Financial,Financial reports dashboard,Part 1 - Analytics,IMPLEMENTED,PASSED,financial/financial_reports_*.png,Revenue analytics
+FIN-002,Financial,Revenue by period,Part 1 - Analytics,IMPLEMENTED,PASSED,financial/*.png,Date range reports
+FIN-003,Financial,Per-clinic breakdown,Part 1 - Analytics,IMPLEMENTED,PASSED,financial/*.png,Multi-clinic stats
+POR-001,Patient Portal,Portal login page,Part 2 - Portal,IMPLEMENTED,PASSED,portal/patient_portal_login_*.png,Patient access
+EDGE-001,Edge Cases,404 error handling,Part 1 - UX,IMPLEMENTED,PASSED,edge-cases/invalid_route_*.png,French error page
+EDGE-002,Edge Cases,XSS protection,Part 1 - Security,IMPLEMENTED,PASSED,edge-cases/special_chars_search_*.png,Script escaped
+EDGE-003,Edge Cases,Responsive desktop,Part 1 - UX,IMPLEMENTED,PASSED,edge-cases/responsive_desktop_*.png,1920px layout
+EDGE-004,Edge Cases,Responsive tablet,Part 1 - UX,IMPLEMENTED,PASSED,edge-cases/responsive_tablet_*.png,768px 4-col grid
+EDGE-005,Edge Cases,Responsive mobile,Part 1 - UX,IMPLEMENTED,PASSED,edge-cases/responsive_mobile_*.png,375px 2-col grid

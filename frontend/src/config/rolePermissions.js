@@ -442,7 +442,7 @@ export const menuConfigurations = {
     icon: 'Shield',
     description: 'Journaux d\'audit système'
   },
-  // Consolidated Clinical menu with submenus
+  // Consolidated Clinical menu with submenus - Clean, non-redundant structure
   clinical: {
     label: 'Clinique',
     path: null,
@@ -450,17 +450,11 @@ export const menuConfigurations = {
     description: 'Modules cliniques',
     subItems: [
       { label: 'Ordonnances', path: '/prescriptions', icon: 'FileText', roles: ['admin', 'doctor', 'ophthalmologist', 'pharmacist', 'nurse', 'optometrist'] },
-      { label: 'File Ordonnances', path: '/prescription-queue', icon: 'ListChecks', roles: ['admin', 'pharmacist'] },
-      { label: 'Laboratoire', path: '/laboratory', icon: 'FlaskConical', roles: ['admin', 'doctor', 'ophthalmologist', 'lab_technician', 'nurse'] },
-      { label: 'Accueil Labo', path: '/lab-checkin', icon: 'ClipboardCheck', roles: ['admin', 'lab_technician', 'nurse'] },
-      { label: 'Liste de Travail Labo', path: '/lab-worklist', icon: 'ListTodo', roles: ['admin', 'lab_technician'] },
-      { label: 'Saisie Signes Vitaux', path: '/nurse-vitals', icon: 'Activity', roles: ['admin', 'nurse', 'doctor', 'ophthalmologist'] },
-      { label: 'Imagerie', path: '/imaging', icon: 'Image', roles: ['admin', 'doctor', 'ophthalmologist', 'radiologist', 'technician', 'imaging_tech'] },
       { label: 'Pharmacie', path: '/pharmacy', icon: 'Pill', roles: ['admin', 'pharmacist', 'doctor', 'ophthalmologist'] },
-      { label: 'Ophtalmologie', path: '/ophthalmology', icon: 'Eye', roles: ['admin', 'doctor', 'ophthalmologist', 'optometrist', 'nurse'] },
-      { label: 'Orthoptie', path: '/orthoptic', icon: 'Eye', roles: ['admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'] },
-      { label: 'IVT', path: '/ivt', icon: 'Syringe', roles: ['admin', 'doctor', 'ophthalmologist', 'nurse'] },
-      { label: 'Chirurgie', path: '/surgery', icon: 'Scissors', roles: ['admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'] },
+      { label: 'Laboratoire', path: '/laboratory', icon: 'FlaskConical', roles: ['admin', 'doctor', 'ophthalmologist', 'lab_technician', 'nurse'] },
+      { label: 'Imagerie', path: '/imaging', icon: 'Image', roles: ['admin', 'doctor', 'ophthalmologist', 'radiologist', 'technician', 'imaging_tech'] },
+      { label: 'Signes Vitaux', path: '/nurse-vitals', icon: 'Activity', roles: ['admin', 'nurse', 'doctor', 'ophthalmologist'] },
+      { label: 'Centre Ophta', path: '/eye-clinic', icon: 'Eye', roles: ['admin', 'doctor', 'ophthalmologist', 'optometrist', 'nurse', 'orthoptist'] },
       { label: 'Boutique Optique', path: '/optical-shop', icon: 'Glasses', roles: ['admin', 'optician', 'technician', 'receptionist', 'manager', 'ophthalmologist', 'optometrist'] },
       { label: 'Appareils', path: '/devices', icon: 'HardDrive', roles: ['admin', 'technician', 'imaging_tech', 'doctor', 'ophthalmologist'] }
     ]
@@ -468,15 +462,15 @@ export const menuConfigurations = {
   // Consolidated Finance menu with submenus
   finance: {
     label: 'Finances',
-    path: null,
+    path: '/finance',
     icon: 'DollarSign',
     description: 'Gestion financière',
     subItems: [
-      { label: 'Facturation', path: '/invoicing', icon: 'Receipt', roles: ['admin', 'receptionist', 'accountant'] },
-      { label: 'Rapports financiers', path: '/financial', icon: 'BarChart3', roles: ['admin', 'accountant', 'manager'] },
-      { label: 'Conventions', path: '/companies', icon: 'Building2', roles: ['admin', 'accountant', 'manager'] },
-      { label: 'Approbations', path: '/approvals', icon: 'ShieldCheck', roles: ['admin', 'accountant', 'manager', 'doctor', 'receptionist'] },
-      { label: 'Services', path: '/services', icon: 'Briefcase', roles: ['admin', 'accountant', 'manager'] }
+      { label: 'Facturation', path: '/finance?tab=invoicing', icon: 'Receipt', roles: ['admin', 'receptionist', 'accountant'] },
+      { label: 'Rapports', path: '/finance?tab=reports', icon: 'BarChart3', roles: ['admin', 'accountant', 'manager'] },
+      { label: 'Conventions', path: '/finance?tab=conventions', icon: 'Building2', roles: ['admin', 'accountant', 'manager'] },
+      { label: 'Approbations', path: '/finance?tab=approvals', icon: 'ShieldCheck', roles: ['admin', 'accountant', 'manager', 'doctor', 'receptionist'] },
+      { label: 'Services', path: '/finance?tab=services', icon: 'Briefcase', roles: ['admin', 'accountant', 'manager'] }
     ]
   },
   // Keep individual items for direct access (legacy support)
@@ -506,13 +500,13 @@ export const menuConfigurations = {
   },
   'prescription-queue': {
     label: 'File Ordonnances',
-    path: '/prescription-queue',
+    path: '/pharmacy?tab=prescriptions',
     icon: 'FileText',
     description: 'Vérification et délivrance des ordonnances'
   },
   'lab-worklist': {
     label: 'Liste de Travail',
-    path: '/lab-worklist',
+    path: '/laboratory?tab=worklist',
     icon: 'FlaskConical',
     description: 'Gestion des prélèvements et saisie des résultats'
   },
@@ -566,47 +560,49 @@ export const menuConfigurations = {
     icon: 'ShieldCheck',
     description: 'Demandes d\'approbation préalable (délibérations)'
   },
-  // Inventory menu with submenus (Optical + Lab)
+  // Inventory menu with submenus - Using Unified Inventory with type params
   inventory: {
     label: 'Inventaire',
-    path: null,
+    path: '/unified-inventory',
     icon: 'Package',
     description: 'Gestion des stocks',
     subItems: [
-      { label: 'Montures', path: '/frame-inventory', icon: 'Glasses', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager'] },
-      { label: 'Verres Optiques', path: '/optical-lens-inventory', icon: 'Eye', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager'] },
-      { label: 'Lentilles Contact', path: '/contact-lens-inventory', icon: 'Circle', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager'] },
-      { label: 'Réactifs Labo', path: '/reagent-inventory', icon: 'FlaskConical', roles: ['admin', 'lab_technician', 'manager'] },
-      { label: 'Consommables Labo', path: '/lab-consumable-inventory', icon: 'TestTube', roles: ['admin', 'lab_technician', 'nurse', 'manager'] }
+      { label: 'Vue Unifiée', path: '/unified-inventory', icon: 'Package', roles: ['admin', 'manager'] },
+      { label: 'Montures', path: '/unified-inventory?type=frame', icon: 'Glasses', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager', 'optician'] },
+      { label: 'Verres Optiques', path: '/unified-inventory?type=optical_lens', icon: 'Eye', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager', 'optician'] },
+      { label: 'Lentilles Contact', path: '/unified-inventory?type=contact_lens', icon: 'Circle', roles: ['admin', 'optometrist', 'ophthalmologist', 'receptionist', 'manager', 'optician'] },
+      { label: 'Réactifs Labo', path: '/unified-inventory?type=reagent', icon: 'FlaskConical', roles: ['admin', 'lab_technician', 'manager'] },
+      { label: 'Consommables Labo', path: '/unified-inventory?type=lab_consumable', icon: 'TestTube', roles: ['admin', 'lab_technician', 'nurse', 'manager'] }
     ]
   },
+  // Legacy inventory items - Now redirect to Unified Inventory with type filters
   'frame-inventory': {
     label: 'Inventaire Montures',
-    path: '/frame-inventory',
+    path: '/unified-inventory?type=frame',
     icon: 'Glasses',
     description: 'Gestion du stock de montures'
   },
   'contact-lens-inventory': {
     label: 'Inventaire Lentilles',
-    path: '/contact-lens-inventory',
+    path: '/unified-inventory?type=contact_lens',
     icon: 'Circle',
     description: 'Gestion du stock de lentilles de contact'
   },
   'optical-lens-inventory': {
     label: 'Inventaire Verres Optiques',
-    path: '/optical-lens-inventory',
+    path: '/unified-inventory?type=optical_lens',
     icon: 'Eye',
     description: 'Gestion du stock de verres ophtalmiques'
   },
   'reagent-inventory': {
     label: 'Réactifs Laboratoire',
-    path: '/reagent-inventory',
+    path: '/unified-inventory?type=reagent',
     icon: 'FlaskConical',
     description: 'Gestion du stock de réactifs de laboratoire'
   },
   'lab-consumable-inventory': {
     label: 'Consommables Laboratoire',
-    path: '/lab-consumable-inventory',
+    path: '/unified-inventory?type=lab_consumable',
     icon: 'TestTube',
     description: 'Gestion du stock de consommables de laboratoire (tubes, aiguilles, etc.)'
   },
@@ -614,7 +610,13 @@ export const menuConfigurations = {
     label: 'Boutique Optique',
     path: '/optical-shop',
     icon: 'Glasses',
-    description: 'Vente de lunettes et verres correcteurs'
+    description: 'Vente de lunettes et verres correcteurs',
+    subItems: [
+      { label: 'Commandes', path: '/optical-shop?tab=orders', icon: 'Glasses', roles: ['admin', 'optician', 'technician', 'receptionist', 'manager', 'ophthalmologist', 'optometrist'] },
+      { label: 'Vérification QC', path: '/optical-shop?tab=verification', icon: 'CheckCircle', roles: ['admin', 'technician', 'optician', 'manager'] },
+      { label: 'Externes', path: '/optical-shop?tab=external', icon: 'Truck', roles: ['admin', 'optician', 'technician', 'manager'] },
+      { label: 'Performance', path: '/optical-shop?tab=performance', icon: 'BarChart3', roles: ['admin', 'manager', 'ophthalmologist'] }
+    ]
   },
   // Procurement menu with submenus
   procurement: {
@@ -678,29 +680,29 @@ export const menuConfigurations = {
     icon: 'Database',
     description: 'Sauvegardes et restauration du système'
   },
-  // Operations menu for cross-clinic features
+  // Operations menu for cross-clinic features - Using unified Multi-Clinic page with tab params
   operations: {
     label: 'Opérations',
-    path: null,
+    path: '/multi-clinic',
     icon: 'Building2',
     description: 'Gestion multi-cliniques',
     subItems: [
-      { label: 'Tableau Multi-Cliniques', path: '/cross-clinic-dashboard', icon: 'LayoutGrid', roles: ['admin', 'manager'] },
-      { label: 'Inventaire Consolidé', path: '/cross-clinic-inventory', icon: 'Package', roles: ['admin', 'manager'] },
+      { label: 'Tableau Multi-Cliniques', path: '/multi-clinic?tab=dashboard', icon: 'LayoutGrid', roles: ['admin', 'manager'] },
+      { label: 'Inventaire Consolidé', path: '/multi-clinic?tab=inventory', icon: 'Package', roles: ['admin', 'manager'] },
       { label: 'Établissements Externes', path: '/external-facilities', icon: 'Building', roles: ['admin', 'manager'] },
       { label: 'Dispatch', path: '/dispatch-dashboard', icon: 'Truck', roles: ['admin', 'manager', 'optician', 'technician'] },
-      { label: 'Rapports Consolidés', path: '/consolidated-reports', icon: 'BarChart3', roles: ['admin', 'manager', 'accountant'] }
+      { label: 'Rapports Consolidés', path: '/multi-clinic?tab=reports', icon: 'BarChart3', roles: ['admin', 'manager', 'accountant'] }
     ]
   },
   'cross-clinic-dashboard': {
     label: 'Tableau Multi-Cliniques',
-    path: '/cross-clinic-dashboard',
+    path: '/multi-clinic?tab=dashboard',
     icon: 'LayoutGrid',
     description: 'Vue d\'ensemble de toutes les cliniques'
   },
   'cross-clinic-inventory': {
     label: 'Inventaire Consolidé',
-    path: '/cross-clinic-inventory',
+    path: '/multi-clinic?tab=inventory',
     icon: 'Package',
     description: 'Inventaire multi-sites consolidé'
   },
@@ -718,14 +720,14 @@ export const menuConfigurations = {
   },
   'consolidated-reports': {
     label: 'Rapports Consolidés',
-    path: '/consolidated-reports',
+    path: '/multi-clinic?tab=reports',
     icon: 'BarChart3',
     description: 'Rapports financiers et opérationnels multi-sites'
   },
-  // Lab workflow pages
+  // Lab workflow pages - Now redirect to Laboratory tabs
   'lab-checkin': {
     label: 'Accueil Labo',
-    path: '/lab-checkin',
+    path: '/laboratory?tab=checkin',
     icon: 'ClipboardCheck',
     description: 'Réception et enregistrement des prélèvements'
   },
@@ -753,5 +755,32 @@ export const menuConfigurations = {
     path: '/lab-tech-view',
     icon: 'FlaskConical',
     description: 'Vue optimisée pour le technicien de laboratoire'
+  },
+  // Ophthalmology Hub - Unified ophthalmology page with tabs
+  'eye-clinic': {
+    label: 'Centre Ophtalmologique',
+    path: '/eye-clinic',
+    icon: 'Eye',
+    description: 'Consultations, examens et interventions ophtalmologiques',
+    subItems: [
+      { label: 'Tableau de Bord', path: '/eye-clinic?tab=dashboard', icon: 'LayoutDashboard', roles: ['admin', 'doctor', 'ophthalmologist', 'optometrist', 'nurse', 'orthoptist'] },
+      { label: 'Orthoptie', path: '/eye-clinic?tab=orthoptic', icon: 'Glasses', roles: ['admin', 'doctor', 'ophthalmologist', 'orthoptist', 'nurse'] },
+      { label: 'Injections IVT', path: '/eye-clinic?tab=ivt', icon: 'Syringe', roles: ['admin', 'doctor', 'ophthalmologist', 'nurse'] },
+      { label: 'Chirurgie', path: '/eye-clinic?tab=surgery', icon: 'Scissors', roles: ['admin', 'doctor', 'ophthalmologist', 'nurse', 'receptionist'] }
+    ]
+  },
+  // Finance Hub - Unified financial operations page with tabs
+  'finance-hub': {
+    label: 'Centre Financier',
+    path: '/finance',
+    icon: 'DollarSign',
+    description: 'Facturation, rapports et gestion des conventions',
+    subItems: [
+      { label: 'Facturation', path: '/finance?tab=invoicing', icon: 'Receipt', roles: ['admin', 'receptionist', 'accountant'] },
+      { label: 'Rapports', path: '/finance?tab=reports', icon: 'BarChart3', roles: ['admin', 'accountant', 'manager'] },
+      { label: 'Conventions', path: '/finance?tab=conventions', icon: 'Building2', roles: ['admin', 'accountant', 'manager'] },
+      { label: 'Approbations', path: '/finance?tab=approvals', icon: 'ShieldCheck', roles: ['admin', 'accountant', 'manager', 'doctor', 'receptionist'] },
+      { label: 'Services', path: '/finance?tab=services', icon: 'Briefcase', roles: ['admin', 'accountant', 'manager'] }
+    ]
   }
 };

@@ -83,9 +83,13 @@ const LabCheckIn = () => {
         labOrderService.getPendingLabOrders().catch(() => ({ data: [] }))
       ]);
 
-      const scheduled = scheduledRes.data || [];
-      const checkedIn = checkedInRes.data || [];
-      const pending = pendingRes.data || [];
+      const scheduledRaw = scheduledRes?.data?.data ?? scheduledRes?.data ?? [];
+      const checkedInRaw = checkedInRes?.data?.data ?? checkedInRes?.data ?? [];
+      const pendingRaw = pendingRes?.data?.data ?? pendingRes?.data ?? [];
+
+      const scheduled = Array.isArray(scheduledRaw) ? scheduledRaw : [];
+      const checkedIn = Array.isArray(checkedInRaw) ? checkedInRaw : [];
+      const pending = Array.isArray(pendingRaw) ? pendingRaw : [];
 
       setScheduledOrders(scheduled);
       setCheckedInOrders(checkedIn);

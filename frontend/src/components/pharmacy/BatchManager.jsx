@@ -28,9 +28,16 @@ const BatchManager = ({ isOpen, onClose, medication, onUpdate }) => {
     try {
       setLoading(true);
       const response = await pharmacyInventoryService.getBatches(medication._id);
-      setBatches(response.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setBatches(data);
     } catch (err) {
       setError('Erreur lors du chargement des lots');
+      setBatches([]);
     } finally {
       setLoading(false);
     }

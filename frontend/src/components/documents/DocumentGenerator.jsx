@@ -59,8 +59,11 @@ const DocumentGenerator = ({
         getTemplates(),
         getCategories()
       ]);
-      setTemplates(templatesRes.data || []);
-      setCategories(categoriesRes.data || {});
+      // Safely extract data from various API response formats
+      const rawTemplates = templatesRes?.data?.data ?? templatesRes?.data ?? [];
+      setTemplates(Array.isArray(rawTemplates) ? rawTemplates : []);
+      const rawCategories = categoriesRes?.data?.data ?? categoriesRes?.data ?? {};
+      setCategories(rawCategories && typeof rawCategories === 'object' ? rawCategories : {});
     } catch (error) {
       console.error('Error loading templates:', error);
       toast.error('Erreur lors du chargement des modèles');

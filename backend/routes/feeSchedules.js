@@ -50,13 +50,15 @@ router.get('/public', async (req, res) => {
 
 // @route   GET /api/fee-schedules
 // @desc    Get all active fee schedules with optional filtering and pagination
+//          Returns merged view: clinic-specific prices override templates
 // @access  Private
 router.get('/', protect, async (req, res) => {
   try {
-    const { category, department, search } = req.query;
+    const { category, department, search, all, templatesOnly } = req.query;
     const { page, limit, sort } = getPaginationParams(req.query, 'category');
+    const clinicId = req.user?.currentClinicId;
 
-    const query = {
+    const baseQuery = {
       active: true,
       $or: [
         { effectiveTo: null },
@@ -66,20 +68,20 @@ router.get('/', protect, async (req, res) => {
 
     // Filter by category if provided
     if (category) {
-      query.category = category;
+      baseQuery.category = category;
     }
 
     // Filter by department if provided
     if (department) {
-      query.department = department;
+      baseQuery.department = department;
     }
 
     // Search by name, code, or description
     if (search) {
       // Escape regex special characters for safety
       const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      query.$and = query.$and || [];
-      query.$and.push({
+      baseQuery.$and = baseQuery.$and || [];
+      baseQuery.$and.push({
         $or: [
           { name: { $regex: escapedSearch, $options: 'i' } },
           { code: { $regex: escapedSearch, $options: 'i' } },
@@ -88,18 +90,89 @@ router.get('/', protect, async (req, res) => {
       });
     }
 
-    const result = await paginateOffset(FeeSchedule, {
-      filter: query,
-      page,
-      limit,
-      sort: { category: 1, name: 1 }
-    });
+    let data;
+
+    // If templatesOnly=true, return only templates (for admin catalog management)
+    if (templatesOnly === 'true') {
+      const templateQuery = { ...baseQuery, isTemplate: true };
+      data = await FeeSchedule.find(templateQuery)
+        .sort({ category: 1, name: 1 })
+        .lean();
+    }
+    // If clinic context exists, return merged view (clinic prices override templates)
+    else if (clinicId) {
+      // Get all templates
+      const templates = await FeeSchedule.find({ ...baseQuery, isTemplate: true })
+        .sort({ category: 1, name: 1 })
+        .lean();
+
+      // Get clinic-specific prices
+      const clinicPrices = await FeeSchedule.find({
+        ...baseQuery,
+        clinic: clinicId,
+        isTemplate: false
+      }).lean();
+
+      // Create a map of clinic prices by code for quick lookup
+      const clinicPriceMap = new Map();
+      clinicPrices.forEach(price => {
+        clinicPriceMap.set(price.code, price);
+      });
+
+      // Merge: clinic prices override templates
+      data = templates.map(template => {
+        const clinicOverride = clinicPriceMap.get(template.code);
+        if (clinicOverride) {
+          return {
+            ...clinicOverride,
+            isClinicOverride: true,
+            templatePrice: template.price
+          };
+        }
+        return {
+          ...template,
+          isClinicOverride: false
+        };
+      });
+    }
+    // No clinic context: return templates only
+    else {
+      const templateQuery = { ...baseQuery, isTemplate: true };
+      data = await FeeSchedule.find(templateQuery)
+        .sort({ category: 1, name: 1 })
+        .lean();
+    }
+
+    // If all=true, return all without pagination
+    if (all === 'true') {
+      return res.json({
+        success: true,
+        count: data.length,
+        data,
+        pagination: {
+          page: 1,
+          limit: data.length,
+          total: data.length,
+          pages: 1
+        }
+      });
+    }
+
+    // Apply manual pagination for merged data
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedData = data.slice(startIndex, endIndex);
 
     res.json({
       success: true,
-      count: result.data.length,
-      data: result.data,
-      pagination: result.pagination
+      count: paginatedData.length,
+      data: paginatedData,
+      pagination: {
+        page,
+        limit,
+        total: data.length,
+        pages: Math.ceil(data.length / limit)
+      }
     });
   } catch (error) {
     console.error('Error fetching fee schedules:', error);
@@ -139,20 +212,55 @@ router.get('/categories', protect, async (req, res) => {
 });
 
 // @route   GET /api/fee-schedules/:code
-// @desc    Get single fee schedule by code
+// @desc    Get single fee schedule by code (clinic-specific price overrides template)
 // @access  Private
 router.get('/:code', protect, async (req, res) => {
   try {
-    const feeSchedule = await FeeSchedule.findOne({
-      code: req.params.code,
+    const clinicId = req.user?.currentClinicId;
+    const code = req.params.code.toUpperCase();
+
+    const baseQuery = {
+      code,
       active: true,
       $or: [
         { effectiveTo: null },
         { effectiveTo: { $gte: new Date() } }
       ]
+    };
+
+    // Try clinic-specific price first if clinic context exists
+    if (clinicId) {
+      const clinicPrice = await FeeSchedule.findOne({
+        ...baseQuery,
+        clinic: clinicId,
+        isTemplate: false
+      }).lean();
+
+      if (clinicPrice) {
+        // Get template price for reference
+        const template = await FeeSchedule.findOne({
+          ...baseQuery,
+          isTemplate: true
+        }).lean();
+
+        return res.json({
+          success: true,
+          data: {
+            ...clinicPrice,
+            isClinicOverride: true,
+            templatePrice: template?.price
+          }
+        });
+      }
+    }
+
+    // Fall back to template price
+    const template = await FeeSchedule.findOne({
+      ...baseQuery,
+      isTemplate: true
     }).lean();
 
-    if (!feeSchedule) {
+    if (!template) {
       return res.status(404).json({
         success: false,
         message: 'Fee schedule not found'
@@ -161,7 +269,10 @@ router.get('/:code', protect, async (req, res) => {
 
     res.json({
       success: true,
-      data: feeSchedule
+      data: {
+        ...template,
+        isClinicOverride: false
+      }
     });
   } catch (error) {
     console.error('Error fetching fee schedule:', error);

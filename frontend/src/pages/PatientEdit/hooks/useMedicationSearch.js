@@ -22,7 +22,13 @@ export default function useMedicationSearch() {
       setSearching(true);
       try {
         const result = await medicationService.searchMedications(searchTerm, { limit: 10 });
-        setResults(result.data || []);
+        // Handle various API response formats defensively
+        const medications = Array.isArray(result?.data?.data)
+          ? result.data.data
+          : Array.isArray(result?.data)
+          ? result.data
+          : [];
+        setResults(medications);
       } catch (err) {
         console.error('Medication search error:', err);
         setResults([]);

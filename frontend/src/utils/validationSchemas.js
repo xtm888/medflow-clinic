@@ -25,16 +25,16 @@ export const patterns = {
 export const messages = {
   required: (field) => `${field} est requis`,
   email: 'Adresse email invalide',
-  phone: 'Numéro de téléphone invalide',
-  password: 'Le mot de passe doit contenir au moins 8 caractères, une majuscule, une minuscule et un chiffre',
-  minLength: (field, min) => `${field} doit contenir au moins ${min} caractères`,
-  maxLength: (field, max) => `${field} ne doit pas dépasser ${max} caractères`,
-  min: (field, min) => `${field} doit être au moins ${min}`,
-  max: (field, max) => `${field} ne doit pas dépasser ${max}`,
+  phone: 'NumÃ©ro de tÃ©lÃ©phone invalide',
+  password: 'Le mot de passe doit contenir au moins 8 caractÃ¨res, une majuscule, une minuscule et un chiffre',
+  minLength: (field, min) => `${field} doit contenir au moins ${min} caractÃ¨res`,
+  maxLength: (field, max) => `${field} ne doit pas dÃ©passer ${max} caractÃ¨res`,
+  min: (field, min) => `${field} doit Ãªtre au moins ${min}`,
+  max: (field, max) => `${field} ne doit pas dÃ©passer ${max}`,
   date: 'Date invalide',
-  futureDate: 'La date doit être dans le futur',
-  pastDate: 'La date doit être dans le passé',
-  range: (field, min, max) => `${field} doit être entre ${min} et ${max}`
+  futureDate: 'La date doit Ãªtre dans le futur',
+  pastDate: 'La date doit Ãªtre dans le passÃ©',
+  range: (field, min, max) => `${field} doit Ãªtre entre ${min} et ${max}`
 };
 
 // ============================================================================
@@ -143,8 +143,8 @@ export const validatePastDate = (value) => {
  */
 export const patientSchema = {
   firstName: [
-    (v) => validateRequired(v, 'Le prénom'),
-    (v) => validateMinLength(v, 2, 'Le prénom')
+    (v) => validateRequired(v, 'Le prÃ©nom'),
+    (v) => validateMinLength(v, 2, 'Le prÃ©nom')
   ],
   lastName: [
     (v) => validateRequired(v, 'Le nom'),
@@ -173,10 +173,10 @@ export const appointmentSchema = {
     (v) => validateRequired(v, 'Le patient')
   ],
   provider: [
-    (v) => validateRequired(v, 'Le médecin')
+    (v) => validateRequired(v, 'Le mÃ©decin')
   ],
   department: [
-    (v) => validateRequired(v, 'Le département')
+    (v) => validateRequired(v, 'Le dÃ©partement')
   ],
   date: [
     (v) => validateRequired(v, 'La date')
@@ -200,7 +200,7 @@ export const prescriptionSchema = {
     (v) => validateRequired(v, 'Le patient')
   ],
   medications: [
-    (v) => isEmpty(v) ? 'Au moins un médicament est requis' : null
+    (v) => isEmpty(v) ? 'Au moins un mÃ©dicament est requis' : null
   ]
 };
 
@@ -215,10 +215,10 @@ export const invoiceSchema = {
     (v) => isEmpty(v) ? 'Au moins un article est requis' : null
   ],
   issueDate: [
-    (v) => validateRequired(v, 'La date d\'émission')
+    (v) => validateRequired(v, 'La date d\'Ã©mission')
   ],
   dueDate: [
-    (v) => validateRequired(v, 'La date d\'échéance')
+    (v) => validateRequired(v, 'La date d\'Ã©chÃ©ance')
   ]
 };
 
@@ -305,9 +305,116 @@ export const max = (maxValue, message) => (value) => {
 // EXPORT DEFAULT
 // ============================================================================
 
+// ============================================================================
+// HTML5 VALIDATION MESSAGES (French)
+// ============================================================================
+
+/**
+ * French messages for HTML5 native validation
+ */
+export const html5Messages = {
+  valueMissing: 'Ce champ est obligatoire',
+  typeMismatch: {
+    email: 'Veuillez saisir une adresse email valide',
+    url: 'Veuillez saisir une URL valide',
+    default: 'Format invalide'
+  },
+  patternMismatch: 'Le format saisi est invalide',
+  tooShort: (minLength) => `Ce champ doit contenir au moins ${minLength} caractÃ¨res`,
+  tooLong: (maxLength) => `Ce champ ne doit pas dÃ©passer ${maxLength} caractÃ¨res`,
+  rangeUnderflow: (min) => `La valeur doit Ãªtre supÃ©rieure ou Ã©gale Ã  ${min}`,
+  rangeOverflow: (max) => `La valeur doit Ãªtre infÃ©rieure ou Ã©gale Ã  ${max}`,
+  stepMismatch: 'Valeur non valide pour ce champ',
+  badInput: 'Veuillez saisir une valeur valide'
+};
+
+/**
+ * Apply French validation message to an input element
+ * Call this on input events (onInput, onChange, onBlur)
+ *
+ * @param {HTMLInputElement} input - The input element
+ * @returns {string} The validation message (empty if valid)
+ */
+export const applyFrenchValidation = (input) => {
+  if (!input || !input.validity) return '';
+
+  const validity = input.validity;
+  let message = '';
+
+  if (validity.valueMissing) {
+    message = html5Messages.valueMissing;
+  } else if (validity.typeMismatch) {
+    const typeMessages = html5Messages.typeMismatch;
+    message = typeMessages[input.type] || typeMessages.default;
+  } else if (validity.patternMismatch) {
+    // Check for custom message in data attribute
+    message = input.dataset.patternMessage || html5Messages.patternMismatch;
+  } else if (validity.tooShort) {
+    message = html5Messages.tooShort(input.minLength);
+  } else if (validity.tooLong) {
+    message = html5Messages.tooLong(input.maxLength);
+  } else if (validity.rangeUnderflow) {
+    message = html5Messages.rangeUnderflow(input.min);
+  } else if (validity.rangeOverflow) {
+    message = html5Messages.rangeOverflow(input.max);
+  } else if (validity.stepMismatch) {
+    message = html5Messages.stepMismatch;
+  } else if (validity.badInput) {
+    message = html5Messages.badInput;
+  }
+
+  input.setCustomValidity(message);
+  return message;
+};
+
+/**
+ * Create event handlers for French validation
+ * Apply to form inputs to get French error messages
+ *
+ * Usage:
+ * const handlers = getFrenchValidationHandlers();
+ * <input type="email" required {...handlers} />
+ */
+export const getFrenchValidationHandlers = () => ({
+  onInvalid: (e) => {
+    applyFrenchValidation(e.target);
+  },
+  onInput: (e) => {
+    // Clear custom validity on input to allow re-validation
+    e.target.setCustomValidity('');
+  },
+  onBlur: (e) => {
+    // Validate on blur for immediate feedback
+    if (!e.target.validity.valid) {
+      applyFrenchValidation(e.target);
+    }
+  }
+});
+
+/**
+ * Initialize French validation on all inputs in a form
+ * Call this in useEffect or after form mounts
+ *
+ * @param {HTMLFormElement} form - The form element
+ */
+export const initFrenchValidation = (form) => {
+  if (!form) return;
+
+  const inputs = form.querySelectorAll('input, select, textarea');
+  inputs.forEach(input => {
+    input.addEventListener('invalid', (e) => {
+      applyFrenchValidation(e.target);
+    });
+    input.addEventListener('input', (e) => {
+      e.target.setCustomValidity('');
+    });
+  });
+};
+
 const validation = {
   patterns,
   messages,
+  html5Messages,
   isEmpty,
   validateRequired,
   validateEmail,
@@ -323,6 +430,9 @@ const validation = {
   required,
   min,
   max,
+  applyFrenchValidation,
+  getFrenchValidationHandlers,
+  initFrenchValidation,
   schemas: {
     patient: patientSchema,
     appointment: appointmentSchema,

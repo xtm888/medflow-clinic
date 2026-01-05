@@ -19,10 +19,17 @@ export default function IVTDueSection({ dueCount, onRefresh }) {
     setLoading(true);
     try {
       const response = await api.get('/ivt/due');
-      setPatients(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setPatients(data);
       setLoaded(true);
     } catch (err) {
       console.error('Error fetching due patients:', err);
+      setPatients([]);
     } finally {
       setLoading(false);
     }

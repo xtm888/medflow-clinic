@@ -1,18 +1,31 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useCallback, useRef, lazy, Suspense } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   Glasses, Search, ClipboardCheck, Truck, TrendingUp,
   Plus, Clock, DollarSign, AlertCircle, CheckCircle,
-  Users, Eye, Package, ArrowRight, RefreshCw, X
+  Users, Eye, Package, ArrowRight, RefreshCw, X, ShoppingCart, Loader2
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import opticalShopService from '../../services/opticalShopService';
 import { useAuth } from '../../contexts/AuthContext';
 
+// Lazy load tab content
+const TechnicianVerificationContent = lazy(() => import('./TechnicianVerification'));
+const ExternalOrdersContent = lazy(() => import('./ExternalOrders'));
+const OpticianPerformanceContent = lazy(() => import('./OpticianPerformance'));
+const GlassesOrderListContent = lazy(() => import('../GlassesOrders/GlassesOrderList'));
+
 const OpticalShopDashboard = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
+
+  // Tab state from URL
+  const activeTab = searchParams.get('tab') || 'dashboard';
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
   const [stats, setStats] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
@@ -60,11 +73,20 @@ const OpticalShopDashboard = () => {
         setSearching(true);
         setShowResults(true);
         const response = await opticalShopService.searchPatients(searchQuery.trim());
-        if (response.success) {
-          setSearchResults(response.data || []);
+        if (response?.success) {
+          // Handle various API response formats defensively
+          const data = Array.isArray(response?.data?.data)
+            ? response.data.data
+            : Array.isArray(response?.data)
+            ? response.data
+            : [];
+          setSearchResults(data);
+        } else {
+          setSearchResults([]);
         }
       } catch (error) {
         console.error('Error searching patients:', error);
+        setSearchResults([]);
       } finally {
         setSearching(false);
       }
@@ -143,6 +165,101 @@ const OpticalShopDashboard = () => {
         </button>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200 mb-6">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'dashboard'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            Ventes
+          </button>
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'orders'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Glasses className="h-5 w-5" />
+            Commandes
+          </button>
+          {isTechnician && (
+            <button
+              onClick={() => setActiveTab('verification')}
+              className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+                activeTab === 'verification'
+                  ? 'border-purple-500 text-purple-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+              }`}
+            >
+              <ClipboardCheck className="h-5 w-5" />
+              Vérification
+              {stats?.pendingVerification > 0 && (
+                <span className="bg-orange-500 text-white text-xs rounded-full px-2 py-0.5">
+                  {stats.pendingVerification}
+                </span>
+              )}
+            </button>
+          )}
+          <button
+            onClick={() => setActiveTab('external')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'external'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Truck className="h-5 w-5" />
+            Externes
+          </button>
+          <button
+            onClick={() => setActiveTab('performance')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'performance'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <TrendingUp className="h-5 w-5" />
+            Performance
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'orders' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>}>
+          <GlassesOrderListContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'verification' && isTechnician && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>}>
+          <TechnicianVerificationContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'external' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>}>
+          <ExternalOrdersContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'performance' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>}>
+          <OpticianPerformanceContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'dashboard' && (
+      <>
       {/* Quick Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl p-6 border shadow-sm">
@@ -475,6 +592,8 @@ const OpticalShopDashboard = () => {
           )}
         </div>
       </div>
+      </>
+      )}
     </div>
   );
 };

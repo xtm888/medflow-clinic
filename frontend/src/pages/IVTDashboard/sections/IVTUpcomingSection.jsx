@@ -19,10 +19,17 @@ export default function IVTUpcomingSection({ upcomingCount, onRefresh }) {
     setLoading(true);
     try {
       const response = await api.get('/ivt/upcoming', { params: { days: 30 } });
-      setInjections(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setInjections(data);
       setLoaded(true);
     } catch (err) {
       console.error('Error fetching upcoming:', err);
+      setInjections([]);
     } finally {
       setLoading(false);
     }

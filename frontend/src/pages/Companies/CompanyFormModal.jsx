@@ -90,8 +90,11 @@ export default function CompanyFormModal({ company, onClose, onSave }) {
     const fetchParentConventions = async () => {
       try {
         const result = await companyService.getCompanies({ type: 'insurance', limit: 100 });
+        // Safely extract array from various API response formats
+        const rawData = result?.data?.data ?? result?.data ?? result ?? [];
+        const companies = Array.isArray(rawData) ? rawData : [];
         // Filter to only parent conventions
-        const parents = (result.data || []).filter(c => c.isParentConvention || c.type === 'insurance');
+        const parents = companies.filter(c => c.isParentConvention || c.type === 'insurance');
         setParentConventions(parents);
       } catch (err) {
         console.error('Error fetching parent conventions:', err);

@@ -29,8 +29,24 @@ const GlassesOrderDetail = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Handle "new" route - redirect to optical shop for creating new orders
+    if (id === 'new') {
+      navigate('/optical-shop', {
+        replace: true,
+        state: { message: 'Pour créer une nouvelle commande de lunettes, utilisez la Boutique Optique.' }
+      });
+      return;
+    }
+
+    // Validate that id looks like a valid MongoDB ObjectId (24 hex chars)
+    if (!/^[0-9a-fA-F]{24}$/.test(id)) {
+      setError('Identifiant de commande invalide');
+      setLoading(false);
+      return;
+    }
+
     fetchOrder();
-  }, [id]);
+  }, [id, navigate]);
 
   const fetchOrder = async () => {
     try {

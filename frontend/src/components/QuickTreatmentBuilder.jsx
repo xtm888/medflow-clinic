@@ -95,7 +95,9 @@ export default function QuickTreatmentBuilder({
       const response = await api.get('/drugs', {
         params: { category: categoryId, limit: 100 }
       });
-      setDrugs(response.data.data || response.data || []);
+      // Safely extract array from various API response formats
+      const rawDrugs = response?.data?.data ?? response?.data ?? [];
+      setDrugs(Array.isArray(rawDrugs) ? rawDrugs : []);
     } catch (error) {
       console.error('Error loading drugs:', error);
       // Fallback to static data for demo

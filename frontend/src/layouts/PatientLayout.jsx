@@ -30,6 +30,20 @@ export default function PatientLayout() {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Helper function to check if a menu path is active (handles query params)
+  const isPathActive = (menuPath) => {
+    if (!menuPath) return false;
+    const [menuPathname, menuSearch] = menuPath.split('?');
+    if (location.pathname !== menuPathname) return false;
+    if (!menuSearch) return true;
+    const menuParams = new URLSearchParams(menuSearch);
+    const currentParams = new URLSearchParams(location.search);
+    for (const [key, value] of menuParams.entries()) {
+      if (currentParams.get(key) !== value) return false;
+    }
+    return true;
+  };
+
   // Mock patient data - would come from auth context
   const patient = {
     firstName: 'Mbuyi',
@@ -74,7 +88,7 @@ export default function PatientLayout() {
 
           <nav className="flex-1 px-3 space-y-1">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = isPathActive(item.href);
               return (
                 <Link
                   key={item.name}
@@ -140,7 +154,7 @@ export default function PatientLayout() {
 
           <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href;
+              const isActive = isPathActive(item.href);
               return (
                 <Link
                   key={item.name}

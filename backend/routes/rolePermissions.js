@@ -335,7 +335,7 @@ function getDefaultPermissions(role) {
       label: 'Réceptionniste',
       description: 'Accueil et gestion des rendez-vous',
       menuItems: ['dashboard', 'patients', 'queue', 'appointments', 'finance', 'inventory', 'notifications'],
-      permissions: ['view_patients', 'manage_patients', 'view_appointments', 'manage_appointments', 'view_queue', 'manage_queue', 'process_payments', 'view_financial'],
+      permissions: ['view_patients', 'register_patients', 'manage_patients', 'view_appointments', 'manage_appointments', 'view_queue', 'manage_queue', 'process_payments', 'view_financial'],
       isActive: true,
       isSystemRole: false
     },

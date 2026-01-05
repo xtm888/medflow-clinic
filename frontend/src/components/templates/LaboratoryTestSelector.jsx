@@ -16,9 +16,16 @@ const LaboratoryTestSelector = ({ onAddTest }) => {
     const fetchCategories = async () => {
       try {
         const response = await api.get('/template-catalog/laboratories/categories');
-        setCategories(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setCategories(data);
       } catch (error) {
         console.error('Error fetching lab categories:', error);
+        setCategories([]);
       }
     };
     fetchCategories();
@@ -29,9 +36,16 @@ const LaboratoryTestSelector = ({ onAddTest }) => {
     const fetchProfiles = async () => {
       try {
         const response = await api.get('/template-catalog/laboratories/profiles');
-        setProfiles(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setProfiles(data);
       } catch (error) {
         console.error('Error fetching lab profiles:', error);
+        setProfiles([]);
       }
     };
     fetchProfiles();
@@ -47,9 +61,16 @@ const LaboratoryTestSelector = ({ onAddTest }) => {
     const fetchTests = async () => {
       try {
         const response = await api.get(`/template-catalog/laboratories?category=${selectedCategory}&isProfile=false`);
-        setTests(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setTests(data);
       } catch (error) {
         console.error('Error fetching lab tests:', error);
+        setTests([]);
       }
     };
     fetchTests();

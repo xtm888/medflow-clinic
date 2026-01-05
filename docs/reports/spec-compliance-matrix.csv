@@ -1,0 +1,80 @@
+Requirement ID,Category,Specification Requirement,Source Doc,Implementation Status,Test Status,Evidence,Notes
+REQ-001,Language,French UI for all user-facing content,Part 1,IMPLEMENTED,PASS,All screenshots,Minor browser validation messages in English (M-001)
+REQ-002,Location,Congo (DRC) context,Part 1,IMPLEMENTED,PASS,Phone +243 format verified,Correct country context
+REQ-003,Currency,CDF (Franc Congolais) primary currency,Part 1,IMPLEMENTED,PARTIAL,Analytics/Pharmacy show CFA correctly,Some screens show $ (M-002)
+REQ-004,Visual Acuity,Monoyer scale for distance vision,Part 1,IMPLEMENTED,PASS,refraction_filled screenshots,10/10 9/10 etc. verified
+REQ-005,Visual Acuity,Parinaud scale for near vision,Part 1,IMPLEMENTED,PASS,refraction_filled screenshots,P1 P2 P3 etc. verified
+REQ-006,Visual Acuity,Special notations CLD VBLM PL+ PL-,Part 1,IMPLEMENTED,PASS,StudioVision interface,Supported in VA fields
+REQ-007,Date Format,DD/MM/YYYY French format,Part 1,IMPLEMENTED,PASS,appointment date pickers,French format confirmed
+REQ-008,Time Format,24-hour format,Part 1,IMPLEMENTED,PASS,Queue times appointment times,24h format used
+REQ-009,Frontend,React 19 with Vite,Part 1,IMPLEMENTED,PASS,Modern UI rendering,React components working
+REQ-010,Backend,Node.js 18+ Express MongoDB,Part 1,IMPLEMENTED,PASS,Data persistence,Backend functional
+REQ-011,Auth,JWT authentication with refresh tokens,Part 1,IMPLEMENTED,PASS,Login logout flow,Token-based auth working
+REQ-012,Auth,Role-based access control,Part 1,IMPLEMENTED,PASS,6+ demo roles,RBAC functional
+REQ-013,Auth,Multi-clinic user assignment,Part 1,IMPLEMENTED,PASS,Clinic selector,Multi-clinic working
+REQ-014,Patient,Auto-generated patient ID PAT-YYYYMMDD-SEQ,Part 2,IMPLEMENTED,PASS,Patient detail views,ID format correct
+REQ-015,Patient,Face recognition for identification,Part 2,IMPLEMENTED,PASS,Integration indicators,Face service integrated
+REQ-016,Patient,Photo capture,Part 2,IMPLEMENTED,PASS,Patient wizard,Photo upload available
+REQ-017,Patient,Convention/insurance assignment,Part 2,IMPLEMENTED,PASS,Wizard step 4,Convention step in wizard
+REQ-018,Patient,VIP flag,Part 2,IMPLEMENTED,PASS,Patient badges,VIP indicator present
+REQ-019,Appointments,Calendar-based scheduling,Part 2,IMPLEMENTED,PASS,Calendar views,Liste Semaine Mois Agenda
+REQ-020,Appointments,Multiple appointment types,Part 2,IMPLEMENTED,PASS,Type dropdown,Consultation surgery etc.
+REQ-021,Appointments,Provider assignment,Part 2,IMPLEMENTED,PASS,Praticien field,Doctor selection
+REQ-022,Appointments,Room assignment,Part 2,IMPLEMENTED,PASS,Salle field,Room selection available
+REQ-023,Queue,Real-time queue display,Part 2,IMPLEMENTED,PASS,Queue page,Live counts
+REQ-024,Queue,Priority levels,Part 2,IMPLEMENTED,PASS,Check-in modal,Normal VIP Urgent etc.
+REQ-025,Queue,Wait time tracking,Part 2,IMPLEMENTED,PASS,Temps d attente moyen,Wait time displayed
+REQ-026,Ophthal,Color-coded sections StudioVision,Part 2,IMPLEMENTED,PASS,Consultation interface,Pink Green Yellow verified
+REQ-027,Ophthal,OD/OS laterality,Part 2,IMPLEMENTED,PASS,Refraction panels,Separate eye panels
+REQ-028,Ophthal,Refraction fields sphere cylinder axis add,Part 2,IMPLEMENTED,PASS,Refraction tab,All fields present
+REQ-029,Ophthal,IOP measurement mmHg,Part 2,IMPLEMENTED,PASS,Tonometrie section,IOP fields present
+REQ-030,Ophthal,Consultation types Complete Suivi Refraction,Part 2,IMPLEMENTED,PASS,New consultation modal,Type selection available
+REQ-031,Ophthal,Pupillary distance OD/OS,Part 2,IMPLEMENTED,PASS,Ecart Pupillaire field,Split PD measurement
+REQ-032,Orthoptics,Exam list and tracking,Part 2,IMPLEMENTED,PASS,Orthoptics page,Exam table with status
+REQ-033,IVT,Protocol management,Part 2,IMPLEMENTED,PASS,IVT dashboard,Injection tracking
+REQ-034,IVT,30-day forecast,Part 2,IMPLEMENTED,PASS,A Venir section,Upcoming injections
+REQ-035,Surgery,Surgery scheduling,Part 2,IMPLEMENTED,PASS,Agenda operatoire,OR calendar
+REQ-036,Surgery,Case status tracking,Part 2,IMPLEMENTED,PASS,Status KPIs,En attente En cours etc.
+REQ-037,Pharmacy,Drug database,Part 2,IMPLEMENTED,PASS,Pharmacy inventory,Medications with categories
+REQ-038,Pharmacy,Stock tracking,Part 2,IMPLEMENTED,PASS,Stock levels,Min levels expiry shown
+REQ-039,Pharmacy,Expiry monitoring,Part 2,IMPLEMENTED,PASS,Expire Bientot section,Expiry alerts
+REQ-040,Lab,Test catalog,Part 2,IMPLEMENTED,PASS,Catalogue 60 tests,Full test list
+REQ-041,Lab,Order workflow,Part 2,IMPLEMENTED,PASS,Demandes en Attente,Order queue
+REQ-042,Lab,Result entry,Part 2,IMPLEMENTED,PASS,Resultat button,Result recording
+REQ-043,Lab,Urgency badges,Part 2,IMPLEMENTED,PASS,Urgent indicator,Priority marking
+REQ-044,Optical,Frame inventory,Part 2,IMPLEMENTED,PASS,Boutique Optique,Inventory management
+REQ-045,Optical,Glasses order workflow,Part 2,IMPLEMENTED,PASS,Commandes de Lunettes,Order tracking
+REQ-046,Optical,Quality control,Part 2,IMPLEMENTED,PASS,Controle Qualite tab,QC workflow
+REQ-047,Billing,Fee schedule management,Part 2,IMPLEMENTED,PASS,Settings Tarifs,Fee configuration
+REQ-048,Billing,Invoice generation,Part 2,IMPLEMENTED,PASS,Invoice list,Invoices created
+REQ-049,Billing,Multiple payment methods,Part 2,IMPLEMENTED,PASS,Payment options,Various methods supported
+REQ-050,Billing,Multi-currency CDF USD EUR,Part 2,IMPLEMENTED,PASS,Currency display,Multiple currencies
+REQ-051,Devices,Network device discovery,Part 2,IMPLEMENTED,PASS,Device manager,12 devices shown
+REQ-052,Devices,Device types OCT FUNDUS BIOMETER etc,Part 2,IMPLEMENTED,PASS,Device type badges,All types present
+REQ-053,Devices,File polling,Part 2,IMPLEMENTED,PASS,Folder sync indicators,Sync status shown
+REQ-054,Devices,Patient matching,Part 2,IMPLEMENTED,PASS,Device integration,Auto-matching
+REQ-055,Documents,Template-based generation,Part 2,IMPLEMENTED,PASS,20+ document types,Templates available
+REQ-056,Documents,PDF generation,Part 2,IMPLEMENTED,PASS,Document export,PDF creation
+REQ-057,Audit,Comprehensive event logging,Part 2,IMPLEMENTED,PASS,53830 events,Full audit trail
+REQ-058,Audit,Filter by category,Part 2,IMPLEMENTED,PASS,8 filter tabs,Category filters
+REQ-059,Audit,Date range filtering,Part 2,IMPLEMENTED,PASS,Date picker,Date range available
+REQ-060,Audit,Export function,Part 2,IMPLEMENTED,PASS,Exporter button,Export capability
+REQ-061,Multi-Clinic,Clinic selector,Part 2,IMPLEMENTED,PASS,All Clinics dropdown,Clinic switching
+REQ-062,Multi-Clinic,Cross-clinic features,Part 2,IMPLEMENTED,PASS,Multi-Sites module,8 sub-modules
+REQ-063,Responsive,Mobile layout,Part 2,IMPLEMENTED,PASS,responsive_mobile screenshots,Single column layout
+REQ-064,Responsive,Tablet layout,Part 2,IMPLEMENTED,PASS,responsive_tablet screenshots,2-column grid
+REQ-065,Responsive,Desktop layout,Part 2,IMPLEMENTED,PASS,responsive_desktop screenshots,Full width layout
+REQ-066,Portal,Patient portal login,Part 2,IMPLEMENTED,PASS,patient_portal screenshots,Separate portal
+REQ-067,Portal,Emergency contact info,Part 2,IMPLEMENTED,PASS,Emergency banner,+243 and 112
+REQ-068,Security,Session management,Part 1,IMPLEMENTED,PASS,Login logout flow,Sessions working
+REQ-069,Security,RBAC enforcement,Part 1,IMPLEMENTED,PASS,Role-based views,Access controlled
+REQ-070,Surgery,Laterality OD/OS/ODG selection,Part 2,IMPLEMENTED,PASS,surgery_new_form screenshots,Vue Chirurgien verified
+REQ-071,Approvals,Prior authorization workflow,Part 2,IMPLEMENTED,PASS,approvals screenshots,Company approval process
+REQ-072,External,External facilities management,Part 2,IMPLEMENTED,PASS,external_facilities screenshots,Kinshasa partners
+REQ-073,OCR,Legacy data import wizard,Part 2,IMPLEMENTED,PASS,ocr_import screenshots,Device adapters working
+REQ-074,Templates,Variable system for documents,Part 2,IMPLEMENTED,PASS,template screenshots,Template variables functional
+REQ-075,Settings,11 configuration categories,Part 2,IMPLEMENTED,PASS,settings screenshots,Clinic User Tarifs etc.
+REQ-076,Settings,63 granular permissions,Part 2,IMPLEMENTED,PASS,RBAC settings,Full permission matrix
+REQ-077,Display,Dark theme queue display board,Part 2,IMPLEMENTED,PASS,display_board screenshots,Public display mode
+REQ-078,Financial,Multi-section dashboard,Part 2,IMPLEMENTED,PASS,financial screenshots,Revenue Conventions Performance
+REQ-079,Imaging,OD/OS image organization,Part 2,IMPLEMENTED,PASS,imaging screenshots,Separate eye galleries

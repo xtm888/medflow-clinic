@@ -1,9 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, lazy, Suspense } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   FlaskConical, Plus, Download, Clock, Check, Filter, X,
-  AlertTriangle, Loader2, Wifi, WifiOff, Settings
+  AlertTriangle, Loader2, Wifi, WifiOff, Settings,
+  UserCheck, ClipboardList
 } from 'lucide-react';
+
+// Lazy load tab content components
+const LabCheckInContent = lazy(() => import('../LabCheckIn'));
+const LabTechWorklistContent = lazy(() => import('../LabTechWorklist'));
 import laboratoryService from '../../services/laboratoryService';
 import patientService from '../../services/patientService';
 import { rejectAndReschedule, REJECTION_REASONS, getPendingLabOrders } from '../../services/labOrderService';
@@ -40,6 +45,12 @@ export default function Laboratory() {
 
   // WebSocket for real-time updates
   const { connected: wsConnected } = useWebSocket();
+
+  // Tab state from URL
+  const activeTab = searchParams.get('tab') || 'orders';
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
 
   // State
   const [loading, setLoading] = useState(true);
@@ -629,6 +640,60 @@ export default function Laboratory() {
         </div>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('orders')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'orders'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <FlaskConical className="h-5 w-5" />
+            Demandes
+          </button>
+          <button
+            onClick={() => setActiveTab('checkin')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'checkin'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <UserCheck className="h-5 w-5" />
+            Check-in
+          </button>
+          <button
+            onClick={() => setActiveTab('worklist')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'worklist'
+                ? 'border-purple-500 text-purple-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <ClipboardList className="h-5 w-5" />
+            Worklist Technicien
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'checkin' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>}>
+          <LabCheckInContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'worklist' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-purple-600" /></div>}>
+          <LabTechWorklistContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'orders' && (
+      <>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
@@ -701,6 +766,8 @@ export default function Laboratory() {
 
         <LabSpecimensSection patients={patients} />
       </CollapsibleSectionGroup>
+      </>
+      )}
 
       {/* New Order Modal */}
       {showNewOrder && (

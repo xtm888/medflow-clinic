@@ -22,10 +22,17 @@ export default function PharmacyLowStockSection({
     setLoading(true);
     try {
       const response = await api.get('/pharmacy/low-stock');
-      setMedications(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setMedications(data);
       setLoaded(true);
     } catch (err) {
       console.error('Error fetching low stock:', err);
+      setMedications([]);
     } finally {
       setLoading(false);
     }

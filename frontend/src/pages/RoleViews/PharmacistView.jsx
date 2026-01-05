@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import api from '../../services/apiConfig';
+import { formatTime } from '../../utils/formatters';
 
 /**
  * PharmacistView - Role-based dashboard for pharmacists
@@ -73,13 +74,7 @@ export default function PharmacistView() {
     }
   };
 
-  const formatTime = (dateStr) => {
-    if (!dateStr) return '--:--';
-    return new Date(dateStr).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  // formatTime imported from utils/formatters
 
   if (loading && pendingPrescriptions.length === 0) {
     return (

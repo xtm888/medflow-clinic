@@ -41,13 +41,16 @@ const DeviceImageSelector = ({ examId, patientId, onImageLinked }) => {
       const availableResponse = await api.get(
         `/devices/images?patientId=${patientId}&examId=${examId}`
       );
-      setImages(availableResponse.data.data || []);
+      // Safely extract arrays from various API response formats
+      const rawImages = availableResponse?.data?.data ?? availableResponse?.data ?? [];
+      setImages(Array.isArray(rawImages) ? rawImages : []);
 
       // Get already linked images
       const linkedResponse = await api.get(
         `/ophthalmology/exams/${examId}/device-images`
       );
-      setLinkedImages(linkedResponse.data.data || []);
+      const rawLinkedImages = linkedResponse?.data?.data ?? linkedResponse?.data ?? [];
+      setLinkedImages(Array.isArray(rawLinkedImages) ? rawLinkedImages : []);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load images');
       console.error('Error loading device images:', err);

@@ -8,6 +8,47 @@
  */
 
 const mongoose = require('mongoose');
+const { createContextLogger } = require('./structuredLogger');
+const log = createContextLogger('Transactions');
+
+// Cache for transaction support check
+let _transactionsSupported = null;
+
+/**
+ * Check if MongoDB supports transactions (replica set required)
+ * Results are cached after first check
+ */
+async function isTransactionSupported() {
+  if (_transactionsSupported !== null) {
+    return _transactionsSupported;
+  }
+
+  try {
+    // Try to start a session and transaction
+    const session = await mongoose.startSession();
+    try {
+      session.startTransaction();
+      await session.abortTransaction();
+      _transactionsSupported = true;
+      log.info('MongoDB transactions supported (replica set detected)');
+    } catch (error) {
+      if (error.message?.includes('replica set') ||
+          error.message?.includes('Transaction numbers')) {
+        _transactionsSupported = false;
+        log.warn('MongoDB transactions NOT supported - running in standalone mode. Payments will work without transactions.');
+      } else {
+        throw error;
+      }
+    } finally {
+      session.endSession();
+    }
+  } catch (error) {
+    log.warn('Could not check transaction support:', { error: error.message });
+    _transactionsSupported = false;
+  }
+
+  return _transactionsSupported;
+}
 
 /**
  * Execute a function within a MongoDB transaction
@@ -53,12 +94,24 @@ async function withTransaction(operation, options = {}) {
 /**
  * Execute a function with retry logic for transient transaction errors
  *
- * @param {Function} operation - Async function that receives the session
+ * Falls back to non-transactional execution when MongoDB is running in standalone mode.
+ *
+ * @param {Function} operation - Async function that receives the session (may be null in standalone mode)
  * @param {Object} options - Options including maxRetries
  * @returns {Promise<any>} - Result of the operation
  */
 async function withTransactionRetry(operation, options = {}) {
   const { maxRetries = 3, ...txOptions } = options;
+
+  // Check if transactions are supported
+  const txSupported = await isTransactionSupported();
+
+  if (!txSupported) {
+    // Standalone mode: run without transaction
+    // Pass null as session - callers should handle null session gracefully
+    log.debug('Running operation without transaction (standalone mode)');
+    return await operation(null);
+  }
 
   let lastError;
 
@@ -67,6 +120,14 @@ async function withTransactionRetry(operation, options = {}) {
       return await withTransaction(operation, txOptions);
     } catch (error) {
       lastError = error;
+
+      // Check if error indicates standalone mode (shouldn't happen now, but just in case)
+      if (error.message?.includes('replica set') ||
+          error.message?.includes('Transaction numbers')) {
+        log.warn('Transaction failed due to standalone mode, running without transaction');
+        _transactionsSupported = false;
+        return await operation(null);
+      }
 
       // Check if error is retryable
       const isRetryable =
@@ -83,7 +144,7 @@ async function withTransactionRetry(operation, options = {}) {
       const delay = Math.min(100 * Math.pow(2, attempt - 1), 1000);
       await new Promise(resolve => setTimeout(resolve, delay));
 
-      console.warn(`Transaction retry attempt ${attempt + 1}/${maxRetries} after error:`, error.message);
+      log.warn(`Transaction retry attempt ${attempt + 1}/${maxRetries} after error:`, { error: error.message });
     }
   }
 
@@ -578,6 +639,7 @@ async function atomicRefund(params) {
 module.exports = {
   withTransaction,
   withTransactionRetry,
+  isTransactionSupported,
   atomicInventoryUpdate,
   dispenseBatchFIFO,
   bookAppointmentSlot,

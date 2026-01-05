@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import api from '../../services/apiConfig';
 import authService from '../../services/authService';
+import { formatCurrency } from '../../utils/formatters';
 
 export default function PatientBills() {
   const [invoices, setInvoices] = useState([]);
@@ -26,7 +27,9 @@ export default function PatientBills() {
           params: { patient: patientId, limit: 50 }
         });
 
-        const invoiceData = response.data?.data || response.data || [];
+        // Safely extract array from various API response formats
+        const rawInvoiceData = response?.data?.data ?? response?.data ?? [];
+        const invoiceData = Array.isArray(rawInvoiceData) ? rawInvoiceData : [];
 
         // Transform invoices
         const transformedInvoices = invoiceData.map(inv => ({
@@ -72,7 +75,7 @@ export default function PatientBills() {
       {/* Balance Card */}
       <div className="card bg-gradient-to-r from-blue-500 to-blue-600 text-white">
         <h2 className="text-lg font-medium mb-2">Solde total</h2>
-        <p className="text-4xl font-bold mb-4">${totalOwed.toFixed(2)}</p>
+        <p className="text-4xl font-bold mb-4">{formatCurrency(totalOwed)}</p>
         {totalOwed > 0 && (
           <button className="btn bg-white text-blue-600 hover:bg-gray-100 flex items-center space-x-2">
             <CreditCard className="h-5 w-5" />
@@ -116,16 +119,16 @@ export default function PatientBills() {
                   </div>
                   <div>
                     <p className="text-gray-500">Total</p>
-                    <p className="font-bold text-gray-900">${invoice.total.toFixed(2)}</p>
+                    <p className="font-bold text-gray-900">{formatCurrency(invoice.total)}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Payé</p>
-                    <p className="font-medium text-green-600">${invoice.amountPaid.toFixed(2)}</p>
+                    <p className="font-medium text-green-600">{formatCurrency(invoice.amountPaid)}</p>
                   </div>
                   <div>
                     <p className="text-gray-500">Solde</p>
                     <p className={`font-bold ${invoice.balance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                      ${invoice.balance.toFixed(2)}
+                      {formatCurrency(invoice.balance)}
                     </p>
                   </div>
                 </div>
@@ -136,7 +139,7 @@ export default function PatientBills() {
                     <ul className="mt-1 space-y-1">
                       {invoice.items.map((item, idx) => (
                         <li key={idx} className="text-sm text-gray-600">
-                          • {item.serviceName || item.description || 'Service'} - ${(item.total || item.amount || 0).toFixed(2)}
+                          • {item.serviceName || item.description || 'Service'} - {formatCurrency(item.total || item.amount || 0)}
                         </li>
                       ))}
                     </ul>

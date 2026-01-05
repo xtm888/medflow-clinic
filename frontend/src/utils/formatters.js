@@ -75,13 +75,13 @@ export const formatTime = (time) => {
 // ============================================================================
 
 /**
- * Format currency with consistent display
+ * Format currency with consistent display for Congo/DRC context
  * @param {number} amount - The amount to format
- * @param {string} currency - Currency code ('USD', 'EUR', 'CDF')
+ * @param {string} currency - Currency code ('CDF', 'USD', 'EUR')
  * @param {boolean} showSymbol - Whether to show currency symbol
  * @returns {string} Formatted currency string
  */
-export const formatCurrency = (amount, currency = 'USD', showSymbol = true) => {
+export const formatCurrency = (amount, currency = 'CDF', showSymbol = true) => {
   if (amount == null || isNaN(amount)) return 'N/A';
 
   try {

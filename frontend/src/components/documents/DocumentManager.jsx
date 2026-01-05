@@ -63,9 +63,16 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
       }
 
       const response = await api.get(`${url}?${params}`);
-      setDocuments(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setDocuments(data);
     } catch (error) {
       console.error('Error fetching documents:', error);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -87,9 +94,16 @@ const DocumentManager = ({ patientId, visitId, mode = 'grid' }) => {
       });
 
       const response = await api.get(`/api/documents/search?${params}`);
-      setDocuments(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setDocuments(data);
     } catch (error) {
       console.error('Error searching documents:', error);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }

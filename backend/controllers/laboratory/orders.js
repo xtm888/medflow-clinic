@@ -421,15 +421,58 @@ exports.checkInPatient = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if fasting was required and verify
+  // STRICT FASTING ENFORCEMENT: Validate fasting requirements
   if (order.fasting?.required) {
-    const { fastingVerified, fastingHours } = req.body;
-    if (!fastingVerified) {
+    const { fastingVerified, fastingHours, lastMealTime, bypassFasting } = req.body;
+    const requiredHours = order.fasting.hours || 8;
+
+    // Require explicit verification flag
+    if (!fastingVerified && !bypassFasting) {
       return res.status(400).json({
         success: false,
-        error: 'Fasting verification required for this test',
+        error: 'Vérification du jeûne requise pour cet examen',
         fastingRequired: true,
-        requiredHours: order.fasting.hours || 8
+        requiredHours: requiredHours
+      });
+    }
+
+    // STRICT MODE: Validate fasting duration if hours provided
+    if (fastingVerified && fastingHours !== undefined) {
+      if (fastingHours < requiredHours) {
+        return res.status(400).json({
+          success: false,
+          error: `Jeûne insuffisant: ${fastingHours}h déclarées, ${requiredHours}h requises`,
+          fastingRequired: true,
+          requiredHours: requiredHours,
+          declaredHours: fastingHours
+        });
+      }
+    }
+
+    // STRICT MODE: Validate last meal time if provided
+    if (lastMealTime) {
+      const lastMeal = new Date(lastMealTime);
+      const now = new Date();
+      const hoursSinceMeal = (now - lastMeal) / (1000 * 60 * 60);
+
+      if (hoursSinceMeal < requiredHours) {
+        return res.status(400).json({
+          success: false,
+          error: `Jeûne insuffisant: ${hoursSinceMeal.toFixed(1)}h depuis le dernier repas, ${requiredHours}h requises`,
+          fastingRequired: true,
+          requiredHours: requiredHours,
+          actualHours: hoursSinceMeal.toFixed(1)
+        });
+      }
+    }
+
+    // Log bypass for audit if used
+    if (bypassFasting) {
+      logger.warn('Fasting requirement bypassed', {
+        orderId: order._id,
+        bypassedBy: req.user.id,
+        requiredHours,
+        reason: req.body.bypassReason || 'No reason provided'
       });
     }
   }
@@ -753,6 +796,42 @@ exports.orderTests = asyncHandler(async (req, res) => {
     }
   });
 });
+
+/**
+ * ============================================================================
+ * DUAL-SOURCE LAB ORDER ARCHITECTURE
+ * ============================================================================
+ *
+ * MedFlow maintains lab orders in TWO data sources for historical reasons:
+ *
+ * 1. Visit.laboratoryOrders[] (embedded)
+ *    - Legacy system: orders embedded within Visit documents
+ *    - Pros: Single query for complete visit data, simpler transaction handling
+ *    - Cons: Document size limits, harder to query across visits, no independent lifecycle
+ *    - Status: Still written to for backward compatibility
+ *
+ * 2. LabOrder collection (standalone)
+ *    - Modern system: independent LabOrder model with full schema
+ *    - Pros: Flexible querying, independent lifecycle, richer metadata, billing integration
+ *    - Cons: Requires joins/populates, separate sync consideration
+ *    - Status: Primary authoritative source for new orders
+ *
+ * DATA SYNCHRONIZATION NOTES:
+ * - New orders are created in LabOrder collection (primary)
+ * - Visit.laboratoryOrders is updated via post-save hook for compatibility
+ * - getPendingTests queries BOTH sources and deduplicates by adding 'source' tag
+ * - Results are merged and sorted by date for unified worklist view
+ *
+ * POTENTIAL ISSUES:
+ * - Possible duplicates if same test in both sources (mitigated by source tagging)
+ * - Silent failures if LabOrder saves but Visit update fails (transaction recommended)
+ * - Frontend should handle both 'visit' and 'labOrder' source types
+ *
+ * MIGRATION RECOMMENDATION:
+ * - Long-term: Migrate all legacy Visit.laboratoryOrders to LabOrder collection
+ * - Remove Visit embedding after full migration + validation
+ * ============================================================================
+ */
 
 // @desc    Get pending laboratory tests (Visit-embedded + Standalone)
 // @route   GET /api/laboratory/pending

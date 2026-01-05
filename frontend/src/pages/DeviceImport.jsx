@@ -73,7 +73,13 @@ const DeviceImport = () => {
     setSearchingPatients(true);
     try {
       const response = await patientService.searchPatients(query);
-      setPatientSearchResults(response.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setPatientSearchResults(data);
     } catch (err) {
       console.error('Patient search failed:', err);
       setPatientSearchResults([]);

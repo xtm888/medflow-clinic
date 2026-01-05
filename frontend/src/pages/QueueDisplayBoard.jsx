@@ -90,14 +90,20 @@ export default function QueueDisplayBoard() {
       const roomResponse = await fetch(`${API_BASE}/rooms/display-board`);
       if (roomResponse.ok) {
         const roomData = await roomResponse.json();
-        setDisplayData(roomData.data || []);
+        // Handle various API response formats defensively
+        const rawRooms = roomData?.data?.data ?? roomData?.data ?? [];
+        setDisplayData(Array.isArray(rawRooms) ? rawRooms : []);
       }
 
       // Fetch queue display data (public endpoint)
       const queueResponse = await fetch(`${API_BASE}/queue/display-board`);
       if (queueResponse.ok) {
         const qData = await queueResponse.json();
-        setQueueData(qData.data || { waiting: [], inProgress: [] });
+        // Handle various API response formats defensively
+        const rawQueueData = qData?.data || {};
+        const waiting = Array.isArray(rawQueueData?.waiting) ? rawQueueData.waiting : [];
+        const inProgress = Array.isArray(rawQueueData?.inProgress) ? rawQueueData.inProgress : [];
+        setQueueData({ waiting, inProgress });
       }
     } catch (error) {
       console.error('Failed to fetch display data:', error);

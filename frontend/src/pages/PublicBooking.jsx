@@ -32,7 +32,9 @@ export default function PublicBooking() {
       const response = await api.get('/fee-schedules/public')
         .catch(() => ({ data: { data: [] } }));
 
-      const serviceData = response.data?.data || response.data || [];
+      // Handle various API response formats defensively
+      const rawData = response?.data?.data ?? response?.data ?? [];
+      const serviceData = Array.isArray(rawData) ? rawData : [];
       const transformedServices = serviceData.map(s => ({
         id: s._id || s.id,
         name: s.name || s.description || 'Service',
@@ -45,6 +47,7 @@ export default function PublicBooking() {
       setServices(transformedServices);
     } catch (err) {
       console.error('Error fetching services:', err);
+      setServices([]);
     } finally {
       setLoadingServices(false);
     }

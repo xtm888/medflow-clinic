@@ -6,6 +6,7 @@
 
 import { Loader2, Plus, Edit2, Trash2, DollarSign, AlertCircle, X } from 'lucide-react';
 import { TAX_CATEGORIES, TAX_TYPES } from '../constants';
+import { formatCurrency } from '../../../utils/formatters';
 
 export default function BillingSection({
   taxes,
@@ -90,7 +91,7 @@ function TaxList({ taxes, onEdit, onDelete }) {
             <div className="flex items-center space-x-4">
               <div className="text-right">
                 <p className="font-bold text-lg text-primary-600">
-                  {tax.rate}{tax.type === 'percentage' ? '%' : ' CDF'}
+                  {tax.type === 'percentage' ? `${tax.rate}%` : formatCurrency(tax.rate, 'CDF')}
                 </p>
                 <p className="text-xs text-gray-500">
                   {tax.applicableCategories?.includes('all')

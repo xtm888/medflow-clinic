@@ -210,12 +210,17 @@ const patientSchema = new mongoose.Schema({
     required: [true, 'Phone number is required'],
     validate: {
       validator: function(v) {
+        // Skip validation for already-encrypted values (from PHI encryption plugin)
+        // The plugin encrypts values via setter BEFORE validation runs
+        if (v && v.startsWith('enc:')) {
+          return true;
+        }
         // Accept international formats: +243..., 00243..., or local formats
         // Allows digits, spaces, dashes, parentheses - minimum 6 digits
         const cleaned = v.replace(/[\s\-\(\)\.]/g, '');
         return /^(\+|00)?[0-9]{6,15}$/.test(cleaned);
       },
-      message: 'Please provide a valid phone number'
+      message: 'Veuillez fournir un numéro de téléphone valide'
     }
   },
   alternativePhone: {
@@ -223,16 +228,30 @@ const patientSchema = new mongoose.Schema({
     validate: {
       validator: function(v) {
         if (!v) return true; // Optional field
+        // Skip validation for already-encrypted values (from PHI encryption plugin)
+        if (v && v.startsWith('enc:')) {
+          return true;
+        }
         const cleaned = v.replace(/[\s\-\(\)\.]/g, '');
         return /^(\+|00)?[0-9]{6,15}$/.test(cleaned);
       },
-      message: 'Please provide a valid phone number'
+      message: 'Veuillez fournir un numéro de téléphone valide'
     }
   },
   email: {
     type: String,
     lowercase: true,
-    match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
+    validate: {
+      validator: function(v) {
+        if (!v) return true; // Optional field
+        // Skip validation for already-encrypted values (from PHI encryption plugin)
+        if (v && v.startsWith('enc:')) {
+          return true;
+        }
+        return /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(v);
+      },
+      message: 'Veuillez fournir une adresse email valide'
+    }
   },
   address: {
     street: String,

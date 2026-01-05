@@ -68,7 +68,9 @@ export default function NetworkShareBrowser({
       const response = await api.get('/devices', {
         params: { type: 'file_server,specular_microscope,biometry,oct,document_share' }
       });
-      const deviceList = response.data.data || [];
+      // Safely extract array from various API response formats
+      const rawDevices = response?.data?.data ?? response?.data ?? [];
+      const deviceList = Array.isArray(rawDevices) ? rawDevices : [];
       setDevices(deviceList);
 
       // Check mount status for all devices in parallel (instead of sequential)

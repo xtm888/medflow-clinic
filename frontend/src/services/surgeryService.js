@@ -470,10 +470,13 @@ const surgeryService = {
         api.get('/surgery/checkin/ready')
       ]);
 
-      const cases = [
-        ...(todayResponse.data?.data || []),
-        ...(upcomingResponse.data?.data || [])
-      ];
+      // Safely extract arrays from various API response formats
+      const rawToday = todayResponse?.data?.data ?? todayResponse?.data ?? [];
+      const rawUpcoming = upcomingResponse?.data?.data ?? upcomingResponse?.data ?? [];
+      const todayCases = Array.isArray(rawToday) ? rawToday : [];
+      const upcomingCases = Array.isArray(rawUpcoming) ? rawUpcoming : [];
+
+      const cases = [...todayCases, ...upcomingCases];
 
       if (cases.length > 0) {
         await db.surgeryCases.bulkPut(cases);

@@ -27,7 +27,9 @@ export default function ContactLensSelector({ eye, selectedLens, onSelect, onCle
         query,
         power: prescription?.sphere
       });
-      setSearchResults(response.data || []);
+      // Safely extract array from various API response formats
+      const rawData = response?.data?.data ?? response?.data ?? response ?? [];
+      setSearchResults(Array.isArray(rawData) ? rawData : []);
       setShowDropdown(true);
     } catch (err) {
       console.error('Error searching lenses:', err);

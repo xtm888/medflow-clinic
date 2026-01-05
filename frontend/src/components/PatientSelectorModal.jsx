@@ -31,12 +31,17 @@ export default function PatientSelectorModal({ isOpen, onClose, onSelectPatient,
       setLoading(true);
       setError(null);
       const response = await api.get('/patients?limit=20');
-      if (response.data?.success) {
-        setPatients(response.data.data || []);
-      }
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setPatients(data);
     } catch (err) {
       console.error('Error fetching patients:', err);
       setError('Erreur lors du chargement des patients');
+      setPatients([]);
     } finally {
       setLoading(false);
     }
@@ -47,12 +52,17 @@ export default function PatientSelectorModal({ isOpen, onClose, onSelectPatient,
       setLoading(true);
       setError(null);
       const response = await api.get(`/patients/search?query=${encodeURIComponent(searchTerm)}`);
-      if (response.data?.success) {
-        setPatients(response.data.data || []);
-      }
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setPatients(data);
     } catch (err) {
       console.error('Error searching patients:', err);
       setError('Erreur lors de la recherche');
+      setPatients([]);
     } finally {
       setLoading(false);
     }

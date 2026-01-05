@@ -66,7 +66,9 @@ export default function CalendarIntegration() {
 
       if (response.ok) {
         const data = await response.json();
-        setIntegrations(data.data || []);
+        // Safely extract array from various API response formats
+        const rawIntegrations = data?.data ?? data ?? [];
+        setIntegrations(Array.isArray(rawIntegrations) ? rawIntegrations : []);
       }
     } catch (error) {
       console.error('Failed to fetch integrations:', error);
@@ -148,7 +150,9 @@ export default function CalendarIntegration() {
 
       if (response.ok) {
         const data = await response.json();
-        const results = data.data || [];
+        // Safely extract array from various API response formats
+        const rawResults = data?.data ?? data ?? [];
+        const results = Array.isArray(rawResults) ? rawResults : [];
 
         results.forEach(result => {
           if (result.success) {

@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Pill, Plus, Package, TrendingDown, Calendar, Loader2, X
+  Pill, Plus, Package, TrendingDown, Calendar, Loader2, X, ClipboardList
 } from 'lucide-react';
+
+// Lazy load tab content
+const PrescriptionQueueContent = lazy(() => import('../PrescriptionQueue'));
 import api from '../../services/apiConfig';
 import { CollapsibleSectionGroup } from '../../components/CollapsibleSection';
 import PermissionGate from '../../components/PermissionGate';
@@ -22,8 +25,15 @@ import {
  */
 export default function PharmacyDashboard() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { selectedClinicId } = useClinic();
   const [loading, setLoading] = useState(true);
+
+  // Tab state from URL
+  const activeTab = searchParams.get('tab') || 'inventory';
+  const setActiveTab = (tab) => {
+    setSearchParams({ tab });
+  };
   const [stats, setStats] = useState({
     totalItems: 0,
     lowStock: 0,
@@ -93,10 +103,16 @@ export default function PharmacyDashboard() {
   const fetchAlerts = async () => {
     try {
       const response = await api.get('/pharmacy/alerts');
-      // API may return { success, data: [...], meta } or just array
-      setAlerts(response.data?.data || response.data || []);
+      // Handle various API response formats defensively
+      const alertsData = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setAlerts(alertsData);
     } catch (err) {
       logger.error('Error fetching alerts:', err);
+      setAlerts([]);
     }
   };
 
@@ -157,6 +173,43 @@ export default function PharmacyDashboard() {
         </PermissionGate>
       </div>
 
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          <button
+            onClick={() => setActiveTab('inventory')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'inventory'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <Package className="h-5 w-5" />
+            Inventaire
+          </button>
+          <button
+            onClick={() => setActiveTab('prescriptions')}
+            className={`py-4 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
+              activeTab === 'prescriptions'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <ClipboardList className="h-5 w-5" />
+            Ordonnances
+          </button>
+        </nav>
+      </div>
+
+      {/* Tab Content */}
+      {activeTab === 'prescriptions' && (
+        <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-12 w-12 animate-spin text-blue-600" /></div>}>
+          <PrescriptionQueueContent />
+        </Suspense>
+      )}
+
+      {activeTab === 'inventory' && (
+      <>
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg shadow p-4">
@@ -229,6 +282,8 @@ export default function PharmacyDashboard() {
           refreshKey={refreshKey}
         />
       </CollapsibleSectionGroup>
+      </>
+      )}
 
       {/* Adjust Stock Dialog */}
       {adjustDialog && selectedMedication && (

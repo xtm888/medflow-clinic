@@ -58,9 +58,18 @@ const CrossClinicInventory = () => {
       if (alertType) params.alertType = alertType;
 
       const response = await crossClinicInventoryService.getAlerts(params);
-      setAlerts(response.data || []);
+      // Handle various API response formats defensively
+      const alertsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.alerts)
+        ? response.data.alerts
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setAlerts(alertsData);
     } catch (error) {
       console.error('Error fetching alerts:', error);
+      setAlerts([]);
     }
   }, [selectedInventoryType, alertType]);
 
@@ -71,9 +80,18 @@ const CrossClinicInventory = () => {
         status: 'requested,approved,in-transit',
         limit: 10
       });
-      setTransfers(response.data || []);
+      // Handle various API response formats defensively
+      const transfersData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.transfers)
+        ? response.data.transfers
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setTransfers(transfersData);
     } catch (error) {
       console.error('Error fetching transfers:', error);
+      setTransfers([]);
     }
   }, []);
 
@@ -81,9 +99,18 @@ const CrossClinicInventory = () => {
   const fetchRecommendations = useCallback(async () => {
     try {
       const response = await inventoryTransferService.getRecommendations({ limit: 5 });
-      setRecommendations(response.data || []);
+      // Handle various API response formats defensively
+      const recsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.recommendations)
+        ? response.data.recommendations
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setRecommendations(recsData);
     } catch (error) {
       console.error('Error fetching recommendations:', error);
+      setRecommendations([]);
     }
   }, []);
 

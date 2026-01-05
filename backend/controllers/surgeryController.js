@@ -498,6 +498,7 @@ exports.updatePreOpChecklist = async (req, res) => {
 exports.startSurgery = async (req, res) => {
   try {
     const { id } = req.params;
+    const { bypassChecklist = false } = req.body; // Allow bypass with explicit flag
 
     const surgeryCase = await SurgeryCase.findById(id);
     if (!surgeryCase) {
@@ -506,6 +507,34 @@ exports.startSurgery = async (req, res) => {
 
     if (surgeryCase.status !== 'checked_in') {
       return error(res, 'Le patient doit être enregistré avant de commencer la chirurgie');
+    }
+
+    // SECURITY: Validate pre-op checklist completion before surgery start
+    const checklist = surgeryCase.preOpChecklist || {};
+    const requiredChecks = [
+      { key: 'identityVerified', label: "Identité vérifiée" },
+      { key: 'siteMarked', label: "Site opératoire marqué" },
+      { key: 'allergiesReviewed', label: "Allergies vérifiées" },
+      { key: 'fastingConfirmed', label: "Jeûne confirmé" },
+      { key: 'eyeDropsAdministered', label: "Collyres administrés" },
+      { key: 'pupilDilated', label: "Pupille dilatée" },
+      { key: 'vitalsSigned', label: "Signes vitaux contrôlés" }
+    ];
+
+    const incompleteChecks = requiredChecks.filter(check => !checklist[check.key]);
+
+    if (incompleteChecks.length > 0 && !bypassChecklist) {
+      const missingItems = incompleteChecks.map(c => c.label).join(', ');
+      return error(res, `Checklist pré-opératoire incomplète. Items manquants: ${missingItems}`, 400);
+    }
+
+    // Log bypass for audit trail if used
+    if (bypassChecklist && incompleteChecks.length > 0) {
+      surgeryLogger.warn('Pre-op checklist bypassed', {
+        caseId: id,
+        bypassedBy: req.user._id,
+        missingItems: incompleteChecks.map(c => c.key)
+      });
     }
 
     surgeryCase.updateStatus('in_surgery', req.user._id, 'Chirurgie démarrée');

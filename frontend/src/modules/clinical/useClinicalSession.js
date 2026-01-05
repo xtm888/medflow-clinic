@@ -191,7 +191,8 @@ export default function useClinicalSession(options = {}) {
       const response = await consultationSessionService.getActiveSession(patientId, workflowType);
       const activeSession = response.data || response;
 
-      if (activeSession) {
+      // Only set session if it has a valid _id - empty objects should not count as sessions
+      if (activeSession && activeSession._id) {
         setSession(activeSession);
         sessionRef.current = activeSession;
         return activeSession;

@@ -43,14 +43,24 @@ exports.errorHandler = async (err, req, res, next) => {
 
   // Mongoose duplicate key
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
+    const field = err.keyValue ? Object.keys(err.keyValue)[0] : 'unknown';
     const message = `Duplicate field value entered for ${field}`;
     error = new ErrorResponse(message, 400);
   }
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
+    let message = 'Validation failed';
+    if (err.errors && typeof err.errors === 'object') {
+      const errorMessages = Object.values(err.errors)
+        .filter(val => val && val.message)
+        .map(val => val.message);
+      if (errorMessages.length > 0) {
+        message = errorMessages.join(', ');
+      }
+    } else if (err.message) {
+      message = err.message;
+    }
     error = new ErrorResponse(message, 400);
   }
 

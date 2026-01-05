@@ -64,12 +64,21 @@ const useInventory = (service, config = {}) => {
       });
 
       const response = await service.getItems(params);
-      setItems(response.data || []);
-      setTotalPages(response.pages || 1);
-      setTotal(response.total || 0);
+      // Handle various API response formats defensively
+      const itemsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : Array.isArray(response)
+        ? response
+        : [];
+      setItems(itemsData);
+      setTotalPages(response?.pages || response?.data?.pages || 1);
+      setTotal(response?.total || response?.data?.total || 0);
     } catch (error) {
       console.error('Error fetching items:', error);
       toast.error(errorMessages.fetchItems);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -91,9 +100,18 @@ const useInventory = (service, config = {}) => {
     if (!service.getAlerts) return;
     try {
       const response = await service.getAlerts();
-      setAlerts(response.data || []);
+      // Handle various API response formats defensively
+      const alertsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.alerts)
+        ? response.data.alerts
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setAlerts(alertsData);
     } catch (error) {
       console.error('Error fetching alerts:', error);
+      setAlerts([]);
     }
   }, [service]);
 
@@ -102,11 +120,19 @@ const useInventory = (service, config = {}) => {
     if (!service.getBrands) return;
     try {
       const response = await service.getBrands();
-      const brandsData = response.data || [];
+      // Handle various API response formats defensively
+      const rawBrands = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.brands)
+        ? response.data.brands
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
       // Handle both array of strings and array of objects
-      setBrands(brandsData.map(b => typeof b === 'string' ? b : b.brand));
+      setBrands(rawBrands.map(b => typeof b === 'string' ? b : b.brand));
     } catch (error) {
       console.error('Error fetching brands:', error);
+      setBrands([]);
     }
   }, [service]);
 

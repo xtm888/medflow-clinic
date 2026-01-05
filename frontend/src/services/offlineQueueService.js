@@ -262,7 +262,9 @@ const offlineQueueService = {
       console.log('[OfflineQueueService] Pre-caching today\'s queue...');
 
       const response = await api.get('/queue');
-      const queue = response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawQueue = response?.data?.data ?? response?.data ?? [];
+      const queue = Array.isArray(rawQueue) ? rawQueue : [];
 
       if (queue.length > 0) {
         await databaseService.bulkSave('queue', queue);

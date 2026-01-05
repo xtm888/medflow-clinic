@@ -737,72 +737,127 @@ async function generateInvoice({ patientId, visitId, clinicId, userId, examData,
 }
 
 /**
- * Get fee schedule for clinic, with convention-specific pricing if applicable
+ * Get fee schedule context for clinic, with convention-specific pricing if applicable
+ *
+ * NOTE: In our data model, each FeeSchedule document IS an individual fee item.
+ * This function returns a context object used by lookupItemPrice for price resolution.
  */
 async function getFeeScheduleForClinic(clinicId, companyId = null) {
   try {
-    // If patient has convention, try to get convention-specific fee schedule
-    if (companyId) {
-      const ConventionFeeSchedule = mongoose.model('ConventionFeeSchedule');
-      const conventionSchedule = await ConventionFeeSchedule.findOne({
-        company: companyId,
-        clinic: clinicId,
-        isActive: true
-      }).lean();
-
-      if (conventionSchedule) {
-        return conventionSchedule;
-      }
-    }
-
-    // Fall back to clinic's standard fee schedule
-    const schedule = await FeeSchedule.findOne({
-      clinic: clinicId,
-      isActive: true
-    }).lean();
-
-    return schedule;
+    // Return a context object that lookupItemPrice will use for price resolution
+    return {
+      clinicId,
+      companyId,
+      hasConvention: !!companyId
+    };
   } catch (error) {
-    log.warn('Fee schedule lookup failed', { error: error.message, clinicId });
-    return null;
+    log.warn('Fee schedule context creation failed', { error: error.message, clinicId });
+    return { clinicId, companyId: null, hasConvention: false };
   }
 }
 
 /**
  * Look up price for an item from fee schedule
+ *
+ * Price resolution chain:
+ * 1. Convention-specific price (if patient has convention) - ConventionFeeSchedule
+ * 2. Clinic-specific price (FeeSchedule with clinic set)
+ * 3. Template price (FeeSchedule with isTemplate: true)
+ * 4. ClinicalAct.pricing.basePrice (fallback)
+ *
+ * @param {string} code - Service/procedure code
+ * @param {string} type - Type of service (imaging, laboratory, surgery, etc.)
+ * @param {string} clinicId - Current clinic ID
+ * @param {Object} feeScheduleContext - Context from getFeeScheduleForClinic
  */
-async function lookupItemPrice(code, type, clinicId, feeSchedule = null) {
+async function lookupItemPrice(code, type, clinicId, feeScheduleContext = null) {
   if (!code) return null;
 
+  const upperCode = code.toUpperCase();
+
   try {
-    // Check fee schedule items first
-    if (feeSchedule?.items) {
-      const item = feeSchedule.items.find(i =>
-        i.code?.toUpperCase() === code.toUpperCase()
-      );
-      if (item) {
-        return {
-          price: item.price,
-          name: item.name,
-          source: 'fee_schedule'
-        };
+    // 1. Check convention-specific pricing first (if patient has convention)
+    if (feeScheduleContext?.companyId) {
+      const conventionPrice = await ConventionFeeSchedule.findOne({
+        company: feeScheduleContext.companyId,
+        clinic: clinicId,
+        'items.code': upperCode,
+        active: true
+      }).lean();
+
+      if (conventionPrice?.items) {
+        const item = conventionPrice.items.find(i => i.code?.toUpperCase() === upperCode);
+        if (item) {
+          return {
+            price: item.price,
+            name: item.name || item.description,
+            source: 'convention_fee_schedule',
+            conventionId: conventionPrice._id
+          };
+        }
       }
     }
 
-    // Fall back to ClinicalAct base prices
-    const act = await ClinicalAct.findOne({
-      code: { $regex: new RegExp(`^${code}$`, 'i') },
-      isActive: true
-    }).select('basePrice name').lean();
+    // 2. Check clinic-specific price (individual FeeSchedule item for this clinic)
+    const clinicPrice = await FeeSchedule.findOne({
+      code: upperCode,
+      clinic: clinicId,
+      isTemplate: false,
+      active: true,
+      $or: [
+        { effectiveTo: null },
+        { effectiveTo: { $gte: new Date() } }
+      ]
+    }).lean();
 
-    if (act) {
+    if (clinicPrice) {
       return {
-        price: act.basePrice,
-        name: act.name,
-        source: 'clinical_act'
+        price: clinicPrice.price,
+        name: clinicPrice.name,
+        source: 'clinic_fee_schedule',
+        currency: clinicPrice.currency
       };
     }
 
+    // 3. Check template price (central/default price)
+    const templatePrice = await FeeSchedule.findOne({
+      code: upperCode,
+      isTemplate: true,
+      active: true,
+      $or: [
+        { effectiveTo: null },
+        { effectiveTo: { $gte: new Date() } }
+      ]
+    }).lean();
+
+    if (templatePrice) {
+      return {
+        price: templatePrice.price,
+        name: templatePrice.name,
+        source: 'template_fee_schedule',
+        currency: templatePrice.currency
+      };
+    }
+
+    // 4. Fall back to ClinicalAct base prices
+    const act = await ClinicalAct.findOne({
+      $or: [
+        { actId: { $regex: new RegExp(`^${upperCode}$`, 'i') } },
+        { name: { $regex: new RegExp(`^${code}$`, 'i') } }
+      ],
+      active: true
+    }).select('pricing name nameFr').lean();
+
+    if (act?.pricing?.basePrice) {
+      return {
+        price: act.pricing.basePrice,
+        name: act.nameFr || act.name,
+        source: 'clinical_act',
+        currency: act.pricing.currency
+      };
+    }
+
+    log.debug('No price found for code', { code, type, clinicId });
     return null;
   } catch (error) {
     log.warn('Price lookup failed', { error: error.message, code, type });

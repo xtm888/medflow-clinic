@@ -41,9 +41,9 @@ const clinicContext = async (req, res, next) => {
       return next();
     }
 
-    // For non-admin users, fall back to primaryClinic or single assigned clinic
+    // For non-admin users, fall back to primaryClinic, currentClinic, or single assigned clinic
     if (!clinicId) {
-      clinicId = req.user.primaryClinic;
+      clinicId = req.user.primaryClinic || req.user.currentClinic;
     }
 
     // If user has only one clinic assigned, use that
@@ -139,9 +139,9 @@ const optionalClinic = async (req, res, next) => {
       return next();
     }
 
-    // For non-admin users, fall back to primaryClinic or single assigned clinic
+    // For non-admin users, fall back to primaryClinic, currentClinic, or single assigned clinic
     if (!clinicId) {
-      clinicId = req.user.primaryClinic;
+      clinicId = req.user.primaryClinic || req.user.currentClinic;
     }
 
     if (!clinicId && req.user.clinics && req.user.clinics.length === 1) {

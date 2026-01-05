@@ -75,6 +75,9 @@ module.exports = {
   getPatientLabResults: recordsController.getPatientLabResults,
   getPatientCorrespondence: recordsController.getPatientCorrespondence,
 
+  // Vitals
+  recordVitals: recordsController.recordVitals,
+
   // =====================================================
   // Advanced Controller Functions
   // =====================================================

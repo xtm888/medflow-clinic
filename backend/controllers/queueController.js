@@ -16,6 +16,25 @@ const { QUEUE, PAGINATION } = require('../config/constants');
 // In-memory queue for real-time management
 const queue = [];
 
+// SECURITY: Helper to enforce clinic context for non-admin users
+// Returns { valid: true, clinicFilter: {} } or { valid: false, errorMessage: string }
+const enforceClinicContext = (req) => {
+  // Admin users with accessAllClinics can optionally see all clinics
+  if (req.accessAllClinics && !req.clinicId) {
+    return { valid: true, clinicFilter: {} }; // No filter = all clinics
+  }
+
+  // Regular users MUST have clinic context
+  if (!req.clinicId) {
+    return {
+      valid: false,
+      errorMessage: 'Clinic context required. Please select a clinic.'
+    };
+  }
+
+  return { valid: true, clinicFilter: { clinic: req.clinicId } };
+};
+
 // Patient calling service configuration
 const CALLING_CONFIG = {
   smsEnabled: process.env.SMS_ENABLED === 'true',
@@ -36,19 +55,21 @@ const CALLING_CONFIG = {
 // @route   GET /api/queue
 // @access  Private
 exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
+  // SECURITY: Enforce clinic context for data isolation
+  const clinicContext = enforceClinicContext(req);
+  if (!clinicContext.valid) {
+    return error(res, clinicContext.errorMessage, 400);
+  }
+
   // TIMEZONE FIX: Use timezone-aware date range for clinic's local time
   const { start: today, end: tomorrow } = getTodayRange();
 
-  // Build query with clinic filter for data isolation
+  // Build query with mandatory clinic filter for data isolation
   const query = {
     date: { $gte: today, $lte: tomorrow },
-    status: { $in: ['checked-in', 'in-progress'] }
+    status: { $in: ['checked-in', 'in-progress'] },
+    ...clinicContext.clinicFilter
   };
-
-  // CRITICAL: Apply clinic filter to prevent cross-clinic data leakage
-  if (req.clinicId) {
-    query.clinic = req.clinicId;
-  }
 
   // Get today's checked-in appointments
   const appointments = await Appointment.find(query)
@@ -61,11 +82,9 @@ exports.getCurrentQueue = asyncHandler(async (req, res, next) => {
   // Apply same clinic filter for consistency
   const completedQuery = {
     date: { $gte: today, $lte: tomorrow },
-    status: 'completed'
+    status: 'completed',
+    ...clinicContext.clinicFilter
   };
-  if (req.clinicId) {
-    completedQuery.clinic = req.clinicId;
-  }
   const completedToday = await Appointment.find(completedQuery)
     .select('waitingTime consultationStartTime consultationEndTime department').lean();
 
@@ -445,7 +464,11 @@ exports.updateQueueStatus = asyncHandler(async (req, res, next) => {
   }
 
   const oldStatus = appointment.status;
-  appointment.status = status;
+
+  // Only update status if provided (avoid setting to undefined)
+  if (status) {
+    appointment.status = status;
+  }
 
   // Update priority if provided (with conversion to lowercase)
   if (priority) {
@@ -548,6 +571,12 @@ exports.removeFromQueue = asyncHandler(async (req, res, next) => {
 // @route   POST /api/queue/next
 // @access  Private (Doctor, Nurse)
 exports.callNext = asyncHandler(async (req, res, next) => {
+  // SECURITY: Enforce clinic context for data isolation
+  const clinicContext = enforceClinicContext(req);
+  if (!clinicContext.valid) {
+    return error(res, clinicContext.errorMessage, 400);
+  }
+
   const { department = 'general', roomId, roomNumber, sendSms = false, audioAnnounce = true, language = 'fr' } = req.body;
 
   // TIMEZONE FIX: Use timezone-aware date range for clinic's local time
@@ -557,13 +586,9 @@ exports.callNext = asyncHandler(async (req, res, next) => {
   const query = {
     date: { $gte: today, $lte: tomorrow },
     status: 'checked-in',
-    department
+    department,
+    ...clinicContext.clinicFilter
   };
-
-  // CRITICAL: Apply clinic filter to prevent cross-clinic data leakage
-  if (req.clinicId) {
-    query.clinic = req.clinicId;
-  }
 
   // If doctor/ophthalmologist, filter by provider
   if (req.user.role === 'doctor' || req.user.role === 'ophthalmologist') {
@@ -717,18 +742,20 @@ exports.callNext = asyncHandler(async (req, res, next) => {
 // @route   GET /api/queue/stats
 // @access  Private
 exports.getQueueStats = asyncHandler(async (req, res, next) => {
+  // SECURITY: Enforce clinic context for data isolation
+  const clinicContext = enforceClinicContext(req);
+  if (!clinicContext.valid) {
+    return error(res, clinicContext.errorMessage, 400);
+  }
+
   // TIMEZONE FIX: Use timezone-aware date range for clinic's local time
   const { start: today, end: tomorrow } = getTodayRange();
 
-  // Build query with clinic filter for data isolation
+  // Build query with mandatory clinic filter for data isolation
   const query = {
-    date: { $gte: today, $lte: tomorrow }
+    date: { $gte: today, $lte: tomorrow },
+    ...clinicContext.clinicFilter
   };
-
-  // CRITICAL: Apply clinic filter to prevent cross-clinic data leakage
-  if (req.clinicId) {
-    query.clinic = req.clinicId;
-  }
 
   const appointments = await Appointment.find(query);
 

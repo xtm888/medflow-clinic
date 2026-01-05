@@ -66,10 +66,17 @@ const PrescriptionQueue = () => {
       };
 
       const response = await api.get('/prescriptions', { params });
-      setPrescriptions(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setPrescriptions(data);
     } catch (error) {
       console.error('Error fetching prescriptions:', error);
       toast.error('Erreur lors du chargement des ordonnances');
+      setPrescriptions([]);
     } finally {
       setLoading(false);
     }

@@ -57,26 +57,31 @@ const LabConfiguration = () => {
           labAnalyzerService.getAnalyzers(),
           labAnalyzerService.getStats()
         ]);
-        setAnalyzers(analyzersRes.data || []);
-        setAnalyzerStats(statsRes.data);
+        const analyzersData = analyzersRes?.data?.data ?? analyzersRes?.data ?? [];
+        setAnalyzers(Array.isArray(analyzersData) ? analyzersData : []);
+        setAnalyzerStats(statsRes?.data || null);
       } else if (activeTab === 'lots') {
         const params = {};
         if (lotFilter === 'expiring') {
           const lotsRes = await reagentLotService.getExpiringSoon(30);
-          setReagentLots(lotsRes.data || []);
+          const lotsData = lotsRes?.data?.data ?? lotsRes?.data ?? [];
+          setReagentLots(Array.isArray(lotsData) ? lotsData : []);
         } else if (lotFilter === 'pending') {
           const lotsRes = await reagentLotService.getPendingValidation();
-          setReagentLots(lotsRes.data || []);
+          const pendingData = lotsRes?.data?.data ?? lotsRes?.data ?? [];
+          setReagentLots(Array.isArray(pendingData) ? pendingData : []);
         } else {
           if (lotFilter !== 'all') params.status = lotFilter;
           const lotsRes = await reagentLotService.getReagentLots(params);
-          setReagentLots(lotsRes.data || []);
+          const allLotsData = lotsRes?.data?.data ?? lotsRes?.data ?? [];
+          setReagentLots(Array.isArray(allLotsData) ? allLotsData : []);
         }
         const statsRes = await reagentLotService.getStats();
-        setLotStats(statsRes.data);
+        setLotStats(statsRes?.data || null);
       } else if (activeTab === 'units') {
         const res = await unitConversionService.getConversions();
-        setConversions(res.data || []);
+        const conversionsData = res?.data?.data ?? res?.data ?? [];
+        setConversions(Array.isArray(conversionsData) ? conversionsData : []);
       }
     } catch (err) {
       console.error('Error loading data:', err);

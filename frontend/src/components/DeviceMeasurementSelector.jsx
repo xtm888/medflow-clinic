@@ -40,13 +40,16 @@ const DeviceMeasurementSelector = ({ examId, patientId, onMeasurementApplied }) 
       const availableResponse = await api.get(
         `/ophthalmology/exams/${examId}/available-measurements`
       );
-      setMeasurements(availableResponse.data.data || []);
+      // Safely extract arrays from various API response formats
+      const rawMeasurements = availableResponse?.data?.data ?? availableResponse?.data ?? [];
+      setMeasurements(Array.isArray(rawMeasurements) ? rawMeasurements : []);
 
       // Get already linked measurements
       const linkedResponse = await api.get(
         `/ophthalmology/exams/${examId}/device-measurements`
       );
-      setLinkedMeasurements(linkedResponse.data.data || []);
+      const rawLinkedMeasurements = linkedResponse?.data?.data ?? linkedResponse?.data ?? [];
+      setLinkedMeasurements(Array.isArray(rawLinkedMeasurements) ? rawLinkedMeasurements : []);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load measurements');
       console.error('Error loading device measurements:', err);

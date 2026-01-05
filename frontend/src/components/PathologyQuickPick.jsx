@@ -34,10 +34,11 @@ export default function PathologyQuickPick({ onSelect, selectedPathologies = [],
         templateCatalogService.getPathologyCategories()
       ]);
 
-      const pathologyData = Array.isArray(pathologiesRes) ? pathologiesRes :
-                           pathologiesRes?.data || [];
-      const categoryData = Array.isArray(categoriesRes) ? categoriesRes :
-                          categoriesRes?.data || [];
+      // Safely extract arrays from various API response formats
+      const rawPathologies = pathologiesRes?.data?.data ?? pathologiesRes?.data ?? pathologiesRes ?? [];
+      const pathologyData = Array.isArray(rawPathologies) ? rawPathologies : [];
+      const rawCategories = categoriesRes?.data?.data ?? categoriesRes?.data ?? categoriesRes ?? [];
+      const categoryData = Array.isArray(rawCategories) ? rawCategories : [];
 
       // Filter out MOTIF DE CONSULTATION - these are now shown in Plainte Principale tab
       const filteredPathologies = pathologyData.filter(p =>

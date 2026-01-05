@@ -6,6 +6,40 @@ const { pharmacy: pharmacyLogger } = require('../utils/structuredLogger');
 const { INVENTORY, PAGINATION } = require('../config/constants');
 const { withTransactionRetry } = require('../utils/transactions');
 
+/**
+ * ALLERGY CHECK: Word boundary matching for allergen detection
+ * Prevents false positives like "ASA" matching "NASAL" spray
+ * Uses regex word boundaries to match whole words only
+ *
+ * @param {string} text - The text to search in (drug name, ingredient)
+ * @param {string} allergen - The allergen to search for
+ * @returns {boolean} True if allergen matches as a whole word
+ */
+const matchesAllergen = (text, allergen) => {
+  if (!text || !allergen) return false;
+
+  // Escape regex special characters in allergen
+  const escapedAllergen = allergen.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  // Create word boundary regex - matches allergen as whole word
+  // Also matches at start/end of strings and around hyphens/spaces
+  const wordBoundaryRegex = new RegExp(
+    `(?:^|[\\s\\-\\/,;])${escapedAllergen}(?:$|[\\s\\-\\/,;])`,
+    'i'
+  );
+
+  // Also check for exact match (entire string equals allergen)
+  const normalizedText = text.trim().toLowerCase();
+  const normalizedAllergen = allergen.trim().toLowerCase();
+
+  if (normalizedText === normalizedAllergen) {
+    return true;
+  }
+
+  // Add padding for regex to match at boundaries
+  return wordBoundaryRegex.test(` ${text} `);
+};
+
 // Get all pharmacy inventory with filtering and pagination
 // MULTI-CLINIC: Filters by clinic from X-Clinic-ID header
 // When "All Clinics" is selected, aggregates inventory by drug across all clinics
@@ -553,45 +587,83 @@ exports.updateMedication = async (req, res) => {
   }
 };
 
-// Adjust stock
+// Adjust stock - USES ATOMIC OPERATIONS to prevent race conditions
 exports.adjustStock = async (req, res) => {
   try {
     const { type, quantity, notes, lotNumber } = req.body;
-    const medication = await PharmacyInventory.findById(req.params.id);
 
-    if (!medication) {
-      return notFound(res, 'Medication');
+    if (!quantity || quantity <= 0) {
+      return error(res, 'Quantity must be a positive number', 400);
     }
 
-    // Update stock based on type
-    if (type === 'received' || type === 'returned' || type === 'correction') {
-      medication.inventory.currentStock += quantity;
-    } else {
-      medication.inventory.currentStock -= quantity;
+    // CRITICAL: Use atomic $inc to prevent race conditions
+    // Calculate the delta based on operation type
+    const isAddition = ['received', 'returned', 'correction'].includes(type);
+    const stockDelta = isAddition ? quantity : -quantity;
+
+    // First, atomically update the stock and add transaction
+    const result = await PharmacyInventory.findOneAndUpdate(
+      {
+        _id: req.params.id,
+        // For deductions, ensure we have enough stock (atomic check)
+        ...(stockDelta < 0 ? { 'inventory.currentStock': { $gte: Math.abs(stockDelta) } } : {})
+      },
+      {
+        $inc: { 'inventory.currentStock': stockDelta },
+        $push: {
+          'inventory.transactions': {
+            type,
+            quantity,
+            // Note: balanceAfter will be calculated after update via post-hook or next read
+            performedBy: req.user._id,
+            notes,
+            lotNumber,
+            date: new Date()
+          }
+        },
+        $set: { updatedBy: req.user._id }
+      },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!result) {
+      // Check if medication exists at all
+      const exists = await PharmacyInventory.findById(req.params.id).select('_id inventory.currentStock').lean();
+      if (!exists) {
+        return notFound(res, 'Medication');
+      }
+      // Medication exists but condition failed (insufficient stock)
+      return error(res, `Stock insuffisant. Stock actuel: ${exists.inventory?.currentStock || 0}`, 400);
     }
 
-    // Add transaction
-    if (!medication.inventory.transactions) {
-      medication.inventory.transactions = [];
+    // Update status based on new stock level (this is safe as it's idempotent)
+    result.updateStatus();
+    await result.save();
+
+    // Update the balanceAfter in the last transaction
+    const lastTxIndex = result.inventory.transactions.length - 1;
+    if (lastTxIndex >= 0) {
+      result.inventory.transactions[lastTxIndex].balanceAfter = result.inventory.currentStock;
+      await PharmacyInventory.updateOne(
+        { _id: req.params.id },
+        { $set: { [`inventory.transactions.${lastTxIndex}.balanceAfter`]: result.inventory.currentStock } }
+      );
     }
-    medication.inventory.transactions.push({
+
+    pharmacyLogger.info('Stock adjusted', {
+      id: req.params.id,
       type,
       quantity,
-      balanceAfter: medication.inventory.currentStock,
-      performedBy: req.user._id,
-      notes,
-      lotNumber
+      newStock: result.inventory.currentStock,
+      userId: req.user._id
     });
 
-    // Update status
-    medication.updateStatus();
-
-    medication.updatedBy = req.user._id;
-    await medication.save();
-
-    return success(res, { data: medication, message: 'Stock adjusted successfully' });
-  } catch (error) {
-    pharmacyLogger.error('Error adjusting stock', { id: req.params.id, error: error.message, stack: error.stack });
+    return success(res, { data: result, message: 'Stock adjusted successfully' });
+  } catch (err) {
+    pharmacyLogger.error('Error adjusting stock', { id: req.params.id, error: err.message, stack: err.stack });
     return error(res, 'Error adjusting stock', 400);
   }
 };
@@ -903,13 +975,17 @@ exports.dispensePrescription = async (req, res) => {
           }
 
           for (const allergy of patient.allergies) {
-            const allergen = (allergy.allergen || allergy.name || allergy).toLowerCase();
-            const medName = (med.name || med.genericName || '').toLowerCase();
-            const genericName = (med.genericName || drugDetails?.genericName || '').toLowerCase();
-            const brandName = (med.brand || drugDetails?.brandName || '').toLowerCase();
+            const allergen = (allergy.allergen || allergy.name || allergy);
+            const medName = med.name || med.genericName || '';
+            const genericName = med.genericName || drugDetails?.genericName || '';
+            const brandName = med.brand || drugDetails?.brandName || '';
 
-            // Check for direct name match
-            if (medName.includes(allergen) || genericName.includes(allergen) || brandName.includes(allergen)) {
+            // Check for direct name match using word boundary matching
+            // FIX: Use matchesAllergen() instead of includes() to prevent false positives
+            // e.g., "ASA" should NOT match "NASAL" spray
+            if (matchesAllergen(medName, allergen) ||
+                matchesAllergen(genericName, allergen) ||
+                matchesAllergen(brandName, allergen)) {
               allergyWarnings.push({
                 medication: med.name || med.genericName,
                 allergen: allergy.allergen || allergy.name || allergy,
@@ -921,7 +997,8 @@ exports.dispensePrescription = async (req, res) => {
             // Check active ingredients if drug details available
             if (drugDetails && drugDetails.activeIngredients) {
               for (const ingredient of drugDetails.activeIngredients) {
-                if ((ingredient.name || '').toLowerCase().includes(allergen)) {
+                // FIX: Use word boundary matching for ingredients too
+                if (matchesAllergen(ingredient.name, allergen)) {
                   allergyWarnings.push({
                     medication: med.name || med.genericName,
                     allergen: ingredient.name,

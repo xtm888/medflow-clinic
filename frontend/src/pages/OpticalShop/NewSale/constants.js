@@ -86,14 +86,10 @@ export const DEFAULT_ORDER_DATA = {
   pricing: { subtotal: 0, discount: 0, discountType: 'fixed', finalTotal: 0 }
 };
 
-// Currency formatter for CDF
-export const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('fr-CD', {
-    style: 'currency',
-    currency: 'CDF',
-    minimumFractionDigits: 0
-  }).format(amount || 0);
-};
+// Re-export formatCurrency from central formatters for backward compatibility
+import { formatCurrency as centralFormatCurrency } from '../../../utils/formatters';
+
+export const formatCurrency = (amount) => centralFormatCurrency(amount, 'CDF');
 
 // Frame image type labels
 export const FRAME_IMAGE_TYPES = {

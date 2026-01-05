@@ -40,6 +40,8 @@ const {
   advancedSearch,
   restorePatient,
   getDeletedPatients,
+  // Vitals
+  recordVitals,
   // Legacy integration
   searchByLegacyId,
   linkFolderToPatient,
@@ -228,6 +230,9 @@ router
 // Medical issues
 router.get('/:id/medical-issues', logPatientDataAccess, getMedicalIssues);
 router.put('/:id/medical-issues/:issueId', requirePermission('manage_medical_records'), logAction('MEDICAL_ISSUE_UPDATE'), updateMedicalIssue);
+
+// Vitals - can be recorded by nurse or doctor, auto-creates visit if needed
+router.post('/:id/vitals', requirePermission('manage_medical_records'), logAction('VITALS_RECORD'), recordVitals);
 
 // Patient Alerts
 router.get('/:id/alerts', logPatientDataAccess, getPatientAlerts);

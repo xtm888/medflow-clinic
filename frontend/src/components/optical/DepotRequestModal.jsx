@@ -26,10 +26,17 @@ const DepotRequestModal = ({ isOpen, onClose, onSuccess }) => {
       const response = await api.get('/optical-shop/depot-inventory', {
         params: { search: searchTerm, limit: 100 }
       });
-      setDepotFrames(response.data.data || []);
+      // Handle various API response formats defensively
+      const data = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setDepotFrames(data);
     } catch (err) {
       setError('Failed to load depot inventory');
       console.error('Depot fetch error:', err);
+      setDepotFrames([]);
     } finally {
       setLoading(false);
     }

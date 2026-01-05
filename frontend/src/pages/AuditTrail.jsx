@@ -35,7 +35,7 @@ import {
   ChevronDown,
   ChevronUp,
   FileSpreadsheet,
-  FilePdf
+  FileDown
 } from 'lucide-react';
 import auditService from '../services/auditService';
 import { normalizeToArray } from '../utils/apiHelpers';
@@ -185,13 +185,20 @@ export default function AuditTrail() {
         startDate: filters.startDate,
         endDate: filters.endDate
       });
-      setEmployees(response?.data || []);
+      // Handle various API response formats defensively
+      const employeesData = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setEmployees(employeesData);
     } catch (error) {
       logger.error('Error loading employees:', error);
       // Don't show toast for 404 - means no audit data yet
       if (error.response?.status !== 404) {
         toast.error('Erreur lors du chargement des activités');
       }
+      setEmployees([]);
     } finally {
       setEmployeesLoading(false);
     }
@@ -325,9 +332,16 @@ export default function AuditTrail() {
   const loadActionTypes = async () => {
     try {
       const response = await auditService.getActionTypes();
-      setActionTypes(response?.data || []);
+      // Handle various API response formats defensively
+      const actionTypesData = Array.isArray(response?.data?.data)
+        ? response.data.data
+        : Array.isArray(response?.data)
+        ? response.data
+        : [];
+      setActionTypes(actionTypesData);
     } catch (error) {
       logger.error('Error loading action types:', error);
+      setActionTypes([]);
     }
   };
 

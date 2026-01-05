@@ -6,7 +6,7 @@
 
 import {
   User, Bell, Lock, Database, Globe, DollarSign, Plus,
-  Calendar, Server, Shield, UserPlus, Tag
+  Calendar, Server, Shield, UserPlus, Tag, Users
 } from 'lucide-react';
 
 // Build tabs array based on user roles
@@ -29,6 +29,7 @@ export const buildTabs = (isAdmin, canManageBilling) => {
   if (isAdmin) {
     tabs.push(
       { id: 'clinic', icon: Database, label: 'Clinique' },
+      { id: 'users', icon: Users, label: 'Utilisateurs', navigateTo: '/users' },
       { id: 'permissions', icon: Shield, label: 'Permissions' },
       { id: 'twilio', icon: Globe, label: 'Twilio' },
       { id: 'lis', icon: Server, label: 'LIS/HL7' }

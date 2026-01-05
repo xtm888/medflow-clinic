@@ -290,12 +290,19 @@ export default function UnifiedInventory() {
       });
 
       const response = await unifiedInventoryService.getAll(params);
-      setItems(response?.data || []);
-      setTotalPages(response?.pages || 1);
-      setTotal(response?.total || 0);
+      // Handle various API response formats defensively
+      const itemsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setItems(itemsData);
+      setTotalPages(response?.pages || response?.data?.pages || 1);
+      setTotal(response?.total || response?.data?.total || 0);
     } catch (error) {
       console.error('Error fetching inventory:', error);
       toast.error('Erreur lors du chargement de l\'inventaire');
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -315,9 +322,18 @@ export default function UnifiedInventory() {
   const fetchAlerts = useCallback(async () => {
     try {
       const response = await unifiedInventoryService.getAlerts({ inventoryType: activeType });
-      setAlerts(response?.data || []);
+      // Handle various API response formats defensively
+      const alertsData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.alerts)
+        ? response.data.alerts
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setAlerts(alertsData);
     } catch (error) {
       console.error('Error fetching alerts:', error);
+      setAlerts([]);
     }
   }, [activeType]);
 

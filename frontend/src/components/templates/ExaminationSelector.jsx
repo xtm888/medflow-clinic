@@ -14,9 +14,16 @@ const ExaminationSelector = ({ onAddExamination }) => {
     const fetchCategories = async () => {
       try {
         const response = await api.get('/template-catalog/examinations/categories');
-        setCategories(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setCategories(data);
       } catch (error) {
         console.error('Error fetching examination categories:', error);
+        setCategories([]);
       }
     };
     fetchCategories();
@@ -32,9 +39,16 @@ const ExaminationSelector = ({ onAddExamination }) => {
     const fetchExaminations = async () => {
       try {
         const response = await api.get(`/template-catalog/examinations?category=${selectedCategory}`);
-        setExaminations(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setExaminations(data);
       } catch (error) {
         console.error('Error fetching examinations:', error);
+        setExaminations([]);
       }
     };
     fetchExaminations();

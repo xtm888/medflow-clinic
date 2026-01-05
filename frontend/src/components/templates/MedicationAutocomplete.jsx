@@ -29,7 +29,13 @@ const MedicationAutocomplete = ({ onSelect, value, placeholder = "Rechercher un 
       setLoading(true);
       try {
         const response = await api.get(`/template-catalog/medications/search?q=${searchTerm}&limit=20`);
-        setResults(response.data.data || []);
+        // Handle various API response formats defensively
+        const data = Array.isArray(response?.data?.data)
+          ? response.data.data
+          : Array.isArray(response?.data)
+          ? response.data
+          : [];
+        setResults(data);
         setIsOpen(true);
       } catch (error) {
         console.error('Error searching medications:', error);

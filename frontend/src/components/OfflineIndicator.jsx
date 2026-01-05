@@ -27,7 +27,9 @@ export default function OfflineIndicator() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-        const response = await fetch('/api/auth/me', {
+        // Use the same API base URL as the rest of the app
+        const apiBaseUrl = import.meta.env.VITE_API_URL || `http://${window.location.hostname}:5001/api`;
+        const response = await fetch(`${apiBaseUrl}/auth/me`, {
           method: 'HEAD',
           cache: 'no-cache',
           signal: controller.signal

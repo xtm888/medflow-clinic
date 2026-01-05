@@ -850,7 +850,9 @@ const visitService = {
     try {
       console.log('[VisitService] Pre-caching today\'s visits...');
       const response = await api.get('/visits/today');
-      const visits = response.data?.data || response.data || [];
+      // Safely extract array from various API response formats
+      const rawVisits = response?.data?.data ?? response?.data ?? [];
+      const visits = Array.isArray(rawVisits) ? rawVisits : [];
 
       if (visits.length > 0) {
         const timestamp = new Date().toISOString();

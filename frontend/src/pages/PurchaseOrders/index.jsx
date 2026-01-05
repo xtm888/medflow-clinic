@@ -70,15 +70,24 @@ export default function PurchaseOrders() {
       if (params.inventoryType === 'all') delete params.inventoryType;
 
       const response = await purchaseOrderService.getAll(params);
-      setOrders(response.data || []);
+      // Handle various API response formats defensively
+      const ordersData = Array.isArray(response?.data)
+        ? response.data
+        : Array.isArray(response?.data?.orders)
+        ? response.data.orders
+        : Array.isArray(response?.data?.items)
+        ? response.data.items
+        : [];
+      setOrders(ordersData);
       setPagination({
-        page: response.page || 1,
-        pages: response.pages || 1,
-        total: response.total || 0
+        page: response?.page || response?.data?.page || 1,
+        pages: response?.pages || response?.data?.pages || 1,
+        total: response?.total || response?.data?.total || 0
       });
     } catch (error) {
       toast.error('Erreur lors du chargement des commandes');
       console.error(error);
+      setOrders([]);
     } finally {
       setLoading(false);
     }

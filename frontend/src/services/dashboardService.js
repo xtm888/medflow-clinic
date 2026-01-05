@@ -38,7 +38,9 @@ export const dashboardService = {
   getTodayTasks: async () => {
     try {
       const response = await api.get('/dashboard/today-tasks');
-      return response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawTasks = response?.data?.data ?? response?.data ?? [];
+      return Array.isArray(rawTasks) ? rawTasks : [];
     } catch (error) {
       console.error('Today tasks error:', error);
       return [];
@@ -52,7 +54,9 @@ export const dashboardService = {
   getRecentPatients: async () => {
     try {
       const response = await api.get('/dashboard/recent-patients');
-      return response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawPatients = response?.data?.data ?? response?.data ?? [];
+      return Array.isArray(rawPatients) ? rawPatients : [];
     } catch (error) {
       console.error('Recent patients error:', error);
       return [];
@@ -66,7 +70,9 @@ export const dashboardService = {
   getPendingActions: async () => {
     try {
       const response = await api.get('/dashboard/pending-actions');
-      return response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawActions = response?.data?.data ?? response?.data ?? [];
+      return Array.isArray(rawActions) ? rawActions : [];
     } catch (error) {
       console.error('Pending actions error:', error);
       return [];
@@ -81,7 +87,9 @@ export const dashboardService = {
   getRevenueTrends: async (period = '30days') => {
     try {
       const response = await api.get(`/dashboard/revenue-trends?period=${period}`);
-      return response.data?.data || [];
+      // Safely extract array from various API response formats
+      const rawTrends = response?.data?.data ?? response?.data ?? [];
+      return Array.isArray(rawTrends) ? rawTrends : [];
     } catch (error) {
       console.error('Revenue trends error:', error);
       return [];
