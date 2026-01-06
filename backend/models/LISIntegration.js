@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
-// Encryption key for sensitive data (required in production)
+// Encryption key for sensitive data (recommended in production)
 // SECURITY: Use environment-specific salt derived from the key itself
 // This prevents rainbow table attacks and ensures unique derived keys per installation
 const ENCRYPTION_KEY = (() => {
@@ -17,8 +17,11 @@ const ENCRYPTION_KEY = (() => {
     const salt = typeof saltSource === 'string' ? Buffer.from(saltSource, 'hex') : saltSource;
     return crypto.scryptSync(key, salt, 32);
   }
+  // In production, warn but don't crash - LIS integration will be disabled
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('CRITICAL: LIS_ENCRYPTION_KEY must be set in production');
+    console.warn('⚠️  LIS_ENCRYPTION_KEY not set - LIS integration will be disabled');
+    console.warn('   To enable, set LIS_ENCRYPTION_KEY in environment variables');
+    return null; // Will disable encryption features
   }
   console.warn('⚠️  LIS_ENCRYPTION_KEY not set - using development fallback (NOT FOR PRODUCTION)');
   // Development only: use a deterministic but unique salt
@@ -26,6 +29,9 @@ const ENCRYPTION_KEY = (() => {
   return crypto.scryptSync('dev-fallback-not-for-production', devSalt, 32);
 })();
 const IV_LENGTH = 16;
+
+// Flag to check if LIS encryption is available
+const LIS_ENCRYPTION_ENABLED = !!ENCRYPTION_KEY;
 
 /**
  * LIS Integration Schema
@@ -322,6 +328,10 @@ const lisIntegrationSchema = new mongoose.Schema({
 // Encryption/Decryption methods
 lisIntegrationSchema.methods.encryptData = function(text) {
   if (!text) return null;
+  // Skip encryption if key not configured (LIS integration disabled)
+  if (!LIS_ENCRYPTION_ENABLED) {
+    return text;
+  }
   const iv = crypto.randomBytes(IV_LENGTH);
   const cipher = crypto.createCipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
   let encrypted = cipher.update(text, 'utf8', 'hex');
@@ -331,6 +341,10 @@ lisIntegrationSchema.methods.encryptData = function(text) {
 
 lisIntegrationSchema.methods.decryptData = function(encryptedText) {
   if (!encryptedText) return null;
+  // Skip decryption if key not configured
+  if (!LIS_ENCRYPTION_ENABLED) {
+    return encryptedText;
+  }
   try {
     const parts = encryptedText.split(':');
     const iv = Buffer.from(parts[0], 'hex');

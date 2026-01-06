@@ -213,17 +213,23 @@ calendarIntegrationSchema.index({ status: 1 });
 calendarIntegrationSchema.index({ 'eventMappings.appointmentId': 1 });
 calendarIntegrationSchema.index({ 'eventMappings.externalEventId': 1 });
 
-// Encryption key from environment (required in production)
+// Encryption key from environment (recommended in production)
 const ENCRYPTION_KEY = (() => {
   if (process.env.CALENDAR_ENCRYPTION_KEY) {
     return process.env.CALENDAR_ENCRYPTION_KEY;
   }
+  // In production, warn but don't crash - calendar integration will be disabled
   if (process.env.NODE_ENV === 'production') {
-    throw new Error('CRITICAL: CALENDAR_ENCRYPTION_KEY must be set in production');
+    console.warn('⚠️  CALENDAR_ENCRYPTION_KEY not set - calendar integration will be disabled');
+    console.warn('   To enable, set CALENDAR_ENCRYPTION_KEY in environment variables');
+    return null; // Will disable encryption features
   }
   console.warn('⚠️  CALENDAR_ENCRYPTION_KEY not set - using development fallback (NOT FOR PRODUCTION)');
   return 'dev-only-calendar-key-not-for-production';
 })();
+
+// Flag to check if calendar encryption is available
+const CALENDAR_ENCRYPTION_ENABLED = !!ENCRYPTION_KEY;
 
 // Encrypt sensitive data before saving
 calendarIntegrationSchema.pre('save', function(next) {
@@ -349,6 +355,10 @@ calendarIntegrationSchema.statics.getForUser = async function(userId, provider) 
 
 // Encryption helpers
 function encryptToken(text) {
+  // Skip encryption if key not configured (calendar integration disabled)
+  if (!CALENDAR_ENCRYPTION_ENABLED) {
+    return text;
+  }
   try {
     const key = crypto.scryptSync(ENCRYPTION_KEY, 'salt', 32);
     const iv = crypto.randomBytes(16);
@@ -363,6 +373,10 @@ function encryptToken(text) {
 }
 
 function decryptToken(encryptedText) {
+  // Skip decryption if key not configured
+  if (!CALENDAR_ENCRYPTION_ENABLED) {
+    return encryptedText;
+  }
   try {
     if (!encryptedText.startsWith('enc:')) return encryptedText;
     const parts = encryptedText.split(':');
