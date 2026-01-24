@@ -933,7 +933,7 @@ export default function PatientCompactDashboard({
             icon={Glasses}
             variant="refraction"
           >
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* OD Column */}
               <div>
                 <div className="text-center mb-2">
