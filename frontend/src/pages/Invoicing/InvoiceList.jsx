@@ -4,8 +4,7 @@ import {
   FileText, CheckCircle, AlertCircle, Clock, Eye, DollarSign, Printer,
   RotateCcw, ChevronDown, ChevronRight, Building2
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { safeFormatDate } from '../../utils/dateHelpers';
 
 /**
  * Invoice List Component
@@ -116,19 +115,19 @@ const InvoiceList = memo(({
                 </div>
 
                 {/* Invoice Meta */}
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 mb-4">
                   <div>
                     <p className="text-xs text-gray-500">Patient</p>
                     <p className="font-semibold text-gray-900">{patientName}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Date</p>
-                    <p className="font-medium text-gray-700">{format(new Date(invoice.date), 'dd MMM yyyy', { locale: fr })}</p>
+                    <p className="font-medium text-gray-700">{safeFormatDate(invoice.date, 'dd MMM yyyy', { fallback: 'N/A' })}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Échéance</p>
                     <p className={`font-medium ${invoice.status === 'OVERDUE' ? 'text-red-600' : 'text-gray-700'}`}>
-                      {format(new Date(invoice.dueDate), 'dd MMM yyyy', { locale: fr })}
+                      {safeFormatDate(invoice.dueDate, 'dd MMM yyyy', { fallback: 'N/A' })}
                     </p>
                   </div>
                   <div>
@@ -263,7 +262,7 @@ const InvoiceList = memo(({
                           {invoice.payments.map((payment, idx) => (
                             <div key={idx} className="flex justify-between items-center text-sm bg-white rounded p-2">
                               <div className="flex-1">
-                                <span className="text-gray-700">{format(new Date(payment.date || payment.createdAt), 'dd MMM yyyy', { locale: fr })}</span>
+                                <span className="text-gray-700">{safeFormatDate(payment.date || payment.createdAt, 'dd MMM yyyy', { fallback: 'N/A' })}</span>
                                 <span className="text-gray-500 ml-2">({payment.method || 'N/A'})</span>
                               </div>
                               <div className="flex items-center space-x-2">
@@ -288,7 +287,7 @@ const InvoiceList = memo(({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col space-y-2 ml-4">
+              <div className="flex flex-col space-y-2 ml-2 sm:ml-4 flex-shrink-0">
                 <button onClick={() => onViewInvoice(invoice)} className="btn btn-primary text-sm px-4 py-2 flex items-center space-x-2">
                   <Eye className="h-4 w-4" />
                   <span>Voir</span>
