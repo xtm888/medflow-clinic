@@ -41,36 +41,44 @@ class PDFGeneratorService {
   }
 
   /**
-   * Generate Invoice PDF
+   * Generate Invoice PDF - Enhanced with Legal/Tax Information
+   * Features: Business registration, tax info, payment terms, legal footer
    */
   async generateInvoicePDF(invoice) {
     return new Promise((resolve, reject) => {
       try {
-        const doc = new PDFDocument(this.defaultOptions);
+        const doc = new PDFDocument({
+          ...this.defaultOptions,
+          info: {
+            Producer: 'MedFlow EMR',
+            Creator: 'MedFlow Billing System',
+            Title: `Facture ${invoice.invoiceId || 'N/A'}`
+          }
+        });
         const chunks = [];
 
         doc.on('data', chunk => chunks.push(chunk));
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
 
-        // Header
-        this.addHeader(doc, 'FACTURE');
+        // Header with business registration info
+        this.addInvoiceHeader(doc, invoice);
 
-        // Invoice details
+        // Invoice details section with enhanced formatting
         doc.moveDown(2);
-        this.addInvoiceDetails(doc, invoice);
+        this.addEnhancedInvoiceDetails(doc, invoice);
 
         // Patient info
         doc.moveDown(1);
         this.addPatientInfo(doc, invoice.patient);
 
-        // Items table
+        // Items table with Code column
         doc.moveDown(2);
-        this.addItemsTable(doc, invoice.items);
+        this.addEnhancedItemsTable(doc, invoice.items);
 
-        // Summary
+        // Enhanced summary with tax breakdown
         doc.moveDown(1);
-        this.addInvoiceSummary(doc, invoice.summary);
+        this.addEnhancedInvoiceSummary(doc, invoice);
 
         // Payment info
         if (invoice.payments && invoice.payments.length > 0) {
@@ -78,14 +86,303 @@ class PDFGeneratorService {
           this.addPaymentHistory(doc, invoice.payments);
         }
 
-        // Footer
-        this.addFooter(doc, invoice);
+        // Payment terms section (if configured)
+        if (invoice.paymentTerms || invoice.bankDetails) {
+          doc.moveDown(1);
+          this.addPaymentTerms(doc, invoice);
+        }
+
+        // Legal footer
+        this.addLegalFooter(doc, invoice);
 
         doc.end();
       } catch (error) {
         reject(error);
       }
     });
+  }
+
+  /**
+   * Add invoice header with business registration info
+   * @private
+   */
+  addInvoiceHeader(doc, invoice) {
+    // Logo (if exists)
+    if (this.clinicInfo.logo && fs.existsSync(this.clinicInfo.logo)) {
+      doc.image(this.clinicInfo.logo, 50, 45, { width: 100 });
+    }
+
+    // Clinic info with NIF/RCCM
+    doc.fontSize(14).font('Helvetica-Bold')
+      .fillColor(this.colors.primary)
+      .text(this.clinicInfo.name, 300, 45, { align: 'right', width: 245 });
+
+    doc.fontSize(9).font('Helvetica')
+      .fillColor(this.colors.lightText)
+      .text(this.clinicInfo.address, 300, 62, { align: 'right', width: 245 })
+      .text(`Tel: ${this.clinicInfo.phone}`, 300, 74, { align: 'right', width: 245 })
+      .text(this.clinicInfo.email, 300, 86, { align: 'right', width: 245 });
+
+    // Business registration info (NIF/RCCM)
+    if (this.clinicInfo.taxId) {
+      doc.text(this.clinicInfo.taxId, 300, 98, { align: 'right', width: 245 });
+    }
+    // Add RCCM if configured in environment
+    const rccm = process.env.CLINIC_RCCM;
+    if (rccm) {
+      doc.text(`RCCM: ${rccm}`, 300, 110, { align: 'right', width: 245 });
+    }
+
+    // Title
+    doc.moveDown(5);
+    doc.fontSize(18).font('Helvetica-Bold')
+      .fillColor(this.colors.text)
+      .text('FACTURE', { align: 'center' });
+
+    // Divider
+    doc.moveDown(0.5);
+    doc.strokeColor(this.colors.primary).lineWidth(2)
+      .moveTo(200, doc.y).lineTo(395, doc.y).stroke();
+  }
+
+  /**
+   * Add enhanced invoice details with better formatting
+   * @private
+   */
+  addEnhancedInvoiceDetails(doc, invoice) {
+    const detailsY = doc.y;
+
+    // Generate formatted invoice number: FACT-YYYY-NNNNNN
+    const invoiceDate = invoice.dateIssued ? new Date(invoice.dateIssued) : new Date();
+    const year = invoiceDate.getFullYear();
+    const invoiceNum = invoice.invoiceId || invoice._id?.toString().slice(-6).toUpperCase() || '000000';
+    const formattedInvoiceNum = invoiceNum.startsWith('FACT-') ? invoiceNum : `FACT-${year}-${invoiceNum.padStart(6, '0')}`;
+
+    // Left column
+    doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+      .text('Facture N°:', 50, detailsY);
+    doc.font('Helvetica').text(formattedInvoiceNum, 130, detailsY);
+
+    doc.font('Helvetica-Bold').text('Date emission:', 50, detailsY + 15);
+    doc.font('Helvetica').text(this.formatDate(invoice.dateIssued), 130, detailsY + 15);
+
+    // Due date if payment terms configured
+    if (invoice.dueDate) {
+      doc.font('Helvetica-Bold').text('Echeance:', 50, detailsY + 30);
+      doc.font('Helvetica').text(this.formatDate(invoice.dueDate), 130, detailsY + 30);
+    }
+
+    // Clinic ID/branch code if multi-clinic
+    const clinicCode = invoice.clinic?.code || invoice.clinicId;
+    if (clinicCode) {
+      doc.font('Helvetica-Bold').text('Site:', 50, detailsY + 45);
+      doc.font('Helvetica').text(clinicCode, 130, detailsY + 45);
+    }
+
+    // Right column - Status
+    const statusColors = {
+      paid: this.colors.success,
+      partial: '#f59e0b',
+      overdue: this.colors.danger,
+      issued: this.colors.primary,
+      draft: this.colors.lightText,
+      cancelled: this.colors.danger
+    };
+
+    doc.fontSize(12).font('Helvetica-Bold')
+      .fillColor(statusColors[invoice.status] || this.colors.secondary)
+      .text(this.translateStatus(invoice.status), 400, detailsY, { align: 'right', width: 145 });
+  }
+
+  /**
+   * Add enhanced items table with Code column
+   * @private
+   */
+  addEnhancedItemsTable(doc, items) {
+    const tableTop = doc.y;
+    // Added 'Code' column for procedure codes
+    const tableHeaders = ['Code', 'Description', 'Qte', 'Prix unit.', 'Remise', 'Total'];
+    const columnWidths = [60, 180, 35, 75, 60, 85];
+    const columnX = [50, 110, 290, 325, 400, 460];
+
+    // Header background
+    doc.rect(50, tableTop, 495, 25).fill(this.colors.primary);
+
+    // Headers
+    doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
+    tableHeaders.forEach((header, i) => {
+      doc.text(header, columnX[i] + 3, tableTop + 8, { width: columnWidths[i] - 6 });
+    });
+
+    // Items
+    let y = tableTop + 30;
+    doc.fillColor(this.colors.text).font('Helvetica');
+
+    (items || []).forEach((item, index) => {
+      // Alternate row background
+      if (index % 2 === 0) {
+        doc.rect(50, y - 3, 495, 22).fill(this.colors.background);
+        doc.fillColor(this.colors.text);
+      }
+
+      doc.fontSize(9);
+      // Code column (procedure code)
+      doc.text(item.code || item.procedureCode || '-', columnX[0] + 3, y, { width: columnWidths[0] - 6 });
+      // Description
+      doc.text(item.description || item.name || '-', columnX[1] + 3, y, { width: columnWidths[1] - 6 });
+      // Quantity
+      doc.text((item.quantity || 1).toString(), columnX[2] + 3, y, { width: columnWidths[2] - 6 });
+      // Unit price
+      doc.text(this.formatCurrency(item.unitPrice || item.price || 0), columnX[3] + 3, y, { width: columnWidths[3] - 6 });
+      // Discount
+      doc.text(this.formatCurrency(item.discount || 0), columnX[4] + 3, y, { width: columnWidths[4] - 6 });
+      // Line total (subtotal per line)
+      const lineTotal = item.total || ((item.unitPrice || item.price || 0) * (item.quantity || 1) - (item.discount || 0));
+      doc.text(this.formatCurrency(lineTotal), columnX[5] + 3, y, { width: columnWidths[5] - 6 });
+
+      y += 22;
+    });
+
+    doc.y = y;
+  }
+
+  /**
+   * Add enhanced invoice summary with tax breakdown
+   * @private
+   */
+  addEnhancedInvoiceSummary(doc, invoice) {
+    const summary = invoice.summary || {};
+    const summaryX = 340;
+    const labelX = summaryX;
+    const valueX = 460;
+    const width = 85;
+    const currency = invoice.currency || 'CDF';
+
+    doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+
+    // Subtotal (before discounts)
+    const subtotal = summary.subtotal || summary.total || 0;
+    doc.text('Sous-total:', labelX, doc.y);
+    doc.text(this.formatCurrency(subtotal, currency), valueX, doc.y - 12, { width, align: 'right' });
+
+    // Discount amount (if any)
+    if (summary.discountTotal > 0) {
+      doc.text('Remise:', labelX, doc.y);
+      doc.fillColor(this.colors.success)
+        .text(`-${this.formatCurrency(summary.discountTotal, currency)}`, valueX, doc.y - 12, { width, align: 'right' });
+      doc.fillColor(this.colors.text);
+    }
+
+    // Tax info - Total HT (before tax if applicable)
+    const taxRate = invoice.taxRate || summary.taxRate || 0;
+    if (taxRate > 0) {
+      const totalHT = subtotal - (summary.discountTotal || 0);
+      doc.text('Total HT:', labelX, doc.y);
+      doc.text(this.formatCurrency(totalHT, currency), valueX, doc.y - 12, { width, align: 'right' });
+
+      // Tax amount
+      const taxAmount = summary.taxTotal || (totalHT * taxRate / 100);
+      doc.text(`TVA (${taxRate}%)`, labelX, doc.y);
+      doc.text(this.formatCurrency(taxAmount, currency), valueX, doc.y - 12, { width, align: 'right' });
+    }
+
+    // Total line separator
+    doc.moveDown(0.5);
+    doc.strokeColor(this.colors.border).lineWidth(0.5)
+      .moveTo(summaryX, doc.y).lineTo(545, doc.y).stroke();
+    doc.moveDown(0.5);
+
+    // Total TTC (final amount)
+    const totalLabel = taxRate > 0 ? 'TOTAL TTC:' : 'TOTAL:';
+    doc.fontSize(12).font('Helvetica-Bold');
+    doc.text(totalLabel, labelX, doc.y);
+    doc.text(this.formatCurrency(summary.total || 0, currency), valueX, doc.y - 14, { width, align: 'right' });
+
+    // Amount paid so far
+    if (summary.amountPaid > 0) {
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica').fillColor(this.colors.success);
+      doc.text('Deja paye:', labelX, doc.y);
+      doc.text(this.formatCurrency(summary.amountPaid, currency), valueX, doc.y - 12, { width, align: 'right' });
+    }
+
+    // Amount due (bold, highlighted if >0)
+    const amountDue = summary.amountDue ?? (summary.total - (summary.amountPaid || 0));
+    if (amountDue > 0) {
+      doc.moveDown(0.5);
+      // Highlight box for amount due
+      doc.rect(summaryX - 5, doc.y - 3, 210, 20).fill('#fef2f2');
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.danger);
+      doc.text('RESTE A PAYER:', labelX, doc.y);
+      doc.text(this.formatCurrency(amountDue, currency), valueX, doc.y - 13, { width, align: 'right' });
+    } else if (amountDue <= 0 && summary.amountPaid > 0) {
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.success);
+      doc.text('SOLDE: Paye', labelX, doc.y);
+    }
+
+    doc.fillColor(this.colors.text);
+  }
+
+  /**
+   * Add payment terms section
+   * @private
+   */
+  addPaymentTerms(doc, invoice) {
+    doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+      .text('Conditions de paiement');
+    doc.moveDown(0.3);
+    doc.fontSize(9).font('Helvetica');
+
+    // Payment terms text
+    if (invoice.paymentTerms) {
+      doc.text(invoice.paymentTerms);
+    } else {
+      doc.text('Paiement a reception de facture.');
+    }
+
+    // Bank details if configured for transfers
+    if (invoice.bankDetails || process.env.CLINIC_BANK_DETAILS) {
+      doc.moveDown(0.5);
+      doc.font('Helvetica-Bold').text('Coordonnees bancaires:');
+      doc.font('Helvetica');
+      const bankDetails = invoice.bankDetails || process.env.CLINIC_BANK_DETAILS;
+      doc.text(bankDetails);
+    }
+  }
+
+  /**
+   * Add legal footer with tax and legal notices
+   * @private
+   */
+  addLegalFooter(doc, invoice) {
+    const bottomY = doc.page.height - 100;
+
+    doc.fontSize(8).fillColor(this.colors.lightText);
+
+    // Payment instructions (if invoice has balance)
+    if (invoice?.summary?.amountDue > 0) {
+      doc.text('Modes de paiement acceptes: Especes, Carte bancaire, Virement, Mobile Money', 50, bottomY - 40, { align: 'center', width: 495 });
+    }
+
+    // Tax notice
+    const taxRate = invoice?.taxRate || invoice?.summary?.taxRate || 0;
+    if (taxRate === 0) {
+      doc.text('TVA non applicable - Article en vigueur', 50, bottomY - 25, { align: 'center', width: 495 });
+    }
+
+    // Legal dispute clause
+    doc.text('En cas de litige, seuls les tribunaux de Kinshasa sont competents.', 50, bottomY - 12, { align: 'center', width: 495 });
+
+    // Footer line
+    doc.strokeColor(this.colors.border).lineWidth(0.5)
+      .moveTo(50, bottomY).lineTo(545, bottomY).stroke();
+
+    // Business info footer
+    doc.text(`${this.clinicInfo.name} | ${this.clinicInfo.taxId} | ${this.clinicInfo.phone}`, 50, bottomY + 10, { align: 'center', width: 495 });
+
+    // Invoice validity notice
+    doc.text('Facture valable 30 jours - Document genere electroniquement', 50, bottomY + 22, { align: 'center', width: 495 });
   }
 
   /**
