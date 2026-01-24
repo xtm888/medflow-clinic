@@ -1018,7 +1018,7 @@ export default function PatientCompactDashboard({
 
           {/* IOP & Tonometry - GREEN (StudioVision style) */}
           <CompactCard title="Pression Intraoculaire" icon={Activity} variant="tonometry">
-            <div className="flex items-center justify-around">
+            <div className="flex flex-col sm:flex-row items-center justify-around gap-3 sm:gap-0">
               <div className="text-center">
                 <div className="text-xs text-gray-500 mb-1">OD</div>
                 <div className={`text-2xl font-bold ${
@@ -1028,7 +1028,7 @@ export default function PatientCompactDashboard({
                 </div>
                 <div className="text-xs text-gray-400">mmHg</div>
               </div>
-              <div className="h-12 w-px bg-gray-200" />
+              <div className="hidden sm:block h-12 w-px bg-gray-200" />
               <div className="text-center">
                 <div className="text-xs text-gray-500 mb-1">OS</div>
                 <div className={`text-2xl font-bold ${
