@@ -169,13 +169,39 @@ export default function StudioVisionTabNavigation({
   showLabels = true,
   className = ''
 }) {
+  // Check if user is typing in an editable field
+  const isEditableElement = useCallback((element) => {
+    if (!element) return false;
+    const tagName = element.tagName?.toLowerCase();
+    // Check for standard form elements
+    if (['input', 'textarea', 'select'].includes(tagName)) {
+      return true;
+    }
+    // Check for contentEditable elements
+    if (element.isContentEditable) {
+      return true;
+    }
+    // Check for role="textbox" or role="spinbutton" (custom inputs)
+    const role = element.getAttribute?.('role');
+    if (['textbox', 'spinbutton', 'searchbox', 'combobox'].includes(role)) {
+      return true;
+    }
+    return false;
+  }, []);
+
   // Handle keyboard navigation
   const handleKeyDown = useCallback((e) => {
     if (disabled) return;
 
+    // IMPORTANT: Don't capture keyboard events when user is typing in an input field
+    // This prevents number keys from switching tabs while entering numeric data
+    if (isEditableElement(document.activeElement)) {
+      return;
+    }
+
     const currentIndex = CONSULTATION_TABS.findIndex(t => t.id === activeTab);
 
-    // Arrow navigation
+    // Arrow navigation (only when not in editable - already checked above)
     if (e.key === 'ArrowLeft' && currentIndex > 0) {
       e.preventDefault();
       onTabChange?.(CONSULTATION_TABS[currentIndex - 1].id);
@@ -184,13 +210,13 @@ export default function StudioVisionTabNavigation({
       onTabChange?.(CONSULTATION_TABS[currentIndex + 1].id);
     }
 
-    // Number key navigation (1-8)
+    // Number key navigation (1-8) - only when NOT typing in a field
     const numKey = parseInt(e.key);
     if (numKey >= 1 && numKey <= CONSULTATION_TABS.length) {
       e.preventDefault();
       onTabChange?.(CONSULTATION_TABS[numKey - 1].id);
     }
-  }, [activeTab, onTabChange, disabled]);
+  }, [activeTab, onTabChange, disabled, isEditableElement]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
@@ -199,7 +225,7 @@ export default function StudioVisionTabNavigation({
 
   return (
     <div className={`bg-white border-b border-gray-200 ${className}`}>
-      <nav className="flex overflow-x-auto" role="tablist" aria-label="Consultation sections">
+      <nav className="flex overflow-x-auto snap-x snap-mandatory" role="tablist" aria-label="Consultation sections">
         {CONSULTATION_TABS.map((tab, index) => {
           const isActive = activeTab === tab.id;
           const hasUnsavedChanges = hasChanges[tab.id];
@@ -217,8 +243,8 @@ export default function StudioVisionTabNavigation({
               onClick={() => onTabChange?.(tab.id)}
               title={`${tab.description} (${index + 1})`}
               className={`
-                relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium
-                border-b-2 transition-all duration-150 whitespace-nowrap
+                relative flex items-center gap-1 md:gap-1.5 px-2 md:px-3 py-2 md:py-2.5 text-xs md:text-sm font-medium
+                border-b-2 transition-all duration-150 whitespace-nowrap snap-start
                 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500
                 ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
                 ${isActive
