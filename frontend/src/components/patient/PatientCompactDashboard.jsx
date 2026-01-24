@@ -998,7 +998,7 @@ export default function PatientCompactDashboard({
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                   <div>
                     OD: K1 {latestKeratometry.OD?.k1 || latestKeratometry.od?.k1 || '-'} / K2 {latestKeratometry.OD?.k2 || latestKeratometry.od?.k2 || '-'}
                     {(latestKeratometry.OD?.axis || latestKeratometry.od?.axis) && (
@@ -1060,13 +1060,13 @@ export default function PatientCompactDashboard({
               {patient.diagnoses?.slice(0, 5).map((diagnosis, idx) => (
                 <div
                   key={idx}
-                  className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-xs"
+                  className="flex items-center justify-between py-1 px-2 bg-gray-50 rounded text-xs gap-2"
                 >
-                  <span className="font-medium text-gray-700">
+                  <span className="font-medium text-gray-700 truncate flex-1" title={diagnosis.name || diagnosis.description}>
                     {diagnosis.name || diagnosis.description}
                   </span>
                   {diagnosis.code && (
-                    <span className="text-gray-400">{diagnosis.code}</span>
+                    <span className="text-gray-400 shrink-0">{diagnosis.code}</span>
                   )}
                 </div>
               ))}
