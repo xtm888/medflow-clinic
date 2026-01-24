@@ -89,14 +89,47 @@ class PDFGeneratorService {
   }
 
   /**
-   * Generate Receipt PDF
+   * Calculate dynamic receipt height based on content
+   * @private
+   */
+  _calculateReceiptHeight(payment, invoice) {
+    // Base height for header, title, and footer
+    let height = 180;
+
+    // Add height for address lines
+    if (this.clinicInfo.address) height += 12;
+
+    // Add height for payment reference if present
+    if (payment.reference) height += 12;
+
+    // Add height for balance display
+    height += 25;
+
+    // Add extra height for long patient names
+    const patientName = `${payment.patient?.firstName || ''} ${payment.patient?.lastName || ''}`;
+    if (patientName.length > 25) height += 10;
+
+    // Minimum height for thermal receipt
+    return Math.max(height, 220);
+  }
+
+  /**
+   * Generate Receipt PDF - Improved Thermal Format
+   * Features: Dynamic height, dotted separators, better formatting
    */
   async generateReceiptPDF(payment, invoice, patient) {
     return new Promise((resolve, reject) => {
       try {
+        // Calculate dynamic height based on content
+        const receiptHeight = this._calculateReceiptHeight(payment, invoice);
+
         const doc = new PDFDocument({
-          ...this.defaultOptions,
-          size: [226, 350] // Thermal receipt size (80mm x ~140mm)
+          size: [226, receiptHeight], // 80mm width = 226 points, dynamic height
+          margins: { top: 10, bottom: 10, left: 10, right: 10 },
+          info: {
+            Producer: 'MedFlow EMR',
+            Creator: 'MedFlow Receipt System'
+          }
         });
         const chunks = [];
 
@@ -104,66 +137,114 @@ class PDFGeneratorService {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
 
-        const centerX = 113;
+        const contentWidth = 206; // 226 - 20 (margins)
+        const leftMargin = 10;
 
-        // Header
+        // ===== HEADER SECTION =====
+        // Clinic name in bold, centered
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text(this.clinicInfo.name, leftMargin, 10, { width: contentWidth, align: 'center' });
+
+        // Address line 1
+        doc.fontSize(7).font('Helvetica').fillColor(this.colors.lightText)
+          .text(this.clinicInfo.address, { width: contentWidth, align: 'center' });
+
+        // Phone number
+        doc.text(`Tel: ${this.clinicInfo.phone}`, { width: contentWidth, align: 'center' });
+
+        // Dotted line separator
+        doc.moveDown(0.3);
+        doc.fillColor(this.colors.text).fontSize(8)
+          .text('- - - - - - - - - - - - - - - - - - - - -', { width: contentWidth, align: 'center' });
+
+        // ===== RECEIPT TITLE =====
+        doc.moveDown(0.3);
         doc.fontSize(12).font('Helvetica-Bold')
-          .text(this.clinicInfo.name, { align: 'center' });
+          .text('RECU', { width: contentWidth, align: 'center' });
+
+        // Receipt number
         doc.fontSize(8).font('Helvetica')
-          .text(this.clinicInfo.address, { align: 'center' })
-          .text(`Tel: ${this.clinicInfo.phone}`, { align: 'center' });
+          .text(`N° ${payment.paymentId || payment._id?.toString().slice(-8).toUpperCase()}`, { width: contentWidth, align: 'center' });
 
-        doc.moveDown(0.5);
-        doc.fontSize(10).font('Helvetica-Bold')
-          .text('RECU DE PAIEMENT', { align: 'center' });
+        // Date/time
+        const paymentDate = payment.date || payment.createdAt || new Date();
+        const dateStr = this.formatDate(paymentDate);
+        const timeStr = new Date(paymentDate).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        doc.text(`${dateStr} ${timeStr}`, { width: contentWidth, align: 'center' });
 
-        // Divider
-        doc.moveDown(0.5);
-        doc.strokeColor(this.colors.border).lineWidth(0.5)
-          .moveTo(10, doc.y).lineTo(216, doc.y).stroke();
+        // ===== DOTTED SEPARATOR =====
+        doc.moveDown(0.3);
+        doc.text('- - - - - - - - - - - - - - - - - - - - -', { width: contentWidth, align: 'center' });
 
-        // Receipt details
-        doc.moveDown(0.5);
+        // ===== PATIENT INFO =====
+        doc.moveDown(0.3);
         doc.fontSize(8).font('Helvetica');
-        doc.text(`N° Recu: ${payment.paymentId}`, { align: 'left' });
-        doc.text(`Date: ${this.formatDate(payment.date)}`, { align: 'left' });
-        doc.text(`Facture: ${invoice.invoiceId}`, { align: 'left' });
+        const patientName = patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : 'N/A';
+        doc.text(`Patient: ${patientName}`, leftMargin, doc.y, { width: contentWidth });
 
-        // Patient
+        const patientId = patient?.patientId || patient?._id?.toString().slice(-8) || 'N/A';
+        doc.text(`ID: ${patientId}`, { width: contentWidth });
+
+        // ===== INVOICE REFERENCE =====
+        const invoiceNum = invoice?.invoiceId || invoice?._id?.toString().slice(-8) || 'N/A';
+        doc.text(`Facture: ${invoiceNum}`, { width: contentWidth });
+
+        // ===== DOTTED SEPARATOR =====
+        doc.moveDown(0.3);
+        doc.text('- - - - - - - - - - - - - - - - - - - - -', { width: contentWidth, align: 'center' });
+
+        // ===== AMOUNT SECTION (prominent) =====
         doc.moveDown(0.5);
-        doc.text(`Patient: ${patient.firstName} ${patient.lastName}`);
-        doc.text(`ID: ${patient.patientId}`);
 
-        // Divider
-        doc.moveDown(0.5);
-        doc.strokeColor(this.colors.border)
-          .moveTo(10, doc.y).lineTo(216, doc.y).stroke();
-
-        // Amount
-        doc.moveDown(1);
-        doc.fontSize(12).font('Helvetica-Bold')
-          .text(`MONTANT: ${this.formatCurrency(payment.amount)}`, { align: 'center' });
-
+        // "MONTANT PAYE" label
         doc.fontSize(8).font('Helvetica')
-          .text(`Mode: ${this.translatePaymentMethod(payment.method)}`, { align: 'center' });
+          .text('MONTANT PAYE', { width: contentWidth, align: 'center' });
 
+        // Amount in large bold font with currency
+        const currency = payment.currency || invoice?.currency || 'CDF';
+        doc.fontSize(14).font('Helvetica-Bold')
+          .text(this.formatCurrency(payment.amount, currency), { width: contentWidth, align: 'center' });
+
+        // Payment method in French
+        doc.fontSize(8).font('Helvetica')
+          .text(`Mode: ${this.translatePaymentMethod(payment.method)}`, { width: contentWidth, align: 'center' });
+
+        // Reference number if present
         if (payment.reference) {
-          doc.text(`Ref: ${payment.reference}`, { align: 'center' });
+          doc.text(`Ref: ${payment.reference}`, { width: contentWidth, align: 'center' });
         }
 
-        // Balance
-        doc.moveDown(1);
-        const balance = invoice.summary.amountDue - payment.amount;
-        doc.text(`Solde restant: ${this.formatCurrency(Math.max(0, balance))}`, { align: 'center' });
-
-        // Footer
-        doc.moveDown(1);
-        doc.strokeColor(this.colors.border)
-          .moveTo(10, doc.y).lineTo(216, doc.y).stroke();
+        // ===== BALANCE SECTION =====
         doc.moveDown(0.5);
-        doc.fontSize(7)
-          .text('Merci de votre confiance', { align: 'center' })
-          .text(this.clinicInfo.website, { align: 'center' });
+        const invoiceTotal = invoice?.summary?.total || invoice?.totalAmount || 0;
+        const invoicePaid = invoice?.summary?.amountPaid || 0;
+        const balance = Math.max(0, invoiceTotal - invoicePaid - payment.amount);
+
+        if (balance <= 0) {
+          // Fully paid
+          doc.fontSize(9).font('Helvetica-Bold').fillColor(this.colors.success)
+            .text('SOLDE: 0 (Paye en totalite)', { width: contentWidth, align: 'center' });
+        } else {
+          // Balance remaining
+          doc.fontSize(9).font('Helvetica').fillColor(this.colors.text)
+            .text(`Solde restant: ${this.formatCurrency(balance, currency)}`, { width: contentWidth, align: 'center' });
+        }
+
+        // ===== DOTTED SEPARATOR =====
+        doc.moveDown(0.3);
+        doc.fillColor(this.colors.text).fontSize(8)
+          .text('- - - - - - - - - - - - - - - - - - - - -', { width: contentWidth, align: 'center' });
+
+        // ===== FOOTER =====
+        doc.moveDown(0.3);
+        doc.fontSize(7).font('Helvetica').fillColor(this.colors.lightText)
+          .text('Merci de votre confiance', { width: contentWidth, align: 'center' })
+          .text('Conservez ce recu', { width: contentWidth, align: 'center' });
+
+        // Website if configured
+        if (this.clinicInfo.website) {
+          doc.text(this.clinicInfo.website, { width: contentWidth, align: 'center' });
+        }
 
         doc.end();
       } catch (error) {
