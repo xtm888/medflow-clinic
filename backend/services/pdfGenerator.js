@@ -761,6 +761,87 @@ class PDFGeneratorService {
   }
 
   /**
+   * Determine lab result category from test data
+   * @param {Object} labResult - Lab result object
+   * @returns {string} Category: 'biochemistry', 'hematology', 'microbiology', 'urinalysis', 'coagulation', 'serology', or 'general'
+   */
+  getLabCategory(labResult) {
+    // Priority 1: Check explicit category field
+    if (labResult?.test?.category) {
+      const category = labResult.test.category.toLowerCase();
+      if (['biochemistry', 'biochimie', 'chemistry'].includes(category)) return 'biochemistry';
+      if (['hematology', 'hematologie', 'hémato'].includes(category)) return 'hematology';
+      if (['microbiology', 'microbiologie', 'bacteriology', 'bactériologie'].includes(category)) return 'microbiology';
+      if (['urinalysis', 'urologie', 'urine'].includes(category)) return 'urinalysis';
+      if (['coagulation', 'hemostase', 'hémostase'].includes(category)) return 'coagulation';
+      if (['serology', 'sérologie', 'immunology', 'immunologie'].includes(category)) return 'serology';
+    }
+
+    // Priority 2: Check testCode prefix patterns
+    const testCode = (labResult?.test?.testCode || '').toUpperCase();
+
+    // Biochemistry prefixes
+    if (/^(BIO|GLU|LIP|HEP|REN|CREA|URE|CHOL|TG|ALT|AST|GGT|BIL|PROT|ALB|ALP|LDH|CK|UREA|GLUC|HBA1C)/.test(testCode)) {
+      return 'biochemistry';
+    }
+
+    // Hematology prefixes
+    if (/^(CBC|HEM|WBC|RBC|HGB|HCT|PLT|MCV|MCH|MCHC|RDW|MPV|RETI|NFS|GB|GR|HB|VGM)/.test(testCode)) {
+      return 'hematology';
+    }
+
+    // Microbiology prefixes
+    if (/^(CUL|SENS|BACT|MICRO|ECBU|HEMO|COPRO|PARASIT|CULT)/.test(testCode)) {
+      return 'microbiology';
+    }
+
+    // Urinalysis prefixes
+    if (/^(URI|BU|ECBU|SED|URIN)/.test(testCode)) {
+      return 'urinalysis';
+    }
+
+    // Coagulation prefixes
+    if (/^(PT|INR|COAG|TCA|TQ|FIB|APTT|PTT|TP)/.test(testCode)) {
+      return 'coagulation';
+    }
+
+    // Serology prefixes
+    if (/^(SER|AB|IGG|IGM|IGA|HIV|HBS|HCV|VIH|SERO|ASLO|CRP|RF|ANA)/.test(testCode)) {
+      return 'serology';
+    }
+
+    // Priority 3: Check test name patterns
+    const testName = (labResult?.test?.testName || '').toLowerCase();
+
+    if (/glucose|glycémie|lipid|cholestérol|triglyc|créatinine|urée|transaminase|bilirubine|albumine|protéine|ionogramme|calcium|phosphore|magnésium|fer|ferritine/.test(testName)) {
+      return 'biochemistry';
+    }
+
+    if (/hémogramme|numération|formule|nfs|globule|hémoglobine|plaquette|hématocrite|leucocyte|érythrocyte/.test(testName)) {
+      return 'hematology';
+    }
+
+    if (/culture|antibiogramme|bactério|ecbu|uroculture|hémoculture|coproculture|prélèvement/.test(testName)) {
+      return 'microbiology';
+    }
+
+    if (/urine|bandelette|sédiment|protéinurie|glycosurie/.test(testName)) {
+      return 'urinalysis';
+    }
+
+    if (/coagulation|tp|tca|inr|fibrinogène|hémostase/.test(testName)) {
+      return 'coagulation';
+    }
+
+    if (/sérologie|anticorps|antigène|hiv|vih|hépatite|hbs|hcv|aslo|crp|facteur rhumatoïde/.test(testName)) {
+      return 'serology';
+    }
+
+    // Default fallback
+    return 'general';
+  }
+
+  /**
    * Generate Lab Results PDF
    */
   async generateLabResultsPDF(labResult, patient) {
@@ -1625,7 +1706,7 @@ class PDFGeneratorService {
           margins: { top: 40, bottom: 60, left: 40, right: 40 }
         });
         const chunks = [];
-        let pageNumber = 1;
+        const pageNumber = 1;
         const totalPages = data.totalPages || 1;
 
         doc.on('data', chunk => chunks.push(chunk));
@@ -1637,7 +1718,7 @@ class PDFGeneratorService {
 
         // Document number format: PatientID + Visit sequence
         const documentNumber = data.documentNumber ||
-          `${patient?.patientId || ''}${visit?.visitNumber ? '/' + visit.visitNumber : ''}`;
+          `${patient?.patientId || ''}${visit?.visitNumber ? `/${visit.visitNumber}` : ''}`;
 
         // ===== HEADER SECTION =====
         // Logo (left side) - wider for better visibility
@@ -1678,7 +1759,7 @@ class PDFGeneratorService {
           civilStatus: patient?.civilStatus || patient?.maritalStatus || '',
           birthPlace: patient?.birthPlace || patient?.placeOfBirth || '',
           phones: Array.isArray(patient?.phones) ? patient.phones.join(' - ') :
-                  patient?.phoneNumber || patient?.phone || '',
+            patient?.phoneNumber || patient?.phone || '',
           email: patient?.email || '',
           address: patient?.address?.street || patient?.avenue || '',
           commune: patient?.address?.commune || patient?.commune || '',
@@ -1695,7 +1776,7 @@ class PDFGeneratorService {
         doc.rect(40, tableStartY, tableWidth, rowHeight * 7).stroke(this.colors.text);
         // Vertical divider
         doc.moveTo(40 + leftColWidth, tableStartY)
-           .lineTo(40 + leftColWidth, tableStartY + rowHeight * 7).stroke(this.colors.text);
+          .lineTo(40 + leftColWidth, tableStartY + rowHeight * 7).stroke(this.colors.text);
 
         // Row 1: Noms | Né(e) le + Sexe
         let rowY = tableStartY;
@@ -1773,7 +1854,7 @@ class PDFGeneratorService {
           .text('Réalisation Examen Ophta', 50, examBoxY + 8);
 
         const providerName = provider?.title ? `${provider.title} ${provider.firstName || ''} ${provider.lastName || ''}`.trim() :
-                            provider?.name || visit?.provider?.name || 'Dr';
+          provider?.name || visit?.provider?.name || 'Dr';
         doc.text('Réalisé par:', 320, examBoxY + 8);
         doc.font('Helvetica').text(providerName, 395, examBoxY + 8);
 
@@ -1927,7 +2008,7 @@ class PDFGeneratorService {
 
     const address = clinic.address || '72A, Avenue Tombalbaye, C. Gombe, Kinshasa R.D. Congo';
     const phones = Array.isArray(clinic.phones) ? clinic.phones.join('  ') :
-                   clinic.phone || '+243 977 917 476  +243 993 715 460  +243 999 060 457';
+      clinic.phone || '+243 977 917 476  +243 993 715 460  +243 999 060 457';
     const taxInfo = clinic.taxId || 'N.I.F: A0707382H / ID Nat: N34964N';
     const email = clinic.email || 'info@laelvision.com';
 
