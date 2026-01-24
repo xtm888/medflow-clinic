@@ -8,6 +8,7 @@ const { protect, authorize } = require('../middleware/auth');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const Document = require('../models/Document');
 const documentController = require('../controllers/documentController');
+const documentGenerationController = require('../controllers/documentGenerationController');
 const DocumentTemplate = require('../models/DocumentTemplate');
 
 // Configure multer for file uploads
@@ -553,6 +554,25 @@ router.delete('/:id', protect, authorize('admin', 'doctor', 'ophthalmologist'), 
     });
   }
 });
+
+// ============================================================
+// SURGERY REPORT PDF ROUTES
+// ============================================================
+
+// @desc    Generate Surgery Report (Operative Report) PDF
+// @route   GET /api/documents/surgery-report/:surgeryReportId/pdf
+// @access  Private (doctor, ophthalmologist, admin)
+router.get('/surgery-report/:surgeryReportId/pdf', protect, authorize(['doctor', 'ophthalmologist', 'admin']), logAction('DOCUMENT_GENERATE'), documentGenerationController.generateSurgeryReportPDF);
+
+// @desc    Generate Pre-Op Checklist PDF
+// @route   GET /api/documents/surgery-case/:surgeryCaseId/preop-checklist/pdf
+// @access  Private (doctor, nurse, ophthalmologist, admin)
+router.get('/surgery-case/:surgeryCaseId/preop-checklist/pdf', protect, authorize(['doctor', 'nurse', 'ophthalmologist', 'admin']), logAction('DOCUMENT_GENERATE'), documentGenerationController.generatePreOpChecklistPDF);
+
+// @desc    Generate Post-Op Note (Patient Instructions) PDF
+// @route   GET /api/documents/surgery-report/:surgeryReportId/postop-note/pdf
+// @access  Private (doctor, nurse, ophthalmologist, admin)
+router.get('/surgery-report/:surgeryReportId/postop-note/pdf', protect, authorize(['doctor', 'nurse', 'ophthalmologist', 'admin']), logAction('DOCUMENT_GENERATE'), documentGenerationController.generatePostOpNotePDF);
 
 // ============================================================
 // CERFA Document Generation Routes

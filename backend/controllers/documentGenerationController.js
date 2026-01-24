@@ -118,7 +118,7 @@ const fillTemplate = (templateContent, data) => {
 // @desc    Get all document templates
 // @route   GET /api/document-generation/templates
 // @access  Private
-exports.getTemplates = asyncHandler(async (req, res, next) => {
+exports.getTemplates = asyncHandler(async (req, res, _next) => {
   const { category, subCategory, specialty, search, popular } = req.query;
 
   // Build query
@@ -163,7 +163,7 @@ exports.getTemplates = asyncHandler(async (req, res, next) => {
 // @desc    Get single template with details
 // @route   GET /api/document-generation/templates/:id
 // @access  Private
-exports.getTemplate = asyncHandler(async (req, res, next) => {
+exports.getTemplate = asyncHandler(async (req, res, _next) => {
   const template = await DocumentTemplate.findById(req.params.id);
 
   if (!template) {
@@ -182,7 +182,7 @@ exports.getTemplate = asyncHandler(async (req, res, next) => {
 // @desc    Get template by templateId
 // @route   GET /api/document-generation/templates/code/:templateId
 // @access  Private
-exports.getTemplateByCode = asyncHandler(async (req, res, next) => {
+exports.getTemplateByCode = asyncHandler(async (req, res, _next) => {
   const template = await DocumentTemplate.findOne({ templateId: req.params.templateId });
 
   if (!template) {
@@ -201,7 +201,7 @@ exports.getTemplateByCode = asyncHandler(async (req, res, next) => {
 // @desc    Auto-fill template preview (no save)
 // @route   POST /api/document-generation/templates/:id/preview
 // @access  Private
-exports.previewTemplate = asyncHandler(async (req, res, next) => {
+exports.previewTemplate = asyncHandler(async (req, res, _next) => {
   const template = await DocumentTemplate.findById(req.params.id);
 
   if (!template) {
@@ -240,7 +240,7 @@ exports.previewTemplate = asyncHandler(async (req, res, next) => {
 // @desc    Generate document from template
 // @route   POST /api/document-generation/generate
 // @access  Private
-exports.generateDocument = asyncHandler(async (req, res, next) => {
+exports.generateDocument = asyncHandler(async (req, res, _next) => {
   const { templateId, patientId, visitId, customData, saveToVisit } = req.body;
 
   // Validate required fields
@@ -323,7 +323,7 @@ exports.generateDocument = asyncHandler(async (req, res, next) => {
 // @desc    Get generated documents for a visit
 // @route   GET /api/document-generation/visit/:visitId/documents
 // @access  Private
-exports.getVisitDocuments = asyncHandler(async (req, res, next) => {
+exports.getVisitDocuments = asyncHandler(async (req, res, _next) => {
   const visit = await Visit.findById(req.params.visitId)
     .populate('patient', 'firstName lastName patientId')
     .select('documents visitId visitDate');
@@ -355,7 +355,7 @@ exports.getVisitDocuments = asyncHandler(async (req, res, next) => {
 // @desc    Get patient's all generated documents across visits
 // @route   GET /api/document-generation/patient/:patientId/documents
 // @access  Private
-exports.getPatientDocuments = asyncHandler(async (req, res, next) => {
+exports.getPatientDocuments = asyncHandler(async (req, res, _next) => {
   const { patientId } = req.params;
 
   // Validate patient exists
@@ -407,7 +407,7 @@ exports.getPatientDocuments = asyncHandler(async (req, res, next) => {
 // @desc    Get template categories
 // @route   GET /api/document-generation/categories
 // @access  Private
-exports.getCategories = asyncHandler(async (req, res, next) => {
+exports.getCategories = asyncHandler(async (req, res, _next) => {
   const categories = await DocumentTemplate.aggregate([
     { $match: { status: 'active' } },
     {
@@ -456,7 +456,7 @@ exports.getCategories = asyncHandler(async (req, res, next) => {
 // @desc    Bulk generate documents for a visit
 // @route   POST /api/document-generation/visit/:visitId/bulk-generate
 // @access  Private
-exports.bulkGenerateDocuments = asyncHandler(async (req, res, next) => {
+exports.bulkGenerateDocuments = asyncHandler(async (req, res, _next) => {
   const { visitId } = req.params;
   const { templateIds, customData } = req.body;
 
@@ -541,4 +541,139 @@ exports.bulkGenerateDocuments = asyncHandler(async (req, res, next) => {
       errors: errors.length > 0 ? errors : undefined
     }
   });
+});
+
+// ============================================================
+// SURGERY REPORT PDF GENERATION
+// ============================================================
+
+/**
+ * @desc    Generate Surgery Report PDF (Operative Report)
+ * @route   GET /api/documents/surgery-report/:surgeryReportId/pdf
+ * @access  Private (doctor, surgeon, admin)
+ */
+exports.generateSurgeryReportPDF = asyncHandler(async (req, res, _next) => {
+  const { surgeryReportId } = req.params;
+
+  const SurgeryReport = require('../models/SurgeryReport');
+  const Clinic = require('../models/Clinic');
+
+  const report = await SurgeryReport.findById(surgeryReportId)
+    .populate('patient')
+    .populate('surgeon', 'firstName lastName title specialty')
+    .populate('assistantSurgeon', 'firstName lastName title')
+    .populate('surgeryType', 'name code')
+    .populate('clinic');
+
+  if (!report) {
+    return res.status(404).json({
+      success: false,
+      error: 'Compte rendu opératoire non trouvé'
+    });
+  }
+
+  const patient = report.patient;
+  let clinic = report.clinic;
+
+  // If clinic not populated, try to get from patient or default
+  if (!clinic) {
+    clinic = await Clinic.findOne({ status: 'active' });
+  }
+
+  const pdfGenerator = require('../services/pdfGenerator');
+  const pdfBuffer = await pdfGenerator.generateSurgeryReportPDF(report, patient, clinic);
+
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `inline; filename="compte-rendu-operatoire-${report._id}.pdf"`,
+    'Content-Length': pdfBuffer.length
+  });
+
+  res.send(pdfBuffer);
+});
+
+/**
+ * @desc    Generate Pre-Op Checklist PDF
+ * @route   GET /api/documents/surgery-case/:surgeryCaseId/preop-checklist/pdf
+ * @access  Private (doctor, nurse, admin)
+ */
+exports.generatePreOpChecklistPDF = asyncHandler(async (req, res, _next) => {
+  const { surgeryCaseId } = req.params;
+
+  const SurgeryCase = require('../models/SurgeryCase');
+  const Clinic = require('../models/Clinic');
+
+  const surgeryCase = await SurgeryCase.findById(surgeryCaseId)
+    .populate('patient')
+    .populate('surgeryType', 'name code')
+    .populate('surgeon', 'firstName lastName title')
+    .populate('clinic');
+
+  if (!surgeryCase) {
+    return res.status(404).json({
+      success: false,
+      error: 'Cas chirurgical non trouvé'
+    });
+  }
+
+  const patient = surgeryCase.patient;
+  let clinic = surgeryCase.clinic;
+
+  if (!clinic) {
+    clinic = await Clinic.findOne({ status: 'active' });
+  }
+
+  const pdfGenerator = require('../services/pdfGenerator');
+  const pdfBuffer = await pdfGenerator.generatePreOpChecklistPDF(surgeryCase, patient, clinic);
+
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `inline; filename="checklist-preop-${surgeryCase._id}.pdf"`,
+    'Content-Length': pdfBuffer.length
+  });
+
+  res.send(pdfBuffer);
+});
+
+/**
+ * @desc    Generate Post-Op Note PDF (Patient Take-Home Instructions)
+ * @route   GET /api/documents/surgery-report/:surgeryReportId/postop-note/pdf
+ * @access  Private (doctor, nurse, admin)
+ */
+exports.generatePostOpNotePDF = asyncHandler(async (req, res, _next) => {
+  const { surgeryReportId } = req.params;
+
+  const SurgeryReport = require('../models/SurgeryReport');
+  const Clinic = require('../models/Clinic');
+
+  const report = await SurgeryReport.findById(surgeryReportId)
+    .populate('patient')
+    .populate('surgeon', 'firstName lastName title')
+    .populate('surgeryType', 'name code')
+    .populate('clinic');
+
+  if (!report) {
+    return res.status(404).json({
+      success: false,
+      error: 'Compte rendu opératoire non trouvé'
+    });
+  }
+
+  const patient = report.patient;
+  let clinic = report.clinic;
+
+  if (!clinic) {
+    clinic = await Clinic.findOne({ status: 'active' });
+  }
+
+  const pdfGenerator = require('../services/pdfGenerator');
+  const pdfBuffer = await pdfGenerator.generatePostOpNotePDF(report, patient, clinic);
+
+  res.set({
+    'Content-Type': 'application/pdf',
+    'Content-Disposition': `inline; filename="instructions-postop-${report._id}.pdf"`,
+    'Content-Length': pdfBuffer.length
+  });
+
+  res.send(pdfBuffer);
 });
