@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, User, Edit, Phone, Mail, Plus, AlertTriangle,
   Droplets, Expand, Minimize, Loader2, X, Printer, CreditCard, Eye, Download,
-  LayoutGrid, List
+  LayoutGrid, List, Trash2, XCircle, CheckCircle, AlertOctagon
 } from 'lucide-react';
 import patientService from '../../services/patientService';
 import prescriptionService from '../../services/prescriptionService';
@@ -14,6 +14,7 @@ import { PatientPhotoAvatar, FaceVerification } from '../../components/biometric
 import DocumentGenerator from '../../components/documents/DocumentGenerator';
 import PatientAlertsBanner from '../../components/alerts/PatientAlertsBanner';
 import PatientCompactDashboard from '../../components/patient/PatientCompactDashboard';
+import CareVisionLegacyBanner from '../../components/patient/CareVisionLegacyBanner';
 import useViewPreference from '../../hooks/useViewPreference';
 import { CollapsibleSectionGroup } from '../../components/CollapsibleSection';
 import MultiCurrencyPayment from '../../components/MultiCurrencyPayment';
@@ -36,7 +37,8 @@ import {
   AppointmentsSection,
   BillingSection,
   TimelineSection,
-  SurgeryHistorySection
+  SurgeryHistorySection,
+  DeviceDataSection
 } from './sections';
 
 /**
@@ -106,6 +108,16 @@ export default function PatientDetail() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [processingPayment, setProcessingPayment] = useState(false);
+
+  // Delete functionality
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteCheck, setDeleteCheck] = useState(null);
+  const [checkingDelete, setCheckingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
+
+  // Permission checks for delete
+  const canDeletePatient = ['admin', 'doctor'].includes(user?.role);
 
   // ============================================
   // WEBSOCKET REAL-TIME SUBSCRIPTIONS
@@ -417,6 +429,68 @@ export default function PatientDetail() {
     setShowImagingModal(true);
   };
 
+  // === DEVICE DATA HANDLER ===
+  const handleApplyDeviceToConsultation = useCallback((deviceData) => {
+    // Store device data in sessionStorage for StudioVision to pick up
+    sessionStorage.setItem('pendingDeviceData', JSON.stringify({
+      data: deviceData,
+      timestamp: new Date().toISOString(),
+      patientId: patient?._id
+    }));
+
+    // Navigate to StudioVision consultation with flag
+    navigate(`/ophthalmology/consultation/${patient._id}?applyDevice=true`);
+    toast.info('Données appareil prêtes à appliquer');
+  }, [navigate, patient]);
+
+  // === DELETE HANDLERS ===
+  const handleDeleteClick = async () => {
+    setCheckingDelete(true);
+    setDeleteCheck(null);
+    try {
+      const result = await patientService.checkPatientDeletion(patient._id);
+      setDeleteCheck(result.data);
+      setShowDeleteModal(true);
+    } catch (err) {
+      console.error('Error checking deletion eligibility:', err);
+      toast.error('Erreur lors de la verification de suppression');
+    } finally {
+      setCheckingDelete(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteCheck?.canDelete && user?.role !== 'admin') {
+      toast.error('Suppression impossible - des elements bloquants existent');
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      const options = {
+        reason: deleteReason || 'Suppression demandee par utilisateur',
+        forceDelete: !deleteCheck?.canDelete && user?.role === 'admin'
+      };
+
+      await patientService.deletePatientWithCascade(patient._id, options);
+      toast.success('Patient supprime avec succes');
+      setShowDeleteModal(false);
+      navigate('/patients');
+    } catch (err) {
+      console.error('Error deleting patient:', err);
+      const errorMessage = err.response?.data?.message || err.message || 'Erreur lors de la suppression';
+      toast.error(errorMessage);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setShowDeleteModal(false);
+    setDeleteCheck(null);
+    setDeleteReason('');
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -462,9 +536,9 @@ export default function PatientDetail() {
       {/* Sticky Header */}
       <div className="sticky top-0 z-20 bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
             {/* Patient Info */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 sm:gap-4">
               <button
                 onClick={() => navigate('/patients')}
                 className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -502,7 +576,7 @@ export default function PatientDetail() {
             </div>
 
             {/* Quick Actions */}
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               {/* View Toggle */}
               <button
                 onClick={toggleView}
@@ -560,6 +634,20 @@ export default function PatientDetail() {
                   title="Modifier"
                 >
                   <Edit className="h-5 w-5 text-gray-600" />
+                </button>
+              )}
+              {canDeletePatient && (
+                <button
+                  onClick={handleDeleteClick}
+                  disabled={checkingDelete}
+                  className="p-2 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Supprimer le patient"
+                >
+                  {checkingDelete ? (
+                    <Loader2 className="h-5 w-5 text-red-600 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  )}
                 </button>
               )}
 
@@ -651,6 +739,27 @@ export default function PatientDetail() {
         </div>
       )}
 
+      {/* CareVision Legacy Data Banner */}
+      {patient && (patient.hasLegacyData || patient.legacyIds?.lv) && (
+        <div className="max-w-7xl mx-auto px-4 pt-4">
+          <CareVisionLegacyBanner
+            patient={patient}
+            onViewTimeline={() => {
+              // Scroll to timeline section
+              if (sectionRefs.timeline?.current) {
+                sectionRefs.timeline.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+            onViewImages={() => {
+              // Scroll to imaging section
+              if (sectionRefs.imaging?.current) {
+                sectionRefs.imaging.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Compact StudioVision Mode */}
       {isCompact && patient && (
         <PatientCompactDashboard
@@ -721,8 +830,24 @@ export default function PatientDetail() {
             <ImagingSection
               patientId={patientId}
               patientName={patient ? `${patient.firstName || ''} ${patient.lastName || ''}`.trim() : ''}
+              patient={patient}
               canUploadImaging={canUploadImaging}
               onViewImaging={handleViewImaging}
+            />
+          </div>
+
+          {/* Device Data (SOLIX, TOPCON, TOMEY, HFA, TONOREF) */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-4 py-3 bg-gradient-to-r from-indigo-50 to-purple-50 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <span className="w-2 h-2 bg-indigo-500 rounded-full"></span>
+                Données Appareils
+                <span className="text-sm font-normal text-gray-500">(SOLIX, TOPCON, TOMEY, HFA, TONOREF)</span>
+              </h3>
+            </div>
+            <DeviceDataSection
+              patientId={patientId}
+              onApplyToConsultation={handleApplyDeviceToConsultation}
             />
           </div>
 
@@ -763,7 +888,7 @@ export default function PatientDetail() {
       )}
 
       {/* Fixed Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-3 flex justify-end gap-3 z-20">
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 sm:px-6 py-3 flex flex-wrap justify-end gap-2 sm:gap-3 z-20">
         {canGenerateDocuments && (
           <button
             onClick={() => setShowDocumentGenerator(true)}
@@ -1011,6 +1136,172 @@ export default function PatientDetail() {
             <div className="mt-4 text-white text-sm">
               <p>Type: {selectedImaging.type || selectedImaging.category || 'N/A'}</p>
               <p>Date: {formatDate(selectedImaging.createdAt)}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center gap-3">
+                {deleteCheck?.canDelete ? (
+                  <div className="p-2 bg-amber-100 rounded-full">
+                    <AlertTriangle className="h-6 w-6 text-amber-600" />
+                  </div>
+                ) : (
+                  <div className="p-2 bg-red-100 rounded-full">
+                    <AlertOctagon className="h-6 w-6 text-red-600" />
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900">
+                    {deleteCheck?.canDelete ? 'Confirmer la suppression' : 'Suppression impossible'}
+                  </h2>
+                  <p className="text-sm text-gray-500">
+                    {patient?.firstName} {patient?.lastName} ({patient?.patientId})
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {!deleteCheck?.canDelete ? (
+                <>
+                  <p className="text-red-600 font-medium mb-4">
+                    Ce patient ne peut pas etre supprime pour les raisons suivantes:
+                  </p>
+                  <ul className="space-y-3 mb-6">
+                    {deleteCheck?.blockingItems?.map((item, idx) => (
+                      <li key={idx} className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                        <XCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-medium text-red-800">{item.message}</span>
+                          {item.count > 0 && (
+                            <span className="ml-2 text-sm text-red-600">({item.count})</span>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Veuillez resoudre ces elements avant de supprimer le patient.
+                  </p>
+
+                  {/* Admin force delete option */}
+                  {user?.role === 'admin' && (
+                    <div className="mt-4 p-4 bg-amber-50 border border-amber-300 rounded-lg">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                        <div className="flex-1">
+                          <p className="font-medium text-amber-800">Option administrateur</p>
+                          <p className="text-sm text-amber-700 mt-1">
+                            En tant qu'administrateur, vous pouvez forcer la suppression malgre les elements bloquants.
+                            Cette action archivera les donnees associees.
+                          </p>
+                          <div className="mt-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                              Raison de la suppression (obligatoire)
+                            </label>
+                            <textarea
+                              value={deleteReason}
+                              onChange={(e) => setDeleteReason(e.target.value)}
+                              placeholder="Expliquez pourquoi vous forcez cette suppression..."
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                              rows={2}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="text-gray-700 mb-4">
+                    Etes-vous sur de vouloir supprimer ce patient?
+                  </p>
+
+                  {/* Show affected entities preview */}
+                  {deleteCheck?.affectedEntities && Object.keys(deleteCheck.affectedEntities).length > 0 && (
+                    <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                      <p className="font-medium text-gray-800 mb-2">
+                        Elements qui seront archives:
+                      </p>
+                      <ul className="space-y-1 text-sm text-gray-600">
+                        {Object.entries(deleteCheck.affectedEntities)
+                          .filter(([_, data]) => data.count > 0)
+                          .map(([model, data]) => (
+                            <li key={model} className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-green-500" />
+                              <span>{model}: {data.count} enregistrement(s)</span>
+                            </li>
+                          ))
+                        }
+                      </ul>
+                      {deleteCheck?.totalEntities > 0 && (
+                        <p className="mt-2 text-sm font-medium text-gray-700">
+                          Total: {deleteCheck.totalEntities} enregistrement(s) associe(s)
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <p className="text-sm text-gray-500 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <strong>Note:</strong> Cette action archivera toutes les donnees associees au patient.
+                    Les donnees pourront etre restaurees par un administrateur si necessaire.
+                  </p>
+
+                  <div className="mt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Raison de la suppression (optionnel)
+                    </label>
+                    <textarea
+                      value={deleteReason}
+                      onChange={(e) => setDeleteReason(e.target.value)}
+                      placeholder="Raison de la suppression..."
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      rows={2}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={handleCancelDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Annuler
+              </button>
+
+              {(deleteCheck?.canDelete || user?.role === 'admin') && (
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting || (!deleteCheck?.canDelete && !deleteReason.trim())}
+                  className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 ${
+                    !deleteCheck?.canDelete
+                      ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                      : 'bg-red-600 hover:bg-red-700 text-white'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isDeleting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Suppression...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 className="h-4 w-4" />
+                      {!deleteCheck?.canDelete ? 'Forcer la suppression' : 'Supprimer le patient'}
+                    </>
+                  )}
+                </button>
+              )}
             </div>
           </div>
         </div>
