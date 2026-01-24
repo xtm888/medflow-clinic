@@ -1340,6 +1340,679 @@ class PDFGeneratorService {
   }
 
   /**
+   * Add biochemistry-specific layout to lab result PDF
+   * Displays analytes grouped by organ system with reference ranges
+   * @private
+   */
+  _addBiochemistryLayout(doc, labResult, patient) {
+    const results = labResult.results || labResult.tests || [];
+
+    // Group results by organ system
+    const organGroups = {
+      'Fonction rénale': [],
+      'Bilan hépatique': [],
+      'Bilan lipidique': [],
+      'Glycémie': [],
+      'Ionogramme': [],
+      'Autres': []
+    };
+
+    // Classify each result into an organ group
+    results.forEach(result => {
+      const param = (result.parameter || result.testName || result.name || '').toLowerCase();
+      if (/créatinine|urée|urea|acide urique|dfu|dfg|clairance/.test(param)) {
+        organGroups['Fonction rénale'].push(result);
+      } else if (/alt|ast|ggt|gamma|bilirubine|alat|asat|transaminase|phosphatase|ldh|albumine/.test(param)) {
+        organGroups['Bilan hépatique'].push(result);
+      } else if (/cholestérol|triglyc|hdl|ldl|lipid|apolipoprotéine/.test(param)) {
+        organGroups['Bilan lipidique'].push(result);
+      } else if (/glucose|glycémie|hba1c|hémoglobine glyquée/.test(param)) {
+        organGroups['Glycémie'].push(result);
+      } else if (/sodium|potassium|chlore|calcium|phosphore|magnésium|na|k|cl|ca|mg|bicarbonate|co2/.test(param)) {
+        organGroups['Ionogramme'].push(result);
+      } else {
+        organGroups['Autres'].push(result);
+      }
+    });
+
+    // Draw each group with results
+    Object.entries(organGroups).forEach(([groupName, groupResults]) => {
+      if (groupResults.length === 0) return;
+
+      // Check if we need a new page
+      if (doc.y > 680) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      // Group header
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.primary)
+        .text(groupName, 50, doc.y);
+      doc.moveDown(0.3);
+
+      // Table header for this group
+      const tableTop = doc.y;
+      const colX = [50, 180, 260, 320, 420];
+      const colW = [130, 80, 60, 100, 75];
+      const headers = ['Paramètre', 'Valeur', 'Unité', 'Réf. Normale', 'Statut'];
+
+      doc.rect(50, tableTop, 495, 18).fill('#e8e8e8');
+      doc.fillColor(this.colors.text).fontSize(8).font('Helvetica-Bold');
+      headers.forEach((h, i) => doc.text(h, colX[i] + 3, tableTop + 5, { width: colW[i] }));
+
+      let y = tableTop + 22;
+      doc.font('Helvetica');
+
+      groupResults.forEach((result, idx) => {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+
+        // Alternating row background
+        if (idx % 2 === 0) {
+          doc.rect(50, y - 2, 495, 16).fill(this.colors.background);
+        }
+
+        const isAbnormal = result.flag && result.flag !== 'normal';
+        const isCritical = result.flag && (result.flag.includes('critical') || result.flag === 'panic');
+        const value = result.value ?? result.numericValue ?? result.textValue ?? '-';
+        const refRange = this._formatReferenceRange(result);
+
+        doc.fillColor(this.colors.text).fontSize(8);
+        doc.text(result.parameter || result.testName || result.name || '-', colX[0] + 3, y, { width: colW[0] });
+
+        // Value with color coding
+        if (isCritical) {
+          doc.fillColor('#b91c1c').font('Helvetica-Bold');
+        } else if (isAbnormal) {
+          doc.fillColor(this.colors.danger).font('Helvetica-Bold');
+        }
+        doc.text(value.toString(), colX[1] + 3, y, { width: colW[1] });
+        doc.font('Helvetica').fillColor(this.colors.text);
+
+        doc.text(result.unit || '', colX[2] + 3, y, { width: colW[2] });
+        doc.text(refRange, colX[3] + 3, y, { width: colW[3] });
+
+        // Status with delta if available
+        let statusText = 'Normal';
+        if (isCritical) {
+          statusText = result.flag === 'critical-high' ? '↑↑ Critique' : '↓↓ Critique';
+          doc.fillColor('#b91c1c');
+        } else if (result.flag === 'high') {
+          statusText = '↑ Élevé';
+          doc.fillColor(this.colors.danger);
+        } else if (result.flag === 'low') {
+          statusText = '↓ Bas';
+          doc.fillColor(this.colors.danger);
+        } else {
+          doc.fillColor(this.colors.success);
+        }
+
+        // Add trend indicator if delta available
+        if (result.delta?.trend && result.delta.trend !== 'na') {
+          const trendSymbol = result.delta.trend === 'increasing' ? '⬆' : result.delta.trend === 'decreasing' ? '⬇' : '→';
+          statusText += ` ${trendSymbol}`;
+        }
+
+        doc.text(statusText, colX[4] + 3, y, { width: colW[4] });
+        doc.fillColor(this.colors.text);
+
+        y += 16;
+      });
+
+      doc.y = y + 10;
+    });
+  }
+
+  /**
+   * Add hematology-specific layout to lab result PDF
+   * Displays CBC, WBC differential, and platelet sections
+   * @private
+   */
+  _addHematologyLayout(doc, labResult, patient) {
+    const results = labResult.results || labResult.tests || [];
+
+    // Categorize results into hematology sections
+    const sections = {
+      'Numération Globulaire (CBC)': [],
+      'Indices Érythrocytaires': [],
+      'Formule Leucocytaire': [],
+      'Plaquettes': []
+    };
+
+    results.forEach(result => {
+      const param = (result.parameter || result.testName || result.name || '').toLowerCase();
+      if (/hémoglobine|hgb|hb(?!s)|hématocrite|hct|globule rouge|gr|rbc|érythrocyte/.test(param)) {
+        sections['Numération Globulaire (CBC)'].push(result);
+      } else if (/vgm|mcv|ccmh|mchc|tcmh|mch|rdw|idé|idr/.test(param)) {
+        sections['Indices Érythrocytaires'].push(result);
+      } else if (/globule blanc|gb|wbc|leucocyte|neutrophile|lymphocyte|monocyte|éosinophile|basophile|polynucléaire|pnn|pne|pnb/.test(param)) {
+        sections['Formule Leucocytaire'].push(result);
+      } else if (/plaquette|plt|thrombocyte|vpm|mpv|pct|pdw/.test(param)) {
+        sections['Plaquettes'].push(result);
+      } else {
+        // Default to CBC
+        sections['Numération Globulaire (CBC)'].push(result);
+      }
+    });
+
+    // Draw each section
+    Object.entries(sections).forEach(([sectionName, sectionResults]) => {
+      if (sectionResults.length === 0) return;
+
+      if (doc.y > 650) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      // Section header with colored bar
+      doc.rect(50, doc.y, 495, 20).fill(this.colors.primary);
+      doc.fillColor('#ffffff').fontSize(10).font('Helvetica-Bold')
+        .text(sectionName.toUpperCase(), 55, doc.y + 5);
+      doc.y += 25;
+
+      // Table for this section
+      const colX = [50, 200, 280, 340, 430];
+      const colW = [150, 80, 60, 90, 65];
+      const headers = ['Paramètre', 'Valeur', 'Unité', 'Réf.', 'Statut'];
+
+      // Header row
+      doc.rect(50, doc.y, 495, 16).fill('#f0f0f0');
+      doc.fillColor(this.colors.text).fontSize(8).font('Helvetica-Bold');
+      headers.forEach((h, i) => doc.text(h, colX[i] + 3, doc.y + 4, { width: colW[i] }));
+
+      let y = doc.y + 20;
+      doc.font('Helvetica');
+
+      sectionResults.forEach((result, idx) => {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+
+        if (idx % 2 === 0) {
+          doc.rect(50, y - 2, 495, 16).fill(this.colors.background);
+        }
+
+        const isAbnormal = result.flag && result.flag !== 'normal';
+        const value = result.value ?? result.numericValue ?? result.textValue ?? '-';
+        const refRange = this._formatReferenceRange(result);
+
+        doc.fillColor(this.colors.text).fontSize(8);
+        doc.text(result.parameter || result.testName || result.name || '-', colX[0] + 3, y, { width: colW[0] });
+
+        // Value with color and visual indicator
+        if (isAbnormal) {
+          doc.fillColor(this.colors.danger).font('Helvetica-Bold');
+        }
+        doc.text(value.toString(), colX[1] + 3, y, { width: colW[1] });
+        doc.font('Helvetica').fillColor(this.colors.text);
+
+        doc.text(result.unit || '', colX[2] + 3, y, { width: colW[2] });
+        doc.text(refRange, colX[3] + 3, y, { width: colW[3] });
+
+        // Visual bar indicator
+        const barWidth = 60;
+        const barX = colX[4] + 3;
+        if (result.referenceRange && result.numericValue != null) {
+          const low = result.referenceRange.low ?? 0;
+          const high = result.referenceRange.high ?? 100;
+          const val = result.numericValue;
+          const range = high - low;
+          const pos = Math.min(Math.max((val - low) / range, 0), 1);
+
+          // Draw bar background
+          doc.rect(barX, y + 2, barWidth, 8).fill('#e0e0e0');
+          // Draw normal range
+          doc.rect(barX + barWidth * 0.2, y + 2, barWidth * 0.6, 8).fill('#90EE90');
+          // Draw value marker
+          const markerX = barX + pos * barWidth;
+          doc.rect(markerX - 2, y, 4, 12).fill(isAbnormal ? this.colors.danger : this.colors.success);
+        } else {
+          // Just show text status
+          let statusText = result.flag === 'high' ? '↑' : result.flag === 'low' ? '↓' : '✓';
+          doc.fillColor(isAbnormal ? this.colors.danger : this.colors.success)
+            .text(statusText, barX, y, { width: barWidth });
+        }
+        doc.fillColor(this.colors.text);
+
+        y += 16;
+      });
+
+      doc.y = y + 10;
+    });
+  }
+
+  /**
+   * Add microbiology-specific layout to lab result PDF
+   * Displays specimen info, organism, and antibiotic sensitivity table
+   * @private
+   */
+  _addMicrobiologyLayout(doc, labResult, patient) {
+    const results = labResult.results || labResult.tests || [];
+
+    // Specimen information section
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
+      .text('INFORMATIONS PRÉLÈVEMENT', 50, doc.y);
+    doc.moveDown(0.3);
+
+    doc.rect(50, doc.y, 495, 50).stroke(this.colors.border);
+    const specimenY = doc.y + 5;
+    doc.fontSize(9).font('Helvetica').fillColor(this.colors.text);
+    doc.text(`Type de prélèvement: ${labResult.specimen?.type || labResult.test?.testName || 'Non spécifié'}`, 55, specimenY);
+    doc.text(`Site de prélèvement: ${labResult.specimen?.source || 'Non spécifié'}`, 55, specimenY + 12);
+    doc.text(`Date de prélèvement: ${this.formatDate(labResult.collectionDate || labResult.createdAt)}`, 55, specimenY + 24);
+    doc.text(`Méthode de collecte: ${labResult.specimen?.collectionMethod || 'Standard'}`, 300, specimenY);
+    doc.text(`Volume/Quantité: ${labResult.specimen?.volume || 'N/A'}`, 300, specimenY + 12);
+    doc.y = specimenY + 55;
+
+    // Organism identification section
+    doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
+      .text('IDENTIFICATION DES ORGANISMES', 50, doc.y);
+    doc.moveDown(0.3);
+
+    // Find organism results
+    const organismResults = results.filter(r => {
+      const param = (r.parameter || r.testName || r.name || '').toLowerCase();
+      return /organisme|bactérie|germe|culture|identification|croissance/.test(param);
+    });
+
+    if (organismResults.length > 0) {
+      organismResults.forEach(result => {
+        const value = result.value || result.textValue || result.numericValue || 'Négatif';
+        doc.rect(50, doc.y, 495, 20).fill(this.colors.background);
+        doc.fillColor(this.colors.text).fontSize(9).font('Helvetica');
+        doc.text(`Organisme: ${value}`, 55, doc.y + 5);
+        doc.y += 25;
+      });
+    } else {
+      doc.rect(50, doc.y, 495, 20).fill(this.colors.background);
+      doc.fillColor(this.colors.text).fontSize(9).font('Helvetica');
+      doc.text('Culture: En cours d\'analyse ou Pas de croissance', 55, doc.y + 5);
+      doc.y += 25;
+    }
+    doc.moveDown(0.5);
+
+    // Antibiotic sensitivity table (antibiogramme)
+    const sensitivityResults = results.filter(r => {
+      const param = (r.parameter || r.testName || r.name || '').toLowerCase();
+      return /sensibilité|résistance|antibiogramme|antibiotique|mic|cmi/.test(param) ||
+             (r.interpretation && /^[SIR]$/.test(r.interpretation));
+    });
+
+    if (sensitivityResults.length > 0 || results.some(r => r.sensitivity)) {
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
+        .text('ANTIBIOGRAMME', 50, doc.y);
+      doc.moveDown(0.3);
+
+      // Table header
+      const tableTop = doc.y;
+      const colX = [50, 200, 280, 360];
+      const colW = [150, 80, 80, 135];
+      const headers = ['Antibiotique', 'CMI', 'Interprétation', 'Recommandation'];
+
+      doc.rect(50, tableTop, 495, 18).fill(this.colors.primary);
+      doc.fillColor('#ffffff').fontSize(8).font('Helvetica-Bold');
+      headers.forEach((h, i) => doc.text(h, colX[i] + 3, tableTop + 5, { width: colW[i] }));
+
+      let y = tableTop + 22;
+      doc.font('Helvetica');
+
+      // If results have sensitivity array, use that
+      const sensitivities = sensitivityResults.length > 0 ? sensitivityResults :
+        results.flatMap(r => r.sensitivity || []);
+
+      sensitivities.forEach((sens, idx) => {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+
+        if (idx % 2 === 0) {
+          doc.rect(50, y - 2, 495, 16).fill(this.colors.background);
+        }
+
+        const antibiotic = sens.antibiotic || sens.parameter || sens.testName || sens.name || '-';
+        const mic = sens.mic || sens.value || '-';
+        const interp = sens.interpretation || sens.flag || '-';
+
+        doc.fillColor(this.colors.text).fontSize(8);
+        doc.text(antibiotic, colX[0] + 3, y, { width: colW[0] });
+        doc.text(mic.toString(), colX[1] + 3, y, { width: colW[1] });
+
+        // Interpretation with color coding (S=Sensible, I=Intermédiaire, R=Résistant)
+        let interpText = interp;
+        let interpColor = this.colors.text;
+        if (interp === 'S' || /sensible/i.test(interp)) {
+          interpText = 'S (Sensible)';
+          interpColor = this.colors.success;
+        } else if (interp === 'R' || /résistant/i.test(interp)) {
+          interpText = 'R (Résistant)';
+          interpColor = this.colors.danger;
+        } else if (interp === 'I' || /intermédaire/i.test(interp)) {
+          interpText = 'I (Intermédiaire)';
+          interpColor = '#ca8a04'; // amber
+        }
+        doc.fillColor(interpColor).font('Helvetica-Bold');
+        doc.text(interpText, colX[2] + 3, y, { width: colW[2] });
+        doc.font('Helvetica').fillColor(this.colors.text);
+
+        // Recommendation
+        const rec = interp === 'S' || /sensible/i.test(interp) ? 'Utilisable' :
+                    interp === 'R' || /résistant/i.test(interp) ? 'Non recommandé' : 'Prudence';
+        doc.text(rec, colX[3] + 3, y, { width: colW[3] });
+
+        y += 16;
+      });
+
+      doc.y = y + 10;
+    }
+
+    // Comments/Growth notes section
+    if (labResult.comments || labResult.notes || labResult.growthNotes) {
+      doc.moveDown(0.5);
+      doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+        .text('Notes de culture:', 50, doc.y);
+      doc.moveDown(0.2);
+      doc.font('Helvetica').fontSize(9)
+        .text(labResult.comments || labResult.notes || labResult.growthNotes || 'Aucune note', 50, doc.y);
+    }
+  }
+
+  /**
+   * Add urinalysis-specific layout to lab result PDF
+   * Displays physical, chemical (dipstick), and microscopic exam sections
+   * @private
+   */
+  _addUrinalysisLayout(doc, labResult, patient) {
+    const results = labResult.results || labResult.tests || [];
+
+    // Categorize results into urinalysis sections
+    const sections = {
+      physical: [],
+      chemical: [],
+      microscopic: []
+    };
+
+    results.forEach(result => {
+      const param = (result.parameter || result.testName || result.name || '').toLowerCase();
+      if (/couleur|color|aspect|apparence|clarté|turbidité|odeur|densité|gravité spécifique|sg/.test(param)) {
+        sections.physical.push(result);
+      } else if (/ph|protéine|glucose|cétone|bilirubine|urobilinogène|nitrite|leucocyte|sang|hémoglobine|bandelette/.test(param)) {
+        sections.chemical.push(result);
+      } else if (/cellule|leucocyte|érythrocyte|cylindre|cristal|bactérie|levure|épithél|mucus|sédiment|globule/.test(param)) {
+        sections.microscopic.push(result);
+      } else {
+        // Default to chemical
+        sections.chemical.push(result);
+      }
+    });
+
+    // Physical Examination Section
+    if (sections.physical.length > 0) {
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
+        .text('EXAMEN PHYSIQUE', 50, doc.y);
+      doc.moveDown(0.3);
+
+      // Display in 2-column format
+      doc.rect(50, doc.y, 495, Math.ceil(sections.physical.length / 2) * 18 + 10).fill(this.colors.background);
+      const startY = doc.y + 5;
+      let col1Y = startY, col2Y = startY;
+
+      sections.physical.forEach((result, idx) => {
+        const param = result.parameter || result.testName || result.name || '-';
+        const value = result.value ?? result.textValue ?? '-';
+        const isAbnormal = result.flag && result.flag !== 'normal';
+
+        doc.fillColor(this.colors.text).fontSize(9).font('Helvetica');
+        if (idx % 2 === 0) {
+          doc.text(`${param}: `, 55, col1Y, { continued: true });
+          doc.fillColor(isAbnormal ? this.colors.danger : this.colors.text).font(isAbnormal ? 'Helvetica-Bold' : 'Helvetica')
+            .text(value.toString());
+          col1Y += 18;
+        } else {
+          doc.text(`${param}: `, 300, col2Y, { continued: true });
+          doc.fillColor(isAbnormal ? this.colors.danger : this.colors.text).font(isAbnormal ? 'Helvetica-Bold' : 'Helvetica')
+            .text(value.toString());
+          col2Y += 18;
+        }
+      });
+
+      doc.y = Math.max(col1Y, col2Y) + 10;
+    }
+
+    // Chemical Examination Section (Dipstick)
+    if (sections.chemical.length > 0) {
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
+        .text('EXAMEN CHIMIQUE (BANDELETTE)', 50, doc.y);
+      doc.moveDown(0.3);
+
+      const tableTop = doc.y;
+      const colX = [50, 180, 280, 380];
+      const colW = [130, 100, 100, 115];
+      const headers = ['Paramètre', 'Résultat', 'Réf. Normale', 'Interprétation'];
+
+      doc.rect(50, tableTop, 495, 18).fill('#e8e8e8');
+      doc.fillColor(this.colors.text).fontSize(8).font('Helvetica-Bold');
+      headers.forEach((h, i) => doc.text(h, colX[i] + 3, tableTop + 5, { width: colW[i] }));
+
+      let y = tableTop + 22;
+      doc.font('Helvetica');
+
+      sections.chemical.forEach((result, idx) => {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+
+        if (idx % 2 === 0) {
+          doc.rect(50, y - 2, 495, 16).fill(this.colors.background);
+        }
+
+        const isAbnormal = result.flag && result.flag !== 'normal';
+        const value = result.value ?? result.textValue ?? result.numericValue ?? '-';
+        const refRange = this._formatReferenceRange(result) || 'Négatif';
+
+        doc.fillColor(this.colors.text).fontSize(8);
+        doc.text(result.parameter || result.testName || result.name || '-', colX[0] + 3, y, { width: colW[0] });
+
+        // Display dipstick results with +/- scale visual
+        let displayValue = value.toString();
+        let valueColor = this.colors.text;
+        if (/^(\+{1,4}|trace|pos|positif)/i.test(displayValue)) {
+          valueColor = this.colors.danger;
+        } else if (/^(nég|neg|-)/i.test(displayValue)) {
+          valueColor = this.colors.success;
+        }
+
+        doc.fillColor(valueColor).font(isAbnormal ? 'Helvetica-Bold' : 'Helvetica');
+        doc.text(displayValue, colX[1] + 3, y, { width: colW[1] });
+        doc.font('Helvetica').fillColor(this.colors.text);
+
+        doc.text(refRange, colX[2] + 3, y, { width: colW[2] });
+
+        // Interpretation
+        let interp = 'Normal';
+        if (isAbnormal) {
+          interp = result.interpretation || 'Anormal';
+          doc.fillColor(this.colors.danger);
+        } else {
+          doc.fillColor(this.colors.success);
+        }
+        doc.text(interp, colX[3] + 3, y, { width: colW[3] });
+        doc.fillColor(this.colors.text);
+
+        y += 16;
+      });
+
+      doc.y = y + 10;
+    }
+
+    // Microscopic Examination Section
+    if (sections.microscopic.length > 0) {
+      if (doc.y > 620) {
+        doc.addPage();
+        doc.y = 50;
+      }
+
+      doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary)
+        .text('EXAMEN MICROSCOPIQUE', 50, doc.y);
+      doc.moveDown(0.3);
+
+      const tableTop = doc.y;
+      const colX = [50, 200, 300, 400];
+      const colW = [150, 100, 100, 95];
+      const headers = ['Élément', 'Quantité', 'Unité', 'Remarque'];
+
+      doc.rect(50, tableTop, 495, 18).fill('#e8e8e8');
+      doc.fillColor(this.colors.text).fontSize(8).font('Helvetica-Bold');
+      headers.forEach((h, i) => doc.text(h, colX[i] + 3, tableTop + 5, { width: colW[i] }));
+
+      let y = tableTop + 22;
+      doc.font('Helvetica');
+
+      sections.microscopic.forEach((result, idx) => {
+        if (y > 720) {
+          doc.addPage();
+          y = 50;
+        }
+
+        if (idx % 2 === 0) {
+          doc.rect(50, y - 2, 495, 16).fill(this.colors.background);
+        }
+
+        const isAbnormal = result.flag && result.flag !== 'normal';
+        const value = result.value ?? result.numericValue ?? result.textValue ?? '-';
+
+        doc.fillColor(this.colors.text).fontSize(8);
+        doc.text(result.parameter || result.testName || result.name || '-', colX[0] + 3, y, { width: colW[0] });
+
+        doc.fillColor(isAbnormal ? this.colors.danger : this.colors.text)
+           .font(isAbnormal ? 'Helvetica-Bold' : 'Helvetica');
+        doc.text(value.toString(), colX[1] + 3, y, { width: colW[1] });
+        doc.font('Helvetica').fillColor(this.colors.text);
+
+        doc.text(result.unit || '/champ', colX[2] + 3, y, { width: colW[2] });
+
+        // Remarks for abnormal findings
+        const remark = isAbnormal ? (result.interpretation || 'Anormal') : '-';
+        doc.text(remark, colX[3] + 3, y, { width: colW[3] });
+
+        y += 16;
+      });
+
+      doc.y = y + 10;
+    }
+  }
+
+  /**
+   * Add general/default lab layout to lab result PDF
+   * Standard table format for any test type (fallback)
+   * @private
+   */
+  _addGeneralLabLayout(doc, labResult, patient) {
+    const results = labResult.results || labResult.tests || [];
+
+    // Standard table layout
+    const tableTop = doc.y;
+    const headers = ['Analyse', 'Résultat', 'Unité', 'Réf. Normale', 'Statut'];
+    const columnWidths = [150, 80, 60, 110, 95];
+    const columnX = [50, 200, 280, 340, 450];
+
+    // Table header
+    doc.rect(50, tableTop, 495, 22).fill(this.colors.primary);
+    doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
+    headers.forEach((header, i) => {
+      doc.text(header, columnX[i] + 5, tableTop + 7);
+    });
+
+    // Results rows
+    let y = tableTop + 27;
+    doc.fillColor(this.colors.text).font('Helvetica');
+
+    results.forEach((result, index) => {
+      if (y > 720) {
+        doc.addPage();
+        y = 50;
+      }
+
+      if (index % 2 === 0) {
+        doc.rect(50, y - 3, 495, 20).fill(this.colors.background);
+        doc.fillColor(this.colors.text);
+      }
+
+      const isAbnormal = result.flag === 'high' || result.flag === 'low' ||
+                         result.flag === 'abnormal' || result.isAbnormal;
+      const isCritical = result.flag && (result.flag.includes('critical') || result.flag === 'panic');
+      const value = result.value ?? result.numericValue ?? result.textValue ?? '-';
+      const refRange = this._formatReferenceRange(result);
+
+      doc.fontSize(9);
+      doc.text(result.testName || result.parameter || result.name || '-', columnX[0] + 5, y);
+
+      if (isCritical) {
+        doc.fillColor('#b91c1c').font('Helvetica-Bold');
+      } else if (isAbnormal) {
+        doc.fillColor(this.colors.danger).font('Helvetica-Bold');
+      }
+      doc.text(value.toString(), columnX[1] + 5, y);
+      doc.font('Helvetica').fillColor(this.colors.text);
+
+      doc.text(result.unit || '', columnX[2] + 5, y);
+      doc.text(refRange, columnX[3] + 5, y);
+
+      // Status indicator
+      if (isCritical) {
+        doc.fillColor('#b91c1c');
+        doc.text(result.flag === 'critical-high' ? '↑↑ CRITIQUE' : '↓↓ CRITIQUE', columnX[4] + 5, y);
+      } else if (result.flag === 'high') {
+        doc.fillColor(this.colors.danger);
+        doc.text('↑ Élevé', columnX[4] + 5, y);
+      } else if (result.flag === 'low') {
+        doc.fillColor(this.colors.danger);
+        doc.text('↓ Bas', columnX[4] + 5, y);
+      } else if (isAbnormal) {
+        doc.fillColor(this.colors.danger);
+        doc.text('Anormal', columnX[4] + 5, y);
+      } else {
+        doc.fillColor(this.colors.success);
+        doc.text('Normal', columnX[4] + 5, y);
+      }
+      doc.fillColor(this.colors.text);
+
+      y += 20;
+    });
+
+    doc.y = y;
+  }
+
+  /**
+   * Format reference range for display
+   * @private
+   */
+  _formatReferenceRange(result) {
+    if (result.referenceRange) {
+      if (result.referenceRange.text) {
+        return result.referenceRange.text;
+      }
+      if (result.referenceRange.low != null && result.referenceRange.high != null) {
+        return `${result.referenceRange.low} - ${result.referenceRange.high}`;
+      }
+      if (result.referenceRange.low != null) {
+        return `> ${result.referenceRange.low}`;
+      }
+      if (result.referenceRange.high != null) {
+        return `< ${result.referenceRange.high}`;
+      }
+    }
+    if (result.normalRange) {
+      return result.normalRange;
+    }
+    return '-';
+  }
+
+  /**
    * Generate Lab Results PDF
    */
   async generateLabResultsPDF(labResult, patient) {
