@@ -129,6 +129,20 @@ const documentTemplateSchema = new mongoose.Schema({
   description: String,
   tags: [String],
 
+  // Legacy system tracking
+  legacyId: {
+    type: String,
+    sparse: true,
+    index: true
+  },
+  legacySource: {
+    type: String,
+    enum: ['courriertexte', 'maquettes', 'makete', 'manual'],
+    default: 'manual'
+  },
+  legacyType: String,  // Original type code from legacy
+  importedAt: Date,
+
   // Permissions - which roles can use this template
   allowedRoles: [{
     type: String,
@@ -163,6 +177,7 @@ documentTemplateSchema.index({ category: 1, subCategory: 1 });
 documentTemplateSchema.index({ specialty: 1, status: 1 });
 documentTemplateSchema.index({ templateId: 1 });
 documentTemplateSchema.index({ tags: 1 });
+documentTemplateSchema.index({ legacyId: 1, legacySource: 1 }, { sparse: true });
 
 // Generate template ID
 documentTemplateSchema.pre('save', async function(next) {
