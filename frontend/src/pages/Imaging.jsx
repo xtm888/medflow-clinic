@@ -3,14 +3,16 @@ import { useSearchParams } from 'react-router-dom';
 import {
   Eye, Calendar, User, Image as ImageIcon, ZoomIn, Download, FileText,
   Layers, Grid3X3, SplitSquareHorizontal, Filter, Search, Clock,
-  ChevronDown, Check, TrendingUp
+  ChevronDown, Check, TrendingUp, Archive
 } from 'lucide-react';
 import ophthalmologyService from '../services/ophthalmologyService';
+import patientService from '../services/patientService';
 import ImageComparisonViewer from '../components/imaging/ImageComparisonViewer';
 
 export default function Imaging() {
   const [searchParams] = useSearchParams();
   const patientIdFilter = searchParams.get('patientId');
+  const sourceFilter = searchParams.get('source'); // 'carevision' or null
 
   const [exams, setExams] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -27,133 +29,88 @@ export default function Imaging() {
   const [selectedForComparison, setSelectedForComparison] = useState([]);
   const [showComparisonViewer, setShowComparisonViewer] = useState(false);
 
+  // CareVision images state
+  const [careVisionImages, setCareVisionImages] = useState([]);
+  const [careVisionMode, setCareVisionMode] = useState(sourceFilter === 'carevision');
+
   useEffect(() => {
-    loadExamsWithImages();
-  }, []);
+    if (sourceFilter === 'carevision' && patientIdFilter) {
+      loadCareVisionImages();
+    } else {
+      loadExamsWithImages();
+    }
+  }, [sourceFilter, patientIdFilter]);
 
-  // Generate demo images from real clinical images
-  const generateDemoImages = () => {
-    // Real clinical images from the clinic
-    const clinicalImages = [
-      {
-        filename: '004_MAHANA MUPONGO_PITSHOU BONIFACE_15052025_134829_OCTReport_L_001.jpg',
-        patientName: 'MAHANA MUPONGO PITSHOU BONIFACE',
-        type: 'oct',
-        eye: 'OS',
-        caption: 'OCT Report - Œil Gauche',
-        date: '2025-05-15'
-      },
-      {
-        filename: '004_MAHANA MUPONGO_PITSHOU BONIFACE_15052025_134909_OCTReport_R_001.jpg',
-        patientName: 'MAHANA MUPONGO PITSHOU BONIFACE',
-        type: 'oct',
-        eye: 'OD',
-        caption: 'OCT Report - Œil Droit',
-        date: '2025-05-15'
-      },
-      {
-        filename: '004_MAHANA MUPONGO_PITSHOU BONIFACE_15052025_134944_OCTReport_L_001.jpg',
-        patientName: 'MAHANA MUPONGO PITSHOU BONIFACE',
-        type: 'oct',
-        eye: 'OS',
-        caption: 'OCT Report - Œil Gauche (2)',
-        date: '2025-05-15'
-      },
-      {
-        filename: '005_MIANGO KIKUNI_BERNARD_15052025_141343_Color_R_001.jpg',
-        patientName: 'MIANGO KIKUNI BERNARD',
-        type: 'fundus',
-        eye: 'OD',
-        caption: 'Fond d\'œil Couleur - Œil Droit',
-        date: '2025-05-15'
-      },
-      {
-        filename: '005_MIANGO KIKUNI_BERNARD_15052025_141452_Color_R_001.jpg',
-        patientName: 'MIANGO KIKUNI BERNARD',
-        type: 'fundus',
-        eye: 'OD',
-        caption: 'Fond d\'œil Couleur - Œil Droit (2)',
-        date: '2025-05-15'
-      },
-      {
-        filename: '4177_NSENGA IMANE_MARVELLE_29112025_110028_Color_L_001.jpg',
-        patientName: 'NSENGA IMANE MARVELLE',
-        type: 'fundus',
-        eye: 'OS',
-        caption: 'Fond d\'œil Couleur - Œil Gauche',
-        date: '2025-11-29'
-      },
-      {
-        filename: 'GI.jpg',
-        patientName: 'NSENGA IMANE MARVELLE',
-        type: 'fundus',
-        eye: 'OD',
-        caption: 'Fond d\'œil - Imagerie',
-        date: '2025-11-28'
-      },
-      {
-        filename: 'WhatsApp Image 2023-09-12 at 10.45.22 (1).jpeg',
-        patientName: 'Examen Externe',
-        type: 'fundus',
-        eye: 'OD',
-        caption: 'Image externe - Consultation',
-        date: '2023-09-12'
-      },
-      {
-        filename: 'WhatsApp Image 2023-09-12 at 10.45.22.jpeg',
-        patientName: 'Examen Externe',
-        type: 'fundus',
-        eye: 'OS',
-        caption: 'Image externe - Consultation (2)',
-        date: '2023-09-12'
-      }
-    ];
+  // Load CareVision legacy images
+  const loadCareVisionImages = async () => {
+    if (!patientIdFilter) {
+      setLoading(false);
+      return;
+    }
 
-    return clinicalImages.map((img, i) => ({
-      _id: `demo-${i}`,
-      url: `/datasets/retina/${encodeURIComponent(img.filename)}`,
-      type: img.type,
-      eye: img.eye,
-      caption: img.caption,
-      takenAt: new Date(img.date).toISOString(),
-      patientId: `patient-${img.patientName.replace(/\s+/g, '-').toLowerCase()}`,
-      patientName: img.patientName,
-      examId: `EXAM-${String(i + 1).padStart(4, '0')}`,
-      examDate: new Date(img.date).toISOString(),
-      exam: {
-        examId: `EXAM-${String(i + 1).padStart(4, '0')}`,
-        createdAt: new Date(img.date).toISOString()
-      }
-    }));
-  };
-
-  const [demoMode, setDemoMode] = useState(true); // Start with demo images
-  const [demoImages] = useState(() => generateDemoImages());
-
-  const loadExamsWithImages = async () => {
     try {
       setLoading(true);
-      const response = await ophthalmologyService.getExams();
-      const allExams = response.data || response || [];
-      const examsWithImages = allExams.filter(exam => exam.images && exam.images.length > 0);
-      setExams(examsWithImages);
-      // Auto-enable demo mode if no real images
-      if (examsWithImages.length === 0) {
-        setDemoMode(true);
-      }
+      setCareVisionMode(true);
+      setDemoMode(false);
+
+      const images = await patientService.getLegacyImages(patientIdFilter, { limit: 200 });
+
+      // Transform CareVision images to gallery format
+      const transformedImages = (images || []).map((img, idx) => ({
+        _id: `carevision-${img.id || idx}`,
+        url: img.thumbnailUrl || img.fullUrl || img.imageUrl || img.url,
+        fullUrl: img.fullUrl || img.thumbnailUrl,
+        type: img.name || img.typeExamen || 'archive',
+        eye: img.eye || 'OU',
+        caption: img.description || img.name || 'Image CareVision',
+        takenAt: img.dateFromDescription || img.dateExamen ? new Date(img.dateFromDescription || img.dateExamen).toISOString() : new Date().toISOString(),
+        patientId: patientIdFilter,
+        patientName: img.patientName || 'Patient',
+        examId: `CV-${img.id || idx}`,
+        examDate: img.dateFromDescription || img.dateExamen ? new Date(img.dateFromDescription || img.dateExamen).toISOString() : new Date().toISOString(),
+        source: 'carevision',
+        exam: {
+          examId: `CV-${img.id || idx}`,
+          createdAt: img.dateFromDescription || img.dateExamen ? new Date(img.dateFromDescription || img.dateExamen).toISOString() : new Date().toISOString()
+        }
+      }));
+
+      setCareVisionImages(transformedImages);
     } catch (error) {
-      console.error('Error loading imaging data:', error);
-      setDemoMode(true); // Fall back to demo mode on error
+      console.error('Error loading CareVision images:', error);
+      setCareVisionImages([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Get all images with exam context (or demo images)
+  const loadExamsWithImages = async () => {
+    try {
+      setLoading(true);
+      const response = await ophthalmologyService.getExams();
+      // Handle various API response formats: { data: { data: [...] } }, { data: [...] }, or [...]
+      let allExams = [];
+      if (Array.isArray(response)) {
+        allExams = response;
+      } else if (Array.isArray(response?.data?.data)) {
+        allExams = response.data.data;
+      } else if (Array.isArray(response?.data)) {
+        allExams = response.data;
+      }
+      const examsWithImages = allExams.filter(exam => exam.images && exam.images.length > 0);
+      setExams(examsWithImages);
+    } catch (error) {
+      console.error('Error loading imaging data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Get all images with exam context (or CareVision images)
   const getAllImages = useMemo(() => {
-    // If demo mode, return demo images
-    if (demoMode) {
-      return demoImages;
+    // If CareVision mode, return CareVision images
+    if (careVisionMode && careVisionImages.length > 0) {
+      return careVisionImages;
     }
 
     const allImages = [];
@@ -172,7 +129,7 @@ export default function Imaging() {
       }
     });
     return allImages;
-  }, [exams, demoMode, demoImages]);
+  }, [exams, careVisionMode, careVisionImages]);
 
   // Get unique patients for filter
   const uniquePatients = useMemo(() => {
@@ -254,7 +211,7 @@ export default function Imaging() {
   const getImageUrl = (url) => {
     if (!url) return null;
     if (url.startsWith('http')) return url;
-    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5001`;
+    const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5002`;
     return `${baseUrl}${url}`;
   };
 
@@ -328,27 +285,33 @@ export default function Imaging() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-            <ImageIcon className="h-7 w-7 text-blue-600" />
-            Imagerie Médicale
+            {careVisionMode ? (
+              <>
+                <Archive className="h-7 w-7 text-amber-600" />
+                Archives CareVision
+              </>
+            ) : (
+              <>
+                <ImageIcon className="h-7 w-7 text-blue-600" />
+                Imagerie Médicale
+              </>
+            )}
           </h1>
           <p className="text-gray-600 mt-1">
-            Galerie d'images ophtalmologiques avec comparaison avancée
+            {careVisionMode
+              ? `Images archivées du système CareVision - ${filteredImages.length} image(s)`
+              : 'Galerie d\'images ophtalmologiques avec comparaison avancée'}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Demo mode toggle */}
-          <button
-            onClick={() => setDemoMode(!demoMode)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2 ${
-              demoMode
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <Eye className="h-4 w-4" />
-            {demoMode ? 'Données démo' : 'Données réelles'}
-          </button>
+          {/* CareVision mode indicator */}
+          {careVisionMode && (
+            <div className="px-4 py-2 bg-amber-100 border border-amber-300 rounded-lg text-sm font-medium text-amber-800 flex items-center gap-2">
+              <Archive className="h-4 w-4" />
+              Mode Archives
+            </div>
+          )}
 
           {/* Comparison mode toggle */}
           <button
@@ -614,10 +577,16 @@ export default function Imaging() {
                   )}
 
                   {/* Type badge */}
-                  <div className="absolute top-2 left-2">
+                  <div className="absolute top-2 left-2 flex gap-1">
                     <span className="px-2 py-1 bg-blue-600 text-white text-xs font-semibold rounded">
                       {image.type}
                     </span>
+                    {image.source === 'carevision' && (
+                      <span className="px-2 py-1 bg-amber-500 text-white text-xs font-semibold rounded flex items-center gap-1">
+                        <Archive className="h-3 w-3" />
+                        Archive
+                      </span>
+                    )}
                   </div>
 
                   {/* Eye badge */}
@@ -838,7 +807,7 @@ export default function Imaging() {
             </button>
 
             <img
-              src={getImageUrl(selectedImage.url)}
+              src={getImageUrl(selectedImage.fullUrl || selectedImage.url)}
               alt={selectedImage.caption}
               className="max-w-full max-h-[80vh] object-contain rounded-lg"
             />

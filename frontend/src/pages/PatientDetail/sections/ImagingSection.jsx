@@ -1,102 +1,110 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Image, Plus, Eye, Upload, Loader2, X, Layers, Download, ZoomIn, TrendingUp } from 'lucide-react';
+import {
+  Image, Plus, Eye, Upload, Loader2, X, Layers, Download, ZoomIn, TrendingUp,
+  Archive, ToggleLeft, ToggleRight, Calendar, Database, AlertCircle
+} from 'lucide-react';
 import CollapsibleSection, { SectionEmptyState, SectionActionButton } from '../../../components/CollapsibleSection';
 import documentService from '../../../services/documentService';
 import ophthalmologyService from '../../../services/ophthalmologyService';
+import patientService from '../../../services/patientService';
+import imagingService from '../../../services/imagingService';
 import ImageComparisonViewer from '../../../components/imaging/ImageComparisonViewer';
 import { toast } from 'react-toastify';
 
-// Demo images from clinical data
-const generateDemoImages = () => {
-  const clinicalImages = [
-    {
-      filename: '004_MAHANA MUPONGO_PITSHOU BONIFACE_15052025_134829_OCTReport_L_001.jpg',
-      title: 'OCT Report - Œil Gauche',
-      type: 'oct',
-      eye: 'OS',
-      date: '2025-05-15'
-    },
-    {
-      filename: '004_MAHANA MUPONGO_PITSHOU BONIFACE_15052025_134909_OCTReport_R_001.jpg',
-      title: 'OCT Report - Œil Droit',
-      type: 'oct',
-      eye: 'OD',
-      date: '2025-05-15'
-    },
-    {
-      filename: '004_MAHANA MUPONGO_PITSHOU BONIFACE_15052025_134944_OCTReport_L_001.jpg',
-      title: 'OCT Report - Œil Gauche (2)',
-      type: 'oct',
-      eye: 'OS',
-      date: '2025-05-15'
-    },
-    {
-      filename: '005_MIANGO KIKUNI_BERNARD_15052025_141343_Color_R_001.jpg',
-      title: 'Fond d\'œil Couleur - Œil Droit',
-      type: 'fundus',
-      eye: 'OD',
-      date: '2025-05-15'
-    },
-    {
-      filename: '005_MIANGO KIKUNI_BERNARD_15052025_141452_Color_R_001.jpg',
-      title: 'Fond d\'œil Couleur - Œil Droit (2)',
-      type: 'fundus',
-      eye: 'OD',
-      date: '2025-05-15'
-    },
-    {
-      filename: '4177_NSENGA IMANE_MARVELLE_29112025_110028_Color_L_001.jpg',
-      title: 'Fond d\'œil Couleur - Œil Gauche',
-      type: 'fundus',
-      eye: 'OS',
-      date: '2025-11-29'
-    },
-    {
-      filename: 'GI.jpg',
-      title: 'Fond d\'œil - Imagerie',
-      type: 'fundus',
-      eye: 'OD',
-      date: '2025-11-28'
-    },
-    {
-      filename: 'WhatsApp Image 2023-09-12 at 10.45.22 (1).jpeg',
-      title: 'Image externe - Consultation',
-      type: 'fundus',
-      eye: 'OD',
-      date: '2023-09-12'
-    },
-    {
-      filename: 'WhatsApp Image 2023-09-12 at 10.45.22.jpeg',
-      title: 'Image externe - Consultation (2)',
-      type: 'fundus',
-      eye: 'OS',
-      date: '2023-09-12'
-    }
-  ];
+/**
+ * CareVisionImageCard - Individual image card for CareVision legacy images
+ */
+function CareVisionImageCard({ image, onSelect, formatDateShort, getImageUrl }) {
+  const [imageError, setImageError] = useState(false);
 
-  // Use environment variable or dynamic hostname for production
-  const baseUrl = import.meta.env.VITE_API_URL?.replace('/api', '') || `${window.location.protocol}//${window.location.hostname}:5001`;
+  // Build the full URL for CareVision thumbnail
+  const baseUrl = import.meta.env.VITE_API_URL || `${window.location.protocol}//${window.location.hostname}:5001/api`;
+  const thumbnailUrl = image.thumbnailUrl
+    ? (image.thumbnailUrl.startsWith('http') ? image.thumbnailUrl : `${baseUrl.replace('/api', '')}${image.thumbnailUrl}`)
+    : null;
 
-  return clinicalImages.map((img, i) => ({
-    _id: `demo-${i}`,
-    url: `${baseUrl}/datasets/retina/${encodeURIComponent(img.filename)}`,
-    thumbnailUrl: `${baseUrl}/datasets/retina/${encodeURIComponent(img.filename)}`,
-    title: img.title,
-    type: img.type,
-    eye: img.eye,
-    category: 'demo-imaging',
-    createdAt: new Date(img.date).toISOString(),
-    examId: `DEMO-${String(i + 1).padStart(4, '0')}`
-  }));
-};
+  // Parse date from description (e.g., "RETINO DU 16/01/2026")
+  const displayDate = image.dateFromDescription || image.createdAt;
+
+  return (
+    <div
+      className="group relative aspect-square bg-amber-50 border border-amber-200 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-amber-400 transition"
+      onClick={() => onSelect({
+        ...image,
+        url: image.fullUrl ? `${baseUrl.replace('/api', '')}${image.fullUrl}` : thumbnailUrl,
+        thumbnailUrl: thumbnailUrl,
+        title: image.description || image.name || 'Image CareVision',
+        type: 'archive',
+        source: 'carevision',
+        createdAt: displayDate
+      })}
+    >
+      {thumbnailUrl && !imageError ? (
+        <img
+          src={thumbnailUrl}
+          alt={image.description || 'Archive CareVision'}
+          className="w-full h-full object-cover"
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className="w-full h-full flex flex-col items-center justify-center bg-amber-100">
+          <Archive className="h-8 w-8 text-amber-400" />
+          <span className="text-xs text-amber-500 mt-1">Archive</span>
+        </div>
+      )}
+
+      {/* Hover overlay */}
+      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-50 transition flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onSelect({
+              ...image,
+              url: image.fullUrl ? `${baseUrl.replace('/api', '')}${image.fullUrl}` : thumbnailUrl,
+              thumbnailUrl: thumbnailUrl,
+              title: image.description || image.name || 'Image CareVision',
+              type: 'archive',
+              source: 'carevision',
+              createdAt: displayDate
+            });
+          }}
+          className="p-2 bg-white rounded-full hover:bg-gray-100 transition shadow-lg"
+          title="Voir"
+        >
+          <ZoomIn className="h-4 w-4 text-gray-700" />
+        </button>
+      </div>
+
+      {/* CareVision Archive badge */}
+      <div className="absolute top-1 left-1">
+        <span className="px-1.5 py-0.5 bg-amber-600 text-white text-[10px] font-semibold rounded flex items-center gap-0.5">
+          <Archive className="w-2.5 h-2.5" />
+          Archive
+        </span>
+      </div>
+
+      {/* Info overlay */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-amber-900/70 to-transparent p-2">
+        <p className="text-xs text-white truncate">{image.description || image.name || 'Image'}</p>
+        {displayDate && (
+          <p className="text-xs text-white/70">{formatDateShort(displayDate)}</p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 /**
  * ImagingSection - Medical imaging gallery with upload and comparison
+ *
+ * Enhanced to support CareVision legacy images for patients with hasLegacyData.
+ * Legacy images are displayed in a separate section with amber styling.
  */
 export default function ImagingSection({
   patientId,
   patientName,
+  patient,
   canUploadImaging,
   onViewImaging
 }) {
@@ -107,17 +115,15 @@ export default function ImagingSection({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [imaging, setImaging] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [demoMode, setDemoMode] = useState(false); // CRITICAL FIX: Show real patient data by default, not demo
   const [isDragOver, setIsDragOver] = useState(false);
 
-  // Load demo images on mount and when demoMode changes
-  useEffect(() => {
-    if (demoMode) {
-      setImaging(generateDemoImages());
-    } else {
-      setImaging([]);
-    }
-  }, [demoMode]);
+  // CareVision legacy image support
+  const [careVisionImages, setCareVisionImages] = useState([]);
+  const [loadingCareVision, setLoadingCareVision] = useState(false);
+  const [showCareVision, setShowCareVision] = useState(true);
+
+  // Check if patient has CareVision legacy data
+  const hasCareVisionLink = patient?.hasLegacyData || patient?.legacyIds?.lv;
 
   // Comparison viewer state
   const [showComparisonViewer, setShowComparisonViewer] = useState(false);
@@ -131,21 +137,33 @@ export default function ImagingSection({
     return `${baseUrl}${url}`;
   };
 
-  const loadData = async () => {
-    // If demo mode, use demo images
-    if (demoMode) {
-      setImaging(generateDemoImages());
-      return;
-    }
+  // Load CareVision legacy images
+  const loadCareVisionImages = async () => {
+    if (!hasCareVisionLink || !showCareVision) return;
 
-    if (Array.isArray(imaging) && imaging.length > 0 && !demoMode) return;
+    setLoadingCareVision(true);
+    try {
+      const images = await patientService.getLegacyImages(patientId, { limit: 100 });
+      console.log('[ImagingSection] CareVision images loaded:', images.length);
+      setCareVisionImages(Array.isArray(images) ? images : []);
+    } catch (err) {
+      console.error('[ImagingSection] Error loading CareVision images:', err);
+      setCareVisionImages([]);
+    } finally {
+      setLoadingCareVision(false);
+    }
+  };
+
+  const loadData = async () => {
+    if (Array.isArray(imaging) && imaging.length > 0) return;
 
     setLoading(true);
     try {
-      // Fetch from both sources in parallel
-      const [documentsRes, examsRes] = await Promise.all([
+      // Fetch from all sources in parallel (MedFlow sources + PACS)
+      const [documentsRes, examsRes, studiesRes] = await Promise.all([
         documentService.getPatientDocuments(patientId).catch(() => ({ data: [] })),
-        ophthalmologyService.getExams({ patient: patientId }).catch(() => ({ data: [] }))
+        ophthalmologyService.getExams({ patient: patientId }).catch(() => ({ data: [] })),
+        imagingService.getPatientImagingStudies(patientId).catch(() => ({ data: [] }))
       ]);
 
       // Get imaging documents
@@ -154,6 +172,7 @@ export default function ImagingSection({
         d => d.type === 'imaging' || d.category === 'imaging'
       ).map(d => ({
         ...d,
+        source: 'medflow',
         url: getImageUrl(d.url || d.fileUrl),
         thumbnailUrl: getImageUrl(d.thumbnailUrl || d.url || d.fileUrl)
       })) : [];
@@ -174,6 +193,7 @@ export default function ImagingSection({
                 type: img.type,
                 eye: img.eye,
                 category: 'exam-imaging',
+                source: 'medflow',
                 createdAt: img.takenAt || exam.createdAt,
                 examId: exam.examId || exam._id
               });
@@ -182,13 +202,38 @@ export default function ImagingSection({
         });
       }
 
-      // Combine both sources
-      const allImaging = [...imagingDocs, ...examImages];
+      // Get PACS/DICOM imaging studies
+      const studiesData = studiesRes.data || [];
+      const pacsStudies = Array.isArray(studiesData) ? studiesData.map(study => ({
+        _id: study._id,
+        title: study.description || `PACS Study - ${study.modality}`,
+        type: study.modality?.replace(/\\/g, '/') || 'DICOM',
+        category: 'pacs-study',
+        source: 'pacs',
+        createdAt: study.studyDate,
+        studyId: study.studyId,
+        studyInstanceUID: study.studyInstanceUID,
+        numberOfSeries: study.numberOfSeries,
+        numberOfImages: study.numberOfImages,
+        series: study.series,
+        // PACS studies don't have direct image URLs - they reference DICOM data
+        url: null,
+        thumbnailUrl: null,
+        isPacsStudy: true
+      })) : [];
+
+      // Combine all sources
+      const allImaging = [...imagingDocs, ...examImages, ...pacsStudies];
 
       // Sort by date (newest first)
       allImaging.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setImaging(allImaging);
+
+      // Also load CareVision images if patient has legacy data
+      if (hasCareVisionLink && showCareVision) {
+        loadCareVisionImages();
+      }
     } catch (err) {
       console.error('Error loading imaging:', err);
       setImaging([]);
@@ -395,51 +440,77 @@ export default function ImagingSection({
           gradient="from-cyan-50 to-teal-50"
           defaultExpanded={false}
           onExpand={loadData}
-          loading={loading}
+          loading={loading || loadingCareVision}
           badge={
-          Array.isArray(imaging) && imaging.length > 0 && (
-            <span className="px-2 py-0.5 text-xs bg-cyan-100 text-cyan-700 rounded-full">
-              {imaging.length} images
-            </span>
-          )
-        }
-        actions={
-          <div className="flex gap-2">
-            {/* Demo mode toggle */}
-            <button
-              onClick={() => {
-                setDemoMode(!demoMode);
-                setImaging([]); // Clear to force reload
-              }}
-              className={`px-2 py-1 text-xs rounded-lg transition ${
-                demoMode
-                  ? 'bg-purple-100 text-purple-700'
-                  : 'bg-gray-100 text-gray-600'
-              }`}
-            >
-              {demoMode ? 'Démo' : 'Réel'}
-            </button>
-            {Array.isArray(imaging) && imaging.length > 1 && (
-              <SectionActionButton
-                icon={TrendingUp}
-                onClick={() => openComparisonViewer(imaging[0])}
-                variant="secondary"
+            <div className="flex items-center gap-2">
+              {Array.isArray(imaging) && imaging.length > 0 && (
+                <span className="px-2 py-0.5 text-xs bg-cyan-100 text-cyan-700 rounded-full flex items-center gap-1">
+                  <Database className="w-3 h-3" />
+                  {imaging.length} images
+                </span>
+              )}
+              {hasCareVisionLink && careVisionImages.length > 0 && showCareVision && (
+                <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
+                  <Archive className="w-3 h-3" />
+                  {careVisionImages.length} archives
+                </span>
+              )}
+            </div>
+          }
+          headerActions={
+            hasCareVisionLink && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCareVision(!showCareVision);
+                  if (!showCareVision) {
+                    loadCareVisionImages();
+                  }
+                }}
+                className={`flex items-center gap-1.5 px-2 py-1 text-xs rounded transition-colors ${
+                  showCareVision
+                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+                title={showCareVision ? 'Masquer les archives CareVision' : 'Afficher les archives CareVision'}
               >
-                Évolution
-              </SectionActionButton>
-            )}
-            {canUploadImaging && (
-              <SectionActionButton
-                icon={Plus}
-                onClick={() => fileInputRef.current?.click()}
-                variant="primary"
-              >
-                Ajouter
-              </SectionActionButton>
-            )}
-          </div>
-        }
-      >
+                {showCareVision ? (
+                  <>
+                    <ToggleRight className="w-4 h-4" />
+                    <span className="hidden sm:inline">Archives</span>
+                  </>
+                ) : (
+                  <>
+                    <ToggleLeft className="w-4 h-4" />
+                    <span className="hidden sm:inline">Archives</span>
+                  </>
+                )}
+              </button>
+            )
+          }
+          actions={
+            <div className="flex gap-2">
+              {Array.isArray(imaging) && imaging.length > 1 && (
+                <SectionActionButton
+                  icon={TrendingUp}
+                  onClick={() => openComparisonViewer(imaging[0])}
+                  variant="secondary"
+                >
+                  Évolution
+                </SectionActionButton>
+              )}
+              {canUploadImaging && (
+                <SectionActionButton
+                  icon={Plus}
+                  onClick={() => fileInputRef.current?.click()}
+                  variant="primary"
+                >
+                  Ajouter
+                </SectionActionButton>
+              )}
+            </div>
+          }
+        >
         <input
           type="file"
           ref={fileInputRef}
@@ -471,9 +542,21 @@ export default function ImagingSection({
               {(Array.isArray(imaging) ? imaging.slice(0, 8) : []).map((img) => (
                 <div
                   key={img._id || img.id}
-                  className="group relative aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 hover:ring-cyan-400 transition"
+                  className={`group relative aspect-square rounded-lg overflow-hidden cursor-pointer transition ${
+                    img.isPacsStudy
+                      ? 'bg-indigo-50 border-2 border-indigo-200 hover:ring-2 hover:ring-indigo-400'
+                      : 'bg-gray-100 hover:ring-2 hover:ring-cyan-400'
+                  }`}
                 >
-                  {img.thumbnailUrl || img.url || img.fileUrl ? (
+                  {img.isPacsStudy ? (
+                    // PACS Study Card
+                    <div className="w-full h-full flex flex-col items-center justify-center p-2 text-center">
+                      <Database className="h-8 w-8 text-indigo-500 mb-1" />
+                      <span className="text-xs font-medium text-indigo-700">{img.type}</span>
+                      <span className="text-[10px] text-indigo-500">{img.numberOfSeries} séries</span>
+                      <span className="text-[10px] text-indigo-500">{img.numberOfImages} images</span>
+                    </div>
+                  ) : img.thumbnailUrl || img.url || img.fileUrl ? (
                     <img
                       src={img.thumbnailUrl || img.url || img.fileUrl}
                       alt={img.title || 'Image'}
@@ -524,9 +607,15 @@ export default function ImagingSection({
                   </div>
 
                   {/* Type & Eye badges */}
-                  {(img.type || img.eye) && (
+                  {(img.type || img.eye || img.isPacsStudy) && (
                     <div className="absolute top-1 left-1 flex gap-1">
-                      {img.type && (
+                      {img.isPacsStudy && (
+                        <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[10px] font-semibold rounded flex items-center gap-0.5">
+                          <Database className="w-2.5 h-2.5" />
+                          PACS
+                        </span>
+                      )}
+                      {img.type && !img.isPacsStudy && (
                         <span className="px-1.5 py-0.5 bg-blue-600 text-white text-[10px] font-semibold rounded">
                           {img.type}
                         </span>
@@ -607,6 +696,59 @@ export default function ImagingSection({
           </div>
         )}
 
+        {/* CareVision Legacy Images Section */}
+        {hasCareVisionLink && showCareVision && careVisionImages.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-amber-200">
+            <div className="flex items-center gap-2 mb-4">
+              <Archive className="w-5 h-5 text-amber-600" />
+              <h4 className="font-medium text-amber-800">Archives CareVision</h4>
+              <span className="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">
+                {careVisionImages.length} images
+              </span>
+              <span className="ml-auto text-xs text-amber-600 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                Lecture seule
+              </span>
+            </div>
+
+            {loadingCareVision ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-amber-600" />
+                <span className="ml-2 text-amber-700">Chargement des archives...</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {careVisionImages.slice(0, 12).map((img) => (
+                  <CareVisionImageCard
+                    key={img.id}
+                    image={img}
+                    onSelect={setSelectedImage}
+                    formatDateShort={formatDateShort}
+                    getImageUrl={getImageUrl}
+                  />
+                ))}
+              </div>
+            )}
+
+            {careVisionImages.length > 12 && (
+              <div className="mt-4 text-center">
+                <button
+                  onClick={() => navigate(`/imaging?patientId=${patientId}&source=carevision`)}
+                  className="px-4 py-2 text-sm text-amber-600 hover:text-amber-700 hover:bg-amber-50 rounded-lg transition"
+                >
+                  Voir les {careVisionImages.length} archives →
+                </button>
+              </div>
+            )}
+
+            {/* Info note about CareVision archives */}
+            <p className="text-xs text-center text-amber-500 mt-4 flex items-center justify-center gap-1">
+              <AlertCircle className="w-3.5 h-3.5" />
+              Les archives CareVision sont en lecture seule. Les nouvelles images sont enregistrées dans MedFlow.
+            </p>
+          </div>
+        )}
+
         {/* Quick Image Viewer Modal */}
         {selectedImage && (
           <div
@@ -627,11 +769,21 @@ export default function ImagingSection({
                 className="max-w-full max-h-[75vh] object-contain rounded-lg"
               />
 
-              <div className="bg-white rounded-b-lg p-4 mt-2">
+              <div className={`rounded-b-lg p-4 mt-2 ${
+                selectedImage.source === 'carevision'
+                  ? 'bg-amber-50 border-t-2 border-amber-300'
+                  : 'bg-white'
+              }`}>
                 <div className="flex justify-between items-start">
                   <div>
                     <div className="flex items-center gap-2 mb-2">
-                      {selectedImage.type && (
+                      {/* Source badge */}
+                      {selectedImage.source === 'carevision' ? (
+                        <span className="px-2 py-1 bg-amber-600 text-white text-xs font-semibold rounded flex items-center gap-1">
+                          <Archive className="w-3 h-3" />
+                          Archive CareVision
+                        </span>
+                      ) : selectedImage.type && (
                         <span className="px-2 py-1 bg-blue-600 text-white text-xs font-semibold rounded">
                           {selectedImage.type}
                         </span>
@@ -642,24 +794,41 @@ export default function ImagingSection({
                         </span>
                       )}
                     </div>
-                    <p className="font-medium text-gray-900">{selectedImage.title}</p>
-                    <p className="text-sm text-gray-500">{formatDate(selectedImage.createdAt)}</p>
+                    <p className={`font-medium ${
+                      selectedImage.source === 'carevision' ? 'text-amber-900' : 'text-gray-900'
+                    }`}>{selectedImage.title}</p>
+                    <p className={`text-sm ${
+                      selectedImage.source === 'carevision' ? 'text-amber-600' : 'text-gray-500'
+                    }`}>{formatDate(selectedImage.createdAt)}</p>
+                    {selectedImage.source === 'carevision' && (
+                      <p className="text-xs text-amber-500 mt-1 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        Archive en lecture seule
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex gap-2">
-                    <button
-                      onClick={() => {
-                        setSelectedImage(null);
-                        openComparisonViewer(selectedImage);
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
-                    >
-                      <Layers className="h-4 w-4" />
-                      Comparer
-                    </button>
+                    {/* Only show compare for MedFlow images */}
+                    {selectedImage.source !== 'carevision' && (
+                      <button
+                        onClick={() => {
+                          setSelectedImage(null);
+                          openComparisonViewer(selectedImage);
+                        }}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                      >
+                        <Layers className="h-4 w-4" />
+                        Comparer
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDownload(selectedImage)}
-                      className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition flex items-center gap-2"
+                      className={`px-4 py-2 rounded-lg transition flex items-center gap-2 ${
+                        selectedImage.source === 'carevision'
+                          ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
                     >
                       <Download className="h-4 w-4" />
                       Télécharger
