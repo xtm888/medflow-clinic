@@ -2057,68 +2057,63 @@ class PDFGeneratorService {
         doc.text(`N° Dossier: ${labResult.labNumber || labResult._id?.toString().slice(-8)}`, 290, patientBoxY + 41);
 
         doc.y = patientBoxY + 70;
-        doc.moveDown(2);
+        doc.moveDown(1);
 
-        // Results table
-        const tableTop = doc.y;
-        const headers = ['Analyse', 'Résultat', 'Unité', 'Ref. Normal', 'Status'];
-        const columnWidths = [150, 80, 60, 100, 80];
-        const columnX = [50, 200, 280, 340, 440];
+        // Detect lab category for specialized layout
+        const category = this.getLabCategory(labResult);
 
-        // Table header
-        doc.rect(50, tableTop, 470, 25).fill(this.colors.primary);
-        doc.fillColor('#ffffff').fontSize(9).font('Helvetica-Bold');
-        headers.forEach((header, i) => {
-          doc.text(header, columnX[i] + 5, tableTop + 8);
-        });
+        // Category labels in French
+        const categoryLabels = {
+          biochemistry: 'BIOCHIMIE',
+          hematology: 'HÉMATOLOGIE',
+          microbiology: 'MICROBIOLOGIE',
+          urinalysis: 'ANALYSE D\'URINE',
+          coagulation: 'HÉMOSTASE',
+          serology: 'SÉROLOGIE',
+          general: 'ANALYSES'
+        };
 
-        // Results rows
-        let y = tableTop + 30;
-        doc.fillColor(this.colors.text).font('Helvetica');
+        // Add category subtitle
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(this.colors.secondary)
+          .text(categoryLabels[category] || 'ANALYSES', { align: 'center' });
+        doc.moveDown(1);
 
-        const results = labResult.results || labResult.tests || [];
-        results.forEach((result, index) => {
-          if (index % 2 === 0) {
-            doc.rect(50, y - 3, 470, 20).fill(this.colors.background);
-            doc.fillColor(this.colors.text);
-          }
+        // Apply category-specific layout
+        switch (category) {
+          case 'biochemistry':
+            this._addBiochemistryLayout(doc, labResult, patient);
+            break;
+          case 'hematology':
+            this._addHematologyLayout(doc, labResult, patient);
+            break;
+          case 'microbiology':
+            this._addMicrobiologyLayout(doc, labResult, patient);
+            break;
+          case 'urinalysis':
+            this._addUrinalysisLayout(doc, labResult, patient);
+            break;
+          case 'coagulation':
+          case 'serology':
+          default:
+            this._addGeneralLabLayout(doc, labResult, patient);
+        }
 
-          const isAbnormal = result.flag === 'high' || result.flag === 'low' || result.isAbnormal;
-
-          doc.fontSize(9);
-          doc.text(result.testName || result.name, columnX[0] + 5, y);
-
-          if (isAbnormal) {
-            doc.fillColor(this.colors.danger).font('Helvetica-Bold');
-          }
-          doc.text(result.value?.toString() || '-', columnX[1] + 5, y);
-          doc.font('Helvetica').fillColor(this.colors.text);
-
-          doc.text(result.unit || '', columnX[2] + 5, y);
-          doc.text(result.referenceRange || result.normalRange || '-', columnX[3] + 5, y);
-
-          // Status indicator
-          if (isAbnormal) {
-            doc.fillColor(this.colors.danger);
-            doc.text(result.flag === 'high' ? '↑ Élevé' : result.flag === 'low' ? '↓ Bas' : 'Anormal', columnX[4] + 5, y);
-          } else {
-            doc.fillColor(this.colors.success);
-            doc.text('Normal', columnX[4] + 5, y);
-          }
-          doc.fillColor(this.colors.text);
-
-          y += 20;
-        });
-
-        // Comments/Notes
-        if (labResult.notes || labResult.comments) {
-          doc.y = y + 20;
-          doc.fontSize(10).font('Helvetica-Bold').text('Commentaires:');
+        // Comments/Notes section (if not already handled by microbiology layout)
+        if (category !== 'microbiology' && (labResult.notes || labResult.comments)) {
+          doc.moveDown(1);
+          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text).text('Commentaires:');
           doc.font('Helvetica').text(labResult.notes || labResult.comments);
         }
 
-        // Validation
-        doc.y = y + 40;
+        // Overall interpretation if present
+        if (labResult.overallInterpretation) {
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text).text('Interprétation générale:');
+          doc.font('Helvetica').text(labResult.overallInterpretation);
+        }
+
+        // Validation section
+        doc.moveDown(2);
         doc.fontSize(9).fillColor(this.colors.lightText);
         doc.text(`Validé par: ${labResult.validatedBy?.name || 'Laboratoire'}`, { align: 'right' });
         doc.text(`Date validation: ${this.formatDate(labResult.validatedAt || new Date())}`, { align: 'right' });
@@ -3264,6 +3259,414 @@ class PDFGeneratorService {
         // Footer
         doc.fontSize(8).fillColor(this.colors.lightText)
           .text(`Exporté le ${this.formatDate(new Date())}`, 50, 550);
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Generate Surgery Report PDF (Compte Rendu Opératoire)
+   * Full operative report for surgical procedures
+   */
+  async generateSurgeryReportPDF(surgeryReport, patient, clinic) {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({
+          ...this.defaultOptions,
+          size: 'A4',
+          margins: { top: 50, bottom: 50, left: 50, right: 50 }
+        });
+        const chunks = [];
+
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+
+        const clinicInfo = clinic || this.clinicInfo;
+
+        // ===== HEADER =====
+        this.addHeader(doc, 'COMPTE RENDU OPÉRATOIRE');
+        doc.moveDown(2);
+
+        // ===== PATIENT IDENTIFICATION =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('IDENTIFICATION DU PATIENT');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        const patientName = patient?.firstName && patient?.lastName ? `${patient.lastName.toUpperCase()} ${patient.firstName}` : patient?.fullName || 'N/A';
+        doc.text(`Nom: ${patientName}`);
+        doc.text(`Date de naissance: ${patient?.dateOfBirth ? this.formatDate(patient.dateOfBirth) : 'N/A'}`);
+        doc.text(`N° Dossier: ${patient?.medicalRecordNumber || patient?.patientId || 'N/A'}`);
+        doc.moveDown(1);
+
+        // ===== SURGERY DETAILS =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('DÉTAILS DE L\'INTERVENTION');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        const surgeonName = surgeryReport.surgeon?.title ? `${surgeryReport.surgeon.title} ${surgeryReport.surgeon.firstName || ''} ${surgeryReport.surgeon.lastName || ''}` : surgeryReport.surgeon?.firstName ? `Dr. ${surgeryReport.surgeon.firstName} ${surgeryReport.surgeon.lastName || ''}` : 'N/A';
+        doc.text(`Chirurgien: ${surgeonName}`);
+        if (surgeryReport.assistantSurgeon) {
+          const assistantName = surgeryReport.assistantSurgeon?.firstName ? `Dr. ${surgeryReport.assistantSurgeon.firstName} ${surgeryReport.assistantSurgeon.lastName || ''}` : 'N/A';
+          doc.text(`Assistant: ${assistantName}`);
+        }
+        doc.text(`Date d'intervention: ${surgeryReport.surgeryDate ? this.formatDate(surgeryReport.surgeryDate) : 'N/A'}`);
+        if (surgeryReport.durationMinutes) {
+          const hours = Math.floor(surgeryReport.durationMinutes / 60);
+          const minutes = surgeryReport.durationMinutes % 60;
+          doc.text(`Durée: ${hours > 0 ? `${hours}h ${minutes}min` : `${minutes} minutes`}`);
+        }
+        const eyeLabels = { 'OD': 'Œil Droit (OD)', 'OS': 'Œil Gauche (OS)', 'OU': 'Les Deux Yeux (OU)', 'N/A': 'N/A' };
+        doc.text(`Œil opéré: ${eyeLabels[surgeryReport.eye] || surgeryReport.eye || 'N/A'}`);
+        doc.moveDown(1);
+
+        // ===== DIAGNOSES =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('DIAGNOSTICS');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        doc.font('Helvetica-Bold').text('Diagnostic pré-opératoire: ', { continued: true });
+        doc.font('Helvetica').text(surgeryReport.preOpDiagnosis || 'N/A');
+        doc.font('Helvetica-Bold').text('Diagnostic post-opératoire: ', { continued: true });
+        doc.font('Helvetica').text(surgeryReport.postOpDiagnosis || 'N/A');
+        doc.moveDown(0.5);
+        doc.font('Helvetica-Bold').text('Intervention réalisée: ', { continued: true });
+        doc.font('Helvetica').text(surgeryReport.procedurePerformed || 'N/A');
+        doc.moveDown(1);
+
+        // ===== OPERATIVE FINDINGS =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('CONSTATATIONS OPÉRATOIRES');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        doc.text(surgeryReport.operativeFindings || 'Non renseigné', { width: 495 });
+        if (surgeryReport.procedureDetails) {
+          doc.moveDown(0.5);
+          doc.font('Helvetica-Bold').text('Détails de la procédure:');
+          doc.font('Helvetica').text(surgeryReport.procedureDetails, { width: 495 });
+        }
+        doc.moveDown(1);
+
+        // ===== IOL DETAILS (if applicable) =====
+        if (surgeryReport.iolImplanted && surgeryReport.iolDetails) {
+          doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('IMPLANT INTRAOCULAIRE (IOL)');
+          doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+          const iol = surgeryReport.iolDetails;
+          if (iol.model) doc.text(`Modèle: ${iol.model}`);
+          if (iol.manufacturer) doc.text(`Fabricant: ${iol.manufacturer}`);
+          if (iol.power) doc.text(`Puissance: ${iol.power} D`);
+          if (iol.targetRefraction) doc.text(`Réfraction cible: ${iol.targetRefraction}`);
+          if (iol.lotNumber) doc.text(`N° Lot: ${iol.lotNumber}`);
+          if (iol.serialNumber) doc.text(`N° Série: ${iol.serialNumber}`);
+          doc.moveDown(1);
+        }
+
+        // ===== ANESTHESIA =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('ANESTHÉSIE');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        const anesthesiaLabels = { 'topical': 'Topique', 'peribulbar': 'Péribulbaire', 'retrobulbar': 'Rétrobulbaire', 'general': 'Générale', 'local': 'Locale', 'none': 'Aucune' };
+        doc.text(`Type: ${anesthesiaLabels[surgeryReport.anesthesiaType] || surgeryReport.anesthesiaType || 'N/A'}`);
+        if (surgeryReport.anesthesiaAgent) doc.text(`Agent: ${surgeryReport.anesthesiaAgent}`);
+        doc.moveDown(1);
+
+        // ===== COMPLICATIONS =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('COMPLICATIONS');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        if (surgeryReport.complications?.occurred) {
+          doc.fillColor(this.colors.danger).font('Helvetica-Bold').text('COMPLICATIONS SURVENUES');
+          doc.fillColor(this.colors.text).font('Helvetica');
+          if (surgeryReport.complications.description) doc.text(`Description: ${surgeryReport.complications.description}`);
+          if (surgeryReport.complications.management) doc.text(`Prise en charge: ${surgeryReport.complications.management}`);
+          const checklist = surgeryReport.complicationChecklist || {};
+          const complicationLabels = { posteriorCapsuleRupture: 'Rupture capsulaire postérieure', vitreousLoss: 'Perte de vitré', zonularDehiscence: 'Déhiscence zonulaire', irisTrauma: 'Traumatisme irien', cornealEdema: 'Œdème cornéen', hyphema: 'Hyphéma', elevatedIOP: 'Hypertonie oculaire' };
+          const presentComplications = Object.entries(checklist).filter(([key, value]) => value === true && key !== 'otherComplication').map(([key]) => complicationLabels[key] || key);
+          if (presentComplications.length > 0) doc.text('Complications notées: ' + presentComplications.join(', '));
+          if (checklist.otherComplication) doc.text(`Autre: ${checklist.otherComplication}`);
+        } else {
+          doc.fillColor(this.colors.success).text('Aucune complication per-opératoire');
+          doc.fillColor(this.colors.text);
+        }
+        doc.moveDown(1);
+
+        // ===== SPECIMENS (if any) =====
+        if (surgeryReport.specimensCollected && surgeryReport.specimensCollected.length > 0) {
+          doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('PRÉLÈVEMENTS');
+          doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+          surgeryReport.specimensCollected.forEach((specimen, index) => {
+            doc.text(`${index + 1}. ${specimen.specimenType}${specimen.source ? ` - ${specimen.source}` : ''}`);
+            if (specimen.sentToLab && specimen.sentTo) doc.text(`   Envoyé au laboratoire: ${specimen.sentTo}`);
+          });
+          doc.moveDown(1);
+        }
+
+        // ===== PROGNOSIS =====
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('PRONOSTIC');
+        doc.strokeColor(this.colors.border).moveTo(50, doc.y).lineTo(545, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        const prognosisLabels = { 'excellent': 'Excellent', 'good': 'Bon', 'guarded': 'Réservé', 'poor': 'Mauvais' };
+        doc.text(`Pronostic: ${prognosisLabels[surgeryReport.prognosis] || surgeryReport.prognosis || 'N/A'}`);
+        if (surgeryReport.prognosisNotes) doc.text(`Notes: ${surgeryReport.prognosisNotes}`);
+
+        // ===== SIGNATURE =====
+        doc.moveDown(2);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        doc.text(`Fait à ${clinicInfo.address?.split(',')[0] || 'Kinshasa'}, le ${this.formatDate(surgeryReport.signedAt || new Date())}`, 50, doc.y);
+        doc.moveDown(2);
+        doc.text('Signature du chirurgien:', 350);
+        doc.moveDown(0.5);
+        doc.text('_______________________', 350);
+        doc.text(surgeonName, 350);
+
+        this.addFooter(doc);
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Generate Pre-Op Checklist PDF (Fiche Pré-Opératoire)
+   */
+  async generatePreOpChecklistPDF(surgeryCase, patient, clinic) {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ ...this.defaultOptions, size: 'A4', margins: { top: 40, bottom: 40, left: 40, right: 40 } });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+        const clinicInfo = clinic || this.clinicInfo;
+
+        this.addHeader(doc, 'FICHE PRÉ-OPÉRATOIRE');
+        doc.moveDown(1.5);
+
+        // Patient identification box
+        const patientBoxY = doc.y;
+        doc.rect(40, patientBoxY, 515, 85).stroke(this.colors.text);
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('IDENTIFICATION DU PATIENT', 50, patientBoxY + 8);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        const patientNamePreOp = patient?.firstName && patient?.lastName ? `${patient.lastName.toUpperCase()} ${patient.firstName}` : patient?.fullName || 'N/A';
+        doc.text(`Nom: ${patientNamePreOp}`, 50, patientBoxY + 25);
+        doc.text(`Date de naissance: ${patient?.dateOfBirth ? this.formatDate(patient.dateOfBirth) : 'N/A'}`, 300, patientBoxY + 25);
+        doc.text(`N° Dossier: ${patient?.medicalRecordNumber || patient?.patientId || 'N/A'}`, 50, patientBoxY + 40);
+        const allergies = Array.isArray(patient?.allergies) ? patient.allergies.map(a => typeof a === 'string' ? a : a.name || a.allergen).join(', ') : patient?.allergies || '';
+        if (allergies) {
+          doc.fillColor(this.colors.danger).font('Helvetica-Bold').text(`ALLERGIES: ${allergies}`, 50, patientBoxY + 58, { width: 495 });
+        } else {
+          doc.fillColor(this.colors.success).text('Allergies: Aucune connue', 50, patientBoxY + 58);
+        }
+        doc.y = patientBoxY + 95;
+
+        // Scheduled procedure box
+        const procBoxY = doc.y;
+        doc.rect(40, procBoxY, 515, 70).stroke(this.colors.text);
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('INTERVENTION PROGRAMMÉE', 50, procBoxY + 8);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        doc.text(`Type d'intervention: ${surgeryCase.surgeryType?.name || surgeryCase.surgeryDescription || 'N/A'}`, 50, procBoxY + 25);
+        const eyeLabelsPreOp = { 'OD': 'Œil Droit (OD)', 'OS': 'Œil Gauche (OS)', 'OU': 'Les Deux Yeux (OU)', 'N/A': 'N/A' };
+        doc.text(`Œil: ${eyeLabelsPreOp[surgeryCase.eye] || surgeryCase.eye || 'N/A'}`, 350, procBoxY + 25);
+        doc.text(`Date/Heure: ${surgeryCase.scheduledDate ? this.formatDate(surgeryCase.scheduledDate) : 'N/A'}`, 50, procBoxY + 40);
+        doc.text(`Salle d'opération: ${surgeryCase.operatingRoom?.name || surgeryCase.operatingRoom || 'Non assignée'}`, 350, procBoxY + 40);
+        doc.text(`Chirurgien: ${surgeryCase.surgeon?.firstName ? `Dr. ${surgeryCase.surgeon.firstName} ${surgeryCase.surgeon.lastName || ''}` : 'Non assigné'}`, 50, procBoxY + 55);
+        doc.y = procBoxY + 80;
+
+        // Checklist section
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('LISTE DE VÉRIFICATION PRÉ-OPÉRATOIRE', 40, doc.y);
+        doc.strokeColor(this.colors.border).moveTo(40, doc.y + 3).lineTo(555, doc.y + 3).stroke();
+        doc.moveDown(0.8);
+        const preOpChecklist = surgeryCase.preOpChecklist || {};
+        const checklistItems = [
+          { label: 'Identité du patient vérifiée', checked: preOpChecklist.identityVerified },
+          { label: 'Site opératoire marqué', checked: preOpChecklist.siteMarked },
+          { label: 'Allergies revues et documentées', checked: preOpChecklist.allergiesReviewed },
+          { label: 'Jeûne respecté (minimum 6h)', checked: preOpChecklist.fastingConfirmed },
+          { label: 'Constantes vitales prises et signées', checked: preOpChecklist.vitalsSigned },
+          { label: 'Collyres pré-opératoires administrés', checked: preOpChecklist.eyeDropsAdministered },
+          { label: 'Dilatation pupillaire effectuée', checked: preOpChecklist.pupilDilated },
+          { label: 'Consentement éclairé signé', checked: false },
+          { label: 'Bilan sanguin vérifié', checked: false },
+          { label: 'ECG récent (si applicable)', checked: false },
+          { label: 'Consultation pré-anesthésique validée', checked: false },
+          { label: 'Prémédication administrée (si prescrite)', checked: false }
+        ];
+        const colWidth = 250;
+        let currentY = doc.y;
+        checklistItems.forEach((item, index) => {
+          const col = index % 2;
+          const row = Math.floor(index / 2);
+          const x = 50 + (col * colWidth);
+          const y = currentY + (row * 20);
+          doc.rect(x, y, 12, 12).stroke(this.colors.text);
+          if (item.checked) doc.fontSize(10).fillColor(this.colors.success).text('V', x + 2, y - 1);
+          doc.fontSize(9).fillColor(this.colors.text).font('Helvetica').text(item.label, x + 18, y + 1, { width: colWidth - 25 });
+        });
+        doc.y = currentY + (Math.ceil(checklistItems.length / 2) * 20) + 15;
+
+        // Current medications
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('MÉDICAMENTS EN COURS', 40, doc.y);
+        doc.strokeColor(this.colors.border).moveTo(40, doc.y + 3).lineTo(555, doc.y + 3).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(9).font('Helvetica').fillColor(this.colors.text);
+        if (patient?.currentMedications && patient.currentMedications.length > 0) {
+          patient.currentMedications.forEach((med) => {
+            const medName = typeof med === 'string' ? med : med.name || med.medication;
+            const dosage = typeof med === 'object' ? med.dosage : '';
+            doc.text(`- ${medName}${dosage ? ` - ${dosage}` : ''}`);
+          });
+        } else {
+          doc.text('Aucun médicament en cours déclaré');
+        }
+        doc.moveDown(1);
+
+        // Special notes
+        doc.fontSize(11).font('Helvetica-Bold').fillColor(this.colors.primary).text('NOTES PARTICULIÈRES', 40, doc.y);
+        doc.strokeColor(this.colors.border).moveTo(40, doc.y + 3).lineTo(555, doc.y + 3).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(9).font('Helvetica').fillColor(this.colors.text);
+        doc.rect(40, doc.y, 515, 50).stroke(this.colors.border);
+        doc.text(surgeryCase.preOpNotes || '', 45, doc.y + 5, { width: 505, height: 40 });
+        doc.y += 60;
+
+        // Signatures
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        const sigY = doc.y;
+        doc.text('Infirmier(e):', 50, sigY);
+        doc.text('Date/Heure: _____________', 50, sigY + 15);
+        doc.text('Signature: _____________', 50, sigY + 30);
+        doc.text('Chirurgien:', 300, sigY);
+        doc.text('Date/Heure: _____________', 300, sigY + 15);
+        doc.text('Signature: _____________', 300, sigY + 30);
+
+        this.addFooter(doc);
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  /**
+   * Generate Post-Op Note PDF (Consignes Post-Opératoires)
+   */
+  async generatePostOpNotePDF(surgeryReport, patient, clinic) {
+    return new Promise((resolve, reject) => {
+      try {
+        const doc = new PDFDocument({ ...this.defaultOptions, size: 'A5', margins: { top: 30, bottom: 30, left: 30, right: 30 } });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(chunks)));
+        doc.on('error', reject);
+        const clinicInfo = clinic || this.clinicInfo;
+        const pageWidth = 420;
+        const contentWidth = pageWidth - 60;
+
+        // Header
+        doc.fontSize(14).font('Helvetica-Bold').fillColor(this.colors.primary).text('CONSIGNES POST-OPÉRATOIRES', { align: 'center' });
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.lightText).text(clinicInfo.name, { align: 'center' });
+        doc.strokeColor(this.colors.primary).lineWidth(1).moveTo(30, doc.y + 5).lineTo(pageWidth - 30, doc.y + 5).stroke();
+        doc.moveDown(1);
+
+        // Patient info
+        doc.fontSize(11).font('Helvetica').fillColor(this.colors.text);
+        const patientNamePostOp = patient?.firstName && patient?.lastName ? `${patient.lastName.toUpperCase()} ${patient.firstName}` : patient?.fullName || 'N/A';
+        doc.font('Helvetica-Bold').text('Patient: ', { continued: true });
+        doc.font('Helvetica').text(patientNamePostOp);
+        doc.font('Helvetica-Bold').text('Date d\'intervention: ', { continued: true });
+        doc.font('Helvetica').text(surgeryReport.surgeryDate ? this.formatDate(surgeryReport.surgeryDate) : 'N/A');
+        const eyeLabelsPostOp = { 'OD': 'Œil Droit', 'OS': 'Œil Gauche', 'OU': 'Les Deux Yeux' };
+        doc.font('Helvetica-Bold').text('Œil opéré: ', { continued: true });
+        doc.font('Helvetica').text(eyeLabelsPostOp[surgeryReport.eye] || surgeryReport.eye || 'N/A');
+        doc.font('Helvetica-Bold').text('Intervention: ', { continued: true });
+        doc.font('Helvetica').text(surgeryReport.procedurePerformed || 'N/A');
+        doc.moveDown(1);
+
+        // Post-op medications
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(this.colors.primary).text('MÉDICAMENTS PRESCRITS');
+        doc.strokeColor(this.colors.border).moveTo(30, doc.y).lineTo(pageWidth - 30, doc.y).stroke();
+        doc.moveDown(0.5);
+        if (surgeryReport.postOpMedications && surgeryReport.postOpMedications.length > 0) {
+          const medTableTop = doc.y;
+          const medColWidths = [110, 60, 70, 50, 50];
+          const medHeaders = ['Médicament', 'Dosage', 'Fréquence', 'Durée', 'Œil'];
+          doc.rect(30, medTableTop, contentWidth, 18).fill(this.colors.background);
+          doc.fillColor(this.colors.text).fontSize(9).font('Helvetica-Bold');
+          let headerX = 32;
+          medHeaders.forEach((header, i) => { doc.text(header, headerX, medTableTop + 4, { width: medColWidths[i] - 4 }); headerX += medColWidths[i]; });
+          let rowY = medTableTop + 20;
+          doc.font('Helvetica').fontSize(9);
+          surgeryReport.postOpMedications.forEach((med) => {
+            let colX = 32;
+            doc.fillColor(this.colors.text);
+            doc.text(med.medication || 'N/A', colX, rowY, { width: medColWidths[0] - 4 }); colX += medColWidths[0];
+            doc.text(med.dosage || '-', colX, rowY, { width: medColWidths[1] - 4 }); colX += medColWidths[1];
+            doc.text(med.frequency || '-', colX, rowY, { width: medColWidths[2] - 4 }); colX += medColWidths[2];
+            doc.text(med.duration || '-', colX, rowY, { width: medColWidths[3] - 4 }); colX += medColWidths[3];
+            const medEyeLabels = { 'OD': 'OD', 'OS': 'OS', 'OU': 'OU' };
+            doc.text(medEyeLabels[med.eye] || med.eye || '-', colX, rowY, { width: medColWidths[4] - 4 });
+            rowY += 15;
+          });
+          doc.y = rowY + 5;
+        } else {
+          doc.fontSize(10).font('Helvetica').fillColor(this.colors.text).text('Aucun médicament prescrit', { align: 'center' });
+        }
+        doc.moveDown(1);
+
+        // General instructions
+        if (surgeryReport.postOpInstructions) {
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(this.colors.primary).text('INSTRUCTIONS GÉNÉRALES');
+          doc.strokeColor(this.colors.border).moveTo(30, doc.y).lineTo(pageWidth - 30, doc.y).stroke();
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica').fillColor(this.colors.text).text(surgeryReport.postOpInstructions, { width: contentWidth });
+          doc.moveDown(1);
+        }
+
+        // Activity restrictions
+        if (surgeryReport.activityRestrictions) {
+          doc.fontSize(12).font('Helvetica-Bold').fillColor(this.colors.primary).text('RESTRICTIONS D\'ACTIVITÉ');
+          doc.strokeColor(this.colors.border).moveTo(30, doc.y).lineTo(pageWidth - 30, doc.y).stroke();
+          doc.moveDown(0.5);
+          doc.fontSize(10).font('Helvetica').fillColor(this.colors.text).text(surgeryReport.activityRestrictions, { width: contentWidth });
+          doc.moveDown(1);
+        }
+
+        // Warning signs
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(this.colors.danger).text('SIGNES D\'ALERTE - CONSULTEZ EN URGENCE');
+        doc.strokeColor(this.colors.danger).moveTo(30, doc.y).lineTo(pageWidth - 30, doc.y).stroke();
+        doc.moveDown(0.5);
+        const warningSignsList = ['Douleur intense ne cédant pas aux antalgiques', 'Baisse brutale de la vision', 'Rougeur importante de l\'œil', 'Écoulement purulent', 'Fièvre supérieure à 38°C', 'Gonflement important des paupières'];
+        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
+        warningSignsList.forEach(sign => { doc.text(`- ${sign}`, { width: contentWidth }); });
+        doc.moveDown(1);
+
+        // Follow-up appointment
+        doc.fontSize(12).font('Helvetica-Bold').fillColor(this.colors.primary).text('RENDEZ-VOUS DE CONTRÔLE');
+        doc.strokeColor(this.colors.border).moveTo(30, doc.y).lineTo(pageWidth - 30, doc.y).stroke();
+        doc.moveDown(0.5);
+        doc.fontSize(11).font('Helvetica').fillColor(this.colors.text);
+        if (surgeryReport.followUpDate) { doc.font('Helvetica-Bold').text('Date: ', { continued: true }); doc.font('Helvetica').text(this.formatDate(surgeryReport.followUpDate)); }
+        if (surgeryReport.followUpInstructions) doc.text(surgeryReport.followUpInstructions, { width: contentWidth });
+        doc.moveDown(1);
+
+        // Emergency contact
+        doc.rect(30, doc.y, contentWidth, 45).fill(this.colors.background);
+        const contactBoxY = doc.y;
+        doc.fillColor(this.colors.text).fontSize(10).font('Helvetica-Bold').text('EN CAS D\'URGENCE:', 35, contactBoxY + 8);
+        doc.font('Helvetica').fontSize(11).text(`Tél: ${clinicInfo.phone}`, 35, contactBoxY + 22);
+        doc.fontSize(9).text(clinicInfo.address || '', 35, contactBoxY + 35, { width: contentWidth - 10 });
 
         doc.end();
       } catch (error) {
