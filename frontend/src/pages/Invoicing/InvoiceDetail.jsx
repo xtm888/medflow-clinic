@@ -1,8 +1,7 @@
 import { memo } from 'react';
 import PropTypes from 'prop-types';
 import { FileText, DollarSign, Printer } from 'lucide-react';
-import { format } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { safeFormatDate } from '../../utils/dateHelpers';
 
 /**
  * Invoice Detail Component
@@ -63,8 +62,8 @@ const InvoiceDetail = memo(({
             </div>
             <div className="text-right">
               <span className={`${getStatusBadge(invoice.status)} text-lg`}>{getStatusText(invoice.status)}</span>
-              <p className="text-sm text-gray-600 mt-2">Date: {format(new Date(invoice.date), 'dd MMMM yyyy', { locale: fr })}</p>
-              <p className="text-sm text-gray-600">Échéance: {format(new Date(invoice.dueDate), 'dd MMMM yyyy', { locale: fr })}</p>
+              <p className="text-sm text-gray-600 mt-2">Date: {safeFormatDate(invoice.date, 'dd MMMM yyyy', { fallback: 'N/A' })}</p>
+              <p className="text-sm text-gray-600">Échéance: {safeFormatDate(invoice.dueDate, 'dd MMMM yyyy', { fallback: 'N/A' })}</p>
             </div>
           </div>
 
@@ -110,7 +109,7 @@ const InvoiceDetail = memo(({
 
           <div className="border-t-2 pt-4 mt-4">
             <div className="flex justify-end">
-              <div className="w-64 space-y-2">
+              <div className="w-full sm:w-64 space-y-2">
                 <div className="flex justify-between"><span>Total:</span><span className="font-bold">{invoice.total.toLocaleString('fr-FR')} FC</span></div>
                 {invoice.conventionBilling && (
                   <>
