@@ -153,6 +153,292 @@ function inferCategory(name, content) {
   return 'correspondence';
 }
 
+// ============================================================
+// Variable Extraction Functions
+// ============================================================
+
+/**
+ * French label mappings for common variable names
+ */
+const FRENCH_LABELS = {
+  // Patient info
+  'patientname': 'Nom du patient',
+  'patientnom': 'Nom du patient',
+  'patientprenom': 'Prenom du patient',
+  'nom': 'Nom',
+  'prenom': 'Prenom',
+  'patient': 'Patient',
+  'dateofbirth': 'Date de naissance',
+  'datenaissance': 'Date de naissance',
+  'age': 'Age',
+  'sexe': 'Sexe',
+  'gender': 'Sexe',
+  'adresse': 'Adresse',
+  'telephone': 'Telephone',
+  'email': 'Email',
+
+  // Doctor info
+  'doctorname': 'Nom du medecin',
+  'medecin': 'Medecin',
+  'docteur': 'Docteur',
+  'praticien': 'Praticien',
+
+  // Dates
+  'date': 'Date',
+  'datejour': 'Date du jour',
+  'dateconsultation': 'Date de consultation',
+  'dateexamen': "Date d'examen",
+  'dateintervention': "Date d'intervention",
+  'dateprochain': 'Date prochain rendez-vous',
+
+  // Clinical
+  'diagnostic': 'Diagnostic',
+  'diagnosis': 'Diagnostic',
+  'observation': 'Observation',
+  'conclusion': 'Conclusion',
+  'resultat': 'Resultat',
+  'traitement': 'Traitement',
+  'prescription': 'Prescription',
+  'ordonnance': 'Ordonnance',
+
+  // Vision
+  'avlod': 'Acuite visuelle OD (loin)',
+  'avlos': 'Acuite visuelle OS (loin)',
+  'avpod': 'Acuite visuelle OD (pres)',
+  'avpos': 'Acuite visuelle OS (pres)',
+  'refraction': 'Refraction',
+  'tonus': 'Tonus oculaire',
+  'pio': 'Pression intraoculaire',
+  'iop': 'Pression intraoculaire',
+  'tod': 'Tension OD',
+  'tog': 'Tension OS',
+
+  // Surgery
+  'intervention': 'Intervention',
+  'operation': 'Operation',
+  'anesthesie': 'Anesthesie',
+  'complications': 'Complications',
+
+  // Billing
+  'montant': 'Montant',
+  'total': 'Total',
+  'paiement': 'Paiement',
+  'devise': 'Devise',
+
+  // Misc
+  'remarque': 'Remarque',
+  'commentaire': 'Commentaire',
+  'note': 'Note',
+  'motif': 'Motif',
+  'duree': 'Duree',
+  'lieu': 'Lieu'
+};
+
+/**
+ * Humanize a variable name to a French label
+ * @param {string} varName - Variable name (lowercase, no separators)
+ * @returns {string} Human-readable French label
+ */
+function humanizeLabel(varName) {
+  // Check predefined labels first
+  const key = varName.toLowerCase().replace(/[_\-\s]/g, '');
+  if (FRENCH_LABELS[key]) {
+    return FRENCH_LABELS[key];
+  }
+
+  // Fallback: Convert camelCase/snake_case to spaced words
+  return varName
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/[_\-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+    .replace(/^./, s => s.toUpperCase());
+}
+
+/**
+ * Infer variable type from name
+ * @param {string} varName - Variable name
+ * @returns {'text'|'date'|'number'|'select'|'boolean'}
+ */
+function inferVariableType(varName) {
+  const name = varName.toLowerCase();
+
+  // Date fields
+  if (name.includes('date') || name.includes('naissance') ||
+      name.includes('jour') || name.includes('rdv')) {
+    return 'date';
+  }
+
+  // Number fields
+  if (name.includes('age') || name.includes('montant') ||
+      name.includes('total') || name.includes('prix') ||
+      name.includes('nombre') || name.includes('duree') ||
+      name.includes('sphere') || name.includes('cylindre') ||
+      name.includes('axe') || name.includes('add') ||
+      name.includes('iop') || name.includes('pio') ||
+      name.includes('tod') || name.includes('tog')) {
+    return 'number';
+  }
+
+  // Select fields
+  if (name.includes('sexe') || name.includes('gender') ||
+      name.includes('oeil') || name.includes('eye') ||
+      name.includes('lateralite') || name.includes('devise')) {
+    return 'select';
+  }
+
+  // Boolean fields
+  if (name.includes('urgent') || name.includes('confirm') ||
+      name.includes('valide') || name.includes('complete')) {
+    return 'boolean';
+  }
+
+  return 'text';
+}
+
+/**
+ * Determine if a variable is required
+ * @param {string} varName - Variable name
+ * @returns {boolean}
+ */
+function isRequiredVar(varName) {
+  const name = varName.toLowerCase();
+  const requiredVars = [
+    'patientname', 'patientnom', 'nom', 'patient',
+    'date', 'datejour',
+    'medecin', 'docteur', 'doctorname'
+  ];
+  return requiredVars.some(rv => name.includes(rv));
+}
+
+/**
+ * Extract variable placeholders from template content
+ * Supports multiple placeholder formats:
+ * - {{varName}} (Handlebars/Mustache style)
+ * - [VAR_NAME] (Bracket style)
+ * - %VAR_NAME% (Percent style)
+ * - <VAR_NAME> (Angle bracket style)
+ * - @VAR_NAME@ (At-sign style)
+ *
+ * @param {string} content - Template content
+ * @returns {Array<{name: string, label: string, type: string, required: boolean}>}
+ */
+function extractVariables(content) {
+  if (!content) return [];
+
+  const variables = [];
+  const found = new Set();
+
+  // Patterns for different placeholder formats
+  const patterns = [
+    /\{\{([a-zA-Z_][a-zA-Z0-9_]*)\}\}/g,           // {{varName}}
+    /\[([A-Z][A-Z0-9_]*)\]/g,                       // [VAR_NAME]
+    /%([A-Z][A-Z0-9_]*)%/g,                         // %VAR_NAME%
+    /<([A-Z][A-Z0-9_]*)>/g,                         // <VAR_NAME>
+    /@([A-Z][A-Z0-9_]*)@/g,                         // @VAR_NAME@
+    /\$([a-zA-Z_][a-zA-Z0-9_]*)/g,                  // $varName
+    /#([a-zA-Z_][a-zA-Z0-9_]*)#/g                   // #varName#
+  ];
+
+  for (const pattern of patterns) {
+    let match;
+    // Reset pattern state
+    pattern.lastIndex = 0;
+
+    while ((match = pattern.exec(content)) !== null) {
+      const rawName = match[1];
+      // Normalize: lowercase, remove underscores
+      const normalizedName = rawName.toLowerCase().replace(/_/g, '');
+
+      // Skip if we've already found this variable
+      if (found.has(normalizedName)) continue;
+      found.add(normalizedName);
+
+      // Create camelCase variable name
+      const camelName = rawName
+        .toLowerCase()
+        .replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+
+      variables.push({
+        name: camelName,
+        label: humanizeLabel(normalizedName),
+        type: inferVariableType(normalizedName),
+        required: isRequiredVar(normalizedName)
+      });
+    }
+  }
+
+  return variables;
+}
+
+/**
+ * Normalize placeholders in content to use consistent {{varName}} format
+ * @param {string} content - Template content
+ * @returns {string} Content with normalized placeholders
+ */
+function normalizePlaceholders(content) {
+  if (!content) return content;
+
+  let normalized = content;
+
+  // Map of patterns to replacements
+  const replacements = [
+    // [VAR_NAME] -> {{varName}}
+    {
+      pattern: /\[([A-Z][A-Z0-9_]*)\]/g,
+      replace: (_, name) => `{{${toCamelCase(name)}}}`
+    },
+    // %VAR_NAME% -> {{varName}}
+    {
+      pattern: /%([A-Z][A-Z0-9_]*)%/g,
+      replace: (_, name) => `{{${toCamelCase(name)}}}`
+    },
+    // <VAR_NAME> -> {{varName}} (but not HTML tags)
+    {
+      pattern: /<([A-Z][A-Z0-9_]*)>/g,
+      replace: (match, name) => {
+        // Skip if it looks like an HTML tag
+        const htmlTags = ['BR', 'HR', 'P', 'DIV', 'SPAN', 'TABLE', 'TR', 'TD', 'TH', 'B', 'I', 'U', 'A', 'IMG'];
+        if (htmlTags.includes(name.toUpperCase())) return match;
+        return `{{${toCamelCase(name)}}}`;
+      }
+    },
+    // @VAR_NAME@ -> {{varName}}
+    {
+      pattern: /@([A-Z][A-Z0-9_]*)@/g,
+      replace: (_, name) => `{{${toCamelCase(name)}}}`
+    },
+    // $varName -> {{varName}}
+    {
+      pattern: /\$([a-zA-Z_][a-zA-Z0-9_]*)/g,
+      replace: (_, name) => `{{${toCamelCase(name)}}}`
+    },
+    // #varName# -> {{varName}}
+    {
+      pattern: /#([a-zA-Z_][a-zA-Z0-9_]*)#/g,
+      replace: (_, name) => `{{${toCamelCase(name)}}}`
+    }
+  ];
+
+  for (const { pattern, replace } of replacements) {
+    normalized = normalized.replace(pattern, replace);
+  }
+
+  return normalized;
+}
+
+/**
+ * Convert UPPER_SNAKE_CASE or snake_case to camelCase
+ * @param {string} str - Input string
+ * @returns {string} camelCase string
+ */
+function toCamelCase(str) {
+  return str
+    .toLowerCase()
+    .replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
 /**
  * Import letter templates from Courriertexte table
  * @param {sql.ConnectionPool} pool - SQL connection pool
