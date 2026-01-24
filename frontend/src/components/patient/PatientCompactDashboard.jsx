@@ -16,8 +16,10 @@
  * StudioVision Parity: Color-coded clinical sections, French medical fields
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import patientService from '../../services/patientService';
+import deviceDataService from '../../services/deviceDataService';
 import {
   Eye,
   Glasses,
@@ -49,10 +51,11 @@ import {
   Shield,
   CreditCard,
   Briefcase,
-  Hash
+  Hash,
+  Star
 } from 'lucide-react';
-import { format, differenceInYears } from 'date-fns';
-import { fr } from 'date-fns/locale';
+import { differenceInYears } from 'date-fns';
+import { safeFormatDate } from '../../utils/dateHelpers';
 
 // ============================================================================
 // STUDIOVISION COLOR-CODED SECTION SYSTEM
@@ -236,9 +239,320 @@ export default function PatientCompactDashboard({
     return differenceInYears(new Date(), new Date(patient.dateOfBirth));
   }, [patient?.dateOfBirth]);
 
-  // Get latest exam data
+  // State for visits and refraction data loaded from API
+  const [visitsData, setVisitsData] = useState([]);
+  const [extractedRefraction, setExtractedRefraction] = useState({});
+  const [extractedVisualAcuity, setExtractedVisualAcuity] = useState({});
+  const [extractedIOP, setExtractedIOP] = useState({});
+  const [careVisionImages, setCareVisionImages] = useState([]);
+  const [careVisionKeratometry, setCareVisionKeratometry] = useState(null);
+  const [latestIOPFromBridge, setLatestIOPFromBridge] = useState(null);
+
+  // Device integration data (TONOREF, TOPCON, HFA, SOLIX, TOMEY)
+  const [deviceExams, setDeviceExams] = useState([]);
+  const [deviceRefraction, setDeviceRefraction] = useState(null);
+  const [deviceIOP, setDeviceIOP] = useState(null);
+  const [deviceKeratometry, setDeviceKeratometry] = useState(null);
+  const [deviceImages, setDeviceImages] = useState([]);
+
+  // Visit analytics (from CareVision bridge)
+  const [visitAnalytics, setVisitAnalytics] = useState(null);
+
+  // Check if patient has CareVision link
+  const hasCareVisionLink = patient?.hasLegacyData || patient?.legacyIds?.lv || patient?.legacyIds?.careVision;
+
+  // Load visits data to extract refraction (including legacy CareVision data)
+  useEffect(() => {
+    const loadVisitsData = async () => {
+      if (!patient?._id) return;
+      try {
+        const response = await patientService.getPatientVisits(patient._id);
+        // Handle different response structures (same as OphthalmologySection)
+        const visitsArray = Array.isArray(response?.data) ? response.data : (response?.data?.data || response?.data?.visits || []);
+        setVisitsData(visitsArray);
+
+        // Find latest visit with refraction data
+        const visitWithRefraction = visitsArray.find(v =>
+          v.refraction?.subjective?.OD || v.refraction?.subjective?.OS ||
+          v.refraction?.finalPrescription?.OD || v.refraction?.finalPrescription?.OS ||
+          v.refraction?.OD || v.refraction?.OS ||
+          v.refractions?.length > 0 || v.clinicalData?.refractions?.length > 0
+        );
+
+        if (visitWithRefraction) {
+          // Extract refraction - check multiple possible paths (matches OphthalmologySection logic)
+          const refData = visitWithRefraction.refraction?.finalPrescription ||
+                          visitWithRefraction.refraction?.subjective ||
+                          visitWithRefraction.refraction ||
+                          {};
+          setExtractedRefraction(refData);
+
+          // Extract visual acuity from the visit
+          const vaData = visitWithRefraction.visualAcuity ||
+                         visitWithRefraction.refraction?.visualAcuity ||
+                         {};
+          setExtractedVisualAcuity(vaData);
+        }
+
+        // Find latest visit with IOP data (may be different from refraction visit)
+        const visitWithIOP = visitsArray.find(v =>
+          v.iop?.OD?.value || v.iop?.OS?.value || v.iop?.OD || v.iop?.OS
+        );
+        if (visitWithIOP?.iop) {
+          setExtractedIOP(visitWithIOP.iop);
+        }
+      } catch (err) {
+        console.error('Error loading visits for refraction:', err);
+      }
+    };
+    loadVisitsData();
+  }, [patient?._id]);
+
+  // Load CareVision bridge data if patient has legacy link
+  useEffect(() => {
+    const loadCareVisionData = async () => {
+      if (!patient?._id || !hasCareVisionLink) return;
+
+      try {
+        // Fetch combined history from CareVision bridge
+        const history = await patientService.getCombinedHistory(patient._id, { limit: 100 });
+
+        if (history) {
+          // Extract images from CareVision
+          if (history.carevision?.images?.length > 0) {
+            setCareVisionImages(history.carevision.images);
+          }
+
+          // Extract keratometry from CareVision
+          if (history.carevision?.keratometry?.length > 0) {
+            setCareVisionKeratometry(history.carevision.keratometry[0]);
+          }
+
+          // Extract latest IOP from consultations if not already found
+          const consultWithIOP = history.carevision?.consultations?.find(c =>
+            c.tonometry?.od || c.tonometry?.os
+          );
+          if (consultWithIOP?.tonometry) {
+            setLatestIOPFromBridge({
+              OD: { value: consultWithIOP.tonometry.od },
+              OS: { value: consultWithIOP.tonometry.os }
+            });
+          }
+
+          // If no MedFlow refraction, try CareVision refraction
+          if (!extractedRefraction?.OD && !extractedRefraction?.OS && history.carevision?.refractions?.length > 0) {
+            const cvRef = history.carevision.refractions[0];
+            setExtractedRefraction({
+              OD: {
+                sphere: cvRef.od?.sphere,
+                cylinder: cvRef.od?.cylinder,
+                axis: cvRef.od?.axis,
+                add: cvRef.od?.add
+              },
+              OS: {
+                sphere: cvRef.os?.sphere,
+                cylinder: cvRef.os?.cylinder,
+                axis: cvRef.os?.axis,
+                add: cvRef.os?.add
+              }
+            });
+            setExtractedVisualAcuity({
+              OD: {
+                corrected: cvRef.od?.visualAcuity?.distance,
+                near: cvRef.od?.visualAcuity?.near
+              },
+              OS: {
+                corrected: cvRef.os?.visualAcuity?.distance,
+                near: cvRef.os?.visualAcuity?.near
+              }
+            });
+          }
+
+          // Extract visit analytics
+          if (history.carevision?.visitAnalytics) {
+            setVisitAnalytics(history.carevision.visitAnalytics);
+          }
+        }
+      } catch (err) {
+        console.error('Error loading CareVision bridge data:', err);
+      }
+    };
+    loadCareVisionData();
+  }, [patient?._id, hasCareVisionLink, extractedRefraction?.OD, extractedRefraction?.OS]);
+
+  // Load device integration data (TONOREF, TOPCON, HFA, SOLIX, TOMEY)
+  useEffect(() => {
+    const loadDeviceData = async () => {
+      if (!patient?._id) return;
+
+      try {
+        const response = await deviceDataService.getPatientDeviceData(patient._id);
+        const exams = response?.data || response || [];
+        setDeviceExams(exams);
+
+        // Extract latest data from each device type
+        exams.forEach(exam => {
+          const source = exam.deviceSource || exam.source;
+
+          // TONOREF III - refraction + IOP + keratometry
+          if (source === 'TONOREF_III') {
+            if (exam.measurements?.refraction && !deviceRefraction) {
+              setDeviceRefraction({
+                OD: exam.measurements.refraction.OD,
+                OS: exam.measurements.refraction.OS,
+                source: 'TONOREF III',
+                date: exam.examDate || exam.createdAt
+              });
+            }
+            if (exam.measurements?.tonometry && !deviceIOP) {
+              setDeviceIOP({
+                OD: { value: exam.measurements.tonometry.OD },
+                OS: { value: exam.measurements.tonometry.OS },
+                source: 'TONOREF III',
+                date: exam.examDate || exam.createdAt
+              });
+            }
+            if (exam.measurements?.keratometry && !deviceKeratometry) {
+              setDeviceKeratometry({
+                OD: exam.measurements.keratometry.OD,
+                OS: exam.measurements.keratometry.OS,
+                source: 'TONOREF III',
+                date: exam.examDate || exam.createdAt
+              });
+            }
+          }
+
+          // TOPCON Maestro2 (ACQUISITION) - images
+          if (source === 'ACQUISITION' && exam.files?.length > 0) {
+            setDeviceImages(prev => [
+              ...prev,
+              ...exam.files.map((f, idx) => ({
+                id: `${exam._id}-${idx}`,
+                deviceSource: source,
+                type: exam.reportType || 'FUNDUS',
+                url: deviceDataService.getFileUrl(exam._id, idx),
+                date: exam.examDate || exam.createdAt,
+                eye: exam.eye
+              }))
+            ]);
+          }
+
+          // SOLIX OCT - images
+          if (source === 'SOLIX_OCT' && exam.files?.length > 0) {
+            setDeviceImages(prev => [
+              ...prev,
+              ...exam.files.map((f, idx) => ({
+                id: `${exam._id}-${idx}`,
+                deviceSource: source,
+                type: exam.reportType || 'OCT',
+                url: deviceDataService.getFileUrl(exam._id, idx),
+                date: exam.examDate || exam.createdAt,
+                eye: exam.eye
+              }))
+            ]);
+          }
+
+          // TOMEY MR-6000 - keratometry/topography images
+          if (source === 'TOMEY_MR6000' && exam.files?.length > 0) {
+            setDeviceImages(prev => [
+              ...prev,
+              ...exam.files.map((f, idx) => ({
+                id: `${exam._id}-${idx}`,
+                deviceSource: source,
+                type: exam.reportType || 'TOPO',
+                url: deviceDataService.getFileUrl(exam._id, idx),
+                date: exam.examDate || exam.createdAt,
+                eye: exam.eye
+              }))
+            ]);
+          }
+
+          // HFA Visual Field - PDFs/images
+          if (source === 'HFA_VISUAL_FIELD' && exam.files?.length > 0) {
+            setDeviceImages(prev => [
+              ...prev,
+              ...exam.files.map((f, idx) => ({
+                id: `${exam._id}-${idx}`,
+                deviceSource: source,
+                type: exam.reportType || 'VF',
+                url: deviceDataService.getFileUrl(exam._id, idx),
+                date: exam.examDate || exam.createdAt,
+                eye: exam.eye
+              }))
+            ]);
+          }
+        });
+      } catch (err) {
+        console.error('Error loading device integration data:', err);
+      }
+    };
+    loadDeviceData();
+  }, [patient?._id]);
+
+  // ============================================================================
+  // UNIFIED DATA PRIORITY: MedFlow → Device → CareVision → Legacy Exam
+  // ============================================================================
+
   const latestExam = patient?.latestOphthalmologyExam || {};
-  const latestRefraction = patient?.latestRefraction || latestExam?.refraction || {};
+
+  // Refraction priority: MedFlow visits → Device (TONOREF) → Legacy exam
+  const latestRefraction = extractedRefraction?.OD || extractedRefraction?.OS
+    ? extractedRefraction
+    : (deviceRefraction?.OD || deviceRefraction?.OS)
+      ? deviceRefraction
+      : (patient?.latestRefraction || latestExam?.refraction || {});
+
+  // Visual acuity priority: MedFlow visits → Legacy exam
+  const latestVisualAcuity = extractedVisualAcuity?.OD || extractedVisualAcuity?.OS
+    ? extractedVisualAcuity
+    : latestExam.visualAcuity || {};
+
+  // IOP priority: MedFlow visits → Device (TONOREF) → CareVision → Legacy exam
+  const latestIOP = extractedIOP?.OD || extractedIOP?.OS
+    ? extractedIOP
+    : (deviceIOP?.OD || deviceIOP?.OS)
+      ? deviceIOP
+      : (latestIOPFromBridge?.OD || latestIOPFromBridge?.OS)
+        ? latestIOPFromBridge
+        : latestExam.iop || {};
+
+  // Keratometry priority: Device (TONOREF/TOMEY) → CareVision → Legacy exam
+  const latestKeratometry = deviceKeratometry?.OD || deviceKeratometry?.OS
+    ? deviceKeratometry
+    : careVisionKeratometry
+      ? careVisionKeratometry
+      : latestExam.keratometry || {};
+
+  // Combined images from all sources
+  const allImages = useMemo(() => {
+    const combined = [];
+
+    // Add device images
+    deviceImages.forEach(img => {
+      combined.push({
+        ...img,
+        source: 'device',
+        sourceBadge: img.deviceSource?.replace('_', ' ') || 'Device'
+      });
+    });
+
+    // Add CareVision images
+    careVisionImages.forEach(img => {
+      combined.push({
+        id: `cv-${img.photoId || img.id}`,
+        url: img.thumbnailUrl || `/api/carevision/bridge/images/${img.photoId}/thumbnail`,
+        fullUrl: `/api/carevision/bridge/images/${img.photoId}/full`,
+        type: img.albumName || 'Photo',
+        date: img.date,
+        eye: img.eye,
+        source: 'carevision',
+        sourceBadge: 'CareVision'
+      });
+    });
+
+    // Sort by date (most recent first)
+    return combined.sort((a, b) => new Date(b.date) - new Date(a.date));
+  }, [deviceImages, careVisionImages]);
 
   // Count alerts
   const alertCounts = useMemo(() => {
@@ -317,6 +631,34 @@ export default function PatientCompactDashboard({
 
         {/* View Toggle & Actions */}
         <div className="flex items-center gap-3">
+          {/* Visit Analytics Badge */}
+          {visitAnalytics && (
+            <div className="flex items-center gap-2">
+              {visitAnalytics.isRegularPatient && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 border border-emerald-200 rounded text-xs font-medium" title={`Patient depuis ${visitAnalytics.patientSinceYears || 0} an(s) - ${visitAnalytics.completedVisits || 0} visites`}>
+                  <Star className="w-3 h-3" />
+                  Patient régulier
+                </div>
+              )}
+              {visitAnalytics.visitFrequency && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 border border-blue-200 rounded text-xs" title={`Intervalle moyen: ${visitAnalytics.averageIntervalDays || '?'} jours`}>
+                  <Calendar className="w-3 h-3" />
+                  {visitAnalytics.visitFrequency === 'monthly' && 'Mensuel'}
+                  {visitAnalytics.visitFrequency === 'quarterly' && 'Trimestriel'}
+                  {visitAnalytics.visitFrequency === 'biannual' && 'Semestriel'}
+                  {visitAnalytics.visitFrequency === 'annual' && 'Annuel'}
+                  {visitAnalytics.visitFrequency === 'irregular' && 'Irrégulier'}
+                </div>
+              )}
+              {visitAnalytics.noShowRate > 20 && (
+                <div className="flex items-center gap-1 px-2 py-1 bg-amber-100 text-amber-700 border border-amber-200 rounded text-xs" title={`${visitAnalytics.noShows} absences sur ${visitAnalytics.totalAppointments} RDV`}>
+                  <AlertTriangle className="w-3 h-3" />
+                  {visitAnalytics.noShowRate}% absences
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Alert Summary */}
           <div className="flex items-center gap-2">
             <AlertBadge type="critical" count={alertCounts.critical} label="critique(s)" />
@@ -344,9 +686,9 @@ export default function PatientCompactDashboard({
       </div>
 
       {/* Main 3-Column Layout */}
-      <div className="flex-1 flex overflow-hidden p-2 gap-2">
+      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden p-2 gap-2">
         {/* LEFT COLUMN - Navigation & Quick Actions (25%) */}
-        <div className="w-1/4 flex flex-col gap-2 overflow-y-auto">
+        <div className="w-full lg:w-1/4 flex flex-col gap-2 overflow-y-auto">
           {/* Quick Actions */}
           <CompactCard title="Actions Rapides" icon={Activity}>
             <div className="grid grid-cols-2 gap-2">
@@ -555,7 +897,7 @@ export default function PatientCompactDashboard({
                 >
                   <div>
                     <div className="text-xs font-medium text-gray-700">
-                      {format(new Date(visit.visitDate || visit.createdAt), 'dd/MM/yyyy', { locale: fr })}
+                      {safeFormatDate(visit.visitDate || visit.createdAt, 'dd/MM/yyyy', { fallback: '-' })}
                     </div>
                     <div className="text-xs text-gray-500">{visit.reason || visit.type}</div>
                   </div>
@@ -573,9 +915,24 @@ export default function PatientCompactDashboard({
         </div>
 
         {/* CENTER COLUMN - Clinical Data (50%) */}
-        <div className="w-1/2 flex flex-col gap-2 overflow-y-auto">
+        <div className="w-full lg:w-1/2 flex flex-col gap-2 overflow-y-auto">
           {/* Visual Acuity & Refraction - PINK (StudioVision style) */}
-          <CompactCard title="Réfraction" icon={Glasses} variant="refraction">
+          <CompactCard
+            title={
+              <span className="flex items-center gap-2">
+                Réfraction
+                {latestRefraction?.source && (
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                    latestRefraction.source === 'TONOREF III' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                  }`}>
+                    {latestRefraction.source}
+                  </span>
+                )}
+              </span>
+            }
+            icon={Glasses}
+            variant="refraction"
+          >
             <div className="grid grid-cols-2 gap-4">
               {/* OD Column */}
               <div>
@@ -585,11 +942,11 @@ export default function PatientCompactDashboard({
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">AV sc:</span>
-                    <span className="font-medium">{latestExam.visualAcuity?.OD?.uncorrected || '-'}</span>
+                    <span className="font-medium">{latestVisualAcuity?.OD?.uncorrected || '-'}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">AV ac:</span>
-                    <span className="font-medium">{latestExam.visualAcuity?.OD?.corrected || '-'}</span>
+                    <span className="font-medium">{latestVisualAcuity?.OD?.corrected || '-'}</span>
                   </div>
                   <div className="flex justify-between text-xs bg-blue-50 p-1 rounded">
                     <span className="text-gray-500">Rx:</span>
@@ -597,7 +954,7 @@ export default function PatientCompactDashboard({
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Add:</span>
-                    <span className="font-medium">{latestRefraction?.OD?.add || '-'}</span>
+                    <span className="font-medium">{latestRefraction?.OD?.add || latestRefraction?.OD?.addition || '-'}</span>
                   </div>
                 </div>
               </div>
@@ -609,11 +966,11 @@ export default function PatientCompactDashboard({
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">AV sc:</span>
-                    <span className="font-medium">{latestExam.visualAcuity?.OS?.uncorrected || '-'}</span>
+                    <span className="font-medium">{latestVisualAcuity?.OS?.uncorrected || '-'}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">AV ac:</span>
-                    <span className="font-medium">{latestExam.visualAcuity?.OS?.corrected || '-'}</span>
+                    <span className="font-medium">{latestVisualAcuity?.OS?.corrected || '-'}</span>
                   </div>
                   <div className="flex justify-between text-xs bg-green-50 p-1 rounded">
                     <span className="text-gray-500">Rx:</span>
@@ -621,21 +978,38 @@ export default function PatientCompactDashboard({
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Add:</span>
-                    <span className="font-medium">{latestRefraction?.OS?.add || '-'}</span>
+                    <span className="font-medium">{latestRefraction?.OS?.add || latestRefraction?.OS?.addition || '-'}</span>
                   </div>
                 </div>
               </div>
             </div>
-            {/* Keratometry if available */}
-            {latestExam.keratometry && (
+            {/* Keratometry - unified from Device → CareVision → Legacy */}
+            {(latestKeratometry?.OD || latestKeratometry?.OS || latestKeratometry?.od || latestKeratometry?.os) && (
               <div className="mt-3 pt-3 border-t">
-                <div className="text-xs text-gray-500 mb-1">Kératométrie:</div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs text-gray-500">Kératométrie:</span>
+                  {latestKeratometry.source && (
+                    <span className={`text-[9px] px-1.5 py-0.5 rounded ${
+                      latestKeratometry.source === 'TONOREF III' ? 'bg-purple-100 text-purple-700' :
+                      latestKeratometry.source === 'TOMEY' ? 'bg-green-100 text-green-700' :
+                      'bg-amber-100 text-amber-700'
+                    }`}>
+                      {latestKeratometry.source}
+                    </span>
+                  )}
+                </div>
                 <div className="grid grid-cols-2 gap-2 text-xs">
                   <div>
-                    OD: K1 {latestExam.keratometry.OD?.k1 || '-'} / K2 {latestExam.keratometry.OD?.k2 || '-'}
+                    OD: K1 {latestKeratometry.OD?.k1 || latestKeratometry.od?.k1 || '-'} / K2 {latestKeratometry.OD?.k2 || latestKeratometry.od?.k2 || '-'}
+                    {(latestKeratometry.OD?.axis || latestKeratometry.od?.axis) && (
+                      <span className="text-gray-400"> @{latestKeratometry.OD?.axis || latestKeratometry.od?.axis}°</span>
+                    )}
                   </div>
                   <div>
-                    OS: K1 {latestExam.keratometry.OS?.k1 || '-'} / K2 {latestExam.keratometry.OS?.k2 || '-'}
+                    OS: K1 {latestKeratometry.OS?.k1 || latestKeratometry.os?.k1 || '-'} / K2 {latestKeratometry.OS?.k2 || latestKeratometry.os?.k2 || '-'}
+                    {(latestKeratometry.OS?.axis || latestKeratometry.os?.axis) && (
+                      <span className="text-gray-400"> @{latestKeratometry.OS?.axis || latestKeratometry.os?.axis}°</span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -648,9 +1022,9 @@ export default function PatientCompactDashboard({
               <div className="text-center">
                 <div className="text-xs text-gray-500 mb-1">OD</div>
                 <div className={`text-2xl font-bold ${
-                  (latestExam.iop?.OD?.value || 0) > 21 ? 'text-red-600' : 'text-gray-800'
+                  (latestIOP?.OD?.value || 0) > 21 ? 'text-red-600' : 'text-gray-800'
                 }`}>
-                  {latestExam.iop?.OD?.value || '-'}
+                  {latestIOP?.OD?.value || '-'}
                 </div>
                 <div className="text-xs text-gray-400">mmHg</div>
               </div>
@@ -658,18 +1032,26 @@ export default function PatientCompactDashboard({
               <div className="text-center">
                 <div className="text-xs text-gray-500 mb-1">OS</div>
                 <div className={`text-2xl font-bold ${
-                  (latestExam.iop?.OS?.value || 0) > 21 ? 'text-red-600' : 'text-gray-800'
+                  (latestIOP?.OS?.value || 0) > 21 ? 'text-red-600' : 'text-gray-800'
                 }`}>
-                  {latestExam.iop?.OS?.value || '-'}
+                  {latestIOP?.OS?.value || '-'}
                 </div>
                 <div className="text-xs text-gray-400">mmHg</div>
               </div>
             </div>
-            {latestExam.iop?.OD?.method && (
-              <div className="text-xs text-gray-400 text-center mt-2">
-                Méthode: {latestExam.iop.OD.method}
-              </div>
-            )}
+            {/* Method and source indicator */}
+            <div className="flex items-center justify-center gap-2 mt-2 text-xs">
+              {latestIOP?.OD?.method && latestIOP.OD.method !== 'unknown' && (
+                <span className="text-gray-400">Méthode: {latestIOP.OD.method}</span>
+              )}
+              {latestIOP?.source && (
+                <span className={`px-1.5 py-0.5 rounded text-[9px] font-medium ${
+                  latestIOP.source === 'TONOREF III' ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'
+                }`}>
+                  {latestIOP.source}
+                </span>
+              )}
+            </div>
           </CompactCard>
 
           {/* Diagnoses - YELLOW (StudioVision style) */}
@@ -744,7 +1126,7 @@ export default function PatientCompactDashboard({
         </div>
 
         {/* RIGHT COLUMN - Print, Devices, Scheduling (25%) */}
-        <div className="w-1/4 flex flex-col gap-2 overflow-y-auto">
+        <div className="w-full lg:w-1/4 flex flex-col gap-2 overflow-y-auto">
           {/* Quick Print */}
           <CompactCard title="Impression Rapide" icon={Printer}>
             <div className="space-y-2">
@@ -767,29 +1149,71 @@ export default function PatientCompactDashboard({
             </div>
           </CompactCard>
 
-          {/* Device Images (if available) */}
-          {patient.deviceImages?.length > 0 && (
-            <CompactCard title="Images Appareils" icon={Camera}>
+          {/* Unified Images - MedFlow Devices + CareVision */}
+          {allImages.length > 0 && (
+            <CompactCard title="Images & Examens" icon={Camera}>
               <div className="grid grid-cols-2 gap-2">
-                {patient.deviceImages.slice(0, 4).map((image, idx) => (
-                  <div
-                    key={idx}
-                    className="aspect-square bg-gray-100 rounded-lg overflow-hidden cursor-pointer hover:ring-2 ring-blue-500"
-                    onClick={() => onAction?.('view-image', image)}
-                  >
-                    <img
-                      src={image.thumbnail || image.url}
-                      alt={image.type || `Image ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                ))}
+                {allImages.slice(0, 4).map((image, idx) => {
+                  const isDevice = image.source === 'device';
+                  const isCareVision = image.source === 'carevision';
+                  const bgColor = isDevice ? 'bg-purple-50' : isCareVision ? 'bg-amber-50' : 'bg-gray-100';
+                  const ringColor = isDevice ? 'ring-purple-500' : isCareVision ? 'ring-amber-500' : 'ring-blue-500';
+                  const badgeColor = isDevice ? 'bg-purple-600' : isCareVision ? 'bg-amber-500' : 'bg-blue-500';
+
+                  return (
+                    <div
+                      key={image.id || idx}
+                      className={`aspect-square ${bgColor} rounded-lg overflow-hidden cursor-pointer hover:ring-2 ${ringColor} relative`}
+                      onClick={() => onAction?.('view-image', {
+                        ...image,
+                        url: image.fullUrl || image.url
+                      })}
+                    >
+                      <img
+                        src={image.url}
+                        alt={image.type || `Image ${idx + 1}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
+                          const fallbackDiv = document.createElement('div');
+                          fallbackDiv.className = 'text-center p-2';
+                          fallbackDiv.innerHTML = `<span class="text-xs text-gray-500">${image.type || 'Image'}</span>`;
+                          e.target.parentElement.appendChild(fallbackDiv);
+                        }}
+                      />
+                      {/* Source badge */}
+                      <div className={`absolute bottom-1 right-1 px-1.5 py-0.5 ${badgeColor} text-white text-[9px] rounded font-medium`}>
+                        {isDevice ? (image.type || 'DEV') : isCareVision ? 'CV' : 'MF'}
+                      </div>
+                      {/* Eye indicator */}
+                      {image.eye && (
+                        <div className="absolute top-1 left-1 px-1 py-0.5 bg-black/50 text-white text-[9px] rounded">
+                          {image.eye}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              {patient.deviceImages.length > 4 && (
-                <button className="w-full mt-2 py-1 text-xs text-blue-600 hover:text-blue-800">
-                  Voir {patient.deviceImages.length - 4} autres images
+              {/* Show count of additional images */}
+              {allImages.length > 4 && (
+                <button
+                  className="w-full mt-2 py-1 text-xs text-blue-600 hover:text-blue-800"
+                  onClick={() => onNavigateToSection?.('images')}
+                >
+                  Voir {allImages.length - 4} autres images
                 </button>
               )}
+              {/* Source legend */}
+              <div className="flex items-center justify-center gap-3 mt-2 text-[10px] text-gray-500">
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-purple-600 rounded"></span> Appareils
+                </span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-amber-500 rounded"></span> CareVision
+                </span>
+              </div>
             </CompactCard>
           )}
 
@@ -800,7 +1224,7 @@ export default function PatientCompactDashboard({
                 <div key={idx} className="p-2 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-medium text-gray-700">
-                      {format(new Date(apt.scheduledDate), 'dd/MM à HH:mm', { locale: fr })}
+                      {safeFormatDate(apt.scheduledDate, 'dd/MM à HH:mm', { fallback: '-' })}
                     </span>
                     <span className="text-xs text-gray-500">{apt.type}</span>
                   </div>
@@ -828,7 +1252,7 @@ export default function PatientCompactDashboard({
               {patient.notes?.slice(0, 3).map((note, idx) => (
                 <div key={idx} className="p-2 bg-gray-50 rounded text-xs">
                   <div className="text-gray-500 mb-1">
-                    {format(new Date(note.createdAt), 'dd/MM/yyyy', { locale: fr })}
+                    {safeFormatDate(note.createdAt, 'dd/MM/yyyy', { fallback: '-' })}
                   </div>
                   <div className="text-gray-700 line-clamp-2">{note.content}</div>
                 </div>
