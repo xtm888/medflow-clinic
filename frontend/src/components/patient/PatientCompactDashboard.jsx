@@ -182,9 +182,10 @@ function QuickAction({ icon: Icon, label, onClick, variant = 'default', disabled
       onClick={onClick}
       disabled={disabled}
       className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${variants[variant]} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+      title={label}
     >
-      <Icon className="w-4 h-4" />
-      <span>{label}</span>
+      <Icon className="w-4 h-4 shrink-0" />
+      <span className="truncate">{label}</span>
     </button>
   );
 }
