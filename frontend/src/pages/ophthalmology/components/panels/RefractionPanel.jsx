@@ -580,8 +580,8 @@ export default function RefractionPanel({ data, onChange, patient, previousData 
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Header with Eye Selector and Scale Toggle */}
       <div className="bg-gradient-to-r from-blue-50 to-purple-50 px-4 py-3 border-b border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2 lg:gap-0">
+          <div className="flex flex-wrap items-center gap-2 lg:gap-4">
             <div className="flex items-center gap-2">
               <Glasses className="h-5 w-5 text-purple-600" />
               <h2 className="font-semibold text-gray-900">Réfraction</h2>
@@ -604,7 +604,7 @@ export default function RefractionPanel({ data, onChange, patient, previousData 
             </button>
 
             {/* Quick Action Buttons */}
-            <div className="flex items-center gap-2 ml-2 pl-2 border-l border-gray-300">
+            <div className="flex flex-wrap items-center gap-1 sm:gap-2 ml-2 pl-2 border-l border-gray-300">
               {/* Validation Status Indicator */}
               {!validationResult.valid && (
                 <div className="flex items-center gap-1 px-2 py-1 text-xs rounded-lg bg-red-50 border border-red-200 text-red-700" title={validationResult.errors.join('\n')}>
