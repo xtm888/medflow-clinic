@@ -641,15 +641,20 @@ class PDFGeneratorService {
   }
 
   /**
-   * Generate Prescription PDF
+   * Generate Prescription PDF - CareVision Legacy Format
+   * Features: Header box with clinic info, signature/stamp box, French formatting
    */
   async generatePrescriptionPDF(prescription) {
     return new Promise((resolve, reject) => {
       try {
+        // A5 size: 420 x 595 points
         const doc = new PDFDocument({
-          ...this.defaultOptions,
-          size: 'A5', // Smaller size for prescriptions
-          margins: { top: 40, bottom: 40, left: 40, right: 40 }
+          size: 'A5',
+          margins: { top: 30, bottom: 30, left: 30, right: 30 },
+          info: {
+            Producer: 'MedFlow EMR',
+            Creator: 'MedFlow Prescription System'
+          }
         });
         const chunks = [];
 
@@ -657,101 +662,216 @@ class PDFGeneratorService {
         doc.on('end', () => resolve(Buffer.concat(chunks)));
         doc.on('error', reject);
 
-        // Header
-        this.addHeader(doc);
+        const pageWidth = 420;
+        const contentWidth = pageWidth - 60; // 30 margin each side
 
-        // Title
-        doc.moveDown(2);
-        doc.fontSize(16).font('Helvetica-Bold').fillColor(this.colors.primary)
-          .text('ORDONNANCE MEDICALE', { align: 'center' });
-        doc.moveDown();
+        // ===== HEADER BOX with clinic info =====
+        const headerBoxY = 30;
+        const headerBoxHeight = 55;
+        doc.rect(30, headerBoxY, contentWidth, headerBoxHeight)
+          .strokeColor(this.colors.border)
+          .lineWidth(1)
+          .stroke();
 
-        // Prescription number and date
-        doc.fontSize(10).font('Helvetica').fillColor(this.colors.text);
-        doc.text(`N° ${prescription.prescriptionNumber || prescription._id?.toString().slice(-8).toUpperCase()}`, { align: 'right' });
-        doc.text(`Date: ${this.formatDate(prescription.prescribedDate || prescription.createdAt)}`, { align: 'right' });
-        doc.moveDown();
+        // Clinic name (bold, 14pt)
+        doc.fontSize(14).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text(this.clinicInfo.name, 35, headerBoxY + 8, { width: contentWidth - 10, align: 'center' });
 
-        // Patient info
-        if (prescription.patient) {
-          const patient = prescription.patient;
-          doc.fontSize(11).font('Helvetica-Bold').text('Patient:');
-          doc.font('Helvetica').text(`${patient.firstName} ${patient.lastName}`);
-          if (patient.dateOfBirth) {
-            const age = Math.floor((new Date() - new Date(patient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000));
-            doc.text(`Age: ${age} ans`);
-          }
-          doc.moveDown();
-        }
+        // Clinic address
+        doc.fontSize(9).font('Helvetica').fillColor(this.colors.lightText)
+          .text(this.clinicInfo.address, 35, headerBoxY + 25, { width: contentWidth - 10, align: 'center' });
 
-        // Medications
-        doc.fontSize(11).font('Helvetica-Bold').text('Médicaments prescrits:');
+        // Phone and email
+        doc.text(`Tel: ${this.clinicInfo.phone} | ${this.clinicInfo.email}`, 35, headerBoxY + 38, { width: contentWidth - 10, align: 'center' });
+
+        // ===== TITLE SECTION =====
+        doc.y = headerBoxY + headerBoxHeight + 15;
+
+        // "ORDONNANCE MEDICALE" centered, underlined
+        doc.fontSize(14).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text('ORDONNANCE MEDICALE', { align: 'center', underline: true });
+
         doc.moveDown(0.5);
 
-        (prescription.medications || []).forEach((med, index) => {
-          // Medication name with route and eye
-          let medHeader = `${index + 1}. ${med.medication || med.name}`;
-          if (med.route && med.route !== 'oral') {
-            const routeLabels = {
-              ophthalmic: 'Collyre',
-              intravitreal: 'Intravitréen',
-              subconjunctival: 'Sous-conjonctival',
-              periocular: 'Périoculaire',
-              intracameral: 'Intracaméral',
-              topical: 'Topique',
-              otic: 'Auriculaire',
-              nasal: 'Nasal'
-            };
-            medHeader += ` (${routeLabels[med.route] || med.route})`;
-          }
-          if (med.applicationLocation?.eye) {
-            medHeader += ` - ${med.applicationLocation.eye}`;
+        // Prescription number aligned right
+        const prescNum = prescription.prescriptionNumber || `ORD-${prescription._id?.toString().slice(-8).toUpperCase() || 'XXXX'}`;
+        doc.fontSize(9).font('Helvetica').fillColor(this.colors.lightText)
+          .text(`N° ${prescNum}`, { align: 'right' });
+
+        // Date aligned right in French format: "Kinshasa, le DD/MM/YYYY"
+        const prescDate = this.formatDate(prescription.prescribedDate || prescription.createdAt);
+        doc.text(`Kinshasa, le ${prescDate}`, { align: 'right' });
+
+        doc.moveDown(1);
+
+        // ===== PATIENT SECTION (boxed) =====
+        if (prescription.patient) {
+          const patient = prescription.patient;
+          const patientBoxY = doc.y;
+          const patientBoxHeight = 45;
+
+          // Light gray background box
+          doc.rect(30, patientBoxY, contentWidth, patientBoxHeight)
+            .fillColor('#f5f5f5')
+            .fill();
+          doc.rect(30, patientBoxY, contentWidth, patientBoxHeight)
+            .strokeColor(this.colors.border)
+            .lineWidth(0.5)
+            .stroke();
+
+          // Patient info inside box
+          doc.fillColor(this.colors.text).fontSize(10).font('Helvetica-Bold')
+            .text(`Patient: ${patient.firstName || ''} ${patient.lastName || ''}`, 38, patientBoxY + 8);
+
+          // Birth date and age
+          if (patient.dateOfBirth) {
+            const age = Math.floor((new Date() - new Date(patient.dateOfBirth)) / (365.25 * 24 * 60 * 60 * 1000));
+            doc.font('Helvetica').fontSize(9)
+              .text(`Né(e) le: ${this.formatDate(patient.dateOfBirth)}  (${age} ans)`, 38, patientBoxY + 22);
           }
 
-          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.primary)
-            .text(medHeader);
-          doc.font('Helvetica').fillColor(this.colors.text);
-          if (med.dosage) doc.text(`   Dosage: ${med.dosage}`);
-          if (med.frequency) doc.text(`   Fréquence: ${med.frequency}`);
-          if (med.duration) doc.text(`   Durée: ${med.duration}`);
-          if (med.instructions) doc.text(`   Instructions: ${med.instructions}`);
+          // Patient MRN/ID
+          const mrn = patient.patientId || patient.mrn || patient._id?.toString().slice(-8);
+          doc.text(`N° Dossier: ${mrn}`, 38, patientBoxY + 33);
+
+          doc.y = patientBoxY + patientBoxHeight + 10;
+        }
+
+        // ===== MEDICATIONS SECTION =====
+        doc.moveDown(0.5);
+        doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text('Prescription:');
+        doc.moveDown(0.3);
+
+        const routeLabels = {
+          ophthalmic: 'Collyre',
+          intravitreal: 'Intravitréen',
+          subconjunctival: 'Sous-conjonctival',
+          periocular: 'Périoculaire',
+          intracameral: 'Intracaméral',
+          topical: 'Topique',
+          otic: 'Auriculaire',
+          nasal: 'Nasal',
+          oral: 'Oral'
+        };
+
+        const eyeLabels = {
+          OD: 'Oeil Droit (OD)',
+          OS: 'Oeil Gauche (OS)',
+          OU: 'Les deux yeux (OU)'
+        };
+
+        (prescription.medications || []).forEach((med, index) => {
+          // Medication number and name
+          const medName = med.medication || med.name || 'Médicament';
+          doc.fontSize(10).font('Helvetica-Bold').fillColor(this.colors.text)
+            .text(`${index + 1}) ${medName}`);
+
+          // Indented details with bullet points
+          doc.font('Helvetica').fontSize(9).fillColor(this.colors.text);
+
+          if (med.dosage) {
+            doc.text(`   • Dosage: ${med.dosage}`, { indent: 10 });
+          }
+
+          if (med.frequency) {
+            doc.text(`   • Posologie: ${med.frequency}`, { indent: 10 });
+          }
+
+          if (med.duration) {
+            doc.text(`   • Durée: ${med.duration}`, { indent: 10 });
+          }
+
+          // Eye specification for ophthalmic medications
+          const eye = med.applicationLocation?.eye || med.eye;
+          if (eye && med.route !== 'oral') {
+            doc.text(`   • Oeil: ${eyeLabels[eye] || eye}`, { indent: 10 });
+          }
+
+          // Route if not oral
+          if (med.route && med.route !== 'oral') {
+            doc.text(`   • Voie: ${routeLabels[med.route] || med.route}`, { indent: 10 });
+          }
+
+          if (med.instructions) {
+            doc.text(`   • Instructions: ${med.instructions}`, { indent: 10 });
+          }
 
           // Tapering schedule if present
           if (med.tapering?.enabled && med.tapering.schedule?.length > 0) {
-            doc.moveDown(0.3);
-            doc.font('Helvetica-Bold').fontSize(9).fillColor(this.colors.warning || '#B45309')
-              .text(`   Décroissance (${med.tapering.totalDurationDays || '?'} jours):`);
-            doc.font('Helvetica').fontSize(9).fillColor(this.colors.text);
+            doc.fillColor('#B45309').font('Helvetica-Bold').fontSize(8)
+              .text(`   • Décroissance (${med.tapering.totalDurationDays || '?'} jours):`, { indent: 10 });
+            doc.font('Helvetica').fillColor(this.colors.text);
             med.tapering.schedule.forEach((step, stepIdx) => {
-              doc.text(`      Étape ${step.stepNumber || stepIdx + 1}: ${step.frequency || `${step.dose?.amount} ${step.dose?.unit}`} pendant ${step.durationDays} jours`);
+              const freq = step.frequency || `${step.dose?.amount || ''} ${step.dose?.unit || ''}`.trim();
+              doc.text(`      - Étape ${step.stepNumber || stepIdx + 1}: ${freq} pendant ${step.durationDays} jours`, { indent: 20 });
             });
           }
 
-          doc.moveDown(0.5);
+          // Horizontal separator between medications (except last)
+          if (index < (prescription.medications || []).length - 1) {
+            doc.moveDown(0.3);
+            doc.strokeColor('#e0e0e0').lineWidth(0.3)
+              .moveTo(40, doc.y).lineTo(contentWidth + 20, doc.y).stroke();
+            doc.moveDown(0.3);
+          } else {
+            doc.moveDown(0.5);
+          }
         });
 
-        // Special instructions
+        // ===== SPECIAL INSTRUCTIONS =====
         if (prescription.notes) {
-          doc.moveDown();
-          doc.fontSize(10).font('Helvetica-Bold').text('Notes:');
+          doc.moveDown(0.5);
+          doc.fontSize(9).font('Helvetica-Bold').fillColor(this.colors.text)
+            .text('Instructions particulières:');
           doc.font('Helvetica').text(prescription.notes);
         }
 
-        // Prescriber signature
-        doc.moveDown(2);
-        doc.fontSize(10).font('Helvetica');
+        // ===== SIGNATURE BOX (bottom right) =====
+        // Calculate position - try to place at bottom of page
+        const signatureBoxWidth = 100;
+        const signatureBoxHeight = 60;
+        const signatureBoxX = pageWidth - 30 - signatureBoxWidth; // Right aligned
+        let signatureBoxY = Math.max(doc.y + 30, 480); // At least 30pt below content, or near bottom
+
+        // Ensure we don't go off page
+        if (signatureBoxY + signatureBoxHeight + 30 > 595) {
+          signatureBoxY = 595 - signatureBoxHeight - 50;
+        }
+
+        // "Cachet et Signature" label above box
+        doc.fontSize(9).font('Helvetica-Bold').fillColor(this.colors.text)
+          .text('Cachet et Signature', signatureBoxX, signatureBoxY - 12, { width: signatureBoxWidth, align: 'center' });
+
+        // Signature box border
+        doc.rect(signatureBoxX, signatureBoxY, signatureBoxWidth, signatureBoxHeight)
+          .strokeColor(this.colors.border)
+          .lineWidth(1)
+          .stroke();
+
+        // Doctor name and specialty below box
+        doc.y = signatureBoxY + signatureBoxHeight + 5;
         if (prescription.prescriber) {
-          doc.text(`Dr. ${prescription.prescriber.name || `${prescription.prescriber.firstName} ${prescription.prescriber.lastName}`}`, { align: 'right' });
+          const prescriberName = prescription.prescriber.name ||
+            `${prescription.prescriber.firstName || ''} ${prescription.prescriber.lastName || ''}`.trim();
+          doc.fontSize(8).font('Helvetica-Bold')
+            .text(`Dr. ${prescriberName}`, signatureBoxX, doc.y, { width: signatureBoxWidth, align: 'center' });
           if (prescription.prescriber.specialty) {
-            doc.text(prescription.prescriber.specialty, { align: 'right' });
+            doc.font('Helvetica').fontSize(7)
+              .text(prescription.prescriber.specialty, signatureBoxX, doc.y, { width: signatureBoxWidth, align: 'center' });
           }
         }
-        doc.text('Signature:', { align: 'right' });
 
-        // Footer
-        doc.moveDown(2);
-        doc.fontSize(8).fillColor(this.colors.lightText)
-          .text(`${this.clinicInfo.name} - ${this.clinicInfo.phone}`, { align: 'center' });
+        // ===== FOOTER =====
+        const footerY = 565;
+        doc.fontSize(7).font('Helvetica').fillColor(this.colors.lightText);
+
+        // Validity notice
+        const validityDays = prescription.validityDays || 90;
+        doc.text(`Ordonnance valable ${validityDays === 90 ? '3 mois' : validityDays + ' jours'}`, 30, footerY, { width: contentWidth, align: 'center' });
+
+        // Clinic contact
+        doc.text(`${this.clinicInfo.name} | Tel: ${this.clinicInfo.phone}`, 30, footerY + 10, { width: contentWidth, align: 'center' });
 
         doc.end();
       } catch (error) {
