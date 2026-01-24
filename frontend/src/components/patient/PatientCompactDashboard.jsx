@@ -950,7 +950,7 @@ export default function PatientCompactDashboard({
                   </div>
                   <div className="flex justify-between text-xs bg-blue-50 p-1 rounded">
                     <span className="text-gray-500">Rx:</span>
-                    <span className="font-medium text-blue-700">{formatRefraction('OD')}</span>
+                    <span className="font-medium text-blue-700 truncate max-w-[120px]" title={formatRefraction('OD')}>{formatRefraction('OD')}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Add:</span>
@@ -974,7 +974,7 @@ export default function PatientCompactDashboard({
                   </div>
                   <div className="flex justify-between text-xs bg-green-50 p-1 rounded">
                     <span className="text-gray-500">Rx:</span>
-                    <span className="font-medium text-green-700">{formatRefraction('OS')}</span>
+                    <span className="font-medium text-green-700 truncate max-w-[120px]" title={formatRefraction('OS')}>{formatRefraction('OS')}</span>
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-gray-500">Add:</span>
