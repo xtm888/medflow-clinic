@@ -1,5 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const {
+  validateOphthalmologySessionStart,
+  validateOphthalmologyExamUpdate,
+  validateObjectIdParam
+} = require('../middleware/validation');
 // Import from split controller modules (maintains backward compatibility via index.js)
 const {
   // Core exam CRUD
@@ -13,6 +18,16 @@ const {
   // Consultation Integration (new)
   completeConsultation,
   saveExam,
+
+  // Session Management (replaces ConsultationSession)
+  getActiveSession,
+  getRecentSessions,
+  startSession,
+  autoSaveSession,
+  saveSessionData,
+  completeSession,
+  abandonSession,
+  checkSessionConflicts,
 
   // Prescription & Refraction
   generateOpticalPrescription,
@@ -33,6 +48,8 @@ const {
   getAvailableDeviceMeasurements,
   linkDeviceMeasurement,
   applyDeviceMeasurement,
+  applyDeviceExamData,
+  getAvailableDeviceExamData,
   linkDeviceImage,
   getLinkedDeviceMeasurements,
   getLinkedDeviceImages,
@@ -100,13 +117,80 @@ router.post(
 // Save exam data (create or update) - replaces missing saveExam method
 router.post('/exams/save', logAction('OPHTHALMOLOGY_EXAM_SAVE'), saveExam);
 
+// =====================================================
+// SESSION MANAGEMENT ROUTES
+// These routes replace ConsultationSession functionality
+// OphthalmologyExam is now the SINGLE SOURCE OF TRUTH
+// =====================================================
+
+// Get active session for a patient (if any in-progress exam exists)
+router.get(
+  '/sessions/active/:patientId',
+  logPatientDataAccess,
+  getActiveSession
+);
+
+// Get recent sessions for the current doctor
+router.get('/sessions/recent', getRecentSessions);
+
+// Check for conflicts before starting a new session
+router.get(
+  '/sessions/conflicts/:patientId',
+  checkSessionConflicts
+);
+
+// Start a new session (creates OphthalmologyExam with conflict detection)
+router.post(
+  '/sessions/start',
+  validateOphthalmologySessionStart,
+  logAction('SESSION_START'),
+  startSession
+);
+
+// Auto-save session data (lightweight, frequent saves)
+router.put(
+  '/sessions/:id/autosave',
+  autoSaveSession
+);
+
+// Manual save session data (full save with user tracking)
+router.put(
+  '/sessions/:id/save',
+  logAction('SESSION_SAVE'),
+  saveSessionData
+);
+
+// Complete session (creates Visit, clinical acts, invoice)
+router.post(
+  '/sessions/:id/complete',
+  logAction('SESSION_COMPLETE'),
+  completeSession
+);
+
+// Abandon session (mark as abandoned without completing)
+router.post(
+  '/sessions/:id/abandon',
+  logAction('SESSION_ABANDON'),
+  abandonSession
+);
+
 // Base route - API information
 router.get('/', (req, res) => {
   res.json({
     success: true,
     message: 'Ophthalmology API',
-    version: '1.0.0',
+    version: '2.0.0',
     endpoints: {
+      sessions: {
+        'GET /api/ophthalmology/sessions/active/:patientId': 'Get active session for patient',
+        'GET /api/ophthalmology/sessions/recent': 'Get recent sessions for current doctor',
+        'GET /api/ophthalmology/sessions/conflicts/:patientId': 'Check for session conflicts',
+        'POST /api/ophthalmology/sessions/start': 'Start new consultation session',
+        'PUT /api/ophthalmology/sessions/:id/autosave': 'Auto-save session data',
+        'PUT /api/ophthalmology/sessions/:id/save': 'Manual save session data',
+        'POST /api/ophthalmology/sessions/:id/complete': 'Complete session (creates Visit + Invoice)',
+        'POST /api/ophthalmology/sessions/:id/abandon': 'Abandon session'
+      },
       exams: {
         'GET /api/ophthalmology/exams': 'Get all ophthalmology exams',
         'POST /api/ophthalmology/exams': 'Create new exam',
@@ -135,9 +219,9 @@ router
 
 router
   .route('/exams/:id')
-  .get(logPatientDataAccess, getExam)
-  .put(logAction('OPHTHALMOLOGY_EXAM_UPDATE'), updateExam)
-  .delete(authorize('admin'), logAction('OPHTHALMOLOGY_EXAM_DELETE'), deleteExam);
+  .get(validateObjectIdParam, logPatientDataAccess, getExam)
+  .put(validateOphthalmologyExamUpdate, logAction('OPHTHALMOLOGY_EXAM_UPDATE'), updateExam)
+  .delete(validateObjectIdParam, authorize('admin'), logAction('OPHTHALMOLOGY_EXAM_DELETE'), deleteExam);
 
 router.put('/exams/:id/complete', logAction('OPHTHALMOLOGY_EXAM_COMPLETE'), completeExam);
 router.post('/exams/:id/prescription', logAction('OPTICAL_PRESCRIPTION_CREATE'), generateOpticalPrescription);
@@ -164,6 +248,10 @@ router.post('/exams/:id/link-image', logAction('DEVICE_IMAGE_LINKED'), linkDevic
 router.get('/exams/:id/device-measurements', getLinkedDeviceMeasurements);
 router.get('/exams/:id/device-images', getLinkedDeviceImages);
 router.post('/exams/:id/import-device', logAction('DEVICE_MEASUREMENT_IMPORTED'), importDeviceMeasurement);
+
+// Device exam data routes (for non-DICOM device imports: HFA, TOPCON OCT, Solix, TOMEY)
+router.get('/exams/:id/available-device-data', getAvailableDeviceExamData);
+router.post('/exams/:id/apply-device-exam-data', logAction('DEVICE_EXAM_DATA_APPLIED'), applyDeviceExamData);
 
 // Specialized test data routes
 router.put('/exams/:id/tonometry', logAction('TONOMETRY_DATA_SAVED'), saveTonometryData);

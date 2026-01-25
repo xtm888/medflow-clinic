@@ -4,6 +4,11 @@ const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { logCriticalOperation } = require('../middleware/auditLogger');
 const laboratoryController = require('../controllers/laboratory');
 const { optionalClinic } = require('../middleware/clinicAuth');
+const {
+  validateLabOrderCreate,
+  validateLabResultEntry,
+  validateObjectIdParam
+} = require('../middleware/validation');
 
 // Protect all routes and add clinic context
 router.use(protect);
@@ -24,13 +29,13 @@ router.delete('/templates/:id', requirePermission('manage_system'), laboratoryCo
 router.get('/tests', requirePermission('view_lab_orders'), laboratoryController.getAllTests);
 router.get('/pending', requirePermission('view_lab_orders'), laboratoryController.getPendingTests);
 router.get('/completed', requirePermission('view_lab_orders'), laboratoryController.getCompletedTests);
-router.post('/tests', requirePermission('view_lab_orders', 'order_imaging'), laboratoryController.orderTests);
+router.post('/tests', requirePermission('view_lab_orders', 'order_imaging'), validateLabOrderCreate, laboratoryController.orderTests);
 
 // ============================================
 // RESULT ENTRY ROUTES - CRITICAL
 // ============================================
 router.put('/tests/:visitId/:testId', requirePermission('view_lab_orders', 'enter_results'), logCriticalOperation('LAB_RESULT_UPDATE'), laboratoryController.updateTestResults);
-router.put('/tests/:visitId/:testId/results', requirePermission('view_lab_orders', 'enter_results'), logCriticalOperation('LAB_RESULT_ENTRY'), laboratoryController.enterResults);
+router.put('/tests/:visitId/:testId/results', requirePermission('view_lab_orders', 'enter_results'), validateLabResultEntry, logCriticalOperation('LAB_RESULT_ENTRY'), laboratoryController.enterResults);
 router.get('/tests/:visitId/:testId/results', requirePermission('view_lab_orders'), laboratoryController.getTestResults);
 
 // ============================================

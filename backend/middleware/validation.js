@@ -546,6 +546,409 @@ const validateQueueUpdate = [
   handleValidationErrors
 ];
 
+// =====================================================
+// OPHTHALMOLOGY SESSION VALIDATORS
+// =====================================================
+
+const validateOphthalmologySessionStart = [
+  body('patientId')
+    .notEmpty()
+    .withMessage('Patient requis')
+    .custom(isValidObjectId)
+    .withMessage('ID patient invalide'),
+  body('appointmentId')
+    .optional()
+    .custom(isValidObjectId)
+    .withMessage('ID rendez-vous invalide'),
+  body('examType')
+    .optional()
+    .isIn(['comprehensive', 'refraction', 'contact-lens', 'follow-up', 'emergency', 'screening', 'pre-operative', 'post-operative'])
+    .withMessage('Type d\'examen invalide'),
+  handleValidationErrors
+];
+
+const validateOphthalmologyExamUpdate = [
+  param('id')
+    .custom(isValidObjectId)
+    .withMessage('ID examen invalide'),
+  body('visualAcuity.OD.uncorrected')
+    .optional()
+    .matches(/^(10\/10|[1-9]\/10|1\/20|1\/50|CLD|VBLM|PL\+|PL-|NLP)$/i)
+    .withMessage('Acuite visuelle OD invalide (Monoyer scale)'),
+  body('visualAcuity.OS.uncorrected')
+    .optional()
+    .matches(/^(10\/10|[1-9]\/10|1\/20|1\/50|CLD|VBLM|PL\+|PL-|NLP)$/i)
+    .withMessage('Acuite visuelle OS invalide (Monoyer scale)'),
+  body('refraction.*.sphere')
+    .optional()
+    .isFloat({ min: -30, max: 30 })
+    .withMessage('Sphere invalide (-30 a +30)'),
+  body('refraction.*.cylinder')
+    .optional()
+    .isFloat({ min: -10, max: 10 })
+    .withMessage('Cylindre invalide (-10 a +10)'),
+  body('refraction.*.axis')
+    .optional()
+    .isInt({ min: 0, max: 180 })
+    .withMessage('Axe invalide (0-180)'),
+  body('intraocularPressure.OD')
+    .optional()
+    .isFloat({ min: 0, max: 80 })
+    .withMessage('PIO OD invalide (0-80 mmHg)'),
+  body('intraocularPressure.OS')
+    .optional()
+    .isFloat({ min: 0, max: 80 })
+    .withMessage('PIO OS invalide (0-80 mmHg)'),
+  handleValidationErrors
+];
+
+// =====================================================
+// LABORATORY ORDER VALIDATORS (enhanced)
+// =====================================================
+
+const validateLabOrderCreate = [
+  body('patient')
+    .notEmpty()
+    .withMessage('Patient requis')
+    .custom(isValidObjectId)
+    .withMessage('ID patient invalide'),
+  body('tests')
+    .isArray({ min: 1 })
+    .withMessage('Au moins un test requis'),
+  body('tests.*.testCode')
+    .notEmpty()
+    .withMessage('Code du test requis')
+    .isLength({ max: 50 })
+    .withMessage('Code du test trop long'),
+  body('tests.*.testName')
+    .notEmpty()
+    .withMessage('Nom du test requis')
+    .isLength({ max: 200 })
+    .withMessage('Nom du test trop long')
+    .customSanitizer(sanitizeString),
+  body('priority')
+    .optional()
+    .isIn(['routine', 'urgent', 'stat'])
+    .withMessage('Priorite invalide'),
+  body('clinicalNotes')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('Notes cliniques trop longues')
+    .customSanitizer(sanitizeString),
+  handleValidationErrors
+];
+
+const validateLabResultEntry = [
+  param('orderId')
+    .custom(isValidObjectId)
+    .withMessage('ID commande invalide'),
+  body('testCode')
+    .notEmpty()
+    .withMessage('Code du test requis'),
+  body('value')
+    .notEmpty()
+    .withMessage('Valeur du resultat requise'),
+  body('unit')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Unite trop longue'),
+  body('referenceRange')
+    .optional()
+    .isLength({ max: 100 })
+    .withMessage('Plage de reference trop longue'),
+  body('abnormalFlag')
+    .optional()
+    .isIn(['normal', 'low', 'high', 'critical-low', 'critical-high', 'abnormal'])
+    .withMessage('Indicateur anormal invalide'),
+  handleValidationErrors
+];
+
+// =====================================================
+// SURGERY VALIDATORS
+// =====================================================
+
+const validateSurgeryCaseCreate = [
+  body('patient')
+    .notEmpty()
+    .withMessage('Patient requis')
+    .custom(isValidObjectId)
+    .withMessage('ID patient invalide'),
+  body('surgeryType')
+    .notEmpty()
+    .withMessage('Type de chirurgie requis')
+    .isLength({ max: 200 })
+    .withMessage('Type de chirurgie trop long')
+    .customSanitizer(sanitizeString),
+  body('eye')
+    .optional()
+    .isIn(['OD', 'OS', 'OU'])
+    .withMessage('Oeil invalide (OD, OS, ou OU)'),
+  body('scheduledDate')
+    .notEmpty()
+    .withMessage('Date programmee requise')
+    .isISO8601()
+    .withMessage('Format de date invalide'),
+  body('surgeon')
+    .notEmpty()
+    .withMessage('Chirurgien requis')
+    .custom(isValidObjectId)
+    .withMessage('ID chirurgien invalide'),
+  body('anesthesiaType')
+    .optional()
+    .isIn(['local', 'topical', 'peribulbar', 'retrobulbar', 'general', 'sedation'])
+    .withMessage('Type d\'anesthesie invalide'),
+  body('preOpDiagnosis')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Diagnostic pre-operatoire trop long')
+    .customSanitizer(sanitizeString),
+  handleValidationErrors
+];
+
+const validateSurgeryNoteCreate = [
+  param('caseId')
+    .custom(isValidObjectId)
+    .withMessage('ID cas chirurgical invalide'),
+  body('noteType')
+    .notEmpty()
+    .withMessage('Type de note requis')
+    .isIn(['operative', 'pre-op', 'post-op', 'complication', 'follow-up'])
+    .withMessage('Type de note invalide'),
+  body('content')
+    .notEmpty()
+    .withMessage('Contenu de la note requis')
+    .isLength({ max: 10000 })
+    .withMessage('Contenu de la note trop long')
+    .customSanitizer(sanitizeString),
+  handleValidationErrors
+];
+
+const validateSurgeryReportCreate = [
+  param('id')
+    .custom(isValidObjectId)
+    .withMessage('ID cas chirurgical invalide'),
+  body('procedure')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Description de la procedure trop longue')
+    .customSanitizer(sanitizeString),
+  body('findings')
+    .optional()
+    .trim()
+    .isLength({ max: 5000 })
+    .withMessage('Constatations trop longues')
+    .customSanitizer(sanitizeString),
+  body('complications')
+    .optional()
+    .trim()
+    .isLength({ max: 2000 })
+    .withMessage('Complications trop longues')
+    .customSanitizer(sanitizeString),
+  handleValidationErrors
+];
+
+// =====================================================
+// PRESCRIPTION VALIDATORS (enhanced)
+// =====================================================
+
+const validatePrescriptionUpdate = [
+  param('id')
+    .custom(isValidObjectId)
+    .withMessage('ID ordonnance invalide'),
+  body('status')
+    .optional()
+    .isIn(['pending', 'partial', 'dispensed', 'expired', 'cancelled'])
+    .withMessage('Statut invalide'),
+  body('medications.*.quantity')
+    .optional()
+    .isInt({ min: 1, max: 1000 })
+    .withMessage('Quantite invalide (1-1000)'),
+  handleValidationErrors
+];
+
+const validatePrescriptionDispense = [
+  param('id')
+    .custom(isValidObjectId)
+    .withMessage('ID ordonnance invalide'),
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('Au moins un medicament a dispenser requis'),
+  body('items.*.medicationId')
+    .notEmpty()
+    .withMessage('ID medicament requis')
+    .custom(isValidObjectId)
+    .withMessage('ID medicament invalide'),
+  body('items.*.quantity')
+    .isInt({ min: 1, max: 1000 })
+    .withMessage('Quantite invalide (1-1000)'),
+  body('items.*.lotNumber')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Numero de lot trop long'),
+  handleValidationErrors
+];
+
+// =====================================================
+// PHARMACY VALIDATORS
+// =====================================================
+
+const validatePharmacyDispense = [
+  body('prescriptionId')
+    .optional()
+    .custom(isValidObjectId)
+    .withMessage('ID ordonnance invalide'),
+  body('patientId')
+    .notEmpty()
+    .withMessage('Patient requis')
+    .custom(isValidObjectId)
+    .withMessage('ID patient invalide'),
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('Au moins un article requis'),
+  body('items.*.inventoryId')
+    .notEmpty()
+    .withMessage('ID inventaire requis')
+    .custom(isValidObjectId)
+    .withMessage('ID inventaire invalide'),
+  body('items.*.quantity')
+    .isInt({ min: 1, max: 10000 })
+    .withMessage('Quantite invalide (1-10000)'),
+  body('items.*.lotNumber')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Numero de lot trop long'),
+  handleValidationErrors
+];
+
+const validatePharmacyStockAdjustment = [
+  body('inventoryId')
+    .notEmpty()
+    .withMessage('ID inventaire requis')
+    .custom(isValidObjectId)
+    .withMessage('ID inventaire invalide'),
+  body('quantity')
+    .isInt({ min: -100000, max: 100000 })
+    .withMessage('Quantite invalide'),
+  body('reason')
+    .notEmpty()
+    .withMessage('Motif requis')
+    .isIn(['damaged', 'expired', 'lost', 'found', 'correction', 'transfer', 'return', 'other'])
+    .withMessage('Motif invalide'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 500 })
+    .withMessage('Notes trop longues')
+    .customSanitizer(sanitizeString),
+  handleValidationErrors
+];
+
+const validatePharmacyMedicationCreate = [
+  body('name')
+    .notEmpty()
+    .withMessage('Nom du medicament requis')
+    .isLength({ max: 200 })
+    .withMessage('Nom du medicament trop long')
+    .customSanitizer(sanitizeString),
+  body('genericName')
+    .optional()
+    .isLength({ max: 200 })
+    .withMessage('Nom generique trop long')
+    .customSanitizer(sanitizeString),
+  body('category')
+    .optional()
+    .isLength({ max: 100 })
+    .withMessage('Categorie trop longue'),
+  body('dosageForm')
+    .optional()
+    .isIn(['tablet', 'capsule', 'syrup', 'injection', 'cream', 'ointment', 'drops', 'inhaler', 'patch', 'suppository', 'solution', 'suspension', 'powder', 'other'])
+    .withMessage('Forme galenique invalide'),
+  body('strength')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Dosage trop long'),
+  body('quantity')
+    .optional()
+    .isInt({ min: 0, max: 1000000 })
+    .withMessage('Quantite invalide'),
+  body('reorderLevel')
+    .optional()
+    .isInt({ min: 0, max: 100000 })
+    .withMessage('Seuil de reapprovisionnement invalide'),
+  body('price')
+    .optional()
+    .isFloat({ min: 0, max: 10000000 })
+    .withMessage('Prix invalide'),
+  handleValidationErrors
+];
+
+// =====================================================
+// INVENTORY TRANSFER VALIDATORS
+// =====================================================
+
+const validateInventoryTransferCreate = [
+  body('sourceClinic')
+    .notEmpty()
+    .withMessage('Clinique source requise')
+    .custom(isValidObjectId)
+    .withMessage('ID clinique source invalide'),
+  body('destinationClinic')
+    .notEmpty()
+    .withMessage('Clinique destination requise')
+    .custom(isValidObjectId)
+    .withMessage('ID clinique destination invalide')
+    .custom((value, { req }) => {
+      if (value === req.body.sourceClinic) {
+        throw new Error('La clinique destination doit etre differente de la source');
+      }
+      return true;
+    }),
+  body('items')
+    .isArray({ min: 1 })
+    .withMessage('Au moins un article requis'),
+  body('items.*.inventoryId')
+    .notEmpty()
+    .withMessage('ID inventaire requis')
+    .custom(isValidObjectId)
+    .withMessage('ID inventaire invalide'),
+  body('items.*.quantity')
+    .isInt({ min: 1, max: 10000 })
+    .withMessage('Quantite invalide (1-10000)'),
+  body('items.*.lotNumber')
+    .optional()
+    .isLength({ max: 50 })
+    .withMessage('Numero de lot trop long'),
+  body('priority')
+    .optional()
+    .isIn(['normal', 'urgent', 'emergency'])
+    .withMessage('Priorite invalide'),
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 })
+    .withMessage('Notes trop longues')
+    .customSanitizer(sanitizeString),
+  handleValidationErrors
+];
+
+const validateInventoryTransferUpdate = [
+  param('id')
+    .custom(isValidObjectId)
+    .withMessage('ID transfert invalide'),
+  body('status')
+    .optional()
+    .isIn(['pending', 'approved', 'in-transit', 'received', 'completed', 'cancelled'])
+    .withMessage('Statut invalide'),
+  body('receivedQuantities')
+    .optional()
+    .isArray()
+    .withMessage('Quantites recues doivent etre un tableau'),
+  handleValidationErrors
+];
+
 module.exports = {
   handleValidationErrors,
   isValidObjectId,
@@ -562,13 +965,30 @@ module.exports = {
   validateAppointmentUpdate,
   // Prescription
   validatePrescriptionCreate,
+  validatePrescriptionUpdate,
+  validatePrescriptionDispense,
   // Invoice
   validateInvoiceCreate,
   validatePayment,
   // Lab
   validateLabTestCreate,
+  validateLabOrderCreate,
+  validateLabResultEntry,
   // Ophthalmology
   validateOphthalmologyExam,
+  validateOphthalmologySessionStart,
+  validateOphthalmologyExamUpdate,
+  // Surgery
+  validateSurgeryCaseCreate,
+  validateSurgeryNoteCreate,
+  validateSurgeryReportCreate,
+  // Pharmacy
+  validatePharmacyDispense,
+  validatePharmacyStockAdjustment,
+  validatePharmacyMedicationCreate,
+  // Inventory Transfer
+  validateInventoryTransferCreate,
+  validateInventoryTransferUpdate,
   // Queue
   validateQueueAdd,
   validateQueueUpdate,

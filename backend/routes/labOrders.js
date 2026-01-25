@@ -3,11 +3,60 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/auth');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const labOrderController = require('../controllers/laboratory');
+const labBillingController = require('../controllers/laboratory/billing');
+const preEmptiveController = require('../controllers/laboratory/preEmptiveController');
 const { optionalClinic } = require('../middleware/clinicAuth');
+const {
+  validateLabOrderCreate,
+  validateObjectIdParam
+} = require('../middleware/validation');
 
 // Protect all routes and add clinic context
 router.use(protect);
 router.use(optionalClinic);
+
+// ============================================
+// PRE-EMPTIVE LAB ORDER ROUTES (Point-of-Care Optimization)
+// ============================================
+
+// Request lab order with smart merge and instant label printing
+router.post('/preemptive',
+  authorize('admin', 'doctor', 'ophthalmologist'),
+  logAction('LAB_ORDER_PREEMPTIVE'),
+  preEmptiveController.requestPreEmptiveOrder
+);
+
+// Check merge opportunities before ordering
+router.get('/preemptive/check-merge/:patientId',
+  authorize('admin', 'doctor', 'ophthalmologist'),
+  preEmptiveController.checkMergeOpportunities
+);
+
+// Get pre-emptive order configuration
+router.get('/preemptive/config',
+  authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+  preEmptiveController.getPreEmptiveConfig
+);
+
+// Get pending critical results for current user
+router.get('/preemptive/critical-pending',
+  authorize('admin', 'doctor', 'ophthalmologist'),
+  preEmptiveController.getPendingCriticalResults
+);
+
+// Acknowledge critical lab result
+router.post('/preemptive/acknowledge-critical/:resultId',
+  authorize('admin', 'doctor', 'ophthalmologist'),
+  logCriticalOperation('LAB_CRITICAL_ACKNOWLEDGE'),
+  preEmptiveController.acknowledgeCriticalResult
+);
+
+// Reprint label for existing order
+router.post('/preemptive/:orderId/reprint-label',
+  authorize('admin', 'doctor', 'ophthalmologist', 'nurse', 'lab_technician'),
+  logAction('LAB_LABEL_REPRINT'),
+  preEmptiveController.reprintLabel
+);
 
 // ============================================
 // LAB ORDER ROUTES
@@ -33,6 +82,23 @@ router.get('/checked-in',
 router.get('/rejection-stats',
   authorize('admin', 'lab_technician', 'doctor'),
   labOrderController.getRejectionStats
+);
+
+// ============================================
+// PENALTY MANAGEMENT ROUTES
+// ============================================
+
+// Get penalty statistics (Admin)
+router.get('/penalty-stats',
+  authorize('admin'),
+  labOrderController.getPenaltyStats
+);
+
+// Manually run penalty check (Admin)
+router.post('/run-penalty-check',
+  authorize('admin'),
+  logCriticalOperation('LAB_PENALTY_CHECK_MANUAL'),
+  labOrderController.runPenaltyCheck
 );
 
 // Get rejected lab orders awaiting rescheduling (for reception)
@@ -68,17 +134,20 @@ router.route('/')
   )
   .post(
     authorize('admin', 'doctor', 'ophthalmologist', 'nurse'),
+    validateLabOrderCreate,
     logAction('LAB_ORDER_CREATE'),
     labOrderController.createOrder
   );
 
 router.route('/:id')
   .get(
+    validateObjectIdParam,
     authorize('admin', 'doctor', 'ophthalmologist', 'lab_technician', 'nurse'),
     logAction('LAB_ORDER_VIEW'),
     labOrderController.getOrder
   )
   .put(
+    validateObjectIdParam,
     authorize('admin', 'doctor', 'ophthalmologist', 'lab_technician'),
     logAction('LAB_ORDER_UPDATE'),
     labOrderController.updateOrder
@@ -122,6 +191,24 @@ router.put('/:id/reschedule',
   authorize('admin', 'receptionist', 'nurse'),
   logAction('LAB_ORDER_RESCHEDULE'),
   labOrderController.rescheduleAfterRejection
+);
+
+// Waive penalty for a lab order (Admin only)
+router.put('/:id/waive-penalty',
+  authorize('admin'),
+  logCriticalOperation('LAB_PENALTY_WAIVE'),
+  labOrderController.waivePenalty
+);
+
+// ============================================
+// LAB BILLING ROUTES
+// ============================================
+
+// Generate invoice for lab order (with transaction support)
+router.post('/:id/invoice',
+  authorize('admin', 'cashier', 'billing'),
+  logCriticalOperation('LAB_INVOICE_CREATE'),
+  labBillingController.generateLabOrderInvoice
 );
 
 module.exports = router;
