@@ -6,6 +6,8 @@ const morgan = require('morgan');
 const compression = require('compression');
 const cookieParser = require('cookie-parser');
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 require('dotenv').config();
 
 // Redis and rate limiting
@@ -69,7 +71,6 @@ const auditRoutes = require('./routes/audit');
 const settingsRoutes = require('./routes/settings');
 const templateCatalogRoutes = require('./routes/templateCatalog');
 const treatmentProtocolRoutes = require('./routes/treatmentProtocols');
-const consultationSessionRoutes = require('./routes/consultationSessions');
 const alertRoutes = require('./routes/alerts');
 const deviceRoutes = require('./routes/devices');
 const documentGenerationRoutes = require('./routes/documentGeneration');
@@ -113,6 +114,7 @@ const logger = require('./config/logger');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
 const { auditLogger } = require('./middleware/auditLogger');
+const { incomingLogger: interServiceLogger } = require('./middleware/interServiceLogger');
 const { attachToResponse } = require('./utils/apiResponse');
 const alertScheduler = require('./services/alertScheduler');
 const deviceSyncScheduler = require('./services/deviceSyncScheduler');
@@ -141,25 +143,37 @@ if (process.env.NODE_ENV !== 'production') {
   cspImgSrc.push('http://localhost:5001', 'http://localhost:5173');
 }
 
+// Check if we're running with HTTPS (for HSTS and upgrade-insecure-requests)
+const useHttps = process.env.FORCE_HTTPS === 'true' || process.env.USE_HTTPS === 'true';
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-      'img-src': cspImgSrc
+      'img-src': cspImgSrc,
+      // Only upgrade insecure requests if HTTPS is enabled
+      'upgrade-insecure-requests': useHttps ? [] : null
     }
   },
+  // Disable HSTS for HTTP-only deployments
+  hsts: useHttps ? { maxAge: 15552000, includeSubDomains: true } : false,
   crossOriginResourcePolicy: { policy: 'cross-origin' }
 }));
 
 // CORS configuration - secured for production
 const allowedOrigins = [
-  'http://localhost:5173',
-  'http://localhost:5174',
+  'http://localhost:5173',  // Tombalbaye frontend
+  'http://localhost:5174',  // Matrix frontend
+  'http://localhost:5175',  // Matadi frontend
   'http://localhost:3000',
+  'http://localhost:4173',  // Vite preview
   'http://127.0.0.1:5173',
   'http://127.0.0.1:5174',
+  'http://127.0.0.1:5175',
+  'http://127.0.0.1:4173',  // Vite preview
   'https://medflow-clinic.vercel.app',
-  process.env.FRONTEND_URL
+  process.env.FRONTEND_URL,
+  process.env.FRONTEND_URL_LAN  // LAN preview for clinic testing
 ].filter(Boolean);
 
 // Allow local network access for development only (192.168.x.x, 10.x.x.x)
@@ -182,9 +196,9 @@ app.use(cors({
       return callback(null, true);
     }
 
-    // In production, only allow configured FRONTEND_URL
+    // In production, only allow configured FRONTEND_URL (supports comma-separated list)
     if (process.env.NODE_ENV === 'production') {
-      const prodOrigins = [process.env.FRONTEND_URL].filter(Boolean);
+      const prodOrigins = (process.env.FRONTEND_URL || '').split(',').map(u => u.trim()).filter(Boolean);
       if (prodOrigins.includes(origin)) {
         return callback(null, true);
       }
@@ -255,9 +269,16 @@ const xlPayloadLimit = express.json({ limit: '50mb' });
 // Audit logging for all requests
 app.use(auditLogger);
 
+// Inter-service communication logging (for multi-clinic setup)
+// Enable with LOG_INTER_SERVICE=true in environment
+app.use(interServiceLogger);
+
 // CSRF protection - validates tokens on state-changing requests
-const { csrfProtection } = require('./middleware/csrf');
+const { csrfProtection, getCsrfToken } = require('./middleware/csrf');
 app.use(csrfProtection);
+
+// CSRF token endpoint - call after login to get token cookie
+app.get('/api/csrf-token', getCsrfToken);
 
 // Standardized API response helper - adds res.api.* methods
 app.use(attachToResponse);
@@ -311,7 +332,6 @@ app.use('/api/audit', auditRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/template-catalog', templateCatalogRoutes);
 app.use('/api/treatment-protocols', treatmentProtocolRoutes);
-app.use('/api/consultation-sessions', consultationSessionRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/devices', deviceRoutes);
 app.use('/api/document-generation', reportLimiter, documentGenerationRoutes); // SECURITY: Rate limit document generation
@@ -333,6 +353,10 @@ app.use('/api/clinical-trends', clinicalTrendRoutes);
 app.use('/api/face-recognition', uploadLimiter, largePayloadLimit, faceRecognitionRoutes); // SECURITY: Rate limit biometric uploads
 app.use('/api/correspondence', require('./routes/correspondence'));
 app.use('/api/imaging', uploadLimiter, largePayloadLimit, imagingRoutes); // SECURITY: Rate limit imaging uploads
+app.use('/api/pacs', require('./routes/pacs')); // Conquest PACS integration
+app.use('/api/dicom', require('./routes/dicom')); // DICOM Bridge integration
+app.use('/api/device-data', require('./routes/deviceData')); // Non-DICOM device data integration (TOPCON, Solix, Tomey)
+app.use('/api/device-import/tomey', require('./routes/tomeyImport')); // Tomey auto-import service
 app.use('/api/lab-orders', labOrderRoutes);
 app.use('/api/lab-results', labResultRoutes);
 app.use('/api/lab-analyzers', require('./routes/labAnalyzers'));
@@ -351,10 +375,17 @@ app.use('/api/fulfillment-dispatches', require('./routes/fulfillmentDispatches')
 app.use('/api/backups', sensitiveLimiter, backupRoutes); // SECURITY: Rate limit backup operations
 app.use('/api/migration', sensitiveLimiter, migrationRoutes); // SECURITY: Rate limit migration operations
 
+// CareVision legacy system integration
+app.use('/api/carevision', require('./routes/careVision'));
+
+// Medicare/Bdpharma pharmacy system integration
+app.use('/api/medicare', require('./routes/medicare'));
+
 // Multi-clinic inventory management
 app.use('/api/inventory-transfers', require('./routes/inventoryTransfers'));
 app.use('/api/cross-clinic-inventory', require('./routes/crossClinicInventory'));
 app.use('/api/unified-inventory', require('./routes/unifiedInventory'));
+app.use('/api/inventory-alerts', require('./routes/inventoryAlerts'));
 
 // Central server proxy routes (cross-clinic data access)
 app.use('/api/central', require('./routes/central'));
@@ -392,9 +423,30 @@ const corsOptions = {
   credentials: true
 };
 
-app.use('/imaging', cors(corsOptions), express.static('public/imaging'));
+app.use('/imaging-static', cors(corsOptions), express.static('public/imaging'));
 app.use('/images_ophta', cors(corsOptions), express.static('public/images_ophta'));
 app.use('/datasets', cors(corsOptions), express.static('public/datasets'));
+
+// Production: Serve frontend static files
+const frontendPath = process.env.FRONTEND_PATH || path.join(__dirname, '../matrix-frontend/dist');
+if (fs.existsSync(frontendPath)) {
+  console.log(`📁 Serving frontend from: ${frontendPath}`);
+  app.use(express.static(frontendPath));
+
+  // SPA catch-all: redirect all non-API routes to index.html
+  app.get('*', (req, res, next) => {
+    // Skip API routes and static file requests
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io') ||
+        req.path.startsWith('/imaging-static') || req.path.startsWith('/images_ophta') ||
+        req.path.startsWith('/datasets')) {
+      return next();
+    }
+    res.sendFile(path.join(frontendPath, 'index.html'));
+  });
+} else if (process.env.NODE_ENV === 'production') {
+  console.warn(`⚠️  Frontend path not found: ${frontendPath}`);
+  console.warn('   Set FRONTEND_PATH environment variable to serve frontend');
+}
 
 // Error handling middleware
 app.use(errorHandler);
@@ -488,6 +540,39 @@ connectWithRetry(mongoUri, mongoOptions, retryOptions)
       } catch (err) {
         console.warn('⚠️  Folder sync initialization failed:', err.message);
       }
+
+      // Initialize device data integration service for non-DICOM device monitoring
+      if (process.env.DEVICE_MONITORING_ENABLED !== 'false') {
+        try {
+          const deviceDataIntegrationService = require('./services/deviceDataIntegrationService');
+          await deviceDataIntegrationService.initialize({
+            // NIDEK TONOREF III export folder (autorefractor/keratometer/tonometer)
+            // Device pushes XML data to: C:\tonoref\RKT\TXT\*.xml
+            tonorefPath: process.env.TONOREF_EXPORT_PATH || 'C:/tonoref',
+            // TOMEY MR-6000 export folder (corneal topographer - different device!)
+            tomeyPath: process.env.TOMEY_EXPORT_PATH || null,
+            // TOPCON ACQUISITION folder (if configured)
+            acquisitionPath: process.env.ACQUISITION_EXPORT_PATH || null,
+            // SOLIX OCT folder (if configured)
+            solixPath: process.env.SOLIX_EXPORT_PATH || null,
+            // Default clinic ID for imports (MedFlow Clinique Principale)
+            defaultClinicId: process.env.DEFAULT_CLINIC_ID || '69707e025b3cbd1d545239ef',
+            // File storage path
+            storagePath: process.env.DEVICE_STORAGE_PATH || 'E:/MedFlow/device-imports',
+            // Auto-match patients by name/ID
+            autoMatchPatients: true,
+            // Polling interval for checking folders (30 seconds)
+            pollInterval: 30000
+          });
+          await deviceDataIntegrationService.startMonitoring();
+          global.deviceDataIntegrationService = deviceDataIntegrationService;
+          console.log('✅ Device data integration service started');
+          console.log('   TONOREF III path:', process.env.TONOREF_EXPORT_PATH || 'C:/tonoref');
+        } catch (err) {
+          console.warn('⚠️  Device data integration initialization failed:', err.message);
+          console.warn('   Non-DICOM device data import will not be available');
+        }
+      }
     }
 
     // Initialize data sync service for multi-clinic sync (if enabled)
@@ -524,11 +609,71 @@ connectWithRetry(mongoUri, mongoOptions, retryOptions)
     // Create HTTP server
     const server = http.createServer(app);
 
-    // Initialize WebSocket
-    websocketService.initialize(server, {
-      origin: allowedOrigins,
+    // Initialize WebSocket (async for Redis adapter setup)
+    // Use function-based origin check to support LAN IPs in development
+    await websocketService.initialize(server, {
+      origin: function (origin, callback) {
+        // Allow requests with no origin (server-to-server, mobile apps)
+        if (!origin) {
+          return callback(null, true);
+        }
+        // Check static allowed origins
+        if (allowedOrigins.includes(origin)) {
+          return callback(null, true);
+        }
+        // In development, allow local network IPs (192.168.x.x, 10.x.x.x, etc.)
+        if (process.env.NODE_ENV !== 'production' && isLocalNetworkOrigin(origin)) {
+          return callback(null, true);
+        }
+        // Reject other origins
+        console.warn(`WebSocket CORS blocked origin: ${origin}`);
+        callback(new Error('Not allowed by CORS'), false);
+      },
       credentials: true
     });
+
+    // Start Inventory Alert monitoring job (cross-clinic low-stock detection)
+    const { startInventoryAlertJob } = require('./jobs/inventoryAlertJob');
+    const io = websocketService.getIO();
+    if (process.env.INVENTORY_ALERTS_ENABLED !== 'false') {
+      startInventoryAlertJob(io);
+      console.log('📦 Inventory alert monitoring started');
+    }
+
+    // Start Scheduled Notification job (appointment reminders, payment reminders, etc.)
+    const { startScheduledNotificationJob } = require('./jobs/scheduledNotificationJob');
+    if (process.env.SCHEDULED_NOTIFICATIONS_ENABLED !== 'false') {
+      startScheduledNotificationJob();
+      console.log('📬 Scheduled notification processing started');
+    }
+
+    // Start Lab Penalty Check job (checks for overdue lab penalties daily)
+    const { startLabPenaltyCheckJob } = require('./jobs/labPenaltyCheckJob');
+    if (process.env.LAB_PENALTY_CHECK_ENABLED !== 'false') {
+      startLabPenaltyCheckJob();
+      console.log('💰 Lab penalty check job started');
+    }
+
+    // Start PDF Queue processor (background PDF generation)
+    if (process.env.PDF_QUEUE_ENABLED !== 'false') {
+      try {
+        const pdfQueue = require('./jobs/pdfQueue');
+        // Schedule periodic cleanup of old PDF files
+        const pdfCleanupInterval = setInterval(async () => {
+          try {
+            await pdfQueue.cleanupOldFiles();
+          } catch (err) {
+            console.warn('PDF cleanup error:', err.message);
+          }
+        }, 60 * 60 * 1000); // Every hour
+        global.pdfCleanupInterval = pdfCleanupInterval;
+        global.pdfQueue = pdfQueue;
+        console.log('📄 PDF queue processor started');
+      } catch (err) {
+        console.warn('⚠️  PDF queue initialization failed:', err.message);
+        console.warn('   PDF generation will fall back to synchronous mode');
+      }
+    }
 
     // Start server
     server.listen(PORT, () => {
@@ -568,6 +713,19 @@ const gracefulShutdown = async (signal) => {
   // Stop counter cleanup interval
   if (global.counterCleanupInterval) {
     clearInterval(global.counterCleanupInterval);
+  }
+
+  // Stop PDF queue cleanup interval and close queue
+  if (global.pdfCleanupInterval) {
+    clearInterval(global.pdfCleanupInterval);
+  }
+  if (global.pdfQueue) {
+    try {
+      await global.pdfQueue.close();
+      console.log('✅ PDF queue closed');
+    } catch (err) {
+      console.warn('PDF queue close error:', err.message);
+    }
   }
 
   // Close Redis connection
