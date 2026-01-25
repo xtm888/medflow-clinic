@@ -54,7 +54,7 @@ function validateFolderPath(folderPath) {
 
   // Check if path starts with an allowed base directory
   const isAllowed = ALLOWED_BASE_PATHS.some(base =>
-    normalizedPath.startsWith(base + '/') || normalizedPath === base
+    normalizedPath.startsWith(`${base}/`) || normalizedPath === base
   );
 
   if (!isAllowed) {
@@ -68,7 +68,7 @@ function validateFolderPath(folderPath) {
   ];
 
   for (const blocked of BLOCKED_PATHS) {
-    if (normalizedPath.startsWith(blocked + '/') || normalizedPath === blocked) {
+    if (normalizedPath.startsWith(`${blocked}/`) || normalizedPath === blocked) {
       throw new Error('Access to system directories not allowed');
     }
   }
@@ -386,172 +386,238 @@ class PatientFolderIndexer {
 
   /**
    * Match folder info to existing patient
+   * @param {Object} folderInfo - Parsed folder information
+   * @param {string} folderPath - Full path to the folder
+   * @param {Object} device - Device object with clinic context
    */
   async matchPatientFromFolder(folderInfo, folderPath, device) {
-    const query = { isDeleted: { $ne: true } };
+    try {
+      // Extract clinic ID from device for scoped queries
+      const deviceClinicId = device?.clinic;
 
-    // 1. Try DMI ID match (highest confidence)
-    if (folderInfo.dmiId) {
-      const byDmi = await Patient.findOne({
-        $or: [
-          { 'legacyIds.dmi': folderInfo.dmiId },
-          { legacyId: folderInfo.dmiId },
-          { 'folderIds.folderId': folderInfo.dmiId }
-        ],
-        ...query
-      });
-      if (byDmi) {
-        this.stats.patientsMatched++;
-        return byDmi;
-      }
-    }
+      // Base query - always exclude deleted patients
+      const baseQuery = { isDeleted: { $ne: true } };
 
-    // 2. Try patient ID match
-    if (folderInfo.patientId) {
-      // Escape special regex characters to prevent injection
-      const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const safePatientId = escapeRegExp(folderInfo.patientId);
+      // Clinic-scoped query for better performance (uses compound indexes)
+      const clinicScopedQuery = deviceClinicId
+        ? { ...baseQuery, homeClinic: deviceClinicId }
+        : baseQuery;
 
-      const byId = await Patient.findOne({
-        $or: [
-          { patientId: { $regex: new RegExp(safePatientId, 'i') } },
-          { legacyPatientNumber: folderInfo.patientId }
-        ],
-        ...query
-      });
-      if (byId) {
-        this.stats.patientsMatched++;
-        return byId;
-      }
-    }
+      // 1. Try DMI ID match (highest confidence) - clinic scoped first, then fallback
+      if (folderInfo.dmiId) {
+        // First try with clinic scope (faster with compound index)
+        if (deviceClinicId) {
+          const byDmiScoped = await Patient.findOne({
+            homeClinic: deviceClinicId,
+            $or: [
+              { 'legacyIds.dmi': folderInfo.dmiId },
+              { legacyId: folderInfo.dmiId },
+              { 'folderIds.folderId': folderInfo.dmiId }
+            ],
+            ...baseQuery
+          });
+          if (byDmiScoped) {
+            this.stats.patientsMatched++;
+            return byDmiScoped;
+          }
+        }
 
-    // 3. Try folder path match (already linked)
-    const byFolder = await Patient.findOne({
-      'folderIds.path': folderPath,
-      ...query
-    });
-    if (byFolder) {
-      this.stats.patientsMatched++;
-      return byFolder;
-    }
-
-    // 4. Try folder name match (already linked)
-    const folderName = path.basename(folderPath);
-    const byFolderName = await Patient.findOne({
-      'folderIds.folderId': folderName,
-      ...query
-    });
-    if (byFolderName) {
-      this.stats.patientsMatched++;
-      return byFolderName;
-    }
-
-    // 5. Try name + DOB match
-    if (folderInfo.lastName && folderInfo.dateOfBirth) {
-      const byNameDob = await Patient.findOne({
-        lastName: { $regex: new RegExp(`^${folderInfo.lastName}$`, 'i') },
-        dateOfBirth: folderInfo.dateOfBirth,
-        ...query
-      });
-      if (byNameDob) {
-        this.stats.patientsMatched++;
-        return byNameDob;
-      }
-    }
-
-    // 6. Try name match (fuzzy)
-    if (folderInfo.lastName && folderInfo.firstName) {
-      const byName = await Patient.findOne({
-        lastName: { $regex: new RegExp(`^${folderInfo.lastName}$`, 'i') },
-        firstName: { $regex: new RegExp(`^${folderInfo.firstName}`, 'i') },
-        ...query
-      });
-      if (byName) {
-        this.stats.patientsMatched++;
-        return byName;
-      }
-    }
-
-    // 7. Try full name match
-    if (folderInfo.fullName) {
-      const parts = folderInfo.fullName.split(/[\s_-]+/).filter(p => p.length >= 2);
-      if (parts.length >= 2) {
-        const byFullName = await Patient.findOne({
+        // Fallback to global search (for cross-clinic devices)
+        const byDmi = await Patient.findOne({
           $or: [
-            {
-              lastName: { $regex: new RegExp(`^${parts[0]}$`, 'i') },
-              firstName: { $regex: new RegExp(`^${parts[1]}`, 'i') }
-            },
-            {
-              lastName: { $regex: new RegExp(`^${parts[parts.length - 1]}$`, 'i') },
-              firstName: { $regex: new RegExp(`^${parts[0]}`, 'i') }
-            }
+            { 'legacyIds.dmi': folderInfo.dmiId },
+            { legacyId: folderInfo.dmiId },
+            { 'folderIds.folderId': folderInfo.dmiId }
           ],
-          ...query
+          ...baseQuery
         });
-        if (byFullName) {
+        if (byDmi) {
           this.stats.patientsMatched++;
-          return byFullName;
+          return byDmi;
         }
       }
-    }
 
-    return null;
+      // 2. Try patient ID match - clinic scoped
+      if (folderInfo.patientId) {
+        // Escape special regex characters to prevent injection
+        const escapeRegExp = (str) => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const safePatientId = escapeRegExp(folderInfo.patientId);
+
+        const byId = await Patient.findOne({
+          $or: [
+            { patientId: { $regex: new RegExp(safePatientId, 'i') } },
+            { legacyPatientNumber: folderInfo.patientId }
+          ],
+          ...clinicScopedQuery
+        });
+        if (byId) {
+          this.stats.patientsMatched++;
+          return byId;
+        }
+      }
+
+      // 3. Try folder path match (already linked) - clinic scoped
+      const byFolder = await Patient.findOne({
+        'folderIds.path': folderPath,
+        ...clinicScopedQuery
+      });
+      if (byFolder) {
+        this.stats.patientsMatched++;
+        return byFolder;
+      }
+
+      // 4. Try folder name match (already linked) - clinic scoped
+      const folderName = path.basename(folderPath);
+      const byFolderName = await Patient.findOne({
+        'folderIds.folderId': folderName,
+        ...clinicScopedQuery
+      });
+      if (byFolderName) {
+        this.stats.patientsMatched++;
+        return byFolderName;
+      }
+
+      // 5. Try name + DOB match - clinic scoped (uses compound index)
+      if (folderInfo.lastName && folderInfo.dateOfBirth) {
+        const byNameDob = await Patient.findOne({
+          lastName: { $regex: new RegExp(`^${folderInfo.lastName}$`, 'i') },
+          dateOfBirth: folderInfo.dateOfBirth,
+          ...clinicScopedQuery
+        });
+        if (byNameDob) {
+          this.stats.patientsMatched++;
+          return byNameDob;
+        }
+      }
+
+      // 6. Try name match (fuzzy) - clinic scoped
+      if (folderInfo.lastName && folderInfo.firstName) {
+        const byName = await Patient.findOne({
+          lastName: { $regex: new RegExp(`^${folderInfo.lastName}$`, 'i') },
+          firstName: { $regex: new RegExp(`^${folderInfo.firstName}`, 'i') },
+          ...clinicScopedQuery
+        });
+        if (byName) {
+          this.stats.patientsMatched++;
+          return byName;
+        }
+      }
+
+      // 7. Try full name match - clinic scoped
+      if (folderInfo.fullName) {
+        const parts = folderInfo.fullName.split(/[\s_-]+/).filter(p => p.length >= 2);
+        if (parts.length >= 2) {
+          const byFullName = await Patient.findOne({
+            $or: [
+              {
+                lastName: { $regex: new RegExp(`^${parts[0]}$`, 'i') },
+                firstName: { $regex: new RegExp(`^${parts[1]}`, 'i') }
+              },
+              {
+                lastName: { $regex: new RegExp(`^${parts[parts.length - 1]}$`, 'i') },
+                firstName: { $regex: new RegExp(`^${parts[0]}`, 'i') }
+              }
+            ],
+            ...clinicScopedQuery
+          });
+          if (byFullName) {
+            this.stats.patientsMatched++;
+            return byFullName;
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      log.error('Patient folder matching failed:', {
+        error: error.message,
+        stack: error.stack,
+        folderInfo: {
+          type: folderInfo?.type,
+          lastName: folderInfo?.lastName,
+          firstName: folderInfo?.firstName,
+          dmiId: folderInfo?.dmiId
+        },
+        folderPath
+      });
+      // Return null on error (treat as "no match found")
+      return null;
+    }
   }
 
   /**
    * Link a folder to a patient
    */
   async linkFolderToPatient(patient, folderPath, deviceType, device) {
-    const folderName = path.basename(folderPath);
+    try {
+      const folderName = path.basename(folderPath);
 
-    // Check if already linked
-    const existingLink = patient.folderIds?.find(f =>
-      f.path === folderPath || f.folderId === folderName
-    );
+      // Check if already linked
+      const existingLink = patient.folderIds?.find(f =>
+        f.path === folderPath || f.folderId === folderName
+      );
 
-    if (existingLink) {
-      return; // Already linked
+      if (existingLink) {
+        return; // Already linked
+      }
+
+      // Add folder link
+      if (!patient.folderIds) {
+        patient.folderIds = [];
+      }
+
+      patient.folderIds.push({
+        deviceType: deviceType,
+        folderId: folderName,
+        path: folderPath,
+        linkedAt: new Date(),
+        linkedBy: null // System auto-link
+      });
+
+      await patient.save({ validateBeforeSave: false });
+      this.stats.patientsLinked++;
+
+      log.info(`Linked ${folderPath} to patient ${patient.patientId}`);
+    } catch (error) {
+      log.error('Failed to link folder to patient:', {
+        error: error.message,
+        stack: error.stack,
+        patientId: patient?._id,
+        folderPath
+      });
+      // Do not re-throw - linking failure should not stop indexing
     }
-
-    // Add folder link
-    if (!patient.folderIds) {
-      patient.folderIds = [];
-    }
-
-    patient.folderIds.push({
-      deviceType: deviceType,
-      folderId: folderName,
-      path: folderPath,
-      linkedAt: new Date(),
-      linkedBy: null // System auto-link
-    });
-
-    await patient.save({ validateBeforeSave: false });
-    this.stats.patientsLinked++;
-
-    log.info(`Linked ${folderPath} to patient ${patient.patientId}`);
   }
 
   /**
    * Index files within a patient folder
    */
   async indexPatientFiles(folderPath, patient, device) {
-    const files = await this.findAllFiles(folderPath, {
-      maxDepth: 5,
-      extensions: ['.jpg', '.jpeg', '.png', '.pdf', '.dcm', '.bmp', '.tiff', '.xml']
-    });
-
-    this.stats.filesIndexed += files.length;
-
-    // Store file count in indexed folders
-    const indexed = this.indexedFolders.get(folderPath);
-    if (indexed) {
-      this.indexedFolders.set(folderPath, {
-        patientId: patient._id,
-        patientName: `${patient.firstName} ${patient.lastName}`,
-        fileCount: files.length
+    try {
+      const files = await this.findAllFiles(folderPath, {
+        maxDepth: 5,
+        extensions: ['.jpg', '.jpeg', '.png', '.pdf', '.dcm', '.bmp', '.tiff', '.xml']
       });
+
+      this.stats.filesIndexed += files.length;
+
+      // Store file count in indexed folders
+      const indexed = this.indexedFolders.get(folderPath);
+      if (indexed) {
+        this.indexedFolders.set(folderPath, {
+          patientId: patient._id,
+          patientName: `${patient.firstName} ${patient.lastName}`,
+          fileCount: files.length
+        });
+      }
+    } catch (error) {
+      log.error('Failed to index patient files:', {
+        error: error.message,
+        stack: error.stack,
+        patientId: patient?._id,
+        folderPath
+      });
+      // Do not re-throw - file indexing failure should not stop folder indexing
     }
   }
 
@@ -670,101 +736,122 @@ class PatientFolderIndexer {
    * Manually link a folder to a patient
    */
   async manualLinkFolder(folderPath, patientId, deviceType, userId) {
-    // SECURITY: Validate path to prevent traversal attacks
-    let validatedPath;
     try {
-      validatedPath = validateFolderPath(folderPath);
+      // SECURITY: Validate path to prevent traversal attacks
+      let validatedPath;
+      try {
+        validatedPath = validateFolderPath(folderPath);
+      } catch (validationError) {
+        throw new Error(`Chemin de dossier invalide: ${validationError.message}`);
+      }
+
+      const patient = await Patient.findById(patientId);
+      if (!patient) {
+        throw new Error('Patient non trouvé');
+      }
+
+      const folderName = path.basename(validatedPath);
+
+      if (!patient.folderIds) {
+        patient.folderIds = [];
+      }
+
+      // Check if already linked
+      const existing = patient.folderIds.find(f => f.path === validatedPath);
+      if (existing) {
+        return { message: 'Folder already linked', patient };
+      }
+
+      patient.folderIds.push({
+        deviceType: deviceType || 'other',
+        folderId: folderName,
+        path: validatedPath,
+        linkedAt: new Date(),
+        linkedBy: userId
+      });
+
+      await patient.save({ validateBeforeSave: false });
+
+      // Remove from unmatched queue
+      this.unmatchedQueue = this.unmatchedQueue.filter(f => f.path !== validatedPath);
+
+      log.info(`Manual link: ${validatedPath} -> ${patient.patientId}`);
+
+      return { message: 'Folder linked successfully', patient };
     } catch (error) {
-      throw new Error(`Invalid folder path: ${error.message}`);
+      log.error('Manual folder link failed:', {
+        error: error.message,
+        stack: error.stack,
+        folderPath,
+        patientId
+      });
+      // Re-throw with user-friendly message for API calls
+      throw new Error(error.message || 'Impossible de lier le dossier au patient');
     }
-
-    const patient = await Patient.findById(patientId);
-    if (!patient) {
-      throw new Error('Patient not found');
-    }
-
-    const folderName = path.basename(validatedPath);
-
-    if (!patient.folderIds) {
-      patient.folderIds = [];
-    }
-
-    // Check if already linked
-    const existing = patient.folderIds.find(f => f.path === validatedPath);
-    if (existing) {
-      return { message: 'Folder already linked', patient };
-    }
-
-    patient.folderIds.push({
-      deviceType: deviceType || 'other',
-      folderId: folderName,
-      path: validatedPath,
-      linkedAt: new Date(),
-      linkedBy: userId
-    });
-
-    await patient.save({ validateBeforeSave: false });
-
-    // Remove from unmatched queue
-    this.unmatchedQueue = this.unmatchedQueue.filter(f => f.path !== validatedPath);
-
-    log.info(`Manual link: ${validatedPath} -> ${patient.patientId}`);
-
-    return { message: 'Folder linked successfully', patient };
   }
 
   /**
    * Find patient by folder path (used during file sync)
    */
   async findPatientByFolderPath(filePath) {
-    // SECURITY: Validate path to prevent traversal attacks
-    let validatedPath;
     try {
-      validatedPath = validateFolderPath(filePath);
+      // SECURITY: Validate path to prevent traversal attacks
+      let validatedPath;
+      try {
+        validatedPath = validateFolderPath(filePath);
+      } catch (validationError) {
+        log.error(`[FolderIndexer] Security: Invalid file path: ${validationError.message}`);
+        return null;
+      }
+
+      // Traverse up from file to find matching patient folder
+      let currentPath = path.dirname(validatedPath);
+      let maxDepth = 5;
+
+      while (maxDepth > 0 && currentPath !== '/') {
+        // Check cache first
+        const cached = this.indexedFolders.get(currentPath);
+        if (cached) {
+          return await Patient.findById(cached.patientId || cached);
+        }
+
+        // Check database
+        const patient = await Patient.findOne({
+          'folderIds.path': currentPath,
+          isDeleted: { $ne: true }
+        });
+
+        if (patient) {
+          this.indexedFolders.set(currentPath, patient._id);
+          return patient;
+        }
+
+        // Check by folder name
+        const folderName = path.basename(currentPath);
+        const byName = await Patient.findOne({
+          'folderIds.folderId': folderName,
+          isDeleted: { $ne: true }
+        });
+
+        if (byName) {
+          this.indexedFolders.set(currentPath, byName._id);
+          return byName;
+        }
+
+        currentPath = path.dirname(currentPath);
+        maxDepth--;
+      }
+
+      return null;
     } catch (error) {
-      log.error(`[FolderIndexer] Security: Invalid file path: ${error.message}`);
+      log.error('Failed to find patient by folder path:', {
+        error: error.message,
+        stack: error.stack,
+        filePath
+      });
+      // Return null on error (treat as "not found")
       return null;
     }
-
-    // Traverse up from file to find matching patient folder
-    let currentPath = path.dirname(validatedPath);
-    let maxDepth = 5;
-
-    while (maxDepth > 0 && currentPath !== '/') {
-      // Check cache first
-      const cached = this.indexedFolders.get(currentPath);
-      if (cached) {
-        return await Patient.findById(cached.patientId || cached);
-      }
-
-      // Check database
-      const patient = await Patient.findOne({
-        'folderIds.path': currentPath,
-        isDeleted: { $ne: true }
-      });
-
-      if (patient) {
-        this.indexedFolders.set(currentPath, patient._id);
-        return patient;
-      }
-
-      // Check by folder name
-      const folderName = path.basename(currentPath);
-      const byName = await Patient.findOne({
-        'folderIds.folderId': folderName,
-        isDeleted: { $ne: true }
-      });
-
-      if (byName) {
-        this.indexedFolders.set(currentPath, byName._id);
-        return byName;
-      }
-
-      currentPath = path.dirname(currentPath);
-      maxDepth--;
-    }
-
-    return null;
   }
 }
 

@@ -168,7 +168,7 @@ class DeviceSyncScheduler {
       const fileFormat = device.integration.folderSync.fileFormat;
 
       // Log sync start
-      const log = await DeviceIntegrationLog.create({
+      const syncLog = await DeviceIntegrationLog.create({
         device: device._id,
         deviceType: device.type,
         eventType: 'FOLDER_SCAN',
@@ -198,9 +198,9 @@ class DeviceSyncScheduler {
         return regex.test(file);
       });
 
-      log.folderSync.filesScanned = files.length;
-      log.folderSync.filesNew = matchingFiles.length;
-      await log.save();
+      syncLog.folderSync.filesScanned = files.length;
+      syncLog.folderSync.filesNew = matchingFiles.length;
+      await syncLog.save();
 
       const processedFolder = device.integration.folderSync.processedFolder ||
                             path.join(folderPath, 'processed');
@@ -258,7 +258,7 @@ class DeviceSyncScheduler {
           // Move file to processed folder
           await fs.rename(filePath, path.join(processedFolder, file));
 
-          log.folderSync.filesProcessed.push({
+          syncLog.folderSync.filesProcessed.push({
             fileName: file,
             fileSize: (await fs.stat(path.join(processedFolder, file))).size,
             processedAt: new Date(),
@@ -280,7 +280,7 @@ class DeviceSyncScheduler {
             log.error('Failed to move error file:', { error: moveError });
           }
 
-          log.folderSync.filesProcessed.push({
+          syncLog.folderSync.filesProcessed.push({
             fileName: file,
             processedAt: new Date(),
             status: 'FAILED',
@@ -289,19 +289,19 @@ class DeviceSyncScheduler {
         }
       }
 
-      // Update log
-      log.status = recordsFailed === 0 ? 'SUCCESS' : 'PARTIAL';
-      log.processing.recordsProcessed = recordsProcessed;
-      log.processing.recordsFailed = recordsFailed;
-      log.completedAt = new Date();
+      // Update sync log
+      syncLog.status = recordsFailed === 0 ? 'SUCCESS' : 'PARTIAL';
+      syncLog.processing.recordsProcessed = recordsProcessed;
+      syncLog.processing.recordsFailed = recordsFailed;
+      syncLog.completedAt = new Date();
       if (errors.length > 0) {
-        log.errorDetails = {
+        syncLog.errorDetails = {
           code: 'PARTIAL_FAILURE',
           message: `${recordsFailed} files failed to process`,
           severity: 'MEDIUM'
         };
       }
-      await log.save();
+      await syncLog.save();
 
       // Update device status
       await Device.findByIdAndUpdate(device._id, {
@@ -401,8 +401,17 @@ class DeviceSyncScheduler {
    * Manually trigger sync for a device
    */
   async triggerSync(deviceId) {
-    log.info(`🔄 Manually triggering sync for device: ${deviceId}`);
-    await this.syncDevice(deviceId);
+    try {
+      log.info(`🔄 Manually triggering sync for device: ${deviceId}`);
+      await this.syncDevice(deviceId);
+    } catch (error) {
+      log.error('Manual sync trigger failed:', {
+        error: error.message,
+        stack: error.stack,
+        deviceId
+      });
+      throw new Error('Impossible de déclencher la synchronisation manuelle');
+    }
   }
 }
 
