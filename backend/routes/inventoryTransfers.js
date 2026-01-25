@@ -14,6 +14,11 @@ const {
   getStats,
   getRecommendations
 } = require('../controllers/inventoryTransferController');
+const {
+  validateInventoryTransferCreate,
+  validateInventoryTransferUpdate,
+  validateObjectIdParam
+} = require('../middleware/validation');
 
 // All routes require authentication
 router.use(protect);
@@ -25,17 +30,17 @@ router.get('/recommendations', authorize('admin', 'manager', 'depot_manager'), g
 // CRUD operations
 router.route('/')
   .get(getTransfers)
-  .post(createTransfer);
+  .post(validateInventoryTransferCreate, createTransfer);
 
 router.route('/:id')
-  .get(getTransfer);
+  .get(validateObjectIdParam, getTransfer);
 
 // Workflow actions
-router.post('/:id/submit', submitTransfer);
-router.post('/:id/approve', authorize('admin', 'manager', 'depot_manager', 'pharmacist'), approveTransfer);
-router.post('/:id/reject', authorize('admin', 'manager', 'depot_manager'), rejectTransfer);
-router.post('/:id/ship', shipTransfer);
-router.post('/:id/receive', receiveTransfer);
-router.post('/:id/cancel', cancelTransfer);
+router.post('/:id/submit', validateObjectIdParam, submitTransfer);
+router.post('/:id/approve', validateObjectIdParam, authorize('admin', 'manager', 'depot_manager', 'pharmacist'), approveTransfer);
+router.post('/:id/reject', validateObjectIdParam, authorize('admin', 'manager', 'depot_manager'), rejectTransfer);
+router.post('/:id/ship', validateObjectIdParam, shipTransfer);
+router.post('/:id/receive', validateInventoryTransferUpdate, receiveTransfer);
+router.post('/:id/cancel', validateObjectIdParam, cancelTransfer);
 
 module.exports = router;

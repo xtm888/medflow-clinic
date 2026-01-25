@@ -4,6 +4,12 @@ const pharmacyController = require('../controllers/pharmacyController');
 const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
 const { optionalClinic } = require('../middleware/clinicAuth');
+const {
+  validatePharmacyDispense,
+  validatePharmacyStockAdjustment,
+  validatePharmacyMedicationCreate,
+  validateObjectIdParam
+} = require('../middleware/validation');
 
 // Protect all routes and add clinic context
 router.use(protect);
@@ -28,11 +34,11 @@ router.get('/search', requirePermission('view_pharmacy'), logAction('MEDICATION_
 // ============================================
 // MEDICATION CRUD ROUTES
 // ============================================
-router.post('/inventory', requirePermission('manage_inventory'), logAction('INVENTORY_ADD'), pharmacyController.createMedication);
-router.get('/inventory/:id', requirePermission('view_pharmacy'), logAction('MEDICATION_VIEW'), pharmacyController.getMedication);
-router.put('/inventory/:id', requirePermission('manage_inventory'), logAction('INVENTORY_UPDATE'), pharmacyController.updateMedication);
-router.delete('/inventory/:id', requirePermission('manage_inventory'), logCriticalOperation('INVENTORY_DELETE'), pharmacyController.deleteMedication);
-router.post('/inventory/:id/adjust', requirePermission('manage_inventory'), logCriticalOperation('INVENTORY_ADJUST'), pharmacyController.adjustStock);
+router.post('/inventory', requirePermission('manage_inventory'), validatePharmacyMedicationCreate, logAction('INVENTORY_ADD'), pharmacyController.createMedication);
+router.get('/inventory/:id', validateObjectIdParam, requirePermission('view_pharmacy'), logAction('MEDICATION_VIEW'), pharmacyController.getMedication);
+router.put('/inventory/:id', validateObjectIdParam, requirePermission('manage_inventory'), logAction('INVENTORY_UPDATE'), pharmacyController.updateMedication);
+router.delete('/inventory/:id', validateObjectIdParam, requirePermission('manage_inventory'), logCriticalOperation('INVENTORY_DELETE'), pharmacyController.deleteMedication);
+router.post('/inventory/:id/adjust', validateObjectIdParam, validatePharmacyStockAdjustment, requirePermission('manage_inventory'), logCriticalOperation('INVENTORY_ADJUST'), pharmacyController.adjustStock);
 
 // ============================================
 // BATCH MANAGEMENT ROUTES - CRITICAL
@@ -45,8 +51,8 @@ router.post('/inventory/:id/batches/:lotNumber/expire', requirePermission('manag
 // ============================================
 // DISPENSING ROUTES - CRITICAL
 // ============================================
-router.post('/inventory/:id/dispense', requirePermission('manage_inventory'), logCriticalOperation('MEDICATION_DISPENSE'), pharmacyController.dispenseFromInventory);
-router.post('/dispense', requirePermission('manage_inventory'), logCriticalOperation('PRESCRIPTION_DISPENSE'), pharmacyController.dispensePrescription);
+router.post('/inventory/:id/dispense', validateObjectIdParam, requirePermission('manage_inventory'), logCriticalOperation('MEDICATION_DISPENSE'), pharmacyController.dispenseFromInventory);
+router.post('/dispense', validatePharmacyDispense, requirePermission('manage_inventory'), logCriticalOperation('PRESCRIPTION_DISPENSE'), pharmacyController.dispensePrescription);
 
 // ============================================
 // RESERVATION ROUTES
