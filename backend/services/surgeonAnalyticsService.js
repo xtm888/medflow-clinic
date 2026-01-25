@@ -41,7 +41,7 @@ const METRICS_CATEGORIES = {
  * @param {String} surgeonId - Surgeon user ID
  * @param {Date} startDate - Report start date
  * @param {Date} endDate - Report end date
- * @returns {Object} Performance report
+ * @returns {Object} Performance report (empty results on error)
  */
 async function getSurgeonPerformanceReport(surgeonId, startDate, endDate) {
   try {
@@ -77,6 +77,7 @@ async function getSurgeonPerformanceReport(surgeonId, startDate, endDate) {
     );
 
     return {
+      success: true,
       surgeonId,
       reportPeriod: { startDate, endDate },
       summary: {
@@ -96,8 +97,32 @@ async function getSurgeonPerformanceReport(surgeonId, startDate, endDate) {
       generatedAt: new Date()
     };
   } catch (error) {
-    log.error('Error generating surgeon performance report:', { error: error });
-    throw new Error(`Failed to generate performance report: ${error.message}`);
+    log.error('Error generating surgeon performance report:', {
+      error: error.message,
+      surgeonId: String(surgeonId),
+      startDate,
+      endDate
+    });
+    // Return empty report structure on error
+    return {
+      success: false,
+      error: 'Erreur lors de la génération du rapport',
+      surgeonId,
+      reportPeriod: { startDate, endDate },
+      summary: {
+        totalCases: 0,
+        completedCases: 0,
+        cancelledCases: 0,
+        cancellationRate: 0
+      },
+      volumeMetrics: { totalCases: 0, casesByType: {}, casesByMonth: {}, trend: 'unknown', averagePerMonth: 0 },
+      outcomeMetrics: { successRate: null, complicationRate: null, revisionRate: null, totalComplications: 0 },
+      efficiencyMetrics: { averageDuration: null, onTimeStartRate: null, averageTurnoverTime: null },
+      safetyMetrics: { checklistCompletionRate: null, averageChecklistCompliance: null, adverseEventRate: null },
+      rankings: null,
+      benchmarks: null,
+      generatedAt: new Date()
+    };
   }
 }
 
@@ -120,7 +145,7 @@ function calculateVolumeMetrics(cases, startDate, endDate) {
   }
 
   // Calculate trend
-  const months = Object.keys(casesByMonth).sort();
+  const months = Object.keys(casesByMonth).sort((a, b) => a.localeCompare(b));
   let trend = 'stable';
   if (months.length >= 3) {
     const recentAvg = (casesByMonth[months[months.length - 1]] + casesByMonth[months[months.length - 2]]) / 2;
@@ -361,6 +386,7 @@ function calculateSafetyMetrics(cases, checklists) {
 
 /**
  * Get benchmark data from all surgeons
+ * Returns null on error (graceful degradation)
  */
 async function getSurgeonBenchmarks(startDate, endDate) {
   try {
@@ -395,7 +421,12 @@ async function getSurgeonBenchmarks(startDate, endDate) {
         : null
     };
   } catch (error) {
-    log.error('Error getting benchmarks:', { error: error });
+    log.error('Error getting benchmarks:', {
+      error: error.message,
+      startDate,
+      endDate
+    });
+    // Return null on error - reports will be generated without benchmarks
     return null;
   }
 }
@@ -445,25 +476,55 @@ function calculateRankings(metrics, benchmarks) {
 
 /**
  * Get surgeon comparison report
+ * Returns empty reports array on complete failure
  */
 async function getSurgeonComparisonReport(surgeonIds, startDate, endDate) {
-  const reports = [];
+  try {
+    const reports = [];
+    const errors = [];
 
-  for (const surgeonId of surgeonIds) {
-    const report = await getSurgeonPerformanceReport(surgeonId, startDate, endDate);
-    const surgeon = await User.findById(surgeonId).select('name specialty').lean();
-    reports.push({
-      surgeon,
-      ...report
+    for (const surgeonId of surgeonIds) {
+      try {
+        const report = await getSurgeonPerformanceReport(surgeonId, startDate, endDate);
+        const surgeon = await User.findById(surgeonId).select('name specialty').lean();
+        reports.push({
+          surgeon,
+          ...report
+        });
+      } catch (surgeonError) {
+        log.error('Failed to get report for surgeon:', {
+          error: surgeonError.message,
+          surgeonId: String(surgeonId)
+        });
+        errors.push({ surgeonId: String(surgeonId), error: surgeonError.message });
+      }
+    }
+
+    return {
+      success: true,
+      comparisonPeriod: { startDate, endDate },
+      surgeonCount: reports.length,
+      reports,
+      errors: errors.length > 0 ? errors : undefined,
+      generatedAt: new Date()
+    };
+  } catch (error) {
+    log.error('Error generating comparison report:', {
+      error: error.message,
+      surgeonCount: surgeonIds?.length,
+      startDate,
+      endDate
     });
+    // Return empty report on error
+    return {
+      success: false,
+      error: 'Erreur lors de la génération du rapport comparatif',
+      comparisonPeriod: { startDate, endDate },
+      surgeonCount: 0,
+      reports: [],
+      generatedAt: new Date()
+    };
   }
-
-  return {
-    comparisonPeriod: { startDate, endDate },
-    surgeonCount: reports.length,
-    reports,
-    generatedAt: new Date()
-  };
 }
 
 module.exports = {

@@ -35,6 +35,9 @@ const websocketService = require('./websocketService');
 // Transaction helper (graceful fallback for standalone MongoDB)
 const { withTransaction, supportsTransactions } = require('../utils/migrationTransaction');
 
+// Saga pattern for non-transactional environments
+const { executeConsultationSaga, SagaStatus } = require('./consultationSaga');
+
 /**
  * Complete a consultation with all integrated operations
  *
@@ -80,112 +83,112 @@ async function completeConsultation({
     // Use transaction helper (gracefully handles standalone MongoDB)
     await withTransaction(async (session) => {
 
-    // 1. Save/Update Ophthalmology Exam
-    result.exam = await saveExam({
-      examId,
-      patientId,
-      visitId,
-      clinicId,
-      userId,
-      examData,
-      session
-    });
-
-    // 2. Create Lab Orders if any
-    if (examData.diagnostic?.laboratory?.length > 0) {
-      const labResult = await createLabOrders({
+      // 1. Save/Update Ophthalmology Exam
+      result.exam = await saveExam({
+        examId,
         patientId,
         visitId,
         clinicId,
         userId,
-        labTests: examData.diagnostic.laboratory,
+        examData,
         session
       });
-      result.labOrders = labResult.orders;
-      if (labResult.warnings?.length) {
-        result.warnings.push(...labResult.warnings);
-      }
-    }
 
-    // 3. Create Prescriptions if any medications
-    if (examData.prescription?.medications?.length > 0) {
-      const prescriptionResult = await createPrescriptions({
+      // 2. Create Lab Orders if any
+      if (examData.diagnostic?.laboratory?.length > 0) {
+        const labResult = await createLabOrders({
+          patientId,
+          visitId,
+          clinicId,
+          userId,
+          labTests: examData.diagnostic.laboratory,
+          session
+        });
+        result.labOrders = labResult.orders;
+        if (labResult.warnings?.length) {
+          result.warnings.push(...labResult.warnings);
+        }
+      }
+
+      // 3. Create Prescriptions if any medications
+      if (examData.prescription?.medications?.length > 0) {
+        const prescriptionResult = await createPrescriptions({
+          patientId,
+          visitId,
+          clinicId,
+          userId,
+          medications: examData.prescription.medications,
+          opticalPrescription: examData.prescription?.optical,
+          session
+        });
+        result.prescriptions = prescriptionResult.prescriptions;
+        if (prescriptionResult.warnings?.length) {
+          result.warnings.push(...prescriptionResult.warnings);
+        }
+      }
+
+      // 4. Create optical prescription if refraction was done
+      if (examData.refraction && hasValidRefraction(examData.refraction)) {
+        const opticalRx = await createOpticalPrescription({
+          patientId,
+          visitId,
+          clinicId,
+          userId,
+          refractionData: examData.refraction,
+          session
+        });
+        if (opticalRx) {
+          result.prescriptions.push(opticalRx);
+        }
+      }
+
+      // 5. Generate Invoice from all billable items
+      // This includes convention billing, fee schedule lookups, and approval checks
+      const invoiceResult = await generateInvoice({
         patientId,
         visitId,
         clinicId,
         userId,
-        medications: examData.prescription.medications,
-        opticalPrescription: examData.prescription?.optical,
+        examData,
+        createdRecords: result,
         session
       });
-      result.prescriptions = prescriptionResult.prescriptions;
-      if (prescriptionResult.warnings?.length) {
-        result.warnings.push(...prescriptionResult.warnings);
-      }
-    }
+      result.invoice = invoiceResult.invoice;
 
-    // 4. Create optical prescription if refraction was done
-    if (examData.refraction && hasValidRefraction(examData.refraction)) {
-      const opticalRx = await createOpticalPrescription({
-        patientId,
+      // Add invoice warnings (convention info, approval requirements, annual limits)
+      if (invoiceResult.warnings?.length > 0) {
+        result.warnings.push(...invoiceResult.warnings);
+      }
+
+      // Track approval issues separately for frontend to handle
+      if (invoiceResult.approvalIssues?.length > 0) {
+        result.approvalIssues = invoiceResult.approvalIssues;
+      }
+
+      // Add convention billing info to result
+      if (result.invoice?.companyBilling) {
+        result.conventionBilling = {
+          companyName: result.invoice.companyBilling.companyName,
+          companyShare: result.invoice.companyBilling.companyShare,
+          patientShare: result.invoice.companyBilling.patientShare,
+          coveragePercentage: result.invoice.companyBilling.coveragePercentage,
+          isWaitingPeriod: result.invoice.companyBilling.waitingPeriodActive
+        };
+      }
+
+      // 6. Update Visit status
+      const updateOptions = session ? { session } : {};
+      await Visit.findByIdAndUpdate(
         visitId,
-        clinicId,
-        userId,
-        refractionData: examData.refraction,
-        session
-      });
-      if (opticalRx) {
-        result.prescriptions.push(opticalRx);
-      }
-    }
-
-    // 5. Generate Invoice from all billable items
-    // This includes convention billing, fee schedule lookups, and approval checks
-    const invoiceResult = await generateInvoice({
-      patientId,
-      visitId,
-      clinicId,
-      userId,
-      examData,
-      createdRecords: result,
-      session
-    });
-    result.invoice = invoiceResult.invoice;
-
-    // Add invoice warnings (convention info, approval requirements, annual limits)
-    if (invoiceResult.warnings?.length > 0) {
-      result.warnings.push(...invoiceResult.warnings);
-    }
-
-    // Track approval issues separately for frontend to handle
-    if (invoiceResult.approvalIssues?.length > 0) {
-      result.approvalIssues = invoiceResult.approvalIssues;
-    }
-
-    // Add convention billing info to result
-    if (result.invoice?.companyBilling) {
-      result.conventionBilling = {
-        companyName: result.invoice.companyBilling.companyName,
-        companyShare: result.invoice.companyBilling.companyShare,
-        patientShare: result.invoice.companyBilling.patientShare,
-        coveragePercentage: result.invoice.companyBilling.coveragePercentage,
-        isWaitingPeriod: result.invoice.companyBilling.waitingPeriodActive
-      };
-    }
-
-    // 6. Update Visit status
-    const updateOptions = session ? { session } : {};
-    await Visit.findByIdAndUpdate(
-      visitId,
-      {
-        status: 'completed',
-        completedAt: new Date(),
-        completedBy: userId,
-        ophthalmologyExam: result.exam._id,
-        invoice: result.invoice?._id
-      },
-      updateOptions
-    );
+        {
+          status: 'completed',
+          completedAt: new Date(),
+          completedBy: userId,
+          ophthalmologyExam: result.exam._id,
+          invoice: result.invoice?._id
+        },
+        updateOptions
+      );
     }); // End withTransaction
 
     log.info('Consultation completed successfully', {
@@ -223,7 +226,8 @@ async function completeConsultation({
  * Save or update ophthalmology exam
  */
 async function saveExam({ examId, patientId, visitId, clinicId, userId, examData, session }) {
-  const examPayload = {
+  try {
+    const examPayload = {
     patient: patientId,
     visit: visitId,
     clinic: clinicId,
@@ -265,21 +269,30 @@ async function saveExam({ examId, patientId, visitId, clinicId, userId, examData
     updatedAt: new Date()
   };
 
-  if (examId) {
-    // Update existing exam
-    const updateOptions = { new: true };
-    if (session) updateOptions.session = session;
-    const exam = await OphthalmologyExam.findByIdAndUpdate(
+    if (examId) {
+      // Update existing exam
+      const updateOptions = { new: true };
+      if (session) updateOptions.session = session;
+      const exam = await OphthalmologyExam.findByIdAndUpdate(
+        examId,
+        { $set: examPayload },
+        updateOptions
+      );
+      return exam;
+    } else {
+      // Create new exam
+      const exam = new OphthalmologyExam(examPayload);
+      await exam.save(session ? { session } : {});
+      return exam;
+    }
+  } catch (error) {
+    log.error('Failed to save exam:', {
+      error: error.message,
       examId,
-      { $set: examPayload },
-      updateOptions
-    );
-    return exam;
-  } else {
-    // Create new exam
-    const exam = new OphthalmologyExam(examPayload);
-    await exam.save(session ? { session } : {});
-    return exam;
+      patientId: String(patientId), // ID only, no PHI
+      visitId: String(visitId)
+    });
+    throw new Error('Erreur lors de l\'enregistrement de l\'examen');
   }
 }
 
@@ -290,44 +303,68 @@ async function createLabOrders({ patientId, visitId, clinicId, userId, labTests,
   const orders = [];
   const warnings = [];
 
-  // Group tests by specimen type for efficiency
-  const testsBySpecimen = groupTestsBySpecimen(labTests);
+  try {
+    // Group tests by specimen type for efficiency
+    const testsBySpecimen = groupTestsBySpecimen(labTests);
 
-  for (const [specimenType, tests] of Object.entries(testsBySpecimen)) {
-    const labOrder = new LabOrder({
-      patient: patientId,
-      visit: visitId,
-      clinic: clinicId,
-      orderedBy: userId,
-      orderDate: new Date(),
-      priority: determinePriority(tests),
-      status: 'ordered',
-      tests: tests.map(test => ({
-        testName: test.name || test.testName,
-        testCode: test.code || test.testCode,
-        category: test.category,
-        specimen: test.specimenType || specimenType,
-        status: 'pending',
-        notes: test.notes
-      })),
-      specimen: {
-        specimenType
-      },
-      clinicalInfo: tests[0]?.clinicalInfo || '',
-      notes: `Ordered from ophthalmology consultation`
+    for (const [specimenType, tests] of Object.entries(testsBySpecimen)) {
+      try {
+        const labOrder = new LabOrder({
+          patient: patientId,
+          visit: visitId,
+          clinic: clinicId,
+          orderedBy: userId,
+          orderDate: new Date(),
+          priority: determinePriority(tests),
+          status: 'ordered',
+          tests: tests.map(test => ({
+            testName: test.name || test.testName,
+            testCode: test.code || test.testCode,
+            category: test.category,
+            specimen: test.specimenType || specimenType,
+            status: 'pending',
+            notes: test.notes
+          })),
+          specimen: {
+            specimenType
+          },
+          clinicalInfo: tests[0]?.clinicalInfo || '',
+          notes: 'Ordered from ophthalmology consultation'
+        });
+
+        await labOrder.save(session ? { session } : {});
+        orders.push(labOrder);
+
+        log.info('Lab order created', {
+          orderId: labOrder._id,
+          testCount: tests.length,
+          specimenType
+        });
+      } catch (orderError) {
+        log.error('Failed to create lab order:', {
+          error: orderError.message,
+          specimenType,
+          patientId: String(patientId)
+        });
+        warnings.push({
+          type: 'lab_order_failed',
+          message: `Erreur lors de la création de la commande labo pour ${specimenType}`
+        });
+      }
+    }
+
+    return { orders, warnings };
+  } catch (error) {
+    log.error('Failed to create lab orders:', {
+      error: error.message,
+      patientId: String(patientId),
+      testCount: labTests?.length
     });
-
-    await labOrder.save(session ? { session } : {});
-    orders.push(labOrder);
-
-    log.info('Lab order created', {
-      orderId: labOrder._id,
-      testCount: tests.length,
-      specimenType
-    });
+    return {
+      orders: [],
+      warnings: [{ type: 'lab_orders_failed', message: 'Erreur lors de la création des commandes laboratoire' }]
+    };
   }
-
-  return { orders, warnings };
 }
 
 /**
@@ -337,8 +374,9 @@ async function createPrescriptions({ patientId, visitId, clinicId, userId, medic
   const prescriptions = [];
   const warnings = [];
 
-  // Get patient for safety checks
-  const patient = await Patient.findById(patientId).select('allergies dateOfBirth gender currentMedications');
+  try {
+    // Get patient for safety checks
+    const patient = await Patient.findById(patientId).select('allergies dateOfBirth gender currentMedications');
 
   // Run drug safety checks
   if (medications.length > 0) {
@@ -421,28 +459,40 @@ async function createPrescriptions({ patientId, visitId, clinicId, userId, medic
     }
   });
 
-  await prescription.save(session ? { session } : {});
-  prescriptions.push(prescription);
+    await prescription.save(session ? { session } : {});
+    prescriptions.push(prescription);
 
-  log.info('Prescription created', {
-    prescriptionId: prescription._id,
-    medicationCount: medications.length,
-    hasWarnings: warnings.length > 0
-  });
+    log.info('Prescription created', {
+      prescriptionId: prescription._id,
+      medicationCount: medications.length,
+      hasWarnings: warnings.length > 0
+    });
 
-  return { prescriptions, warnings };
+    return { prescriptions, warnings };
+  } catch (error) {
+    log.error('Failed to create prescription:', {
+      error: error.message,
+      patientId: String(patientId),
+      medicationCount: medications?.length
+    });
+    return {
+      prescriptions: [],
+      warnings: [{ type: 'prescription_failed', message: 'Erreur lors de la création de l\'ordonnance' }]
+    };
+  }
 }
 
 /**
  * Create optical prescription from refraction data
  */
 async function createOpticalPrescription({ patientId, visitId, clinicId, userId, refractionData, session }) {
-  // Only create if there's actual refraction data
-  if (!refractionData?.subjective?.OD && !refractionData?.subjective?.OS) {
-    return null;
-  }
+  try {
+    // Only create if there's actual refraction data
+    if (!refractionData?.subjective?.OD && !refractionData?.subjective?.OS) {
+      return null;
+    }
 
-  const prescription = new Prescription({
+    const prescription = new Prescription({
     patient: patientId,
     visit: visitId,
     clinic: clinicId,
@@ -482,13 +532,22 @@ async function createOpticalPrescription({ patientId, visitId, clinicId, userId,
     notes: 'Ordonnance optique générée depuis l\'examen de réfraction'
   });
 
-  await prescription.save(session ? { session } : {});
+    await prescription.save(session ? { session } : {});
 
-  log.info('Optical prescription created', {
-    prescriptionId: prescription._id
-  });
+    log.info('Optical prescription created', {
+      prescriptionId: prescription._id
+    });
 
-  return prescription;
+    return prescription;
+  } catch (error) {
+    log.error('Failed to create optical prescription:', {
+      error: error.message,
+      patientId: String(patientId),
+      visitId: String(visitId)
+    });
+    // Return null on failure - non-critical, don't block consultation completion
+    return null;
+  }
 }
 
 /**
@@ -594,7 +653,7 @@ async function generateInvoice({ patientId, visitId, clinicId, userId, examData,
     visit: visitId,
     clinic: clinicId,
     createdBy: userId,
-    status: 'draft', // Invoice starts as draft until finalized
+    status: 'issued', // Auto-created invoices are immediately ready for payment
     items: invoiceItems.map(item => ({
       ...item,
       subtotal: item.unitPrice * item.quantity,
@@ -611,8 +670,9 @@ async function generateInvoice({ patientId, visitId, clinicId, userId, examData,
     billing: {
       currency: 'CDF'
     },
+    source: 'visit', // Invoice created from visit/consultation
     metadata: {
-      source: 'studiovision_consultation',
+      consultationType: 'studiovision',
       ophthalmologyExam: createdRecords.exam?._id,
       labOrders: createdRecords.labOrders?.map(lo => lo._id),
       prescriptions: createdRecords.prescriptions?.map(p => p._id)
@@ -621,6 +681,29 @@ async function generateInvoice({ patientId, visitId, clinicId, userId, examData,
 
   // Save invoice first (required before applying company billing)
   await invoice.save(session ? { session } : {});
+
+  // ========================================
+  // LINK LAB ORDERS TO INVOICE (BILL-03)
+  // ========================================
+  // Update lab orders with invoice reference for bidirectional linking
+  if (createdRecords.labOrders?.length > 0 && invoice._id) {
+    await LabOrder.updateMany(
+      { _id: { $in: createdRecords.labOrders.map(lo => lo._id) } },
+      {
+        $set: {
+          'billing.invoice': invoice._id,
+          'billing.invoicedAt': new Date(),
+          'billing.invoicedBy': userId
+        }
+      },
+      session ? { session } : {}
+    );
+    log.info('Lab orders linked to invoice', {
+      invoiceId: invoice._id,
+      labOrderCount: createdRecords.labOrders.length,
+      labOrderIds: createdRecords.labOrders.map(lo => lo._id)
+    });
+  }
 
   // ========================================
   // CONVENTION/COMPANY BILLING
@@ -711,7 +794,7 @@ async function generateInvoice({ patientId, visitId, clinicId, userId, examData,
       warnings.push({
         type: 'convention_error',
         severity: 'error',
-        message: 'Erreur lors de l\'application de la convention: ' + conventionError.message
+        message: `Erreur lors de l'application de la convention: ${conventionError.message}`
       });
     }
   }
@@ -1171,8 +1254,61 @@ async function getConsultationFee(clinicId, feeSchedule = null) {
   }
 }
 
+/**
+ * Smart consultation completion with automatic fallback to saga pattern
+ *
+ * Uses MongoDB transactions when available (replica set), otherwise
+ * falls back to the saga pattern with compensation for atomicity.
+ *
+ * @param {Object} params - Same as completeConsultation
+ * @param {Object} options - Additional options
+ * @param {boolean} options.requireAtomicity - If true, fails when neither transactions nor saga can guarantee atomicity
+ * @param {boolean} options.preferSaga - If true, always use saga pattern (for testing)
+ * @returns {Promise<Object>} Result with created records
+ */
+async function completeConsultationSmart(params, options = {}) {
+  const { requireAtomicity = false, preferSaga = false } = options;
+
+  // Check if we should use saga pattern
+  const hasTransactions = await supportsTransactions();
+  const useSaga = preferSaga || !hasTransactions;
+
+  if (useSaga) {
+    log.info('Using saga pattern for consultation completion', {
+      reason: preferSaga ? 'preferSaga option' : 'no transaction support',
+      patientId: params.patientId,
+      visitId: params.visitId
+    });
+
+    const sagaResult = await executeConsultationSaga(params);
+
+    // Convert saga result to standard format
+    return {
+      success: sagaResult.status === SagaStatus.COMPLETED,
+      data: sagaResult.data,
+      warnings: sagaResult.data?.warnings || [],
+      errors: sagaResult.error ? [sagaResult.error] : [],
+      metadata: {
+        usedSaga: true,
+        sagaId: sagaResult.sagaId,
+        sagaStatus: sagaResult.status,
+        steps: sagaResult.steps
+      }
+    };
+  }
+
+  // Use transaction-based approach
+  log.info('Using transaction for consultation completion', {
+    patientId: params.patientId,
+    visitId: params.visitId
+  });
+
+  return completeConsultation(params);
+}
+
 module.exports = {
   completeConsultation,
+  completeConsultationSmart,
   // Export helpers for testing
   saveExam,
   createLabOrders,

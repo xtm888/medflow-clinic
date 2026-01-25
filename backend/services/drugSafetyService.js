@@ -15,6 +15,7 @@
 const axios = require('axios');
 
 const { createContextLogger } = require('../utils/structuredLogger');
+const { createBreaker, getBreakerStatus } = require('../utils/circuitBreaker');
 const log = createContextLogger('DrugSafety');
 
 // External API configuration - ENABLED for production use
@@ -46,6 +47,44 @@ const EXTERNAL_API_CONFIG = {
     timeout: 10000
   }
 };
+
+// ============================================
+// CIRCUIT BREAKER SETUP FOR DRUG APIs
+// ============================================
+
+/**
+ * Generic drug API call function for circuit breaker
+ */
+const drugAPICall = async ({ apiName, url, params = {}, headers = {}, timeout = 10000 }) => {
+  const response = await axios.get(url, {
+    params,
+    headers,
+    timeout
+  });
+  return response.data;
+};
+
+// Create circuit breaker for drug APIs
+const drugAPIBreaker = createBreaker(
+  drugAPICall,
+  'drugAPI',
+  {
+    timeout: 10000,           // 10s timeout
+    errorThresholdPercentage: 50,
+    resetTimeout: 45000,      // Wait 45s before retry (some APIs have rate limits)
+    volumeThreshold: 5        // Open after 5 failures
+  }
+);
+
+// Fallback returns null to indicate service unavailable
+drugAPIBreaker.fallback(() => null);
+
+/**
+ * Get circuit breaker status for drug APIs
+ */
+function getDrugAPICircuitStatus() {
+  return getBreakerStatus(drugAPIBreaker);
+}
 
 // French drug name mappings (French -> International)
 const FRENCH_DRUG_MAPPINGS = {
@@ -300,14 +339,16 @@ const CONTRAINDICATIONS = {
 
 /**
  * Check for drug-drug interactions
+ * SAFETY: On error, returns potential interaction flag to err on side of caution
  */
 function checkDrugInteractions(newDrug, currentMedications) {
-  const interactions = [];
-  const drugName = (newDrug.genericName || newDrug.name || '').toLowerCase().trim();
+  try {
+    const interactions = [];
+    const drugName = (newDrug.genericName || newDrug.name || '').toLowerCase().trim();
 
-  if (!drugName || !currentMedications || currentMedications.length === 0) {
-    return { hasInteraction: false, interactions: [] };
-  }
+    if (!drugName || !currentMedications || currentMedications.length === 0) {
+      return { hasInteraction: false, interactions: [] };
+    }
 
   // Check interactions database for the new drug
   const drugInteractions = DRUG_INTERACTIONS[drugName] || [];
@@ -367,32 +408,51 @@ function checkDrugInteractions(newDrug, currentMedications) {
   const moderate = interactions.filter(i => i.severity === 'moderate');
   const minor = interactions.filter(i => i.severity === 'minor');
 
-  return {
-    hasInteraction: interactions.length > 0,
-    interactions,
-    contraindicated,
-    major,
-    moderate,
-    minor,
-    highestSeverity: contraindicated.length > 0 ? 'contraindicated' :
-      major.length > 0 ? 'major' :
-        moderate.length > 0 ? 'moderate' :
-          minor.length > 0 ? 'minor' : null
-  };
+    return {
+      hasInteraction: interactions.length > 0,
+      interactions,
+      contraindicated,
+      major,
+      moderate,
+      minor,
+      highestSeverity: contraindicated.length > 0 ? 'contraindicated' :
+        major.length > 0 ? 'major' :
+          moderate.length > 0 ? 'moderate' :
+            minor.length > 0 ? 'minor' : null
+    };
+  } catch (error) {
+    log.error('Drug interaction check failed:', {
+      error: error.message,
+      drugId: newDrug?._id ? String(newDrug._id) : 'unknown'
+    });
+    // SAFETY: On error, return potential interaction to err on side of caution
+    return {
+      hasInteraction: true,
+      interactions: [{
+        severity: 'moderate',
+        effect: 'Vérification des interactions non disponible',
+        recommendation: 'Vérifier manuellement les interactions médicamenteuses'
+      }],
+      error: true,
+      highestSeverity: 'moderate'
+    };
+  }
 }
 
 /**
  * Check for allergies and cross-reactivity
+ * SAFETY: On error, returns potential allergy flag to err on side of caution
  */
 function checkAllergies(drug, patientAllergies) {
-  if (!drug || !patientAllergies || patientAllergies.length === 0) {
-    return { hasAllergy: false };
-  }
+  try {
+    if (!drug || !patientAllergies || patientAllergies.length === 0) {
+      return { hasAllergy: false };
+    }
 
-  const drugName = (drug.genericName || drug.name || '').toLowerCase();
-  const drugClass = (drug.drugClass || '').toLowerCase();
+    const drugName = (drug.genericName || drug.name || '').toLowerCase();
+    const drugClass = (drug.drugClass || '').toLowerCase();
 
-  const matchingAllergies = [];
+    const matchingAllergies = [];
 
   patientAllergies.forEach(allergy => {
     const allergen = (typeof allergy === 'string' ? allergy : allergy.allergen || '').toLowerCase();
@@ -420,39 +480,59 @@ function checkAllergies(drug, patientAllergies) {
     }
   });
 
-  return {
-    hasAllergy: matchingAllergies.length > 0,
-    directAllergy: matchingAllergies.some(a => a.type === 'direct'),
-    crossReactivity: matchingAllergies.some(a => a.type === 'cross-reactive'),
-    allergies: matchingAllergies
-  };
+    return {
+      hasAllergy: matchingAllergies.length > 0,
+      directAllergy: matchingAllergies.some(a => a.type === 'direct'),
+      crossReactivity: matchingAllergies.some(a => a.type === 'cross-reactive'),
+      allergies: matchingAllergies
+    };
+  } catch (error) {
+    log.error('Allergy check failed:', {
+      error: error.message,
+      drugId: drug?._id ? String(drug._id) : 'unknown'
+    });
+    // SAFETY: On error, return potential allergy to err on side of caution
+    return {
+      hasAllergy: true,
+      directAllergy: false,
+      crossReactivity: true,
+      allergies: [{
+        type: 'check_failed',
+        severity: 'potential',
+        reaction: 'Vérification des allergies non disponible - vérifier manuellement'
+      }],
+      error: true
+    };
+  }
 }
 
 /**
  * Check contraindications based on patient conditions
+ * SAFETY: On error, returns potential contraindication flag
  */
 function checkContraindications(drug, patientConditions) {
-  // Ensure patientConditions is an array
-  if (!drug || !patientConditions) {
-    return { hasContraindication: false };
-  }
-
-  // Handle case where patientConditions is not an array
-  if (!Array.isArray(patientConditions)) {
-    // Try to extract conditions from object format (e.g., patient.medicalHistory.conditions)
-    if (typeof patientConditions === 'object' && patientConditions.conditions) {
-      patientConditions = patientConditions.conditions;
-    } else {
+  try {
+    // Ensure patientConditions is an array
+    if (!drug || !patientConditions) {
       return { hasContraindication: false };
     }
-  }
 
-  if (patientConditions.length === 0) {
-    return { hasContraindication: false };
-  }
+    // Handle case where patientConditions is not an array
+    if (!Array.isArray(patientConditions)) {
+      // Try to extract conditions from object format (e.g., patient.medicalHistory.conditions)
+      if (typeof patientConditions === 'object' && patientConditions.conditions) {
+        patientConditions = patientConditions.conditions;
+      } else {
+        return { hasContraindication: false };
+      }
+    }
 
-  const drugName = (drug.genericName || drug.name || '').toLowerCase();
-  const contraindications = [];
+    if (patientConditions.length === 0) {
+      return { hasContraindication: false };
+    }
+
+    const drugName = (drug.genericName || drug.name || '').toLowerCase();
+    const contraindications = [];
 
   patientConditions.forEach(condition => {
     const conditionKey = (typeof condition === 'string' ? condition : condition.name || '').toLowerCase();
@@ -473,43 +553,64 @@ function checkContraindications(drug, patientConditions) {
     });
   });
 
-  const absolute = contraindications.filter(c => c.severity === 'absolute');
-  const relative = contraindications.filter(c => c.severity === 'relative' || c.severity === 'conditional');
+    const absolute = contraindications.filter(c => c.severity === 'absolute');
+    const relative = contraindications.filter(c => c.severity === 'relative' || c.severity === 'conditional');
 
-  return {
-    hasContraindication: contraindications.length > 0,
-    absolute,
-    relative,
-    contraindications,
-    highestSeverity: absolute.length > 0 ? 'absolute' : relative.length > 0 ? 'relative' : null
-  };
+    return {
+      hasContraindication: contraindications.length > 0,
+      absolute,
+      relative,
+      contraindications,
+      highestSeverity: absolute.length > 0 ? 'absolute' : relative.length > 0 ? 'relative' : null
+    };
+  } catch (error) {
+    log.error('Contraindication check failed:', {
+      error: error.message,
+      drugId: drug?._id ? String(drug._id) : 'unknown'
+    });
+    // SAFETY: On error, return potential contraindication
+    return {
+      hasContraindication: true,
+      absolute: [],
+      relative: [{
+        severity: 'relative',
+        condition: 'unknown',
+        note: 'Vérification des contre-indications non disponible'
+      }],
+      contraindications: [],
+      highestSeverity: 'relative',
+      error: true
+    };
+  }
 }
 
 /**
  * Check age-appropriate dosing
  * CRITICAL: If patient age is unknown, flag as requiring review
+ * SAFETY: On error, returns requiresReview flag
  */
 function checkAgeAppropriateness(drug, patientAge) {
-  if (!drug) {
-    return { appropriate: true };
-  }
+  try {
+    if (!drug) {
+      return { appropriate: true };
+    }
 
-  // SAFETY: If patient age is unknown, don't assume appropriate - flag for review
-  if (patientAge === null || patientAge === undefined) {
-    return {
-      appropriate: false,
-      requiresReview: true,
-      severity: 'warning',
-      reason: 'Patient age unknown',
-      message: 'Patient date of birth not recorded - cannot verify age-appropriate dosing',
-      recommendations: [
-        'Update patient demographics before prescribing',
-        'Manually verify patient age is appropriate for this medication'
-      ]
-    };
-  }
+    // SAFETY: If patient age is unknown, don't assume appropriate - flag for review
+    if (patientAge === null || patientAge === undefined) {
+      return {
+        appropriate: false,
+        requiresReview: true,
+        severity: 'warning',
+        reason: 'Patient age unknown',
+        message: 'Patient date of birth not recorded - cannot verify age-appropriate dosing',
+        recommendations: [
+          'Update patient demographics before prescribing',
+          'Manually verify patient age is appropriate for this medication'
+        ]
+      };
+    }
 
-  const warnings = [];
+    const warnings = [];
 
   // Pediatric check
   if (patientAge < 18) {
@@ -547,97 +648,155 @@ function checkAgeAppropriateness(drug, patientAge) {
     }
   }
 
-  return {
-    appropriate: warnings.length === 0,
-    warnings,
-    requiresReview: warnings.length > 0
-  };
+    return {
+      appropriate: warnings.length === 0,
+      warnings,
+      requiresReview: warnings.length > 0
+    };
+  } catch (error) {
+    log.error('Age appropriateness check failed:', {
+      error: error.message,
+      drugId: drug?._id ? String(drug._id) : 'unknown'
+    });
+    // SAFETY: On error, require review
+    return {
+      appropriate: false,
+      warnings: [],
+      requiresReview: true,
+      error: true,
+      message: 'Vérification de l\'âge non disponible - vérifier manuellement'
+    };
+  }
 }
 
 /**
  * Comprehensive safety check
+ * SAFETY: On error, returns safe=false to require manual review
  */
 function runComprehensiveSafetyCheck(drug, patient, currentMedications = []) {
-  const patientAge = patient.dateOfBirth
-    ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-    : null;
+  try {
+    const patientAge = patient.dateOfBirth
+      ? Math.floor((Date.now() - new Date(patient.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+      : null;
 
-  const checks = {
-    interactions: checkDrugInteractions(drug, currentMedications),
-    allergies: checkAllergies(drug, patient.allergies || []),
-    contraindications: checkContraindications(drug, patient.conditions || patient.medicalHistory || []),
-    ageAppropriateness: checkAgeAppropriateness(drug, patientAge)
-  };
+    const checks = {
+      interactions: checkDrugInteractions(drug, currentMedications),
+      allergies: checkAllergies(drug, patient.allergies || []),
+      contraindications: checkContraindications(drug, patient.conditions || patient.medicalHistory || []),
+      ageAppropriateness: checkAgeAppropriateness(drug, patientAge)
+    };
 
-  // Add pregnancy check
-  if (patient.isPregnant || patient.pregnant) {
-    checks.pregnancy = checkContraindications(drug, [{ name: 'pregnancy' }]);
+    // Add pregnancy check
+    if (patient.isPregnant || patient.pregnant) {
+      checks.pregnancy = checkContraindications(drug, [{ name: 'pregnancy' }]);
+    }
+
+    // Determine overall safety
+    const hasCritical =
+      checks.allergies.directAllergy ||
+      checks.interactions.contraindicated?.length > 0 ||
+      checks.contraindications.absolute?.length > 0;
+
+    const hasMajor =
+      checks.interactions.major?.length > 0 ||
+      checks.contraindications.relative?.length > 0 ||
+      !checks.ageAppropriateness.appropriate;
+
+    const hasWarning =
+      checks.allergies.crossReactivity ||
+      checks.interactions.moderate?.length > 0 ||
+      checks.ageAppropriateness.warnings?.length > 0;
+
+    return {
+      ...checks,
+      overallSafety: hasCritical ? 'critical' : hasMajor ? 'major' : hasWarning ? 'warning' : 'safe',
+      hasCritical,
+      hasMajor,
+      hasWarning,
+      isSafe: !hasCritical && !hasMajor,
+      requiresReview: hasCritical || hasMajor,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    log.error('Comprehensive safety check failed:', {
+      error: error.message,
+      drugId: drug?._id ? String(drug._id) : 'unknown',
+      patientId: patient?._id ? String(patient._id) : 'unknown'
+    });
+    // SAFETY: On error, mark as not safe and require review
+    return {
+      interactions: { hasInteraction: false, error: true },
+      allergies: { hasAllergy: false, error: true },
+      contraindications: { hasContraindication: false, error: true },
+      ageAppropriateness: { appropriate: false, requiresReview: true, error: true },
+      overallSafety: 'major',
+      hasCritical: false,
+      hasMajor: true,
+      hasWarning: true,
+      isSafe: false,
+      requiresReview: true,
+      error: true,
+      errorMessage: 'Vérification de sécurité non disponible - vérifier manuellement',
+      timestamp: new Date().toISOString()
+    };
   }
-
-  // Determine overall safety
-  const hasCritical =
-    checks.allergies.directAllergy ||
-    checks.interactions.contraindicated?.length > 0 ||
-    checks.contraindications.absolute?.length > 0;
-
-  const hasMajor =
-    checks.interactions.major?.length > 0 ||
-    checks.contraindications.relative?.length > 0 ||
-    !checks.ageAppropriateness.appropriate;
-
-  const hasWarning =
-    checks.allergies.crossReactivity ||
-    checks.interactions.moderate?.length > 0 ||
-    checks.ageAppropriateness.warnings?.length > 0;
-
-  return {
-    ...checks,
-    overallSafety: hasCritical ? 'critical' : hasMajor ? 'major' : hasWarning ? 'warning' : 'safe',
-    hasCritical,
-    hasMajor,
-    hasWarning,
-    isSafe: !hasCritical && !hasMajor,
-    requiresReview: hasCritical || hasMajor,
-    timestamp: new Date().toISOString()
-  };
 }
 
 /**
  * Check multiple drugs at once
+ * SAFETY: On error, returns safe=false to require manual review
  */
 function checkMultipleDrugs(drugs, patient, currentMedications = []) {
-  const results = [];
-  const allMedications = [...currentMedications];
+  try {
+    const results = [];
+    const allMedications = [...currentMedications];
 
-  drugs.forEach((drug, index) => {
-    const check = runComprehensiveSafetyCheck(drug, patient, allMedications);
-    results.push({
-      drug: drug.genericName || drug.name,
-      ...check
+    drugs.forEach((drug, index) => {
+      const check = runComprehensiveSafetyCheck(drug, patient, allMedications);
+      results.push({
+        drug: drug.genericName || drug.name,
+        ...check
+      });
+
+      // Add to medications list for checking subsequent drugs
+      allMedications.push(drug);
     });
 
-    // Add to medications list for checking subsequent drugs
-    allMedications.push(drug);
-  });
-
-  // Check for interactions between the new drugs themselves
-  const interDrugInteractions = [];
-  for (let i = 0; i < drugs.length; i++) {
-    for (let j = i + 1; j < drugs.length; j++) {
-      const interaction = checkDrugInteractions(drugs[i], [drugs[j]]);
-      if (interaction.hasInteraction) {
-        interDrugInteractions.push(...interaction.interactions);
+    // Check for interactions between the new drugs themselves
+    const interDrugInteractions = [];
+    for (let i = 0; i < drugs.length; i++) {
+      for (let j = i + 1; j < drugs.length; j++) {
+        const interaction = checkDrugInteractions(drugs[i], [drugs[j]]);
+        if (interaction.hasInteraction) {
+          interDrugInteractions.push(...interaction.interactions);
+        }
       }
     }
-  }
 
-  return {
-    drugChecks: results,
-    interDrugInteractions,
-    overallSafe: results.every(r => r.isSafe) && interDrugInteractions.length === 0,
-    hasAnyCritical: results.some(r => r.hasCritical),
-    hasAnyMajor: results.some(r => r.hasMajor)
-  };
+    return {
+      drugChecks: results,
+      interDrugInteractions,
+      overallSafe: results.every(r => r.isSafe) && interDrugInteractions.length === 0,
+      hasAnyCritical: results.some(r => r.hasCritical),
+      hasAnyMajor: results.some(r => r.hasMajor)
+    };
+  } catch (error) {
+    log.error('Multiple drugs check failed:', {
+      error: error.message,
+      drugCount: drugs?.length,
+      patientId: patient?._id ? String(patient._id) : 'unknown'
+    });
+    // SAFETY: On error, mark as not safe
+    return {
+      drugChecks: [],
+      interDrugInteractions: [],
+      overallSafe: false,
+      hasAnyCritical: false,
+      hasAnyMajor: true,
+      error: true,
+      errorMessage: 'Vérification des médicaments non disponible - vérifier manuellement'
+    };
+  }
 }
 
 // ============================================
@@ -657,6 +816,7 @@ function normalizeDrugName(drugName) {
  * Check interactions using external API (BDPM France, RxNorm, or OpenFDA)
  * Falls back to local database if API is unavailable
  * Optimized for French-speaking countries
+ * SAFETY: On error, returns potential interaction flag
  */
 async function checkInteractionsWithExternalAPI(drugName, currentMedications = []) {
   const results = {
@@ -666,8 +826,9 @@ async function checkInteractionsWithExternalAPI(drugName, currentMedications = [
     normalizedDrugName: normalizeDrugName(drugName)
   };
 
-  // Normalize the drug name (French -> International)
-  const normalizedName = normalizeDrugName(drugName);
+  try {
+    // Normalize the drug name (French -> International)
+    const normalizedName = normalizeDrugName(drugName);
 
   // 1. Try BDPM (French) API first - best for French medications
   if (EXTERNAL_API_CONFIG.bdpm.enabled) {
@@ -751,13 +912,29 @@ async function checkInteractionsWithExternalAPI(drugName, currentMedications = [
     }
   }
 
-  // Sort by severity
-  const severityOrder = { 'contraindicated': 4, 'major': 3, 'moderate': 2, 'minor': 1 };
-  results.interactions.sort((a, b) =>
-    (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0)
-  );
+    // Sort by severity
+    const severityOrder = { 'contraindicated': 4, 'major': 3, 'moderate': 2, 'minor': 1 };
+    results.interactions.sort((a, b) =>
+      (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0)
+    );
 
-  return results;
+    return results;
+  } catch (error) {
+    log.error('External API interaction check failed:', {
+      error: error.message,
+      drugName
+    });
+    // SAFETY: On error, return potential interaction flag with local check results only
+    const localResult = checkDrugInteractions({ genericName: normalizeDrugName(drugName), name: drugName }, currentMedications);
+    return {
+      hasInteraction: localResult.hasInteraction || true, // Assume potential interaction on API failure
+      interactions: localResult.interactions,
+      sources: ['Base locale (API externe non disponible)'],
+      normalizedDrugName: normalizeDrugName(drugName),
+      apiError: true,
+      errorMessage: 'APIs externes non disponibles - vérification locale uniquement'
+    };
+  }
 }
 
 /**
@@ -1122,21 +1299,38 @@ async function getDrugInfo(drugName) {
     contraindications: []
   };
 
-  // Get OpenFDA warnings if available
-  if (EXTERNAL_API_CONFIG.openfda.enabled) {
-    const fdaInfo = await checkOpenFDAWarnings(drugName);
-    if (fdaInfo) {
-      info.warnings = fdaInfo.warnings;
-      info.contraindications = fdaInfo.contraindications;
-      info.boxedWarning = fdaInfo.boxedWarning;
+  try {
+    // Get OpenFDA warnings if available
+    if (EXTERNAL_API_CONFIG.openfda.enabled) {
+      const fdaInfo = await checkOpenFDAWarnings(drugName);
+      if (fdaInfo) {
+        info.warnings = fdaInfo.warnings;
+        info.contraindications = fdaInfo.contraindications;
+        info.boxedWarning = fdaInfo.boxedWarning;
+      }
     }
+
+    // Get local interactions
+    const localInteractions = DRUG_INTERACTIONS[drugName.toLowerCase()] || [];
+    info.interactions = localInteractions;
+
+    return info;
+  } catch (error) {
+    log.error('Failed to get drug info:', {
+      error: error.message,
+      drugName
+    });
+    // Return what we have from local database
+    const localInteractions = DRUG_INTERACTIONS[drugName.toLowerCase()] || [];
+    return {
+      name: drugName,
+      interactions: localInteractions,
+      warnings: [],
+      contraindications: [],
+      error: true,
+      errorMessage: 'Informations médicament partielles - APIs externes non disponibles'
+    };
   }
-
-  // Get local interactions
-  const localInteractions = DRUG_INTERACTIONS[drugName.toLowerCase()] || [];
-  info.interactions = localInteractions;
-
-  return info;
 }
 
 /**
@@ -1235,6 +1429,9 @@ module.exports = {
   configureExternalAPI,
   getDatabaseStatistics,
   getExternalAPIStatus,
+
+  // Circuit breaker status
+  getDrugAPICircuitStatus,
 
   // French drug utilities
   normalizeDrugName,
