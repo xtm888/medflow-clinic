@@ -32,20 +32,63 @@ const { createSurgeryCasesIfNeeded, createSurgeryCasesForPaidItems } = require('
 // @desc    Add payment to invoice
 // @route   POST /api/invoices/:id/payments
 // @access  Private (Admin, Receptionist)
-const addPayment = asyncHandler(async (req, res, next) => {
+const addPayment = asyncHandler(async (req, res, _next) => {
   const { withTransactionRetry } = require('../../utils/transactions');
 
   const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
-    return notFound(res, 'Invoice');
+    return notFound(res, 'Facture');
   }
 
-  const { amount, method, reference, notes, date, currency, exchangeRate, itemAllocations } = req.body;
+  const { amount, method, reference, notes, date, currency, exchangeRate, itemAllocations, expectedVersion } = req.body;
 
   // Validate amount
   if (!amount || amount <= 0) {
-    return badRequest(res, 'Payment amount must be greater than 0');
+    return badRequest(res, 'Le montant du paiement doit etre superieur a 0');
+  }
+
+  // IDEMPOTENCY CHECK: Prevent duplicate payments with same reference
+  // This prevents double-payment from duplicate requests (network retries, double-clicks)
+  if (reference) {
+    const existingPayment = invoice.payments?.find(p => p.reference === reference);
+    if (existingPayment) {
+      invoiceLogger.warn('Duplicate payment reference detected', {
+        invoiceId: invoice.invoiceId,
+        reference,
+        existingPaymentDate: existingPayment.date,
+        existingPaymentAmount: existingPayment.amount
+      });
+      return error(res, {
+        statusCode: 409,
+        error: 'Paiement avec cette reference existe deja',
+        details: {
+          existingPayment: {
+            date: existingPayment.date,
+            amount: existingPayment.amount,
+            method: existingPayment.method
+          }
+        }
+      });
+    }
+  }
+
+  // OPTIMISTIC LOCK: Check version to prevent concurrent modifications
+  // If expectedVersion is provided, verify it matches current version
+  if (expectedVersion !== undefined && invoice.version !== expectedVersion) {
+    invoiceLogger.warn('Invoice version mismatch - concurrent modification detected', {
+      invoiceId: invoice.invoiceId,
+      expectedVersion,
+      currentVersion: invoice.version
+    });
+    return error(res, {
+      statusCode: 409,
+      error: 'Facture modifiee par un autre utilisateur. Veuillez rafraichir et reessayer.',
+      details: {
+        expectedVersion,
+        currentVersion: invoice.version
+      }
+    });
   }
 
   // For multi-currency payments, validate using converted amount
@@ -53,8 +96,8 @@ const addPayment = asyncHandler(async (req, res, next) => {
   const rate = exchangeRate || 1;
   const amountInCDF = paymentCurrency === 'CDF' ? amount : amount * rate;
 
-  if (amountInCDF > invoice.summary.amountDue) {
-    return badRequest(res, `Payment amount (${amountInCDF.toFixed(0)} CDF) exceeds amount due (${invoice.summary.amountDue} CDF)`);
+  if (amountInCDF > invoice.summary.amountDue + 0.01) { // Small tolerance for rounding
+    return badRequest(res, `Montant du paiement (${amountInCDF.toFixed(0)} CDF) depasse le solde du (${invoice.summary.amountDue} CDF)`);
   }
 
   // CRITICAL: Use transaction to ensure payment + surgery case creation is atomic
@@ -217,6 +260,20 @@ const addPayment = asyncHandler(async (req, res, next) => {
       }
     }
 
+    // CRITICAL: Check if this is a lab penalty invoice and lift patient block if fully paid
+    if (invoice.status === 'paid' && invoice.source === 'laboratory_penalty') {
+      try {
+        const { liftBlockOnPayment } = require('../../jobs/labPenaltyCheckJob');
+        await liftBlockOnPayment(invoice._id, req.user.id);
+        invoiceLogger.info('Lifted patient block on lab penalty payment', {
+          invoiceId: invoice._id,
+          patientId: invoice.patient
+        });
+      } catch (blockErr) {
+        invoiceLogger.error('Error lifting patient block (non-blocking)', { error: blockErr.message });
+      }
+    }
+
     invoiceLogger.info('Service payment status synced', paymentSyncResults);
   } catch (syncError) {
     invoiceLogger.error('Error syncing payment to services (non-blocking)', { error: syncError.message });
@@ -231,7 +288,8 @@ const addPayment = asyncHandler(async (req, res, next) => {
     amount: paymentResult.payment?.amount,
     newStatus: invoice.status,
     amountPaid: invoice.summary?.amountPaid,
-    amountDue: invoice.summary?.amountDue
+    amountDue: invoice.summary?.amountDue,
+    clinicId: invoice.clinic || req.clinicId
   });
 
   // AUDIT: Log payment for financial compliance
@@ -274,7 +332,7 @@ const addPayment = asyncHandler(async (req, res, next) => {
 // @desc    Cancel invoice
 // @route   PUT /api/invoices/:id/cancel
 // @access  Private (Admin)
-const cancelInvoice = asyncHandler(async (req, res, next) => {
+const cancelInvoice = asyncHandler(async (req, res, _next) => {
   const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
@@ -328,25 +386,47 @@ const cancelInvoice = asyncHandler(async (req, res, next) => {
 // @desc    Issue refund
 // @route   POST /api/invoices/:id/refund
 // @access  Private (Admin)
-const issueRefund = asyncHandler(async (req, res, next) => {
+const issueRefund = asyncHandler(async (req, res, _next) => {
+  const { withTransactionRetry } = require('../../utils/transactions');
+
   const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
-    return notFound(res, 'Invoice');
+    return notFound(res, 'Facture');
   }
 
-  const { amount, reason, method } = req.body;
+  const { amount, reason, method, expectedVersion } = req.body;
 
   if (!amount || amount <= 0) {
-    return badRequest(res, 'Refund amount must be greater than 0');
+    return badRequest(res, 'Le montant du remboursement doit etre superieur a 0');
   }
 
   if (!reason) {
-    return badRequest(res, 'Refund reason is required');
+    return badRequest(res, 'La raison du remboursement est requise');
+  }
+
+  // OPTIMISTIC LOCK: Check version to prevent concurrent modifications
+  if (expectedVersion !== undefined && invoice.version !== expectedVersion) {
+    invoiceLogger.warn('Invoice version mismatch on refund - concurrent modification detected', {
+      invoiceId: invoice.invoiceId,
+      expectedVersion,
+      currentVersion: invoice.version
+    });
+    return error(res, {
+      statusCode: 409,
+      error: 'Facture modifiee par un autre utilisateur. Veuillez rafraichir et reessayer.',
+      details: {
+        expectedVersion,
+        currentVersion: invoice.version
+      }
+    });
   }
 
   try {
-    await invoice.issueRefund(amount, req.user.id, reason, method);
+    // Use transaction for atomic refund processing
+    await withTransactionRetry(async (session) => {
+      await invoice.issueRefund(amount, req.user.id, reason, method, session);
+    });
 
     // === HANDLE RELATED SERVICE REVERSALS ===
     const serviceUpdates = {
@@ -487,7 +567,7 @@ const issueRefund = asyncHandler(async (req, res, next) => {
 // @desc    Send invoice reminder
 // @route   POST /api/invoices/:id/reminder
 // @access  Private (Admin, Receptionist)
-const sendReminder = asyncHandler(async (req, res, next) => {
+const sendReminder = asyncHandler(async (req, res, _next) => {
   const invoice = await Invoice.findById(req.params.id);
 
   if (!invoice) {
@@ -512,7 +592,7 @@ const sendReminder = asyncHandler(async (req, res, next) => {
 // @desc    Get patient invoices
 // @route   GET /api/invoices/patient/:patientId
 // @access  Private
-const getPatientInvoices = asyncHandler(async (req, res, next) => {
+const getPatientInvoices = asyncHandler(async (req, res, _next) => {
   const { patientId } = req.params;
   const { includeBalance } = req.query;
 
@@ -544,7 +624,7 @@ const getPatientInvoices = asyncHandler(async (req, res, next) => {
 // @desc    Get overdue invoices
 // @route   GET /api/invoices/overdue
 // @access  Private (Admin, Accountant)
-const getOverdueInvoices = asyncHandler(async (req, res, next) => {
+const getOverdueInvoices = asyncHandler(async (req, res, _next) => {
   // Build clinic filter
   const clinicFilter = (req.clinicId && !req.accessAllClinics) ? { clinic: req.clinicId } : {};
 
@@ -562,7 +642,7 @@ const getOverdueInvoices = asyncHandler(async (req, res, next) => {
 // @desc    Get invoice statistics
 // @route   GET /api/invoices/stats
 // @access  Private (Admin, Accountant)
-const getInvoiceStats = asyncHandler(async (req, res, next) => {
+const getInvoiceStats = asyncHandler(async (req, res, _next) => {
   const { startDate, endDate } = req.query;
 
   const dateFilter = {};
