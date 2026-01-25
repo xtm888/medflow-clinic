@@ -75,87 +75,102 @@ class FolderSyncService {
    * Start watching a device's shared folder
    */
   async startWatchingDevice(device) {
-    // Support both nested (integration.folderSync.sharedFolderPath) and root-level (sharedFolderPath)
-    const folderConfig = device.integration?.folderSync;
-    const sharedPath = folderConfig?.sharedFolderPath || device.sharedFolderPath;
+    try {
+      // Support both nested (integration.folderSync.sharedFolderPath) and root-level (sharedFolderPath)
+      const folderConfig = device.integration?.folderSync;
+      const sharedPath = folderConfig?.sharedFolderPath || device.sharedFolderPath;
 
-    if (!sharedPath) {
-      log.info(`No folder path configured for ${device.name}`);
-      return;
-    }
+      if (!sharedPath) {
+        log.info(`No folder path configured for ${device.name}`);
+        return;
+      }
 
-    // Convert SMB path to local mount point (or use directly if already local)
-    const localPath = this.getLocalMountPath(sharedPath);
+      // Convert SMB path to local mount point (or use directly if already local)
+      const localPath = this.getLocalMountPath(sharedPath);
 
-    if (!fs.existsSync(localPath)) {
-      log.info(`Mount point not available: ${localPath}`);
-      await this.updateDeviceStatus(device._id, 'disconnected', `Mount point not found: ${localPath}`);
-      return;
-    }
+      if (!fs.existsSync(localPath)) {
+        log.info(`Mount point not available: ${localPath}`);
+        await this.updateDeviceStatus(device._id, 'disconnected', `Mount point not found: ${localPath}`);
+        return;
+      }
 
-    const isNetworkMount = localPath.startsWith('/Volumes/') && !localPath.includes('/Volumes/Macintosh');
+      const isNetworkMount = localPath.startsWith('/Volumes/') && !localPath.includes('/Volumes/Macintosh');
 
-    // IMPORTANT: Skip real-time watchers for network shares - they block the event loop
-    // Network shares will only sync via scheduled cron jobs
-    if (isNetworkMount) {
-      log.info(`${device.name}: Network share detected - using scheduled sync only (no real-time watcher)`);
-      await this.updateDeviceStatus(device._id, 'connected', 'Using scheduled sync');
+      // IMPORTANT: Skip real-time watchers for network shares - they block the event loop
+      // Network shares will only sync via scheduled cron jobs
+      if (isNetworkMount) {
+        log.info(`${device.name}: Network share detected - using scheduled sync only (no real-time watcher)`);
+        await this.updateDeviceStatus(device._id, 'connected', 'Using scheduled sync');
+
+        // Schedule periodic sync if configured
+        if (folderConfig?.syncSchedule) {
+          this.schedulePeriodicSync(device, folderConfig.syncSchedule);
+        }
+        return; // Skip chokidar watcher for network shares
+      }
+
+      log.info(`Starting watcher for ${device.name} at ${localPath} (local)`);
+
+      // Stop existing watcher if any
+      if (this.watchers.has(device._id.toString())) {
+        await this.stopWatchingDevice(device._id.toString());
+      }
+
+      // File patterns to watch (only for local paths)
+      const patterns = (folderConfig.filePattern || '*.jpg,*.pdf')
+        .split(',')
+        .map(p => path.join(localPath, '**', p.trim()));
+
+      // Create watcher - only used for local directories now
+      const watcher = chokidar.watch(patterns, {
+        persistent: true,
+        ignoreInitial: true,
+        awaitWriteFinish: {
+          stabilityThreshold: 2000,
+          pollInterval: 500
+        },
+        depth: 3,
+        ignored: [
+          /(^|[\/\\])\../, // Ignore dotfiles
+          /Thumbs\.db$/,
+          /\.DS_Store$/,
+          /processed\//,
+          /errors\//,
+          /\.tmp$/,
+          /~$/
+        ],
+        ignorePermissionErrors: true
+      });
+
+      // Event handlers
+      watcher
+        .on('add', (filePath) => this.handleNewFile(device, filePath))
+        .on('change', (filePath) => this.handleFileChange(device, filePath))
+        .on('error', (error) => this.handleWatchError(device, error))
+        .on('ready', () => {
+          log.info(`Watcher ready for ${device.name}`);
+          this.updateDeviceStatus(device._id, 'connected');
+        });
+
+      this.watchers.set(device._id.toString(), watcher);
 
       // Schedule periodic sync if configured
       if (folderConfig?.syncSchedule) {
         this.schedulePeriodicSync(device, folderConfig.syncSchedule);
       }
-      return; // Skip chokidar watcher for network shares
-    }
-
-    log.info(`Starting watcher for ${device.name} at ${localPath} (local)`);
-
-    // Stop existing watcher if any
-    if (this.watchers.has(device._id.toString())) {
-      await this.stopWatchingDevice(device._id.toString());
-    }
-
-    // File patterns to watch (only for local paths)
-    const patterns = (folderConfig.filePattern || '*.jpg,*.pdf')
-      .split(',')
-      .map(p => path.join(localPath, '**', p.trim()));
-
-    // Create watcher - only used for local directories now
-    const watcher = chokidar.watch(patterns, {
-      persistent: true,
-      ignoreInitial: true,
-      awaitWriteFinish: {
-        stabilityThreshold: 2000,
-        pollInterval: 500
-      },
-      depth: 3,
-      ignored: [
-        /(^|[\/\\])\../, // Ignore dotfiles
-        /Thumbs\.db$/,
-        /\.DS_Store$/,
-        /processed\//,
-        /errors\//,
-        /\.tmp$/,
-        /~$/
-      ],
-      ignorePermissionErrors: true
-    });
-
-    // Event handlers
-    watcher
-      .on('add', (filePath) => this.handleNewFile(device, filePath))
-      .on('change', (filePath) => this.handleFileChange(device, filePath))
-      .on('error', (error) => this.handleWatchError(device, error))
-      .on('ready', () => {
-        log.info(`Watcher ready for ${device.name}`);
-        this.updateDeviceStatus(device._id, 'connected');
+    } catch (error) {
+      log.error('Failed to start watching device:', {
+        error: error.message,
+        stack: error.stack,
+        deviceName: device?.name,
+        deviceId: device?._id
       });
-
-    this.watchers.set(device._id.toString(), watcher);
-
-    // Schedule periodic sync if configured
-    if (folderConfig?.syncSchedule) {
-      this.schedulePeriodicSync(device, folderConfig.syncSchedule);
+      // Update device status to error state
+      try {
+        await this.updateDeviceStatus(device._id, 'error', error.message);
+      } catch (statusError) {
+        log.error('Failed to update device status:', { error: statusError.message });
+      }
     }
   }
 
@@ -168,13 +183,22 @@ class FolderSyncService {
       return smbPath;
     }
 
-    // Map SMB paths to local mount points
+    // Build mappings from environment variables for known devices
+    // Environment format: SMB_MOUNT_<SHARE_NAME>=<local_path>
+    // e.g., SMB_MOUNT_ZEISS_RETINO=/Volumes/ZEISS RETINO
+    const mainServerIp = process.env.MAIN_SERVER_IP || '192.168.4.8';
+    const zeissIp = process.env.DEVICE_ZEISS_HOST || '192.168.4.29';
+    const solixIp = process.env.DEVICE_SOLIX_HOST || '192.168.4.56';
+    const tomeyIp = process.env.DEVICE_TOMEY_HOST || '192.168.4.0';
+    const exportDeviceIp = process.env.DEVICE_EXPORT_HOST || '192.168.4.53';
+
+    // Map SMB paths to local mount points - uses env vars with fallback defaults
     const mappings = {
-      '//192.168.4.29/ZEISS RETINO': '/Volumes/ZEISS RETINO',
-      '//192.168.4.56/Export Solix OCT': '/Volumes/Export Solix OCT',
-      '//192.168.4.8/Archives': '/Volumes/Archives',
-      '//192.168.4.53/Export': '/Volumes/Export',
-      '//192.168.4.0/TOMEY DATA': '/Volumes/TOMEY DATA'
+      [`//${zeissIp}/ZEISS RETINO`]: process.env.SMB_MOUNT_ZEISS_RETINO || '/Volumes/ZEISS RETINO',
+      [`//${solixIp}/Export Solix OCT`]: process.env.SMB_MOUNT_SOLIX_OCT || '/Volumes/Export Solix OCT',
+      [`//${mainServerIp}/Archives`]: process.env.SMB_MOUNT_ARCHIVES || '/Volumes/Archives',
+      [`//${exportDeviceIp}/Export`]: process.env.SMB_MOUNT_EXPORT || '/Volumes/Export',
+      [`//${tomeyIp}/TOMEY DATA`]: process.env.SMB_MOUNT_TOMEY || '/Volumes/TOMEY DATA'
     };
 
     // Check for direct mapping
@@ -184,7 +208,7 @@ class FolderSyncService {
       }
     }
 
-    // Try to extract share name and use /Volumes
+    // Try to extract share name and use /Volumes (fallback for unknown devices)
     const match = smbPath.match(/\/\/[^\/]+\/(.+)/);
     if (match) {
       return `/Volumes/${match[1]}`;
@@ -197,46 +221,66 @@ class FolderSyncService {
    * Handle new file detection
    */
   async handleNewFile(device, filePath) {
-    log.info(`New file detected: ${filePath}`);
-    this.stats.filesDiscovered++;
+    try {
+      log.info(`New file detected: ${filePath}`);
+      this.stats.filesDiscovered++;
 
-    // Check if already processed (use file path and device name in metadata)
-    const existingDoc = await Document.findOne({
-      'file.path': filePath,
-      'metadata.device': device.name
-    });
+      // Check if already processed (use file path and device name in metadata)
+      const existingDoc = await Document.findOne({
+        'file.path': filePath,
+        'metadata.device': device.name
+      });
 
-    if (existingDoc) {
-      log.info(`File already processed: ${filePath}`);
-      return;
-    }
-
-    // Add to processing queue
-    this.processingQueue.push({
-      device,
-      filePath,
-      timestamp: new Date(),
-      retries: 0
-    });
-
-    // Notify via websocket
-    websocketService.broadcast({
-      type: 'DEVICE_FILE_DETECTED',
-      data: {
-        deviceId: device.deviceId,
-        deviceName: device.name,
-        fileName: path.basename(filePath),
-        timestamp: new Date()
+      if (existingDoc) {
+        log.info(`File already processed: ${filePath}`);
+        return;
       }
-    });
+
+      // Add to processing queue
+      this.processingQueue.push({
+        device,
+        filePath,
+        timestamp: new Date(),
+        retries: 0
+      });
+
+      // Notify via websocket
+      websocketService.broadcast({
+        type: 'DEVICE_FILE_DETECTED',
+        data: {
+          deviceId: device.deviceId,
+          deviceName: device.name,
+          fileName: path.basename(filePath),
+          timestamp: new Date()
+        }
+      });
+    } catch (error) {
+      log.error('Failed to handle new file:', {
+        error: error.message,
+        stack: error.stack,
+        deviceName: device?.name,
+        filePath
+      });
+      // Do not re-throw - allow watcher to continue processing other files
+    }
   }
 
   /**
    * Handle file change
    */
   async handleFileChange(device, filePath) {
-    log.info(`File changed: ${filePath}`);
-    // Could re-process if needed
+    try {
+      log.info(`File changed: ${filePath}`);
+      // Could re-process if needed
+    } catch (error) {
+      log.error('Failed to handle file change:', {
+        error: error.message,
+        stack: error.stack,
+        deviceName: device?.name,
+        filePath
+      });
+      // Do not re-throw - allow watcher to continue
+    }
   }
 
   /**
@@ -564,84 +608,100 @@ class FolderSyncService {
    * Enhanced with folder-based matching, legacy IDs, and DMI IDs
    */
   async matchPatient(patientInfo, filePath = null) {
-    const query = { isDeleted: { $ne: true } };
+    try {
+      const query = { isDeleted: { $ne: true } };
 
-    // 1. Try folder-based matching first (highest priority for device files)
-    if (filePath) {
-      const byFolder = await patientFolderIndexer.findPatientByFolderPath(filePath);
-      if (byFolder) return byFolder;
-    }
+      // 1. Try folder-based matching first (highest priority for device files)
+      if (filePath) {
+        const byFolder = await patientFolderIndexer.findPatientByFolderPath(filePath);
+        if (byFolder) return byFolder;
+      }
 
-    // 2. Try DMI ID match (legacy system)
-    if (patientInfo.dmiId) {
-      const byDmi = await Patient.findOne({
-        $or: [
-          { 'legacyIds.dmi': patientInfo.dmiId },
-          { legacyId: patientInfo.dmiId },
-          { 'folderIds.folderId': patientInfo.dmiId }
-        ],
-        ...query
-      });
-      if (byDmi) return byDmi;
-    }
-
-    // 3. Try exact patient ID match
-    if (patientInfo.patientId) {
-      const byId = await Patient.findOne({
-        $or: [
-          { patientId: patientInfo.patientId },
-          { legacyPatientNumber: patientInfo.patientId }
-        ],
-        ...query
-      });
-      if (byId) return byId;
-    }
-
-    // 4. Try folder name match
-    if (patientInfo.folderName) {
-      const byFolderName = await Patient.findOne({
-        'folderIds.folderId': patientInfo.folderName,
-        ...query
-      });
-      if (byFolderName) return byFolderName;
-    }
-
-    // 5. Try name + DOB match
-    if (patientInfo.lastName && patientInfo.dateOfBirth) {
-      const byNameDob = await Patient.findOne({
-        lastName: new RegExp(`^${patientInfo.lastName}$`, 'i'),
-        dateOfBirth: patientInfo.dateOfBirth,
-        ...query
-      });
-      if (byNameDob) return byNameDob;
-    }
-
-    // 6. Try fuzzy name match
-    if (patientInfo.lastName && patientInfo.firstName) {
-      const byName = await Patient.findOne({
-        lastName: new RegExp(`^${patientInfo.lastName}$`, 'i'),
-        firstName: new RegExp(`^${patientInfo.firstName}`, 'i'),
-        ...query
-      });
-      if (byName) return byName;
-    }
-
-    // 7. Try full name match
-    if (patientInfo.fullName) {
-      const parts = patientInfo.fullName.split(/[\s_-]+/);
-      if (parts.length >= 2) {
-        const byFullName = await Patient.findOne({
+      // 2. Try DMI ID match (legacy system)
+      if (patientInfo.dmiId) {
+        const byDmi = await Patient.findOne({
           $or: [
-            { lastName: new RegExp(`^${parts[0]}$`, 'i'), firstName: new RegExp(`^${parts[1]}`, 'i') },
-            { lastName: new RegExp(`^${parts[parts.length - 1]}$`, 'i'), firstName: new RegExp(`^${parts[0]}`, 'i') }
+            { 'legacyIds.dmi': patientInfo.dmiId },
+            { legacyId: patientInfo.dmiId },
+            { 'folderIds.folderId': patientInfo.dmiId }
           ],
           ...query
         });
-        if (byFullName) return byFullName;
+        if (byDmi) return byDmi;
       }
-    }
 
-    return null;
+      // 3. Try exact patient ID match
+      if (patientInfo.patientId) {
+        const byId = await Patient.findOne({
+          $or: [
+            { patientId: patientInfo.patientId },
+            { legacyPatientNumber: patientInfo.patientId }
+          ],
+          ...query
+        });
+        if (byId) return byId;
+      }
+
+      // 4. Try folder name match
+      if (patientInfo.folderName) {
+        const byFolderName = await Patient.findOne({
+          'folderIds.folderId': patientInfo.folderName,
+          ...query
+        });
+        if (byFolderName) return byFolderName;
+      }
+
+      // 5. Try name + DOB match
+      if (patientInfo.lastName && patientInfo.dateOfBirth) {
+        const byNameDob = await Patient.findOne({
+          lastName: new RegExp(`^${patientInfo.lastName}$`, 'i'),
+          dateOfBirth: patientInfo.dateOfBirth,
+          ...query
+        });
+        if (byNameDob) return byNameDob;
+      }
+
+      // 6. Try fuzzy name match
+      if (patientInfo.lastName && patientInfo.firstName) {
+        const byName = await Patient.findOne({
+          lastName: new RegExp(`^${patientInfo.lastName}$`, 'i'),
+          firstName: new RegExp(`^${patientInfo.firstName}`, 'i'),
+          ...query
+        });
+        if (byName) return byName;
+      }
+
+      // 7. Try full name match
+      if (patientInfo.fullName) {
+        const parts = patientInfo.fullName.split(/[\s_-]+/);
+        if (parts.length >= 2) {
+          const byFullName = await Patient.findOne({
+            $or: [
+              { lastName: new RegExp(`^${parts[0]}$`, 'i'), firstName: new RegExp(`^${parts[1]}`, 'i') },
+              { lastName: new RegExp(`^${parts[parts.length - 1]}$`, 'i'), firstName: new RegExp(`^${parts[0]}`, 'i') }
+            ],
+            ...query
+          });
+          if (byFullName) return byFullName;
+        }
+      }
+
+      return null;
+    } catch (error) {
+      log.error('Patient matching failed:', {
+        error: error.message,
+        stack: error.stack,
+        patientInfo: {
+          lastName: patientInfo?.lastName,
+          firstName: patientInfo?.firstName,
+          patientId: patientInfo?.patientId,
+          dmiId: patientInfo?.dmiId
+        },
+        filePath
+      });
+      // Return null on error (treat as "no match found")
+      return null;
+    }
   }
 
   /**
@@ -703,27 +763,42 @@ class FolderSyncService {
    * Perform full sync of a device folder
    */
   async performFullSync(device) {
-    // Support both nested and root-level paths
-    const folderConfig = device.integration?.folderSync;
-    const sharedPath = folderConfig?.sharedFolderPath || device.sharedFolderPath;
+    try {
+      // Support both nested and root-level paths
+      const folderConfig = device.integration?.folderSync;
+      const sharedPath = folderConfig?.sharedFolderPath || device.sharedFolderPath;
 
-    if (!sharedPath) return;
+      if (!sharedPath) return;
 
-    const localPath = this.getLocalMountPath(sharedPath);
+      const localPath = this.getLocalMountPath(sharedPath);
 
-    if (!fs.existsSync(localPath)) {
-      log.info(`Mount not available for sync: ${localPath}`);
-      return;
-    }
+      if (!fs.existsSync(localPath)) {
+        log.info(`Mount not available for sync: ${localPath}`);
+        return;
+      }
 
-    // Get all files matching pattern (increased limits for proper deep scanning)
-    const patterns = (folderConfig.filePattern || '*.jpg,*.jpeg,*.png,*.pdf,*.dcm,*.bmp,*.tiff').split(',');
-    const files = await this.findFiles(localPath, patterns, [], 0, 10, 5000);
+      // Get all files matching pattern (increased limits for proper deep scanning)
+      const patterns = (folderConfig.filePattern || '*.jpg,*.jpeg,*.png,*.pdf,*.dcm,*.bmp,*.tiff').split(',');
+      const files = await this.findFiles(localPath, patterns, [], 0, 10, 5000);
 
-    log.info(`Full sync found ${files.length} files for ${device.name}`);
+      log.info(`Full sync found ${files.length} files for ${device.name}`);
 
-    for (const file of files) {
-      await this.handleNewFile(device, file);
+      for (const file of files) {
+        await this.handleNewFile(device, file);
+      }
+    } catch (error) {
+      log.error('Full sync failed:', {
+        error: error.message,
+        stack: error.stack,
+        deviceName: device?.name,
+        deviceId: device?._id
+      });
+      // Update device status to error
+      try {
+        await this.updateDeviceStatus(device._id, 'error', error.message);
+      } catch (statusError) {
+        log.error('Failed to update device status after sync error:', { error: statusError.message });
+      }
     }
   }
 
@@ -782,32 +857,51 @@ class FolderSyncService {
    * Update device integration status
    */
   async updateDeviceStatus(deviceId, status, message = null) {
-    const updateFields = {
-      'integration.status': status,
-      'integration.lastConnection': new Date()
-    };
+    try {
+      const updateFields = {
+        'integration.status': status,
+        'integration.lastConnection': new Date()
+      };
 
-    // Add status message to a separate field (avoid conflict with status string)
-    if (message) {
-      updateFields['integration.statusMessage'] = message;
+      // Add status message to a separate field (avoid conflict with status string)
+      if (message) {
+        updateFields['integration.statusMessage'] = message;
+      }
+
+      await Device.findByIdAndUpdate(deviceId, updateFields);
+    } catch (error) {
+      log.error('Failed to update device status:', {
+        error: error.message,
+        deviceId,
+        status
+      });
+      // Do not re-throw - status update failure should not crash caller
     }
-
-    await Device.findByIdAndUpdate(deviceId, updateFields);
   }
 
   /**
    * Stop watching a device
    */
   async stopWatchingDevice(deviceId) {
-    const watcher = this.watchers.get(deviceId);
-    if (watcher) {
-      await watcher.close();
-      this.watchers.delete(deviceId);
-    }
+    try {
+      const watcher = this.watchers.get(deviceId);
+      if (watcher) {
+        await watcher.close();
+        this.watchers.delete(deviceId);
+      }
 
-    const job = this.syncJobs.get(deviceId);
-    if (job) {
-      job.stop();
+      const job = this.syncJobs.get(deviceId);
+      if (job) {
+        job.stop();
+        this.syncJobs.delete(deviceId);
+      }
+    } catch (error) {
+      log.error('Failed to stop watching device:', {
+        error: error.message,
+        deviceId
+      });
+      // Still clean up maps even on error
+      this.watchers.delete(deviceId);
       this.syncJobs.delete(deviceId);
     }
   }
@@ -816,13 +910,23 @@ class FolderSyncService {
    * Stop all watchers
    */
   async shutdown() {
-    log.info('Shutting down folder sync service...');
+    try {
+      log.info('Shutting down folder sync service...');
 
-    for (const [deviceId] of this.watchers) {
-      await this.stopWatchingDevice(deviceId);
+      for (const [deviceId] of this.watchers) {
+        await this.stopWatchingDevice(deviceId);
+      }
+
+      log.info('Folder sync service stopped');
+    } catch (error) {
+      log.error('Error during folder sync service shutdown:', {
+        error: error.message,
+        stack: error.stack
+      });
+      // Clear all watchers and jobs on error
+      this.watchers.clear();
+      this.syncJobs.clear();
     }
-
-    log.info('Folder sync service stopped');
   }
 
   /**
@@ -877,11 +981,23 @@ class FolderSyncService {
    * Manual sync trigger for a device
    */
   async triggerSync(deviceId) {
-    const device = await Device.findById(deviceId);
-    if (!device) throw new Error('Device not found');
+    try {
+      const device = await Device.findById(deviceId);
+      if (!device) {
+        throw new Error('Appareil non trouvé');
+      }
 
-    await this.performFullSync(device);
-    return { message: 'Sync triggered', device: device.name };
+      await this.performFullSync(device);
+      return { message: 'Sync triggered', device: device.name };
+    } catch (error) {
+      log.error('Sync trigger failed:', {
+        error: error.message,
+        stack: error.stack,
+        deviceId
+      });
+      // Re-throw with user-friendly message
+      throw new Error('Impossible de déclencher la synchronisation');
+    }
   }
 }
 
