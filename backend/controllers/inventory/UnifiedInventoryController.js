@@ -23,10 +23,25 @@ const {
 const { createContextLogger } = require('../../utils/structuredLogger');
 const log = createContextLogger('UnifiedInventory');
 
+// Import transaction utilities for standalone-compatible operations
+const { withTransactionRetry, isTransactionSupported } = require('../../utils/transactions');
+
 // Helper: Escape regex special characters
 const escapeRegex = (str) => {
   if (!str) return '';
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+// Helper: Validate and convert to ObjectId string
+const toValidObjectIdString = (id) => {
+  if (!id) return null;
+  // If it's already an ObjectId object, convert to string
+  const idStr = id.toString ? id.toString() : String(id);
+  // Validate it's a valid 24-character hex string
+  if (/^[a-fA-F0-9]{24}$/.test(idStr)) {
+    return idStr;
+  }
+  return null;
 };
 
 // Map inventory types to their discriminator models
@@ -55,6 +70,53 @@ const SEARCH_FIELDS_BY_TYPE = {
 const DEFAULT_SEARCH_FIELDS = ['name', 'sku', 'barcode', 'brand', 'description'];
 
 class UnifiedInventoryController {
+  /**
+   * Flatten nested inventory fields for frontend compatibility
+   * @param {Object} item - Raw inventory item from database
+   * @returns {Object} - Item with flattened fields
+   */
+  static flattenItem(item) {
+    if (!item) return item;
+
+    const flattened = {
+      ...item,
+      // Flatten inventory subdocument fields
+      currentStock: item.inventory?.currentStock || 0,
+      reserved: item.inventory?.reserved || 0,
+      available: (item.inventory?.currentStock || 0) - (item.inventory?.reserved || 0),
+      status: item.inventory?.status || 'in_stock',
+      reorderPoint: item.inventory?.reorderPoint || 0,
+      minimumStock: item.inventory?.minimumStock || 0,
+      unit: item.inventory?.unit || 'unit',
+      // Flatten pricing fields
+      price: item.pricing?.sellingPrice || item.pricing?.unitPrice || 0,
+      costPrice: item.pricing?.costPrice || 0,
+      // Keep nested objects for backward compatibility
+      inventory: {
+        ...item.inventory,
+        available: (item.inventory?.currentStock || 0) - (item.inventory?.reserved || 0)
+      }
+    };
+
+    // For pharmacy items, also flatten medication fields
+    if (item.inventoryType === 'pharmacy') {
+      if (!flattened.name && item.medication?.brandName) {
+        flattened.name = item.medication.brandName;
+      }
+      if (!flattened.genericName && item.medication?.genericName) {
+        flattened.genericName = item.medication.genericName;
+      }
+      if (item.medication?.dosageForm) {
+        flattened.dosageForm = flattened.dosageForm || item.medication.dosageForm;
+      }
+      if (item.medication?.strength) {
+        flattened.strength = flattened.strength || item.medication.strength;
+      }
+    }
+
+    return flattened;
+  }
+
   /**
    * Get the appropriate model for an inventory type
    */
@@ -217,14 +279,8 @@ class UnifiedInventoryController {
         Model.countDocuments(query)
       ]);
 
-      // Post-process: calculate available stock
-      const processedItems = items.map(item => ({
-        ...item,
-        inventory: {
-          ...item.inventory,
-          available: (item.inventory?.currentStock || 0) - (item.inventory?.reserved || 0)
-        }
-      }));
+      // Post-process: flatten nested fields for frontend compatibility
+      const processedItems = items.map(item => UnifiedInventoryController.flattenItem(item));
 
       res.json({
         success: true,
@@ -252,7 +308,8 @@ class UnifiedInventoryController {
       const item = await Inventory.findById(req.params.id)
         .populate('createdBy', 'name firstName lastName')
         .populate('updatedBy', 'name firstName lastName')
-        .populate('suppliers.supplier', 'name contactName email phone');
+        .populate('suppliers.supplier', 'name contactName email phone')
+        .lean();
 
       if (!item) {
         return res.status(404).json({
@@ -263,7 +320,7 @@ class UnifiedInventoryController {
 
       res.json({
         success: true,
-        data: item
+        data: UnifiedInventoryController.flattenItem(item)
       });
     } catch (error) {
       log.error('Error getting inventory item', { error: error.message, id: req.params.id });
@@ -441,125 +498,162 @@ class UnifiedInventoryController {
 
   /**
    * ADD stock (receive new batch)
+   *
+   * Uses withTransactionRetry for standalone-compatible operation.
+   * In standalone mode, falls back to atomic operations without transaction.
    */
   static async addStock(req, res) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
-      const item = await Inventory.findById(req.params.id).session(session);
-
-      if (!item) {
-        await session.abortTransaction();
-        return res.status(404).json({
-          success: false,
-          message: 'Inventory item not found'
-        });
-      }
-
       const { lotNumber, quantity, expirationDate, ...batchData } = req.body;
 
-      // Validate required fields
+      // Validate required fields before transaction
       if (!lotNumber || !quantity || quantity <= 0) {
-        await session.abortTransaction();
         return res.status(400).json({
           success: false,
-          message: 'Lot number and positive quantity are required'
+          message: 'Numero de lot et quantite positive requis'
         });
       }
 
-      // Check for duplicate lot number
-      const existingLot = item.batches?.find(b => b.lotNumber === lotNumber);
-      if (existingLot) {
-        await session.abortTransaction();
-        return res.status(400).json({
-          success: false,
-          message: 'A batch with this lot number already exists'
-        });
-      }
+      const result = await withTransactionRetry(async (session) => {
+        const queryOptions = session ? { session } : {};
+        const item = await Inventory.findById(req.params.id, null, queryOptions);
 
-      // Use model's addBatch method
-      await item.addBatch({
-        lotNumber,
-        quantity: parseInt(quantity),
-        expirationDate: expirationDate ? new Date(expirationDate) : undefined,
-        ...batchData
-      }, req.user?._id || req.user?.id);
+        if (!item) {
+          throw new Error('Article introuvable');
+        }
 
-      await session.commitTransaction();
+        // Check for duplicate lot number
+        const existingLot = item.batches?.find(b => b.lotNumber === lotNumber);
+        if (existingLot) {
+          throw new Error('Un lot avec ce numero existe deja');
+        }
 
-      res.json({
-        success: true,
-        message: `Stock added successfully. New total: ${item.inventory.currentStock}`,
-        data: {
+        // Use model's addBatch method
+        await item.addBatch({
+          lotNumber,
+          quantity: parseInt(quantity),
+          expirationDate: expirationDate ? new Date(expirationDate) : undefined,
+          ...batchData
+        }, req.user?._id || req.user?.id);
+
+        return {
           currentStock: item.inventory.currentStock,
           available: item.inventory.available,
           status: item.inventory.status
-        }
+        };
+      });
+
+      res.json({
+        success: true,
+        message: `Stock ajoute avec succes. Nouveau total: ${result.currentStock}`,
+        data: result
       });
     } catch (error) {
-      await session.abortTransaction();
       log.error('Error adding stock', { error: error.message, id: req.params.id });
-      res.status(500).json({
+
+      // Return appropriate status code based on error type
+      const statusCode = error.message.includes('introuvable') ? 404 :
+                        error.message.includes('existe deja') ? 400 : 500;
+
+      res.status(statusCode).json({
         success: false,
-        message: 'Error adding stock',
-        error: error.message
+        message: error.message || 'Erreur lors de l\'ajout du stock'
       });
-    } finally {
-      session.endSession();
     }
   }
 
   /**
    * ADJUST stock (manual adjustment)
+   *
+   * Uses atomic $inc operation with condition to prevent negative stock.
+   * This prevents race conditions where concurrent adjustments could
+   * result in inconsistent stock levels.
    */
   static async adjustStock(req, res) {
     try {
-      const item = await Inventory.findById(req.params.id);
-
-      if (!item) {
-        return res.status(404).json({
-          success: false,
-          message: 'Inventory item not found'
-        });
-      }
-
       const { quantity, adjustment, type = 'adjusted', reason } = req.body;
       const adjustmentValue = adjustment !== undefined ? parseInt(adjustment) : parseInt(quantity);
 
       if (isNaN(adjustmentValue)) {
         return res.status(400).json({
           success: false,
-          message: 'Valid quantity or adjustment value is required'
+          message: 'Valeur de quantite ou ajustement valide requise'
         });
       }
 
-      // Prevent negative stock
-      const newStock = (item.inventory.currentStock || 0) + adjustmentValue;
-      if (newStock < 0) {
+      const userId = req.user?._id || req.user?.id;
+      const now = new Date();
+
+      // Build atomic update query
+      const updateQuery = {
+        $inc: {
+          'inventory.currentStock': adjustmentValue,
+          'usage.totalAdjusted': Math.abs(adjustmentValue),
+          version: 1
+        },
+        $set: {
+          updatedBy: userId
+        },
+        $push: {
+          transactions: {
+            type: type || 'adjusted',
+            quantity: adjustmentValue,
+            reason: reason || 'Ajustement manuel',
+            performedBy: userId,
+            performedAt: now
+          }
+        }
+      };
+
+      // Build condition - for decrements, ensure sufficient stock
+      const condition = { _id: req.params.id };
+      if (adjustmentValue < 0) {
+        condition['inventory.currentStock'] = { $gte: Math.abs(adjustmentValue) };
+      }
+
+      // Use atomic findOneAndUpdate
+      const result = await Inventory.findOneAndUpdate(
+        condition,
+        updateQuery,
+        { new: true, runValidators: true }
+      );
+
+      if (!result) {
+        // Determine specific error
+        const item = await Inventory.findById(req.params.id).select('inventory.currentStock').lean();
+
+        if (!item) {
+          return res.status(404).json({
+            success: false,
+            message: 'Article introuvable'
+          });
+        }
+
+        // Stock insufficient for negative adjustment
         return res.status(400).json({
           success: false,
-          message: 'Adjustment would result in negative stock'
+          message: `Stock insuffisant. Disponible: ${item.inventory.currentStock}, Demande: ${Math.abs(adjustmentValue)}`
         });
       }
 
-      // Use model's adjustStock method
-      await item.adjustStock(adjustmentValue, type, reason, req.user?._id || req.user?.id);
+      // Update status based on new stock level (separate operation for simplicity)
+      result.updateInventoryStatus();
+      await result.save();
 
       res.json({
         success: true,
-        message: 'Stock adjusted successfully',
+        message: 'Stock ajuste avec succes',
         data: {
-          currentStock: item.inventory.currentStock,
-          available: item.inventory.available,
-          status: item.inventory.status
+          currentStock: result.inventory.currentStock,
+          available: result.inventory.available,
+          status: result.inventory.status
         }
       });
     } catch (error) {
       log.error('Error adjusting stock', { error: error.message, id: req.params.id });
       res.status(500).json({
         success: false,
-        message: 'Error adjusting stock',
+        message: 'Erreur lors de l\'ajustement du stock',
         error: error.message
       });
     }
@@ -647,113 +741,159 @@ class UnifiedInventoryController {
 
   /**
    * TRANSFER between clinics
+   *
+   * Uses withTransactionRetry for atomic transfer that works in standalone mode.
+   * In standalone, operations are still atomic at the document level via $inc.
    */
   static async transfer(req, res) {
-    const session = await mongoose.startSession();
-    session.startTransaction();
-
     try {
       const { targetClinicId, quantity, reason } = req.body;
 
+      // Validate before transaction
       if (!targetClinicId || !quantity || quantity <= 0) {
-        await session.abortTransaction();
         return res.status(400).json({
           success: false,
-          message: 'Target clinic ID and positive quantity are required'
+          message: 'ID clinique cible et quantite positive requis'
         });
       }
 
-      const sourceItem = await Inventory.findById(req.params.id).session(session);
+      const userId = req.user?._id || req.user?.id;
+      const transferQuantity = parseInt(quantity);
 
-      if (!sourceItem) {
-        await session.abortTransaction();
-        return res.status(404).json({
-          success: false,
-          message: 'Source inventory item not found'
-        });
-      }
+      const result = await withTransactionRetry(async (session) => {
+        const queryOptions = session ? { session } : {};
 
-      // Check available stock
-      if (sourceItem.availableStock < quantity) {
-        await session.abortTransaction();
-        return res.status(400).json({
-          success: false,
-          message: `Insufficient available stock. Available: ${sourceItem.availableStock}`
-        });
-      }
+        // Step 1: Atomic deduct from source (prevents negative stock)
+        const sourceCondition = {
+          _id: req.params.id,
+          'inventory.currentStock': { $gte: transferQuantity }
+        };
 
-      // Find or create target item
-      let targetItem = await Inventory.findOne({
-        clinic: targetClinicId,
-        sku: sourceItem.sku,
-        inventoryType: sourceItem.inventoryType
-      }).session(session);
-
-      if (!targetItem) {
-        // Create new item in target clinic with same details
-        const Model = UnifiedInventoryController.getModel(sourceItem.inventoryType);
-        targetItem = new Model({
-          ...sourceItem.toObject(),
-          _id: undefined,
-          clinic: targetClinicId,
-          inventory: {
-            ...sourceItem.inventory.toObject(),
-            currentStock: 0,
-            reserved: 0,
-            available: 0
+        const sourceUpdate = {
+          $inc: {
+            'inventory.currentStock': -transferQuantity,
+            version: 1
           },
-          batches: [],
-          transactions: [],
-          alerts: [],
-          createdBy: req.user?._id,
-          updatedBy: req.user?._id
-        });
-      }
+          $set: { updatedBy: userId },
+          $push: {
+            transactions: {
+              type: 'transferred',
+              quantity: -transferQuantity,
+              reason: reason || `Transfere vers clinique ${targetClinicId}`,
+              reference: targetClinicId.toString(),
+              referenceType: 'transfer',
+              performedBy: userId,
+              performedAt: new Date()
+            }
+          }
+        };
 
-      // Deduct from source
-      await sourceItem.adjustStock(
-        -quantity,
-        'transferred',
-        reason || `Transferred to clinic ${targetClinicId}`,
-        req.user?._id,
-        { reference: targetClinicId, referenceType: 'transfer' }
-      );
+        const sourceItem = await Inventory.findOneAndUpdate(
+          sourceCondition,
+          sourceUpdate,
+          { new: true, ...queryOptions }
+        );
 
-      // Add to target
-      await targetItem.adjustStock(
-        quantity,
-        'received',
-        reason || `Received from clinic ${sourceItem.clinic}`,
-        req.user?._id,
-        { reference: sourceItem.clinic.toString(), referenceType: 'transfer' }
-      );
+        if (!sourceItem) {
+          // Check why - not found or insufficient stock
+          const checkItem = await Inventory.findById(req.params.id).select('inventory.currentStock availableStock').lean();
+          if (!checkItem) {
+            throw new Error('Article source introuvable');
+          }
+          throw new Error(`Stock insuffisant. Disponible: ${checkItem.inventory?.currentStock || 0}`);
+        }
 
-      await session.commitTransaction();
+        // Step 2: Find or create target item
+        let targetItem = await Inventory.findOne({
+          clinic: targetClinicId,
+          sku: sourceItem.sku,
+          inventoryType: sourceItem.inventoryType
+        }, null, queryOptions);
 
-      res.json({
-        success: true,
-        message: `${quantity} units transferred successfully`,
-        data: {
+        if (!targetItem) {
+          // Create new item in target clinic
+          const Model = UnifiedInventoryController.getModel(sourceItem.inventoryType);
+          targetItem = new Model({
+            ...sourceItem.toObject(),
+            _id: undefined,
+            clinic: targetClinicId,
+            inventory: {
+              ...sourceItem.inventory.toObject(),
+              currentStock: 0,
+              reserved: 0,
+              available: 0
+            },
+            batches: [],
+            transactions: [],
+            alerts: [],
+            createdBy: userId,
+            updatedBy: userId
+          });
+          await targetItem.save(queryOptions);
+        }
+
+        // Step 3: Atomic add to target
+        const targetUpdate = {
+          $inc: {
+            'inventory.currentStock': transferQuantity,
+            version: 1
+          },
+          $set: { updatedBy: userId },
+          $push: {
+            transactions: {
+              type: 'received',
+              quantity: transferQuantity,
+              reason: reason || `Recu de clinique ${sourceItem.clinic}`,
+              reference: sourceItem.clinic.toString(),
+              referenceType: 'transfer',
+              performedBy: userId,
+              performedAt: new Date()
+            }
+          }
+        };
+
+        const updatedTarget = await Inventory.findByIdAndUpdate(
+          targetItem._id,
+          targetUpdate,
+          { new: true, ...queryOptions }
+        );
+
+        // Update statuses
+        sourceItem.updateInventoryStatus();
+        await sourceItem.save(queryOptions);
+
+        if (updatedTarget) {
+          updatedTarget.updateInventoryStatus();
+          await updatedTarget.save(queryOptions);
+        }
+
+        return {
           source: {
             id: sourceItem._id,
             currentStock: sourceItem.inventory.currentStock
           },
           target: {
-            id: targetItem._id,
-            currentStock: targetItem.inventory.currentStock
+            id: updatedTarget?._id || targetItem._id,
+            currentStock: updatedTarget?.inventory.currentStock || transferQuantity
           }
-        }
+        };
+      });
+
+      res.json({
+        success: true,
+        message: `${quantity} unites transferees avec succes`,
+        data: result
       });
     } catch (error) {
-      await session.abortTransaction();
       log.error('Error transferring stock', { error: error.message });
-      res.status(500).json({
+
+      const statusCode = error.message.includes('introuvable') ? 404 :
+                        error.message.includes('insuffisant') ? 400 : 500;
+
+      res.status(statusCode).json({
         success: false,
-        message: 'Error transferring stock',
-        error: error.message
+        message: error.message || 'Erreur lors du transfert de stock'
       });
-    } finally {
-      session.endSession();
     }
   }
 
@@ -766,13 +906,20 @@ class UnifiedInventoryController {
    */
   static async getStats(req, res) {
     try {
-      const { clinic, inventoryType } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const { clinic, clinicId: queryClinicId, inventoryType } = req.query;
+      // Accept both 'clinic' and 'clinicId' query params for frontend compatibility
+      const rawClinicId = clinic || queryClinicId || req.user?.clinic || req.user?.assignedClinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       if (!clinicId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Clinic ID is required'
+        // Return empty stats if no clinic context (allows page to load without error)
+        return res.json({
+          success: true,
+          data: {
+            byType: [],
+            totals: { totalItems: 0, totalValue: 0, lowStockCount: 0, outOfStockCount: 0 }
+          },
+          message: 'No clinic context - select a clinic to view statistics'
         });
       }
 
@@ -813,22 +960,31 @@ class UnifiedInventoryController {
    */
   static async getLowStock(req, res) {
     try {
-      const { clinic, inventoryType } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const { clinic, clinicId: queryClinicId, inventoryType } = req.query;
+      const rawClinicId = clinic || queryClinicId || req.user?.clinic || req.user?.assignedClinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       if (!clinicId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Clinic ID is required'
+        // Return empty list if no clinic context
+        return res.json({
+          success: true,
+          data: [],
+          count: 0,
+          message: 'No clinic context - select a clinic to view low stock items'
         });
       }
 
       const items = await Inventory.getLowStock(clinicId, inventoryType);
 
+      // Flatten items for frontend compatibility
+      const processedItems = items.map(item =>
+        UnifiedInventoryController.flattenItem(item.toObject ? item.toObject() : item)
+      );
+
       res.json({
         success: true,
-        data: items,
-        count: items.length
+        data: processedItems,
+        count: processedItems.length
       });
     } catch (error) {
       log.error('Error getting low stock items', { error: error.message });
@@ -845,22 +1001,32 @@ class UnifiedInventoryController {
    */
   static async getExpiring(req, res) {
     try {
-      const { clinic, days = 30 } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const { clinic, clinicId: queryClinicId, days = 30 } = req.query;
+      const rawClinicId = clinic || queryClinicId || req.user?.clinic || req.user?.assignedClinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       if (!clinicId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Clinic ID is required'
+        // Return empty list if no clinic context
+        return res.json({
+          success: true,
+          data: [],
+          count: 0,
+          daysThreshold: parseInt(days),
+          message: 'No clinic context - select a clinic to view expiring items'
         });
       }
 
       const items = await Inventory.getExpiring(clinicId, parseInt(days));
 
+      // Flatten items for frontend compatibility
+      const processedItems = items.map(item =>
+        UnifiedInventoryController.flattenItem(item.toObject ? item.toObject() : item)
+      );
+
       res.json({
         success: true,
-        data: items,
-        count: items.length,
+        data: processedItems,
+        count: processedItems.length,
         daysThreshold: parseInt(days)
       });
     } catch (error) {
@@ -879,9 +1045,11 @@ class UnifiedInventoryController {
   static async getInventoryValue(req, res) {
     try {
       const { clinic, inventoryType } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const rawClinicId = clinic || req.user?.clinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       const match = { active: true };
+      // Only add clinic filter if valid ObjectId
       if (clinicId) match.clinic = new mongoose.Types.ObjectId(clinicId);
       if (inventoryType) match.inventoryType = inventoryType;
 
@@ -935,7 +1103,7 @@ class UnifiedInventoryController {
    */
   static async search(req, res) {
     try {
-      const { q, clinic, inventoryType, inStockOnly, limit = 20 } = req.query;
+      const { q, clinic, clinicId: queryClinicId, inventoryType, inStockOnly, limit = 20 } = req.query;
 
       if (!q) {
         return res.status(400).json({
@@ -944,12 +1112,16 @@ class UnifiedInventoryController {
         });
       }
 
-      const clinicId = clinic || req.user?.clinic;
+      const rawClinicId = clinic || queryClinicId || req.user?.clinic || req.user?.assignedClinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       if (!clinicId) {
-        return res.status(400).json({
-          success: false,
-          message: 'Clinic ID is required'
+        // Return empty list if no clinic context
+        return res.json({
+          success: true,
+          data: [],
+          count: 0,
+          message: 'No clinic context - select a clinic to search inventory'
         });
       }
 
@@ -959,10 +1131,15 @@ class UnifiedInventoryController {
         limit: parseInt(limit)
       });
 
+      // Flatten items for frontend compatibility
+      const processedItems = items.map(item =>
+        UnifiedInventoryController.flattenItem(item.toObject ? item.toObject() : item)
+      );
+
       res.json({
         success: true,
-        data: items,
-        count: items.length
+        data: processedItems,
+        count: processedItems.length
       });
     } catch (error) {
       log.error('Error searching inventory', { error: error.message });
@@ -980,9 +1157,11 @@ class UnifiedInventoryController {
   static async getBrands(req, res) {
     try {
       const { clinic, inventoryType } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const rawClinicId = clinic || req.user?.clinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       const match = { active: true };
+      // Only add clinic filter if valid ObjectId
       if (clinicId) match.clinic = new mongoose.Types.ObjectId(clinicId);
       if (inventoryType) match.inventoryType = inventoryType;
 
@@ -1012,9 +1191,11 @@ class UnifiedInventoryController {
   static async getCategories(req, res) {
     try {
       const { clinic, inventoryType } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const rawClinicId = clinic || req.user?.clinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       const match = { active: true };
+      // Only add clinic filter if valid ObjectId
       if (clinicId) match.clinic = new mongoose.Types.ObjectId(clinicId);
       if (inventoryType) match.inventoryType = inventoryType;
 
@@ -1101,11 +1282,13 @@ class UnifiedInventoryController {
    */
   static async getAlerts(req, res) {
     try {
-      const { clinic, inventoryType, resolved = 'false' } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const { clinic, clinicId: queryClinicId, inventoryType, resolved = 'false' } = req.query;
+      const rawClinicId = clinic || queryClinicId || req.user?.clinic || req.user?.assignedClinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       const query = { active: true };
-      if (clinicId) query.clinic = clinicId;
+      // Only add clinic filter if valid ObjectId
+      if (clinicId) query.clinic = new mongoose.Types.ObjectId(clinicId);
       if (inventoryType) query.inventoryType = inventoryType;
       if (resolved === 'false') query['alerts.resolved'] = false;
 
@@ -1258,17 +1441,18 @@ class UnifiedInventoryController {
    */
   static async checkExpirations(req, res) {
     try {
-      const { clinic, inventoryType, days = 30 } = req.query;
-      const clinicId = clinic || req.user?.clinic;
+      const { clinic, clinicId: queryClinicId, inventoryType, days = 30 } = req.query;
+      const rawClinicId = clinic || queryClinicId || req.user?.clinic || req.user?.assignedClinic;
+      const clinicId = toValidObjectIdString(rawClinicId);
 
       if (!clinicId) {
         return res.status(400).json({
           success: false,
-          message: 'Clinic ID is required'
+          message: 'Clinic ID is required for expiration checks'
         });
       }
 
-      const query = { clinic: clinicId, active: true };
+      const query = { clinic: new mongoose.Types.ObjectId(clinicId), active: true };
       if (inventoryType) query.inventoryType = inventoryType;
 
       const items = await Inventory.find(query);
