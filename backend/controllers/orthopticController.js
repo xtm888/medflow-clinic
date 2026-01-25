@@ -5,6 +5,7 @@ const Visit = require('../models/Visit');
 const AuditLog = require('../models/AuditLog');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { createContextLogger } = require('../utils/structuredLogger');
+const { serverError } = require('../utils/apiResponse');
 const log = createContextLogger('OrthopticController');
 
 // Helper function to log actions directly
@@ -141,11 +142,7 @@ exports.createOrthopticExam = async (req, res) => {
     });
   } catch (error) {
     log.error('Error creating orthoptic exam', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error creating orthoptic examination',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la création de l\'examen orthoptique');
   }
 };
 
@@ -198,11 +195,7 @@ exports.getOrthopticExams = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching orthoptic exams', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching orthoptic examinations',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération des examens orthoptiques');
   }
 };
 
@@ -233,11 +226,7 @@ exports.getOrthopticExam = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching orthoptic exam', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching orthoptic examination',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération de l\'examen orthoptique');
   }
 };
 
@@ -285,11 +274,7 @@ exports.updateOrthopticExam = async (req, res) => {
     });
   } catch (error) {
     log.error('Error updating orthoptic exam', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error updating orthoptic examination',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la mise à jour de l\'examen orthoptique');
   }
 };
 
@@ -321,11 +306,7 @@ exports.completeOrthopticExam = async (req, res) => {
     });
   } catch (error) {
     log.error('Error completing orthoptic exam', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error completing orthoptic examination',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la finalisation de l\'examen orthoptique');
   }
 };
 
@@ -364,11 +345,7 @@ exports.signOrthopticExam = async (req, res) => {
     });
   } catch (error) {
     log.error('Error signing orthoptic exam', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error signing orthoptic examination',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la signature de l\'examen orthoptique');
   }
 };
 
@@ -400,11 +377,7 @@ exports.getPatientOrthopticHistory = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching patient orthoptic history', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching patient orthoptic history',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération de l\'historique orthoptique');
   }
 };
 
@@ -434,11 +407,7 @@ exports.getTreatmentProgress = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching treatment progress', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching treatment progress',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération de la progression du traitement');
   }
 };
 
@@ -471,11 +440,7 @@ exports.compareWithPrevious = async (req, res) => {
     });
   } catch (error) {
     log.error('Error comparing exams', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error comparing examinations',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la comparaison des examens');
   }
 };
 
@@ -512,11 +477,7 @@ exports.generateReport = async (req, res) => {
     });
   } catch (error) {
     log.error('Error generating report', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error generating report',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la génération du rapport');
   }
 };
 
@@ -542,7 +503,11 @@ exports.deleteOrthopticExam = async (req, res) => {
       });
     }
 
-    await exam.deleteOne();
+    // Soft delete instead of hard delete for audit trail
+    exam.isDeleted = true;
+    exam.deletedAt = new Date();
+    exam.deletedBy = req.user._id;
+    await exam.save();
 
     // Log the action
     await logAuditAction(req, 'DELETE_ORTHOPTIC_EXAM', {
@@ -556,11 +521,7 @@ exports.deleteOrthopticExam = async (req, res) => {
     });
   } catch (error) {
     log.error('Error deleting orthoptic exam', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error deleting orthoptic examination',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la suppression de l\'examen orthoptique');
   }
 };
 
@@ -595,11 +556,7 @@ exports.addAttachment = async (req, res) => {
     });
   } catch (error) {
     log.error('Error adding attachment', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error adding attachment',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'ajout de la pièce jointe');
   }
 };
 
@@ -647,10 +604,6 @@ exports.getOrthopticStats = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching orthoptic stats', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching statistics',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération des statistiques');
   }
 };

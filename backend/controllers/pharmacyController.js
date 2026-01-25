@@ -1,6 +1,6 @@
 const { Inventory, PharmacyInventory } = require('../models/Inventory');
 const { escapeRegex } = require('../utils/sanitize');
-const { success, error, notFound, paginated } = require('../utils/apiResponse');
+const { success, error: errorResponse, notFound, paginated, serverError } = require('../utils/apiResponse');
 const { findPatientByIdOrCode } = require('../utils/patientLookup');
 const { pharmacy: pharmacyLogger } = require('../utils/structuredLogger');
 const { INVENTORY, PAGINATION } = require('../config/constants');
@@ -199,7 +199,7 @@ exports.getInventory = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting inventory', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving inventory');
+    return serverError(res, 'Erreur lors de la récupération de l\'inventaire');
   }
 };
 
@@ -321,7 +321,7 @@ exports.getStats = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting stats', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving statistics');
+    return serverError(res, 'Erreur lors de la récupération des statistiques');
   }
 };
 
@@ -377,7 +377,7 @@ exports.getAlerts = async (req, res) => {
     return success(res, { data: alerts });
   } catch (error) {
     pharmacyLogger.error('Error getting alerts', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving alerts');
+    return serverError(res, 'Erreur lors de la récupération des alertes');
   }
 };
 
@@ -459,7 +459,7 @@ exports.getLowStock = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting low stock', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving low stock items');
+    return serverError(res, 'Erreur lors de la récupération des articles en rupture');
   }
 };
 
@@ -531,7 +531,7 @@ exports.getExpiring = async (req, res) => {
     return success(res, { data: medications });
   } catch (error) {
     pharmacyLogger.error('Error getting expiring items', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving expiring items');
+    return serverError(res, 'Erreur lors de la récupération des articles expirants');
   }
 };
 
@@ -547,7 +547,7 @@ exports.getMedication = async (req, res) => {
     return success(res, { data: medication });
   } catch (error) {
     pharmacyLogger.error('Error getting medication', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving medication');
+    return serverError(res, 'Erreur lors de la récupération du médicament');
   }
 };
 
@@ -563,7 +563,7 @@ exports.createMedication = async (req, res) => {
     return success(res, { data: medication, message: 'Medication created successfully', statusCode: 201 });
   } catch (error) {
     pharmacyLogger.error('Error creating medication', { body: req.body, error: error.message, stack: error.stack });
-    return error(res, 'Error creating medication', 400);
+    return serverError(res, 'Erreur lors de la création du médicament');
   }
 };
 
@@ -583,7 +583,7 @@ exports.updateMedication = async (req, res) => {
     return success(res, { data: medication, message: 'Medication updated successfully' });
   } catch (error) {
     pharmacyLogger.error('Error updating medication', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error updating medication', 400);
+    return serverError(res, 'Erreur lors de la mise à jour du médicament');
   }
 };
 
@@ -593,7 +593,7 @@ exports.adjustStock = async (req, res) => {
     const { type, quantity, notes, lotNumber } = req.body;
 
     if (!quantity || quantity <= 0) {
-      return error(res, 'Quantity must be a positive number', 400);
+      return errorResponse(res, 'La quantité doit être un nombre positif', 400);
     }
 
     // CRITICAL: Use atomic $inc to prevent race conditions
@@ -636,7 +636,7 @@ exports.adjustStock = async (req, res) => {
         return notFound(res, 'Medication');
       }
       // Medication exists but condition failed (insufficient stock)
-      return error(res, `Stock insuffisant. Stock actuel: ${exists.inventory?.currentStock || 0}`, 400);
+      return errorResponse(res, `Stock insuffisant. Stock actuel: ${exists.inventory?.currentStock || 0}`, 400);
     }
 
     // Update status based on new stock level (this is safe as it's idempotent)
@@ -664,7 +664,7 @@ exports.adjustStock = async (req, res) => {
     return success(res, { data: result, message: 'Stock adjusted successfully' });
   } catch (err) {
     pharmacyLogger.error('Error adjusting stock', { id: req.params.id, error: err.message, stack: err.stack });
-    return error(res, 'Error adjusting stock', 400);
+    return serverError(res, 'Erreur lors de l\'ajustement du stock');
   }
 };
 
@@ -687,7 +687,7 @@ exports.reserveForPrescription = async (req, res) => {
     return success(res, { data: result.results, message: result.success ? 'Inventory reserved successfully' : 'Some medications could not be reserved' });
   } catch (error) {
     pharmacyLogger.error('Error reserving inventory', { prescriptionId: req.body.prescriptionId, error: error.message, stack: error.stack });
-    return error(res, 'Error reserving inventory', 400);
+    return serverError(res, 'Erreur lors de la réservation de l\'inventaire');
   }
 };
 
@@ -697,7 +697,7 @@ exports.searchMedications = async (req, res) => {
     const { q, category, inStockOnly = false, limit = 20 } = req.query;
 
     if (!q || q.length < 2) {
-      return error(res, 'Search query must be at least 2 characters', 400);
+      return errorResponse(res, 'La recherche doit contenir au moins 2 caractères', 400);
     }
 
     const Drug = require('../models/Drug');
@@ -765,7 +765,7 @@ exports.searchMedications = async (req, res) => {
     return success(res, { data: filteredResults });
   } catch (error) {
     pharmacyLogger.error('Error searching medications', { query: req.query.q, error: error.message, stack: error.stack });
-    return error(res, 'Error searching medications');
+    return serverError(res, 'Erreur lors de la recherche de médicaments');
   }
 };
 
@@ -792,7 +792,7 @@ exports.getBatches = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting batches', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving batches');
+    return serverError(res, 'Erreur lors de la récupération des lots');
   }
 };
 
@@ -802,7 +802,7 @@ exports.addBatch = async (req, res) => {
     const { lotNumber, quantity, expirationDate, manufactureDate, supplier, cost, notes } = req.body;
 
     if (!lotNumber || !quantity || !expirationDate) {
-      return error(res, 'Lot number, quantity, and expiration date are required', 400);
+      return errorResponse(res, 'Numéro de lot, quantité et date d\'expiration requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(req.params.id);
@@ -814,7 +814,7 @@ exports.addBatch = async (req, res) => {
     // Check if lot number already exists
     const existingBatch = medication.batches.find(b => b.lotNumber === lotNumber);
     if (existingBatch) {
-      return error(res, 'A batch with this lot number already exists', 400);
+      return errorResponse(res, 'Un lot avec ce numéro existe déjà', 400);
     }
 
     // Add batch using model method
@@ -831,7 +831,7 @@ exports.addBatch = async (req, res) => {
     return success(res, { data: medication.batches.find(b => b.lotNumber === lotNumber), message: 'Batch added successfully', statusCode: 201 });
   } catch (error) {
     pharmacyLogger.error('Error adding batch', { id: req.params.id, lotNumber: req.body.lotNumber, error: error.message, stack: error.stack });
-    return error(res, 'Error adding batch', 400);
+    return serverError(res, 'Erreur lors de l\'ajout du lot');
   }
 };
 
@@ -865,7 +865,7 @@ exports.updateBatch = async (req, res) => {
     return success(res, { data: medication.batches[batchIndex], message: 'Batch updated successfully' });
   } catch (error) {
     pharmacyLogger.error('Error updating batch', { id: req.params.id, lotNumber: req.params.lotNumber, error: error.message, stack: error.stack });
-    return error(res, 'Error updating batch', 400);
+    return serverError(res, 'Erreur lors de la mise à jour du lot');
   }
 };
 
@@ -885,7 +885,7 @@ exports.markBatchExpired = async (req, res) => {
     return success(res, { data: null, message: `Batch ${lotNumber} marked as expired` });
   } catch (error) {
     pharmacyLogger.error('Error marking batch expired', { id: req.params.id, lotNumber: req.params.lotNumber, error: error.message, stack: error.stack });
-    return error(res, 'Error marking batch expired', 400);
+    return serverError(res, 'Erreur lors du marquage du lot expiré');
   }
 };
 
@@ -899,7 +899,7 @@ exports.dispenseFromInventory = async (req, res) => {
     const { quantity, patientId, lotNumber, notes, reason } = req.body;
 
     if (!quantity) {
-      return error(res, 'Quantity is required', 400);
+      return errorResponse(res, 'La quantité est requise', 400);
     }
 
     const medication = await PharmacyInventory.findById(req.params.id);
@@ -927,7 +927,7 @@ exports.dispenseFromInventory = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error dispensing medication', { id: req.params.id, quantity: req.body.quantity, error: error.message, stack: error.stack });
-    return error(res, 'Error dispensing medication', 400);
+    return serverError(res, 'Erreur lors de la dispensation du médicament');
   }
 };
 
@@ -937,7 +937,7 @@ exports.dispensePrescription = async (req, res) => {
     const { prescriptionId, medicationIndex, pharmacyNotes, overrideAllergyCheck } = req.body;
 
     if (!prescriptionId) {
-      return error(res, 'Prescription ID is required', 400);
+      return errorResponse(res, 'L\'ID de prescription est requis', 400);
     }
 
     const Prescription = require('../models/Prescription');
@@ -952,7 +952,7 @@ exports.dispensePrescription = async (req, res) => {
 
     // CRITICAL: Check prescription validity
     if (prescription.isExpired) {
-      return error(res, 'Ordonnance expirée. Veuillez obtenir une nouvelle ordonnance.', 400);
+      return errorResponse(res, 'Ordonnance expirée. Veuillez obtenir une nouvelle ordonnance.', 400);
     }
 
     // CRITICAL: Check for patient allergies before dispensing
@@ -1013,7 +1013,7 @@ exports.dispensePrescription = async (req, res) => {
         }
 
         if (allergyWarnings.length > 0) {
-          return error(res, 'ALERTE ALLERGIE: Le patient est allergique à un ou plusieurs médicaments prescrits', 409);
+          return errorResponse(res, 'ALERTE ALLERGIE: Le patient est allergique à un ou plusieurs médicaments prescrits', 409);
         }
       }
     }
@@ -1052,7 +1052,7 @@ exports.dispensePrescription = async (req, res) => {
     }
 
     if (expiredBatchWarnings.length > 0) {
-      return error(res, 'ALERTE: Des lots expirés ont été détectés. Veuillez sélectionner des lots valides.', 400);
+      return errorResponse(res, 'ALERTE: Des lots expirés ont été détectés. Veuillez sélectionner des lots valides.', 400);
     }
 
     // Helper: Audit controlled substance dispensing
@@ -1151,7 +1151,7 @@ exports.dispensePrescription = async (req, res) => {
         });
 
         // Return error indicating complete rollback
-        return error(res, `Dispensing annule: ${txError.message}. Aucun medicament n'a ete dispense.`, 400);
+        return errorResponse(res, 'Dispensation annulée. Aucun médicament n\'a été dispensé.', 400);
       }
     }
 
@@ -1169,7 +1169,7 @@ exports.dispensePrescription = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error dispensing prescription', { prescriptionId: req.body.prescriptionId, error: error.message, stack: error.stack });
-    return error(res, 'Error dispensing prescription', 400);
+    return serverError(res, 'Erreur lors de la dispensation de l\'ordonnance');
   }
 };
 
@@ -1183,7 +1183,7 @@ exports.reserveStock = async (req, res) => {
     const { quantity, type, referenceId, referenceModel, notes } = req.body;
 
     if (!quantity || !type || !referenceId) {
-      return error(res, 'Quantity, type, and reference ID are required', 400);
+      return errorResponse(res, 'Quantité, type et ID de référence requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(req.params.id);
@@ -1203,7 +1203,7 @@ exports.reserveStock = async (req, res) => {
     return success(res, { data: reservation, message: 'Stock reserved successfully' });
   } catch (error) {
     pharmacyLogger.error('Error reserving stock', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error reserving stock', 400);
+    return serverError(res, 'Erreur lors de la réservation du stock');
   }
 };
 
@@ -1213,7 +1213,7 @@ exports.releaseReservation = async (req, res) => {
     const { reservationId } = req.body;
 
     if (!reservationId) {
-      return error(res, 'Reservation ID is required', 400);
+      return errorResponse(res, 'L\'ID de réservation est requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(req.params.id);
@@ -1227,7 +1227,7 @@ exports.releaseReservation = async (req, res) => {
     return success(res, { data: result, message: 'Reservation released successfully' });
   } catch (error) {
     pharmacyLogger.error('Error releasing reservation', { id: req.params.id, reservationId: req.body.reservationId, error: error.message, stack: error.stack });
-    return error(res, 'Error releasing reservation', 400);
+    return serverError(res, 'Erreur lors de la libération de la réservation');
   }
 };
 
@@ -1270,7 +1270,7 @@ exports.getTransactions = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting transactions', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving transactions');
+    return serverError(res, 'Erreur lors de la récupération des transactions');
   }
 };
 
@@ -1322,7 +1322,7 @@ exports.getAllTransactions = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting all transactions', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving transactions');
+    return serverError(res, 'Erreur lors de la récupération des transactions');
   }
 };
 
@@ -1361,7 +1361,7 @@ exports.getInventoryValue = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting inventory value', { error: error.message, stack: error.stack });
-    return error(res, 'Error calculating inventory value');
+    return serverError(res, 'Erreur lors du calcul de la valeur de l\'inventaire');
   }
 };
 
@@ -1403,7 +1403,7 @@ exports.exportInventory = async (req, res) => {
     }
   } catch (error) {
     pharmacyLogger.error('Error exporting inventory', { format: req.query.format, error: error.message, stack: error.stack });
-    return error(res, 'Error exporting inventory');
+    return serverError(res, 'Erreur lors de l\'exportation de l\'inventaire');
   }
 };
 
@@ -1555,7 +1555,7 @@ exports.getProfitMarginReport = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting profit margin report', { error: error.message, stack: error.stack });
-    return error(res, 'Error generating profit margin report');
+    return serverError(res, 'Erreur lors de la génération du rapport de marge');
   }
 };
 
@@ -1630,7 +1630,7 @@ exports.getItemMarginAnalysis = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting item margin analysis', { itemId: req.params.itemId, error: error.message, stack: error.stack });
-    return error(res, 'Error analyzing item margins');
+    return serverError(res, 'Erreur lors de l\'analyse des marges');
   }
 };
 
@@ -1659,7 +1659,7 @@ exports.getSuppliers = async (req, res) => {
     return success(res, { data: suppliers });
   } catch (error) {
     pharmacyLogger.error('Error getting suppliers', { error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving suppliers');
+    return serverError(res, 'Erreur lors de la récupération des fournisseurs');
   }
 };
 
@@ -1669,7 +1669,7 @@ exports.createSupplier = async (req, res) => {
     const { medicationId, name, contact, isPrimary, leadTime, minimumOrder, notes } = req.body;
 
     if (!medicationId || !name) {
-      return error(res, 'Medication ID and supplier name are required', 400);
+      return errorResponse(res, 'L\'ID du médicament et le nom du fournisseur sont requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(medicationId);
@@ -1681,7 +1681,7 @@ exports.createSupplier = async (req, res) => {
     // Check if supplier already exists
     const existingSupplier = medication.suppliers.find(s => s.name === name);
     if (existingSupplier) {
-      return error(res, 'Supplier already exists for this medication', 400);
+      return errorResponse(res, 'Ce fournisseur existe déjà pour ce médicament', 400);
     }
 
     medication.suppliers.push({
@@ -1699,7 +1699,7 @@ exports.createSupplier = async (req, res) => {
     return success(res, { data: medication.suppliers[medication.suppliers.length - 1], message: 'Supplier added successfully', statusCode: 201 });
   } catch (error) {
     pharmacyLogger.error('Error creating supplier', { medicationId: req.body.medicationId, error: error.message, stack: error.stack });
-    return error(res, 'Error creating supplier', 400);
+    return serverError(res, 'Erreur lors de la création du fournisseur');
   }
 };
 
@@ -1733,7 +1733,7 @@ exports.getSupplier = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error getting supplier', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error retrieving supplier');
+    return serverError(res, 'Erreur lors de la récupération du fournisseur');
   }
 };
 
@@ -1745,7 +1745,7 @@ exports.updateSupplier = async (req, res) => {
     const { newName, contact, isPrimary, leadTime, minimumOrder, notes, medicationId } = req.body;
 
     if (!medicationId) {
-      return error(res, 'Medication ID is required', 400);
+      return errorResponse(res, 'L\'ID du médicament est requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(medicationId);
@@ -1773,7 +1773,7 @@ exports.updateSupplier = async (req, res) => {
     return success(res, { data: medication.suppliers[supplierIndex], message: 'Supplier updated successfully' });
   } catch (error) {
     pharmacyLogger.error('Error updating supplier', { id: req.params.id, medicationId: req.body.medicationId, error: error.message, stack: error.stack });
-    return error(res, 'Error updating supplier', 400);
+    return serverError(res, 'Erreur lors de la mise à jour du fournisseur');
   }
 };
 
@@ -1785,7 +1785,7 @@ exports.deleteSupplier = async (req, res) => {
     const { medicationId } = req.body;
 
     if (!medicationId) {
-      return error(res, 'Medication ID is required', 400);
+      return errorResponse(res, 'L\'ID du médicament est requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(medicationId);
@@ -1801,7 +1801,7 @@ exports.deleteSupplier = async (req, res) => {
     return success(res, { data: null, message: 'Supplier removed successfully' });
   } catch (error) {
     pharmacyLogger.error('Error deleting supplier', { id: req.params.id, medicationId: req.body.medicationId, error: error.message, stack: error.stack });
-    return error(res, 'Error deleting supplier', 400);
+    return serverError(res, 'Erreur lors de la suppression du fournisseur');
   }
 };
 
@@ -1860,7 +1860,7 @@ exports.getReorderSuggestions = async (req, res) => {
     return success(res, { data: suggestions });
   } catch (error) {
     pharmacyLogger.error('Error getting reorder suggestions', { error: error.message, stack: error.stack });
-    return error(res, 'Error getting reorder suggestions');
+    return serverError(res, 'Erreur lors de la récupération des suggestions de réapprovisionnement');
   }
 };
 
@@ -1870,7 +1870,7 @@ exports.createReorder = async (req, res) => {
     const { medicationId, quantity, supplier, expectedDeliveryDate, notes, orderReference } = req.body;
 
     if (!medicationId || !quantity) {
-      return error(res, 'Medication ID and quantity are required', 400);
+      return errorResponse(res, 'L\'ID du médicament et la quantité sont requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(medicationId);
@@ -1906,7 +1906,7 @@ exports.createReorder = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error creating reorder', { medicationId: req.body.medicationId, error: error.message, stack: error.stack });
-    return error(res, 'Error creating reorder', 400);
+    return serverError(res, 'Erreur lors de la création du réapprovisionnement');
   }
 };
 
@@ -1916,7 +1916,7 @@ exports.receiveOrder = async (req, res) => {
     const { lotNumber, quantity, expirationDate, manufactureDate, cost, notes } = req.body;
 
     if (!lotNumber || !quantity || !expirationDate) {
-      return error(res, 'Lot number, quantity, and expiration date are required', 400);
+      return errorResponse(res, 'Numéro de lot, quantité et date d\'expiration requis', 400);
     }
 
     const medication = await PharmacyInventory.findById(req.params.id);
@@ -1960,7 +1960,7 @@ exports.receiveOrder = async (req, res) => {
     });
   } catch (error) {
     pharmacyLogger.error('Error receiving order', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error receiving order', 400);
+    return serverError(res, 'Erreur lors de la réception de la commande');
   }
 };
 
@@ -1993,7 +1993,7 @@ exports.resolveAlert = async (req, res) => {
     return success(res, { data: null, message: 'Alert resolved successfully' });
   } catch (error) {
     pharmacyLogger.error('Error resolving alert', { id: req.params.id, alertId: req.params.alertId, error: error.message, stack: error.stack });
-    return error(res, 'Error resolving alert', 400);
+    return serverError(res, 'Erreur lors de la résolution de l\'alerte');
   }
 };
 
@@ -2013,7 +2013,7 @@ exports.deleteMedication = async (req, res) => {
     // Check for active reservations
     const activeReservations = medication.reservations?.filter(r => r.status === 'active') || [];
     if (activeReservations.length > 0) {
-      return error(res, 'Cannot delete medication with active reservations', 400);
+      return errorResponse(res, 'Impossible de supprimer un médicament avec des réservations actives', 400);
     }
 
     // Soft delete - mark as inactive/discontinued
@@ -2028,6 +2028,6 @@ exports.deleteMedication = async (req, res) => {
     return success(res, { data: null, message: 'Medication deactivated successfully' });
   } catch (error) {
     pharmacyLogger.error('Error deleting medication', { id: req.params.id, error: error.message, stack: error.stack });
-    return error(res, 'Error deleting medication', 400);
+    return serverError(res, 'Erreur lors de la suppression du médicament');
   }
 };
