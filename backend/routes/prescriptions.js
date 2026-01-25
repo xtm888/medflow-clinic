@@ -5,6 +5,12 @@ const prescriptionController = require('../controllers/prescriptions');
 const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { logPrescriptionActivity } = require('../middleware/auditLogger');
 const { optionalClinic } = require('../middleware/clinicAuth');
+const {
+  validatePrescriptionCreate,
+  validatePrescriptionUpdate,
+  validatePrescriptionDispense,
+  validateObjectIdParam
+} = require('../middleware/validation');
 
 // Protect all routes and add clinic context
 router.use(protect);
@@ -154,19 +160,22 @@ router
   .get(requirePermission('view_prescriptions'), prescriptionController.getPrescriptions)
   .post(
     requirePermission('create_prescriptions'),
+    validatePrescriptionCreate,
     logPrescriptionActivity,
     prescriptionController.createPrescription
   );
 
 router
   .route('/:id')
-  .get(requirePermission('view_prescriptions'), logPrescriptionActivity, prescriptionController.getPrescription)
+  .get(validateObjectIdParam, requirePermission('view_prescriptions'), logPrescriptionActivity, prescriptionController.getPrescription)
   .put(
+    validatePrescriptionUpdate,
     requirePermission('create_prescriptions'),
     logPrescriptionActivity,
     prescriptionController.updatePrescription
   )
   .delete(
+    validateObjectIdParam,
     requirePermission('create_prescriptions'),
     logPrescriptionActivity,
     prescriptionController.deletePrescription
@@ -184,6 +193,7 @@ router.put(
 
 router.put(
   '/:id/dispense',
+  validatePrescriptionDispense,
   requirePermission('dispense_medications'),
   logPrescriptionActivity,
   prescriptionController.dispensePrescription

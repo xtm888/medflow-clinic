@@ -4,6 +4,11 @@ const surgeryController = require('../controllers/surgeryController');
 const { protect, authorize, requirePermission } = require('../middleware/auth');
 const { optionalClinic } = require('../middleware/clinicAuth');
 const { logAction, logCriticalOperation, logPatientDataAccess } = require('../middleware/auditLogger');
+const {
+  validateSurgeryCaseCreate,
+  validateSurgeryReportCreate,
+  validateObjectIdParam
+} = require('../middleware/validation');
 
 /**
  * Surgery Routes
@@ -72,7 +77,7 @@ router.get('/rooms/schedule', logAction('SURGERY_ROOM_SCHEDULE_VIEW'), surgeryCo
 router.get('/agenda', logAction('SURGERY_AGENDA_VIEW'), surgeryController.getAgenda);
 
 // POST /api/surgery/:id/schedule - Schedule a case with optional room assignment
-router.post('/:id/schedule', logCriticalOperation('SURGERY_SCHEDULE'), surgeryController.scheduleCase);
+router.post('/:id/schedule', validateObjectIdParam, logCriticalOperation('SURGERY_SCHEDULE'), surgeryController.scheduleCase);
 
 // POST /api/surgery/:id/reschedule - Reschedule a case
 router.post('/:id/reschedule', logCriticalOperation('SURGERY_RESCHEDULE'), surgeryController.rescheduleCase);
@@ -111,7 +116,7 @@ router.post('/:id/consumables', logAction('SURGERY_CONSUMABLES_ADD'), surgeryCon
 // ============================================
 
 // POST /api/surgery/:id/report - Create surgery report
-router.post('/:id/report', logCriticalOperation('SURGERY_REPORT_CREATE'), surgeryController.createReport);
+router.post('/:id/report', validateSurgeryReportCreate, logCriticalOperation('SURGERY_REPORT_CREATE'), surgeryController.createReport);
 
 // GET /api/surgery/report/:reportId - Get report by ID
 router.get('/report/:reportId', logPatientDataAccess, logAction('SURGERY_REPORT_VIEW'), surgeryController.getReport);
@@ -159,10 +164,10 @@ router.get('/patient/:patientId', logPatientDataAccess, logAction('SURGERY_PATIE
 router.get('/cases', logAction('SURGERY_CASE_LIST'), surgeryController.getCases);
 
 // POST /api/surgery/cases - Create case manually
-router.post('/cases', logCriticalOperation('SURGERY_CASE_CREATE'), surgeryController.createCase);
+router.post('/cases', validateSurgeryCaseCreate, logCriticalOperation('SURGERY_CASE_CREATE'), surgeryController.createCase);
 
 // GET /api/surgery/:id - Get single case
-router.get('/:id', logPatientDataAccess, logAction('SURGERY_CASE_VIEW'), surgeryController.getCase);
+router.get('/:id', validateObjectIdParam, logPatientDataAccess, logAction('SURGERY_CASE_VIEW'), surgeryController.getCase);
 
 // ============================================
 // SPECIMEN COLLECTION & PATHOLOGY
