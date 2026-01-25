@@ -7,7 +7,10 @@ const CommentTemplate = require('../models/CommentTemplate');
 const DoseTemplate = require('../models/DoseTemplate');
 const LetterTemplate = require('../models/LetterTemplate');
 const EquipmentCatalog = require('../models/EquipmentCatalog');
+const TextSnippet = require('../models/TextSnippet');
+const { PharmacyInventory } = require('../models/Inventory');
 const { createContextLogger } = require('../utils/structuredLogger');
+const { serverError } = require('../utils/apiResponse');
 
 const logger = createContextLogger('TemplateCatalog');
 
@@ -46,10 +49,7 @@ exports.getMedicationTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching medication templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -62,14 +62,11 @@ exports.getMedicationCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching medication categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -107,10 +104,293 @@ exports.searchMedications = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error searching medications', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// ===== THERAPEUTIC CLASS BROWSER =====
+
+// @desc    Get therapeutic classes with medication counts
+// @route   GET /api/template-catalog/therapeutic-classes
+// @access  Private
+exports.getTherapeuticClasses = async (req, res) => {
+  try {
+    const { clinicId } = req.query;
+
+    // Get all medication categories with counts from MedicationTemplate
+    const categoriesAgg = await MedicationTemplate.aggregate([
+      { $match: { isActive: true, isDeleted: { $ne: true } } },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+          medications: {
+            $push: {
+              name: '$name',
+              form: '$form',
+              dosage: '$dosage',
+              packaging: '$packaging'
+            }
+          }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Build hierarchical structure with French ophthalmic categories
+    const therapeuticClasses = categoriesAgg.map(cat => ({
+      id: cat._id,
+      name: cat._id,
+      medicationCount: cat.count,
+      // Group into broader categories for Level 1
+      parentCategory: getParentCategory(cat._id)
+    }));
+
+    // Group by parent category for hierarchical tree
+    const hierarchy = {};
+    therapeuticClasses.forEach(tc => {
+      const parent = tc.parentCategory;
+      if (!hierarchy[parent]) {
+        hierarchy[parent] = {
+          id: parent,
+          name: parent,
+          children: [],
+          totalCount: 0
+        };
+      }
+      hierarchy[parent].children.push({
+        id: tc.id,
+        name: tc.name,
+        medicationCount: tc.medicationCount
+      });
+      hierarchy[parent].totalCount += tc.medicationCount;
     });
+
+    res.json({
+      success: true,
+      data: {
+        categories: therapeuticClasses,
+        hierarchy: Object.values(hierarchy).sort((a, b) => a.name.localeCompare(b.name))
+      }
+    });
+  } catch (error) {
+    logger.error('Error fetching therapeutic classes', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// Helper: Map categories to parent groups for hierarchy
+function getParentCategory(category) {
+  const mapping = {
+    // Anti-inflammatory group
+    'A.I.N.S GENERAUX + CORTICOIDES': 'Anti-inflammatoires',
+    'A.I.N.S LOCAUX': 'Anti-inflammatoires',
+    'CORTICOIDES + ANTIBIOTIQUES': 'Anti-inflammatoires',
+    'CORTICOIDES LOCAUX': 'Anti-inflammatoires',
+
+    // Antiglaucoma group
+    'ANTI GLAUCOMATEUX': 'Antiglaucomateux',
+
+    // Antibiotics group
+    'ANTIBIOTIQUE LOCAUX': 'Antibiotiques',
+    'ANTIBIOTIQUE GENERAUX': 'Antibiotiques',
+
+    // Antiallergic group
+    'ANTI ALLERGIQUES': 'Antiallergiques',
+    'ANTI HISTAMINIQUES GENERAUX': 'Antiallergiques',
+
+    // Lubricants group
+    'LARMES ARTIFICIELLES': 'Lubrifants & Larmes',
+    'LARMES LOTIONS CONTACTO': 'Lubrifants & Larmes',
+
+    // Mydriatics group
+    'MYDRIATIQUES': 'Mydriatiques',
+
+    // Anti-infectives group
+    'ANTI VIRAUX': 'Anti-infectieux',
+    'ANTI MYCOSIQUES': 'Anti-infectieux',
+    'ANTISEPT SANS VASOCONS': 'Anti-infectieux',
+
+    // Cataract group
+    'ANTI CATARACTE': 'Cataracte',
+
+    // Others
+    'CICATRISANTS': 'Cicatrisants',
+    'DECONGESTIONNANT': 'Décongestionnants',
+    'DIVERS OPHA': 'Divers Ophtalmologie',
+    'VASCULOTROPES': 'Vasculotropes',
+    'VITAMINES': 'Vitamines & Suppléments',
+    'ANESTHESIE LOCALES': 'Anesthésiques',
+    'SEDATIF': 'Sédatifs'
+  };
+
+  return mapping[category] || 'Autres';
+}
+
+// @desc    Get medications by therapeutic class with stock levels
+// @route   GET /api/template-catalog/therapeutic-classes/:classId/medications
+// @access  Private
+exports.getMedicationsByClass = async (req, res) => {
+  try {
+    const { classId } = req.params;
+    const { clinicId, search, limit = 50 } = req.query;
+
+    if (!classId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Class ID is required'
+      });
+    }
+
+    // Decode the classId (URL encoded)
+    const decodedClassId = decodeURIComponent(classId);
+
+    // Build query for medication templates
+    const query = {
+      category: decodedClassId,
+      isActive: true,
+      isDeleted: { $ne: true }
+    };
+
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.name = { $regex: escapedSearch, $options: 'i' };
+    }
+
+    // Get medications from template catalog
+    const medications = await MedicationTemplate.find(query)
+      .limit(parseInt(limit))
+      .sort({ name: 1 })
+      .lean();
+
+    // Get stock levels from pharmacy inventory (if clinicId provided)
+    let stockMap = {};
+    if (clinicId) {
+      const inventoryItems = await PharmacyInventory.find({
+        clinic: clinicId,
+        isDeleted: { $ne: true },
+        active: true
+      })
+        .select('name genericName inventory.currentStock inventory.status pricing.sellingPrice')
+        .lean();
+
+      // Create a map by medication name (normalized) for quick lookup
+      inventoryItems.forEach(item => {
+        const normalizedName = (item.genericName || item.name || '').toLowerCase().trim();
+        stockMap[normalizedName] = {
+          currentStock: item.inventory?.currentStock || 0,
+          status: item.inventory?.status || 'unknown',
+          price: item.pricing?.sellingPrice || 0,
+          inventoryId: item._id
+        };
+      });
+    }
+
+    // Enrich medications with stock info
+    const enrichedMedications = medications.map(med => {
+      const normalizedName = (med.name || '').toLowerCase().trim();
+      const stockInfo = stockMap[normalizedName] || null;
+
+      return {
+        _id: med._id,
+        name: med.name,
+        form: med.form,
+        dosage: med.dosage,
+        packaging: med.packaging,
+        category: med.category,
+        stock: stockInfo ? {
+          available: stockInfo.currentStock,
+          status: stockInfo.status,
+          price: stockInfo.price,
+          inventoryId: stockInfo.inventoryId
+        } : null
+      };
+    });
+
+    res.json({
+      success: true,
+      count: enrichedMedications.length,
+      category: decodedClassId,
+      data: enrichedMedications
+    });
+  } catch (error) {
+    logger.error('Error fetching medications by class', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get therapeutic alternatives for a medication
+// @route   GET /api/template-catalog/medications/:medicationId/alternatives
+// @access  Private
+exports.getMedicationAlternatives = async (req, res) => {
+  try {
+    const { medicationId } = req.params;
+    const { clinicId, limit = 10 } = req.query;
+
+    // Find the original medication
+    const originalMed = await MedicationTemplate.findById(medicationId);
+    if (!originalMed) {
+      return res.status(404).json({
+        success: false,
+        error: 'Medication not found'
+      });
+    }
+
+    // Find alternatives in the same category
+    const alternatives = await MedicationTemplate.find({
+      category: originalMed.category,
+      _id: { $ne: medicationId },
+      isActive: true,
+      isDeleted: { $ne: true }
+    })
+      .limit(parseInt(limit))
+      .sort({ name: 1 })
+      .lean();
+
+    // Get stock levels if clinicId provided
+    let enrichedAlternatives = alternatives;
+    if (clinicId) {
+      const inventoryItems = await PharmacyInventory.find({
+        clinic: clinicId,
+        isDeleted: { $ne: true },
+        active: true
+      })
+        .select('name genericName inventory.currentStock inventory.status pricing.sellingPrice')
+        .lean();
+
+      const stockMap = {};
+      inventoryItems.forEach(item => {
+        const normalizedName = (item.genericName || item.name || '').toLowerCase().trim();
+        stockMap[normalizedName] = {
+          currentStock: item.inventory?.currentStock || 0,
+          status: item.inventory?.status || 'unknown',
+          price: item.pricing?.sellingPrice || 0
+        };
+      });
+
+      enrichedAlternatives = alternatives.map(med => {
+        const normalizedName = (med.name || '').toLowerCase().trim();
+        const stockInfo = stockMap[normalizedName];
+        return {
+          ...med,
+          stock: stockInfo || null
+        };
+      });
+    }
+
+    res.json({
+      success: true,
+      original: {
+        id: originalMed._id,
+        name: originalMed.name,
+        category: originalMed.category
+      },
+      count: enrichedAlternatives.length,
+      data: enrichedAlternatives
+    });
+  } catch (error) {
+    logger.error('Error fetching medication alternatives', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -147,10 +427,7 @@ exports.getExaminationTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching examination templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -163,14 +440,11 @@ exports.getExaminationCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching examination categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -215,10 +489,7 @@ exports.getPathologyTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching pathology templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -231,14 +502,11 @@ exports.getPathologyCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching pathology categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -258,14 +526,155 @@ exports.getPathologySubcategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: subcategories.filter(s => s).sort() // Filter out null/empty
+      data: subcategories.filter(s => s).sort((a, b) => a.localeCompare(b)) // Filter out null/empty
     });
   } catch (error) {
     logger.error('Error fetching pathology subcategories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get pathology maquettes (templates grouped by type) for a category
+// @route   GET /api/template-catalog/maquettes/:category
+// @access  Private
+exports.getPathologyMaquettes = async (req, res) => {
+  try {
+    const { category } = req.params;
+    const { subcategory, search } = req.query;
+
+    // Base query
+    const query = {
+      category,
+      isActive: true,
+      isDeleted: { $ne: true }
+    };
+
+    // Optional subcategory filter
+    if (subcategory) {
+      query.subcategory = subcategory;
+    }
+
+    // Optional search filter
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        { name: { $regex: escapedSearch, $options: 'i' } },
+        { value: { $regex: escapedSearch, $options: 'i' } }
+      ];
+    }
+
+    // Fetch all templates for this category
+    const templates = await PathologyTemplate.find(query)
+      .sort({ sortOrder: 1, name: 1 })
+      .lean();
+
+    // Group by type
+    const symptoms = templates.filter(t => t.type === 'symptom');
+    const descriptions = templates.filter(t => t.type === 'description');
+    const diagnostics = templates.filter(t => t.type === 'diagnostic');
+    const findings = templates.filter(t => t.type === 'finding');
+
+    // Return grouped data
+    res.json({
+      success: true,
+      data: {
+        category,
+        symptoms: symptoms.map(s => ({
+          id: s._id,
+          name: s.name,
+          value: s.value || s.name,
+          subcategory: s.subcategory,
+          laterality: s.laterality,
+          severity: s.severity
+        })),
+        descriptions: descriptions.map(d => ({
+          id: d._id,
+          name: d.name,
+          value: d.value || d.name,
+          subcategory: d.subcategory
+        })),
+        diagnostics: diagnostics.map(dx => ({
+          id: dx._id,
+          name: dx.name,
+          code: dx.subcategory, // ICD-10 code stored in subcategory
+          value: dx.value || dx.name
+        })),
+        findings: findings.map(f => ({
+          id: f._id,
+          name: f.name,
+          value: f.value || f.name,
+          subcategory: f.subcategory
+        })),
+        counts: {
+          symptoms: symptoms.length,
+          descriptions: descriptions.length,
+          diagnostics: diagnostics.length,
+          findings: findings.length,
+          total: templates.length
+        }
+      }
     });
+  } catch (error) {
+    logger.error('Error fetching pathology maquettes', { error: error.message, category: req.params.category });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get all maquettes categories with template counts
+// @route   GET /api/template-catalog/maquettes
+// @access  Private
+exports.getMaquettesCategories = async (req, res) => {
+  try {
+    // Aggregate to get categories with counts by type
+    const categoryCounts = await PathologyTemplate.aggregate([
+      { $match: { isActive: true, isDeleted: { $ne: true } } },
+      {
+        $group: {
+          _id: { category: '$category', type: '$type' },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $group: {
+          _id: '$_id.category',
+          types: {
+            $push: {
+              type: '$_id.type',
+              count: '$count'
+            }
+          },
+          total: { $sum: '$count' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Transform to more usable format
+    const categories = categoryCounts.map(cat => {
+      const typeCounts = {};
+      cat.types.forEach(t => {
+        typeCounts[t.type] = t.count;
+      });
+
+      return {
+        id: cat._id,
+        name: cat._id,
+        total: cat.total,
+        symptoms: typeCounts.symptom || 0,
+        descriptions: typeCounts.description || 0,
+        diagnostics: typeCounts.diagnostic || 0,
+        findings: typeCounts.finding || 0
+      };
+    });
+
+    res.json({
+      success: true,
+      count: categories.length,
+      data: categories
+    });
+  } catch (error) {
+    logger.error('Error fetching maquettes categories', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -307,10 +716,7 @@ exports.getLaboratoryTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching laboratory templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -323,14 +729,11 @@ exports.getLaboratoryCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching laboratory categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -353,10 +756,7 @@ exports.getLaboratoryProfiles = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching laboratory profiles', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -393,10 +793,7 @@ exports.getClinicalTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching clinical templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -409,14 +806,11 @@ exports.getClinicalCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching clinical categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -453,10 +847,7 @@ exports.getCommentTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching comment templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -469,14 +860,11 @@ exports.getCommentCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching comment categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -514,10 +902,7 @@ exports.getDoseTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching dose templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -530,14 +915,11 @@ exports.getDoseForms = async (req, res) => {
 
     res.json({
       success: true,
-      data: forms.sort()
+      data: forms.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching dose forms', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -564,10 +946,7 @@ exports.getDoseByForm = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching dose by form', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -604,10 +983,7 @@ exports.getLetterTemplates = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching letter templates', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -620,14 +996,11 @@ exports.getLetterCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching letter categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -651,10 +1024,7 @@ exports.getLetterTemplateById = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching letter template', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -700,10 +1070,7 @@ exports.getEquipmentCatalog = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching equipment catalog', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -716,14 +1083,11 @@ exports.getEquipmentCategories = async (req, res) => {
 
     res.json({
       success: true,
-      data: categories.sort()
+      data: categories.sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching equipment categories', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -736,14 +1100,11 @@ exports.getEquipmentSites = async (req, res) => {
 
     res.json({
       success: true,
-      data: sites.filter(s => s).sort()
+      data: sites.filter(s => s).sort((a, b) => a.localeCompare(b))
     });
   } catch (error) {
     logger.error('Error fetching equipment sites', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -767,10 +1128,7 @@ exports.getEquipmentById = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching equipment', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
 
@@ -820,9 +1178,408 @@ exports.getTemplateCatalogStats = async (req, res) => {
     });
   } catch (error) {
     logger.error('Error fetching template catalog stats', { error: error.message });
-    res.status(500).json({
-      success: false,
-      error: error.message
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// ===== TEXT SNIPPETS (Click-to-Build) =====
+
+// @desc    Get text snippets by category
+// @route   GET /api/template-catalog/snippets
+// @access  Private
+exports.getTextSnippets = async (req, res) => {
+  try {
+    const { category, search, limit = 50 } = req.query;
+    const userId = req.user._id;
+    const clinicId = req.user.currentClinicId;
+
+    const query = {
+      isActive: true,
+      isDeleted: false,
+      $or: [
+        { scope: 'global' },
+        { scope: 'clinic', clinicId },
+        { scope: 'personal', userId }
+      ]
+    };
+
+    if (category) {
+      query.category = category;
+    }
+
+    if (search) {
+      const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      query.$or = [
+        ...query.$or,
+        { title: { $regex: escapedSearch, $options: 'i' } },
+        { text: { $regex: escapedSearch, $options: 'i' } }
+      ];
+    }
+
+    const snippets = await TextSnippet.find(query)
+      .sort({ sortOrder: 1, usageCount: -1 })
+      .limit(parseInt(limit))
+      .select('title text shortcut category subcategory variables usageCount scope');
+
+    res.json({
+      success: true,
+      count: snippets.length,
+      data: snippets
     });
+  } catch (error) {
+    logger.error('Error fetching text snippets', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get snippet categories with counts
+// @route   GET /api/template-catalog/snippets/categories
+// @access  Private
+exports.getSnippetCategories = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const clinicId = req.user.currentClinicId;
+
+    const categories = await TextSnippet.aggregate([
+      {
+        $match: {
+          isActive: true,
+          isDeleted: false,
+          $or: [
+            { scope: 'global' },
+            { scope: 'clinic', clinicId },
+            { scope: 'personal', userId }
+          ]
+        }
+      },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Category labels in French
+    const categoryLabels = {
+      symptom: 'Symptômes',
+      finding: 'Constatations',
+      recommendation: 'Recommandations',
+      instruction: 'Instructions',
+      diagnosis: 'Diagnostics',
+      procedure: 'Procédures',
+      anterior_segment: 'Segment antérieur',
+      posterior_segment: 'Segment postérieur',
+      refraction: 'Réfraction',
+      iop: 'PIO',
+      visual_field: 'Champ visuel',
+      oct: 'OCT',
+      surgery: 'Chirurgie',
+      follow_up: 'Suivi',
+      medication: 'Médicaments',
+      general: 'Général'
+    };
+
+    res.json({
+      success: true,
+      data: categories.map(cat => ({
+        id: cat._id,
+        name: categoryLabels[cat._id] || cat._id,
+        count: cat.count
+      }))
+    });
+  } catch (error) {
+    logger.error('Error fetching snippet categories', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get recent snippets for user
+// @route   GET /api/template-catalog/snippets/recent
+// @access  Private
+exports.getRecentSnippets = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const limit = parseInt(req.query.limit) || 10;
+
+    const snippets = await TextSnippet.getRecent(userId, limit);
+
+    res.json({
+      success: true,
+      data: snippets
+    });
+  } catch (error) {
+    logger.error('Error fetching recent snippets', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get most used snippets
+// @route   GET /api/template-catalog/snippets/popular
+// @access  Private
+exports.getPopularSnippets = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const clinicId = req.user.currentClinicId;
+    const { category, limit = 20 } = req.query;
+
+    const snippets = await TextSnippet.getMostUsed({
+      userId,
+      clinicId,
+      category,
+      limit: parseInt(limit)
+    });
+
+    res.json({
+      success: true,
+      data: snippets
+    });
+  } catch (error) {
+    logger.error('Error fetching popular snippets', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Get all shortcuts for expansion
+// @route   GET /api/template-catalog/snippets/shortcuts
+// @access  Private
+exports.getSnippetShortcuts = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const clinicId = req.user.currentClinicId;
+
+    const shortcuts = await TextSnippet.getAllShortcuts({ userId, clinicId });
+
+    res.json({
+      success: true,
+      data: shortcuts
+    });
+  } catch (error) {
+    logger.error('Error fetching snippet shortcuts', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Expand a shortcut
+// @route   GET /api/template-catalog/snippets/expand/:shortcut
+// @access  Private
+exports.expandSnippetShortcut = async (req, res) => {
+  try {
+    const { shortcut } = req.params;
+    const userId = req.user._id;
+    const clinicId = req.user.currentClinicId;
+
+    const snippet = await TextSnippet.findByShortcut(shortcut, { userId, clinicId });
+
+    if (!snippet) {
+      return res.status(404).json({
+        success: false,
+        error: 'Raccourci non trouvé'
+      });
+    }
+
+    // Increment usage
+    await TextSnippet.findByIdAndUpdate(snippet._id, {
+      $inc: { usageCount: 1 },
+      lastUsedAt: new Date()
+    });
+
+    res.json({
+      success: true,
+      data: {
+        title: snippet.title,
+        text: snippet.text,
+        variables: snippet.variables
+      }
+    });
+  } catch (error) {
+    logger.error('Error expanding snippet shortcut', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Create a new snippet
+// @route   POST /api/template-catalog/snippets
+// @access  Private
+exports.createTextSnippet = async (req, res) => {
+  try {
+    const { category, subcategory, title, text, shortcut, variables, scope, tags } = req.body;
+    const userId = req.user._id;
+    const clinicId = req.user.currentClinicId;
+
+    // Validate required fields
+    if (!category || !title || !text) {
+      return res.status(400).json({
+        success: false,
+        error: 'Catégorie, titre et texte sont requis'
+      });
+    }
+
+    // Check for duplicate shortcut
+    if (shortcut) {
+      const existing = await TextSnippet.findOne({
+        shortcut: shortcut.toLowerCase(),
+        isActive: true,
+        isDeleted: false
+      });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          error: 'Ce raccourci est déjà utilisé'
+        });
+      }
+    }
+
+    const snippet = new TextSnippet({
+      category,
+      subcategory,
+      title,
+      text,
+      shortcut: shortcut?.toLowerCase(),
+      variables,
+      scope: scope || 'personal',
+      userId,
+      clinicId: scope === 'clinic' ? clinicId : undefined,
+      tags
+    });
+
+    await snippet.save();
+
+    res.status(201).json({
+      success: true,
+      data: snippet
+    });
+  } catch (error) {
+    logger.error('Error creating text snippet', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Update a snippet
+// @route   PUT /api/template-catalog/snippets/:id
+// @access  Private
+exports.updateTextSnippet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+    const updates = req.body;
+
+    const snippet = await TextSnippet.findById(id);
+
+    if (!snippet) {
+      return res.status(404).json({
+        success: false,
+        error: 'Snippet non trouvé'
+      });
+    }
+
+    // Check ownership for personal snippets
+    if (snippet.scope === 'personal' && snippet.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Vous ne pouvez pas modifier ce snippet'
+      });
+    }
+
+    // Check for duplicate shortcut if changing
+    if (updates.shortcut && updates.shortcut !== snippet.shortcut) {
+      const existing = await TextSnippet.findOne({
+        shortcut: updates.shortcut.toLowerCase(),
+        isActive: true,
+        isDeleted: false,
+        _id: { $ne: id }
+      });
+      if (existing) {
+        return res.status(400).json({
+          success: false,
+          error: 'Ce raccourci est déjà utilisé'
+        });
+      }
+      updates.shortcut = updates.shortcut.toLowerCase();
+    }
+
+    Object.assign(snippet, updates);
+    await snippet.save();
+
+    res.json({
+      success: true,
+      data: snippet
+    });
+  } catch (error) {
+    logger.error('Error updating text snippet', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Delete a snippet (soft delete)
+// @route   DELETE /api/template-catalog/snippets/:id
+// @access  Private
+exports.deleteTextSnippet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user._id;
+
+    const snippet = await TextSnippet.findById(id);
+
+    if (!snippet) {
+      return res.status(404).json({
+        success: false,
+        error: 'Snippet non trouvé'
+      });
+    }
+
+    // Check ownership for personal snippets
+    if (snippet.scope === 'personal' && snippet.userId.toString() !== userId.toString()) {
+      return res.status(403).json({
+        success: false,
+        error: 'Vous ne pouvez pas supprimer ce snippet'
+      });
+    }
+
+    snippet.isDeleted = true;
+    snippet.deletedAt = new Date();
+    await snippet.save();
+
+    res.json({
+      success: true,
+      message: 'Snippet supprimé'
+    });
+  } catch (error) {
+    logger.error('Error deleting text snippet', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
+  }
+};
+
+// @desc    Record snippet usage
+// @route   POST /api/template-catalog/snippets/:id/use
+// @access  Private
+exports.recordSnippetUsage = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const snippet = await TextSnippet.findByIdAndUpdate(
+      id,
+      {
+        $inc: { usageCount: 1 },
+        lastUsedAt: new Date()
+      },
+      { new: true }
+    );
+
+    if (!snippet) {
+      return res.status(404).json({
+        success: false,
+        error: 'Snippet non trouvé'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: { usageCount: snippet.usageCount }
+    });
+  } catch (error) {
+    logger.error('Error recording snippet usage', { error: error.message });
+    return serverError(res, 'Erreur lors de l\'opération sur le modèle');
   }
 };
