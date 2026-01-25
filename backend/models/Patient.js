@@ -35,10 +35,43 @@ const patientSchema = new mongoose.Schema({
       sparse: true,
       index: true
     },
+    // CareVision/LV legacy system (CodePatient from SQL Server)
+    lv: {
+      type: String,
+      sparse: true,
+      index: true
+    },
+    // When linked to CareVision
+    lvLinkedAt: Date,
+    // Who linked the patient to CareVision
+    lvLinkedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
+    // Conquest PACS patient ID
+    pacs: {
+      type: String,
+      sparse: true,
+      index: true
+    },
+    // When linked to PACS
+    pacsLinkedAt: Date,
+    // Who linked the patient to PACS
+    pacsLinkedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
     // Other legacy systems
     dmiEye: String,
     oldEmr: String,
     externalRef: String
+  },
+
+  // Flag indicating this patient has historical data in CareVision
+  hasLegacyData: {
+    type: Boolean,
+    default: false,
+    index: true
   },
 
   // Multi-Clinic: Where patient was first registered
@@ -864,7 +897,10 @@ const patientSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  lastVisit: Date,
+  lastVisit: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Visit'
+  },
   nextAppointment: Date,
 
   // Notes
@@ -1004,6 +1040,58 @@ const patientSchema = new mongoose.Schema({
     }
   }],
 
+  // Service blocks (for patients with overdue penalties or other restrictions)
+  // Used to prevent access to certain services until issues are resolved
+  blocks: [{
+    // Type of block - which service is restricted
+    type: {
+      type: String,
+      enum: ['laboratory', 'pharmacy', 'optical', 'consultation', 'surgery', 'all'],
+      required: true
+    },
+    // Reason for the block
+    reason: {
+      type: String,
+      enum: ['unpaid_penalty', 'unpaid_invoice', 'fraud', 'abuse', 'other'],
+      required: true
+    },
+    // Human-readable description
+    description: String,
+    // When the block was applied
+    blockedAt: {
+      type: Date,
+      default: Date.now
+    },
+    // Who applied the block
+    blockedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    // Related invoice (for unpaid penalties)
+    invoiceRef: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'Invoice'
+    },
+    // Related lab order (for lab penalties)
+    labOrderRef: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'LabOrder'
+    },
+    // When the block expires (null = permanent until resolved)
+    expiresAt: Date,
+    // Whether block has been lifted
+    isLifted: {
+      type: Boolean,
+      default: false
+    },
+    liftedAt: Date,
+    liftedBy: {
+      type: mongoose.Schema.ObjectId,
+      ref: 'User'
+    },
+    liftedReason: String
+  }],
+
   // Stored Payment Methods (for auto-pay on payment plans)
   storedPaymentMethods: [{
     // Unique identifier for this payment method
@@ -1089,6 +1177,13 @@ const patientSchema = new mongoose.Schema({
   version: {
     type: Number,
     default: 0
+  },
+
+  // Sync metadata - prevents re-syncing data received from central server
+  _syncedFromCentral: {
+    type: Boolean,
+    default: false,
+    select: false  // Don't include in normal queries
   }
 }, {
   timestamps: true,
@@ -1159,6 +1254,35 @@ patientSchema.index({ 'accountBalance.lastUpdated': -1 }); // Balance update tra
 patientSchema.index({ homeClinic: 1, createdAt: -1 }); // Patients by clinic sorted by creation date
 patientSchema.index({ homeClinic: 1, status: 1, lastName: 1 }); // Clinic patient listing
 
+// Device patient matching indexes (optimized for patientFolderIndexer)
+patientSchema.index({ homeClinic: 1, lastName: 1, dateOfBirth: 1 }); // Name + DOB match with clinic scope
+patientSchema.index({ lastName: 1, dateOfBirth: 1 }); // Name + DOB match (fallback without clinic)
+patientSchema.index({ homeClinic: 1, 'legacyIds.dmi': 1 }); // DMI ID match with clinic scope
+patientSchema.index({ dateOfBirth: 1 }); // DOB-only queries
+
+// Service blocks index (for checking if patient is blocked)
+patientSchema.index({ 'blocks.type': 1, 'blocks.reason': 1, 'blocks.isLifted': 1 });
+patientSchema.index({ 'blocks.invoiceRef': 1 });
+patientSchema.index({ 'blocks.labOrderRef': 1 });
+
+// Face recognition indexes (optimized for biometric queries)
+// Compound index for clinic-scoped face encoding queries - reduces dataset size for O(n) comparison
+patientSchema.index(
+  { homeClinic: 1, 'biometric.faceEncoding': 1 },
+  {
+    partialFilterExpression: { 'biometric.faceEncoding': { $exists: true, $ne: null } },
+    name: 'face_encoding_clinic_lookup'
+  }
+);
+// Index for global face encoding existence checks (stats, admin)
+patientSchema.index(
+  { 'biometric.faceEncoding': 1 },
+  {
+    partialFilterExpression: { 'biometric.faceEncoding': { $exists: true, $ne: null } },
+    name: 'face_encoding_exists'
+  }
+);
+
 // Text search index for patient lookup
 patientSchema.index({ lastName: 'text', firstName: 'text', patientId: 'text' }, {
   weights: { patientId: 10, lastName: 5, firstName: 3 },
@@ -1226,7 +1350,7 @@ patientSchema.methods.softDelete = async function(deletedBy, reason = null) {
   // Face encodings must be removed when patient is deleted
   if (this.biometric) {
     this.biometric.faceEncoding = null;
-    this.biometric.faceEncodingVersion = null;
+    // NOTE: faceEncodingVersion field removed as it was not in schema
     log.info('Cleared biometric data for patient deletion', { patientId: this.patientId });
   }
 
@@ -1341,22 +1465,8 @@ patientSchema.methods.softDelete = async function(deletedBy, reason = null) {
       log.debug('Suppressed error', { error: e.message });
     }
 
-    // Mark consultation sessions
-    try {
-      const ConsultationSession = mongoose.model('ConsultationSession');
-      const sessionResult = await ConsultationSession.updateMany(
-        { patient: patientId },
-        {
-          $set: {
-            'metadata.patientDeleted': true,
-            'metadata.patientDeletedAt': new Date()
-          }
-        }
-      );
-      cascadeResults.consultationSessions = sessionResult.modifiedCount;
-    } catch (e) {
-      log.debug('Suppressed error', { error: e.message });
-    }
+    // Note: ConsultationSession has been deprecated and removed
+    // OphthalmologyExam is now the single source of truth for consultation data
 
   } catch (cascadeError) {
     log.error('Error during cascade soft-delete', { error: cascadeError.message, patientId: this.patientId });
@@ -2360,8 +2470,8 @@ patientSchema.statics.generateOverdueFollowupAlerts = async function(systemUserI
   // and have a scheduled follow-up that's past due
   const Appointment = require('./Appointment');
 
-const { createContextLogger } = require('../utils/structuredLogger');
-const log = createContextLogger('Patient');
+  const { createContextLogger } = require('../utils/structuredLogger');
+  const log = createContextLogger('Patient');
 
   const overduePatients = await Appointment.find({
     date: { $lt: now },
@@ -2583,29 +2693,29 @@ function decryptPatientPHI(doc) {
 }
 
 // Post-find hook for single document queries
-patientSchema.post('findOne', function(doc) {
+patientSchema.post('findOne', (doc) => {
   return decryptPatientPHI(doc);
 });
 
 // Post-find hook for findById
-patientSchema.post('findById', function(doc) {
+patientSchema.post('findById', (doc) => {
   return decryptPatientPHI(doc);
 });
 
 // Post-find hook for multiple document queries
-patientSchema.post('find', function(docs) {
+patientSchema.post('find', (docs) => {
   if (!docs || !Array.isArray(docs)) return docs;
   docs.forEach(doc => decryptPatientPHI(doc));
   return docs;
 });
 
 // Post-findOneAndUpdate hook
-patientSchema.post('findOneAndUpdate', function(doc) {
+patientSchema.post('findOneAndUpdate', (doc) => {
   return decryptPatientPHI(doc);
 });
 
 // Post-save hook to ensure the returned document is decrypted
-patientSchema.post('save', function(doc) {
+patientSchema.post('save', (doc) => {
   return decryptPatientPHI(doc);
 });
 

@@ -19,7 +19,9 @@ const {
 // @desc    Get patient medical history
 // @route   GET /api/patients/:id/history
 // @access  Private
-exports.getPatientHistory = asyncHandler(async (req, res, next) => {
+exports.getPatientHistory = asyncHandler(async (req, res, _next) => {
+  const Visit = require('../../models/Visit');
+
   const patient = await findPatientByIdOrCode(req.params.id, {
     select: 'medicalHistory medications vitalSigns ophthalmology',
     populate: { path: 'medications.prescribedBy', select: 'firstName lastName' }
@@ -29,12 +31,59 @@ exports.getPatientHistory = asyncHandler(async (req, res, next) => {
     return notFound(res, 'Patient');
   }
 
+  // Get visit statistics including refraction counts
+  const [visitCount, visitsWithRefractions, lastVisitWithRefraction] = await Promise.all([
+    Visit.countDocuments({ patient: patient._id }),
+    Visit.countDocuments({
+      patient: patient._id,
+      'clinicalData.refractions.0': { $exists: true }
+    }),
+    Visit.findOne({
+      patient: patient._id,
+      'clinicalData.refractions.0': { $exists: true }
+    })
+      .sort({ visitDate: -1, date: -1 })
+      .select('visitDate date clinicalData.refractions')
+      .lean()
+  ]);
+
+  // Extract latest refraction data
+  let lastRefraction = null;
+  let lastRefractionDate = null;
+  if (lastVisitWithRefraction?.clinicalData?.refractions?.length > 0) {
+    const latestRef = lastVisitWithRefraction.clinicalData.refractions[0];
+    lastRefraction = {
+      od: latestRef.od ? {
+        sphere: latestRef.od.sphere,
+        cylinder: latestRef.od.cylinder,
+        axis: latestRef.od.axis,
+        addition: latestRef.od.addition,
+        visualAcuity: latestRef.od.visualAcuity
+      } : null,
+      os: latestRef.os ? {
+        sphere: latestRef.os.sphere,
+        cylinder: latestRef.os.cylinder,
+        axis: latestRef.os.axis,
+        addition: latestRef.os.addition,
+        visualAcuity: latestRef.os.visualAcuity
+      } : null,
+      type: latestRef.type,
+      pd: latestRef.pd
+    };
+    lastRefractionDate = lastVisitWithRefraction.visitDate || lastVisitWithRefraction.date;
+  }
+
   return success(res, {
     data: {
       medicalHistory: patient.medicalHistory,
       currentMedications: patient.medications ? patient.medications.filter(med => med.status === 'active') : [],
       vitalSigns: patient.vitalSigns,
-      ophthalmology: patient.ophthalmology
+      ophthalmology: patient.ophthalmology,
+      // Include visit/refraction statistics
+      visitCount,
+      refractionCount: visitsWithRefractions,
+      lastRefraction,
+      lastRefractionDate
     }
   });
 });
@@ -42,7 +91,7 @@ exports.getPatientHistory = asyncHandler(async (req, res, next) => {
 // @desc    Get patient appointments
 // @route   GET /api/patients/:id/appointments
 // @access  Private
-exports.getPatientAppointments = asyncHandler(async (req, res, next) => {
+exports.getPatientAppointments = asyncHandler(async (req, res, _next) => {
   const Appointment = require('../../models/Appointment');
 
   const patient = await findPatientByIdOrCode(req.params.id);
@@ -67,7 +116,7 @@ exports.getPatientAppointments = asyncHandler(async (req, res, next) => {
 // @desc    Get patient prescriptions
 // @route   GET /api/patients/:id/prescriptions
 // @access  Private
-exports.getPatientPrescriptions = asyncHandler(async (req, res, next) => {
+exports.getPatientPrescriptions = asyncHandler(async (req, res, _next) => {
   const Prescription = require('../../models/Prescription');
 
   const patient = await findPatientByIdOrCode(req.params.id);
@@ -92,7 +141,7 @@ exports.getPatientPrescriptions = asyncHandler(async (req, res, next) => {
 // @desc    Upload patient document
 // @route   POST /api/patients/:id/documents
 // @access  Private (Admin, Doctor, Nurse)
-exports.uploadPatientDocument = asyncHandler(async (req, res, next) => {
+exports.uploadPatientDocument = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -117,7 +166,7 @@ exports.uploadPatientDocument = asyncHandler(async (req, res, next) => {
 // @desc    Search patients
 // @route   GET /api/patients/search
 // @access  Private
-exports.searchPatients = asyncHandler(async (req, res, next) => {
+exports.searchPatients = asyncHandler(async (req, res, _next) => {
   const { q, field = 'all' } = req.query;
 
   if (!q) {
@@ -186,7 +235,7 @@ exports.searchPatients = asyncHandler(async (req, res, next) => {
 // @desc    Get recent patients
 // @route   GET /api/patients/recent
 // @access  Private
-exports.getRecentPatients = asyncHandler(async (req, res, next) => {
+exports.getRecentPatients = asyncHandler(async (req, res, _next) => {
   const limit = Math.min(
     parseInt(req.query.limit) || 10,
     PAGINATION.MAX_PAGE_SIZE
@@ -204,7 +253,7 @@ exports.getRecentPatients = asyncHandler(async (req, res, next) => {
 // @desc    Get patient visits
 // @route   GET /api/patients/:id/visits
 // @access  Private
-exports.getPatientVisits = asyncHandler(async (req, res, next) => {
+exports.getPatientVisits = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -218,86 +267,122 @@ exports.getPatientVisits = asyncHandler(async (req, res, next) => {
 
   const Visit = require('../../models/Visit');
   const OphthalmologyExam = require('../../models/OphthalmologyExam');
-  const ConsultationSession = require('../../models/ConsultationSession');
 
-  // Fetch visits, ophthalmology exams, and consultation sessions in parallel
+  // Fetch visits and ophthalmology exams in parallel
+  // OphthalmologyExam is now the single source of truth for clinical data
   // Apply limits to prevent unbounded queries for patients with long history
-  const [visits, ophthalmologyExams, sessions] = await Promise.all([
+  const [visits, ophthalmologyExams] = await Promise.all([
     Visit.find({ patient: patient._id })
       .populate('primaryProvider', 'firstName lastName')
-      .sort({ visitDate: -1 })
+      .populate('ophthalmologyExam', 'iop refraction keratometry visualAcuity')
+      .sort({ visitDate: -1, date: -1 })
       .limit(limit)
       .skip(skip)
-      .select('visitId visitDate visitType status chiefComplaint diagnoses primaryProvider signatureStatus signedBy signedAt createdAt consultationSession'),
+      .select('visitId visitDate date visitType status chiefComplaint diagnoses primaryProvider signatureStatus signedBy signedAt createdAt ophthalmologyExam clinicalData notes'),
     OphthalmologyExam.find({ patient: patient._id })
       .populate('examiner', 'firstName lastName')
       .sort({ createdAt: -1 })
       .limit(limit)
-      .select('examId examType status iop refraction keratometry currentCorrection visualAcuity assessment examiner createdAt updatedAt'),
-    ConsultationSession.find({ patient: patient._id, status: 'completed' })
-      .populate('doctor', 'firstName lastName')
-      .sort({ createdAt: -1 })
-      .limit(limit)
-      .select('sessionId sessionType status stepData doctor createdAt updatedAt completedAt')
+      .select('examId examType status iop refraction keratometry currentCorrection visualAcuity assessment examiner createdAt updatedAt')
   ]);
-
-  // Create a map of session IDs to their stepData for quick lookup
-  const sessionDataMap = new Map();
-  sessions.forEach(s => {
-    sessionDataMap.set(s._id.toString(), s.stepData || {});
-  });
 
   // Merge ophthalmology exam data with visits or return as combined array
   // The frontend expects records with iop, refraction, keratometry, currentCorrection fields
   const combinedData = [
-    // Process visits - enrich with session stepData if available
+    // Process visits - enrich with ophthalmologyExam data if available, or use clinicalData from CareVision import
     ...visits.map(v => {
       const visitObj = v.toObject();
-      const sessionId = visitObj.consultationSession?.toString();
-      const stepData = sessionId ? sessionDataMap.get(sessionId) : null;
+      // OphthalmologyExam is now the source of truth for clinical data
+      const examData = visitObj.ophthalmologyExam;
 
-      // If visit has linked session with stepData, extract ophthalmology measurements
-      // Also fix status if session is completed but visit is still in-progress
-      if (stepData) {
-        // If session is completed but visit is in-progress, show as completed
-        if (visitObj.status === 'in-progress') {
-          visitObj.status = 'completed';
-        }
-        // Map stepData structure to what frontend expects
-        // stepData.examination.iop -> iop
-        if (stepData.examination?.iop) {
-          visitObj.iop = {
-            OD: stepData.examination.iop.OD,
-            OS: stepData.examination.iop.OS
-          };
-        }
-        // stepData.refraction.subjective or finalPrescription -> refraction
-        if (stepData.refraction?.subjective || stepData.refraction?.finalPrescription) {
-          visitObj.refraction = {
-            finalPrescription: stepData.refraction.finalPrescription,
-            subjective: stepData.refraction.subjective,
-            objective: stepData.refraction.objective
-          };
-        }
-        // stepData.refraction.keratometry -> keratometry (restructure to match model)
-        if (stepData.refraction?.keratometry) {
-          visitObj.keratometry = {
+      // Check for CareVision imported refraction data in clinicalData.refractions
+      if (visitObj.clinicalData?.refractions && visitObj.clinicalData.refractions.length > 0) {
+        // Map CareVision refraction data to frontend format
+        const latestRefraction = visitObj.clinicalData.refractions[0]; // Most recent first
+        visitObj.refraction = {
+          subjective: {
+            OD: latestRefraction.od ? {
+              sphere: latestRefraction.od.sphere,
+              cylinder: latestRefraction.od.cylinder,
+              axis: latestRefraction.od.axis,
+              add: latestRefraction.od.addition
+            } : null,
+            OS: latestRefraction.os ? {
+              sphere: latestRefraction.os.sphere,
+              cylinder: latestRefraction.os.cylinder,
+              axis: latestRefraction.os.axis,
+              add: latestRefraction.os.addition
+            } : null
+          }
+        };
+        // Map visual acuity from CareVision data
+        // CareVision stores: AVDL (distance/far VA), AVDP (near VA)
+        // Frontend expects: uncorrected (AV sc = sans correction), corrected (AV ac = avec correction)
+        // The refraction record's VA is the corrected VA achieved with that Rx
+        if (latestRefraction.od?.visualAcuity || latestRefraction.os?.visualAcuity) {
+          visitObj.visualAcuity = {
             OD: {
-              k1: { power: parseFloat(stepData.refraction.keratometry.OD?.k1) || null, axis: parseFloat(stepData.refraction.keratometry.OD?.k1Axis) || null },
-              k2: { power: parseFloat(stepData.refraction.keratometry.OD?.k2) || null, axis: parseFloat(stepData.refraction.keratometry.OD?.k2Axis) || null }
+              // CareVision distance VA (AVDL) = corrected far vision with Rx
+              corrected: latestRefraction.od?.visualAcuity?.distance,
+              // CareVision near VA (AVDP) = near vision with Rx (for Add)
+              near: latestRefraction.od?.visualAcuity?.near,
+              // Keep original fields for compatibility
+              distance: latestRefraction.od?.visualAcuity?.distance
             },
             OS: {
-              k1: { power: parseFloat(stepData.refraction.keratometry.OS?.k1) || null, axis: parseFloat(stepData.refraction.keratometry.OS?.k1Axis) || null },
-              k2: { power: parseFloat(stepData.refraction.keratometry.OS?.k2) || null, axis: parseFloat(stepData.refraction.keratometry.OS?.k2Axis) || null }
-            }
+              corrected: latestRefraction.os?.visualAcuity?.distance,
+              near: latestRefraction.os?.visualAcuity?.near,
+              distance: latestRefraction.os?.visualAcuity?.distance
+            },
+            binocular: latestRefraction.binocular?.visualAcuity
           };
         }
-        // stepData.refraction.visualAcuity -> visualAcuity
-        if (stepData.refraction?.visualAcuity) {
-          visitObj.visualAcuity = stepData.refraction.visualAcuity;
+        // Store all refractions for full history access
+        visitObj.refractions = visitObj.clinicalData.refractions;
+        // Mark as having ophthalmology data
+        visitObj.type = 'ophthalmology';
+        visitObj.hasLegacyRefraction = true;
+      }
+
+      // Map CareVision IOP data from clinicalData.iop
+      // CareVision stores: clinicalData.iop.od / clinicalData.iop.os (just the value)
+      // Frontend expects: iop.OD.value / iop.OS.value (nested with .value)
+      if (visitObj.clinicalData?.iop && (visitObj.clinicalData.iop.od || visitObj.clinicalData.iop.os)) {
+        visitObj.iop = {
+          OD: visitObj.clinicalData.iop.od ? {
+            value: visitObj.clinicalData.iop.od,
+            method: visitObj.clinicalData.iop.method || 'unknown'
+          } : null,
+          OS: visitObj.clinicalData.iop.os ? {
+            value: visitObj.clinicalData.iop.os,
+            method: visitObj.clinicalData.iop.method || 'unknown'
+          } : null
+        };
+        visitObj.hasLegacyIOP = true;
+      }
+
+      // If visit has linked ophthalmologyExam, extract clinical measurements
+      // OphthalmologyExam is now the single source of truth for ophthalmology data
+      if (examData) {
+        // Map ophthalmologyExam data directly (fields are already in expected format)
+        if (examData.iop) {
+          visitObj.iop = examData.iop;
+        }
+        if (examData.refraction) {
+          visitObj.refraction = examData.refraction;
+        }
+        if (examData.keratometry) {
+          visitObj.keratometry = examData.keratometry;
+        }
+        if (examData.visualAcuity) {
+          visitObj.visualAcuity = examData.visualAcuity;
         }
         // Mark as having ophthalmology data
         visitObj.type = 'ophthalmology';
+      }
+      // Normalize date field - use visitDate if available, otherwise use date (legacy CareVision data)
+      if (!visitObj.visitDate && visitObj.date) {
+        visitObj.visitDate = visitObj.date;
       }
       return visitObj;
     }),
@@ -312,8 +397,8 @@ exports.getPatientVisits = asyncHandler(async (req, res, next) => {
     }))
   ];
 
-  // Sort combined data by date descending
-  combinedData.sort((a, b) => new Date(b.visitDate || b.createdAt) - new Date(a.visitDate || a.createdAt));
+  // Sort combined data by date descending (check visitDate, date, then createdAt)
+  combinedData.sort((a, b) => new Date(b.visitDate || b.date || b.createdAt) - new Date(a.visitDate || a.date || a.createdAt));
 
   return success(res, { data: combinedData });
 });
@@ -321,7 +406,7 @@ exports.getPatientVisits = asyncHandler(async (req, res, next) => {
 // @desc    Get patient allergies
 // @route   GET /api/patients/:id/allergies
 // @access  Private
-exports.getPatientAllergies = asyncHandler(async (req, res, next) => {
+exports.getPatientAllergies = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -334,7 +419,7 @@ exports.getPatientAllergies = asyncHandler(async (req, res, next) => {
 // @desc    Add patient allergy
 // @route   POST /api/patients/:id/allergies
 // @access  Private
-exports.addPatientAllergy = asyncHandler(async (req, res, next) => {
+exports.addPatientAllergy = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -364,7 +449,7 @@ exports.addPatientAllergy = asyncHandler(async (req, res, next) => {
 // @desc    Update patient allergy
 // @route   PUT /api/patients/:id/allergies/:allergyId
 // @access  Private
-exports.updatePatientAllergy = asyncHandler(async (req, res, next) => {
+exports.updatePatientAllergy = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -394,7 +479,7 @@ exports.updatePatientAllergy = asyncHandler(async (req, res, next) => {
 // @desc    Delete patient allergy
 // @route   DELETE /api/patients/:id/allergies/:allergyId
 // @access  Private
-exports.deletePatientAllergy = asyncHandler(async (req, res, next) => {
+exports.deletePatientAllergy = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -420,7 +505,7 @@ exports.deletePatientAllergy = asyncHandler(async (req, res, next) => {
 // @desc    Get patient medications
 // @route   GET /api/patients/:id/medications
 // @access  Private
-exports.getPatientMedications = asyncHandler(async (req, res, next) => {
+exports.getPatientMedications = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -433,7 +518,7 @@ exports.getPatientMedications = asyncHandler(async (req, res, next) => {
 // @desc    Add patient medication
 // @route   POST /api/patients/:id/medications
 // @access  Private
-exports.addPatientMedication = asyncHandler(async (req, res, next) => {
+exports.addPatientMedication = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -465,7 +550,7 @@ exports.addPatientMedication = asyncHandler(async (req, res, next) => {
 // @desc    Update patient medication
 // @route   PUT /api/patients/:id/medications/:medicationId
 // @access  Private
-exports.updatePatientMedication = asyncHandler(async (req, res, next) => {
+exports.updatePatientMedication = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -495,7 +580,7 @@ exports.updatePatientMedication = asyncHandler(async (req, res, next) => {
 // @desc    Delete patient medication
 // @route   DELETE /api/patients/:id/medications/:medicationId
 // @access  Private
-exports.deletePatientMedication = asyncHandler(async (req, res, next) => {
+exports.deletePatientMedication = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -521,7 +606,7 @@ exports.deletePatientMedication = asyncHandler(async (req, res, next) => {
 // @desc    Update patient insurance
 // @route   PUT /api/patients/:id/insurance
 // @access  Private
-exports.updatePatientInsurance = asyncHandler(async (req, res, next) => {
+exports.updatePatientInsurance = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -542,7 +627,7 @@ exports.updatePatientInsurance = asyncHandler(async (req, res, next) => {
 // @desc    Get patient documents
 // @route   GET /api/patients/:id/documents
 // @access  Private
-exports.getPatientDocuments = asyncHandler(async (req, res, next) => {
+exports.getPatientDocuments = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -567,7 +652,7 @@ exports.getPatientDocuments = asyncHandler(async (req, res, next) => {
 // @desc    Get complete patient profile
 // @route   GET /api/patients/:id/complete-profile
 // @access  Private
-exports.getCompleteProfile = asyncHandler(async (req, res, next) => {
+exports.getCompleteProfile = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -612,7 +697,7 @@ exports.getCompleteProfile = asyncHandler(async (req, res, next) => {
 // @desc    Get patient medical issues
 // @route   GET /api/patients/:id/medical-issues
 // @access  Private
-exports.getMedicalIssues = asyncHandler(async (req, res, next) => {
+exports.getMedicalIssues = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -640,7 +725,7 @@ exports.getMedicalIssues = asyncHandler(async (req, res, next) => {
 // @desc    Update medical issue
 // @route   PUT /api/patients/:id/medical-issues/:issueId
 // @access  Private
-exports.updateMedicalIssue = asyncHandler(async (req, res, next) => {
+exports.updateMedicalIssue = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -670,7 +755,7 @@ exports.updateMedicalIssue = asyncHandler(async (req, res, next) => {
 // @desc    Get patient providers (all doctors who treated patient)
 // @route   GET /api/patients/:id/providers
 // @access  Private
-exports.getPatientProviders = asyncHandler(async (req, res, next) => {
+exports.getPatientProviders = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -700,8 +785,8 @@ exports.getPatientProviders = asyncHandler(async (req, res, next) => {
     { $match: {
       patient: patient._id,
       primaryProvider: { $in: providers.map(p => p._id) }
-    }},
-    { $group: { _id: '$primaryProvider', count: { $sum: 1 } }}
+    } },
+    { $group: { _id: '$primaryProvider', count: { $sum: 1 } } }
   ]);
 
   const countMap = new Map(
@@ -719,7 +804,7 @@ exports.getPatientProviders = asyncHandler(async (req, res, next) => {
 // @desc    Get patient audit trail
 // @route   GET /api/patients/:id/audit
 // @access  Private (Admin only)
-exports.getPatientAudit = asyncHandler(async (req, res, next) => {
+exports.getPatientAudit = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -775,7 +860,7 @@ exports.getPatientAudit = asyncHandler(async (req, res, next) => {
 // @desc    Get patient statistics
 // @route   GET /api/patients/:id/statistics
 // @access  Private
-exports.getPatientStatistics = asyncHandler(async (req, res, next) => {
+exports.getPatientStatistics = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -835,7 +920,7 @@ exports.getPatientStatistics = asyncHandler(async (req, res, next) => {
 // @desc    Upload patient photo
 // @route   POST /api/patients/:id/photo
 // @access  Private
-exports.uploadPatientPhoto = asyncHandler(async (req, res, next) => {
+exports.uploadPatientPhoto = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -932,7 +1017,7 @@ exports.uploadPatientPhoto = asyncHandler(async (req, res, next) => {
 // @desc    Get patient by MRN
 // @route   GET /api/patients/mrn/:mrn
 // @access  Private
-exports.getPatientByMRN = asyncHandler(async (req, res, next) => {
+exports.getPatientByMRN = asyncHandler(async (req, res, _next) => {
   const patient = await Patient.findOne({ patientId: req.params.mrn });
 
   if (!patient) {
@@ -945,7 +1030,7 @@ exports.getPatientByMRN = asyncHandler(async (req, res, next) => {
 // @desc    Get patient insurance
 // @route   GET /api/patients/:id/insurance
 // @access  Private
-exports.getPatientInsurance = asyncHandler(async (req, res, next) => {
+exports.getPatientInsurance = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -958,7 +1043,7 @@ exports.getPatientInsurance = asyncHandler(async (req, res, next) => {
 // @desc    Get patient lab results
 // @route   GET /api/patients/:id/lab-results
 // @access  Private
-exports.getPatientLabResults = asyncHandler(async (req, res, next) => {
+exports.getPatientLabResults = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -1009,7 +1094,7 @@ exports.getPatientLabResults = asyncHandler(async (req, res, next) => {
 // @desc    Get patient correspondence
 // @route   GET /api/patients/:id/correspondence
 // @access  Private
-exports.getPatientCorrespondence = asyncHandler(async (req, res, next) => {
+exports.getPatientCorrespondence = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -1038,7 +1123,7 @@ exports.getPatientCorrespondence = asyncHandler(async (req, res, next) => {
 // @route   POST /api/patients/:id/vitals
 // @access  Private (Nurse, Doctor)
 // @note    Finds or creates a visit for today and attaches vitals
-exports.recordVitals = asyncHandler(async (req, res, next) => {
+exports.recordVitals = asyncHandler(async (req, res, _next) => {
   const Visit = require('../../models/Visit');
   const Appointment = require('../../models/Appointment');
 

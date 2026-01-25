@@ -19,7 +19,7 @@ const {
 // @desc    Check for duplicate patients
 // @route   POST /api/patients/check-duplicates
 // @access  Private
-exports.checkDuplicates = asyncHandler(async (req, res, next) => {
+exports.checkDuplicates = asyncHandler(async (req, res, _next) => {
   const duplicates = await Patient.checkForDuplicates(req.body);
 
   return success(res, {
@@ -34,7 +34,7 @@ exports.checkDuplicates = asyncHandler(async (req, res, next) => {
 // @desc    Merge duplicate patients
 // @route   POST /api/patients/merge
 // @access  Private (Admin only)
-exports.mergePatients = asyncHandler(async (req, res, next) => {
+exports.mergePatients = asyncHandler(async (req, res, _next) => {
   const { primaryId, secondaryId } = req.body;
 
   if (!primaryId || !secondaryId) {
@@ -86,7 +86,6 @@ exports.mergePatients = asyncHandler(async (req, res, next) => {
   const Invoice = require('../../models/Invoice');
   const Document = require('../../models/Document');
   const OphthalmologyExam = require('../../models/OphthalmologyExam');
-  const ConsultationSession = require('../../models/ConsultationSession');
   const AuditLog = require('../../models/AuditLog');
 
   // Optional models that may not exist in all installations
@@ -103,7 +102,6 @@ exports.mergePatients = asyncHandler(async (req, res, next) => {
     invoices: 0,
     documents: 0,
     exams: 0,
-    sessions: 0,
     glassesOrders: 0,
     labOrders: 0,
     imagingOrders: 0
@@ -156,13 +154,6 @@ exports.mergePatients = asyncHandler(async (req, res, next) => {
         { session }
       );
       updateResults.exams = examResult.modifiedCount;
-
-      const sessionResult = await ConsultationSession.updateMany(
-        { patient: secondaryPatient._id },
-        { patient: primaryPatient._id },
-        { session }
-      );
-      updateResults.sessions = sessionResult.modifiedCount;
 
       // Optional model updates within same transaction
       if (GlassesOrder) {
@@ -251,7 +242,7 @@ exports.mergePatients = asyncHandler(async (req, res, next) => {
 // @desc    Export patients to CSV
 // @route   GET /api/patients/export
 // @access  Private
-exports.exportPatients = asyncHandler(async (req, res, next) => {
+exports.exportPatients = asyncHandler(async (req, res, _next) => {
   const { format = 'csv', status = 'active' } = req.query;
   const pdfGenerator = require('../../services/pdfGenerator');
 
@@ -336,7 +327,7 @@ exports.exportPatients = asyncHandler(async (req, res, next) => {
 // @desc    Advanced patient search with filters
 // @route   GET /api/patients/advanced-search
 // @access  Private
-exports.advancedSearch = asyncHandler(async (req, res, next) => {
+exports.advancedSearch = asyncHandler(async (req, res, _next) => {
   const {
     search,
     ageMin,
@@ -435,7 +426,7 @@ exports.advancedSearch = asyncHandler(async (req, res, next) => {
 // @desc    Search patient by legacy ID
 // @route   GET /api/patients/search/legacy/:legacyId
 // @access  Private
-exports.searchByLegacyId = asyncHandler(async (req, res, next) => {
+exports.searchByLegacyId = asyncHandler(async (req, res, _next) => {
   const { legacyId } = req.params;
 
   if (!legacyId) {
@@ -464,7 +455,7 @@ exports.searchByLegacyId = asyncHandler(async (req, res, next) => {
 // @desc    Link folder ID to patient
 // @route   POST /api/patients/:id/link-folder
 // @access  Private
-exports.linkFolderToPatient = asyncHandler(async (req, res, next) => {
+exports.linkFolderToPatient = asyncHandler(async (req, res, _next) => {
   const { deviceType, folderId, path } = req.body;
 
   if (!deviceType || !folderId) {
@@ -530,7 +521,7 @@ exports.linkFolderToPatient = asyncHandler(async (req, res, next) => {
 // @desc    Unlink folder ID from patient
 // @route   DELETE /api/patients/:id/unlink-folder/:folderId
 // @access  Private
-exports.unlinkFolderFromPatient = asyncHandler(async (req, res, next) => {
+exports.unlinkFolderFromPatient = asyncHandler(async (req, res, _next) => {
   const { folderId } = req.params;
 
   const patient = await findPatientByIdOrCode(req.params.id);
@@ -564,7 +555,7 @@ exports.unlinkFolderFromPatient = asyncHandler(async (req, res, next) => {
 // @desc    Get patients with legacy data
 // @route   GET /api/patients/with-legacy-data
 // @access  Private
-exports.getPatientsWithLegacyData = asyncHandler(async (req, res, next) => {
+exports.getPatientsWithLegacyData = asyncHandler(async (req, res, _next) => {
   const { deviceType } = req.query;
 
   const page = parseInt(req.query.page) || 1;
@@ -609,7 +600,7 @@ exports.getPatientsWithLegacyData = asyncHandler(async (req, res, next) => {
 // @desc    Get patient alerts
 // @route   GET /api/patients/:id/alerts
 // @access  Private
-exports.getPatientAlerts = asyncHandler(async (req, res, next) => {
+exports.getPatientAlerts = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -628,7 +619,7 @@ exports.getPatientAlerts = asyncHandler(async (req, res, next) => {
 // @desc    Add alert to patient
 // @route   POST /api/patients/:id/alerts
 // @access  Private
-exports.addPatientAlert = asyncHandler(async (req, res, next) => {
+exports.addPatientAlert = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -677,7 +668,7 @@ exports.addPatientAlert = asyncHandler(async (req, res, next) => {
 // @desc    Dismiss patient alert
 // @route   PUT /api/patients/:id/alerts/:alertId/dismiss
 // @access  Private
-exports.dismissPatientAlert = asyncHandler(async (req, res, next) => {
+exports.dismissPatientAlert = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -701,7 +692,7 @@ exports.dismissPatientAlert = asyncHandler(async (req, res, next) => {
 // @desc    Acknowledge patient alert
 // @route   PUT /api/patients/:id/alerts/:alertId/acknowledge
 // @access  Private
-exports.acknowledgePatientAlert = asyncHandler(async (req, res, next) => {
+exports.acknowledgePatientAlert = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -725,7 +716,7 @@ exports.acknowledgePatientAlert = asyncHandler(async (req, res, next) => {
 // @desc    Sync allergy-based alerts
 // @route   POST /api/patients/:id/alerts/sync-allergies
 // @access  Private
-exports.syncAllergyAlerts = asyncHandler(async (req, res, next) => {
+exports.syncAllergyAlerts = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {
@@ -750,7 +741,7 @@ exports.syncAllergyAlerts = asyncHandler(async (req, res, next) => {
 // @desc    Generate overdue follow-up alerts
 // @route   POST /api/patients/:id/alerts/generate-followup
 // @access  Private
-exports.generateFollowupAlerts = asyncHandler(async (req, res, next) => {
+exports.generateFollowupAlerts = asyncHandler(async (req, res, _next) => {
   const patient = await findPatientByIdOrCode(req.params.id);
 
   if (!patient) {

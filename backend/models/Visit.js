@@ -21,9 +21,22 @@ const visitSchema = new mongoose.Schema({
     ref: 'Appointment'
   },
 
+  // DEPRECATED: ConsultationSession model has been removed
+  // This field is kept for backwards compatibility with existing data
+  // New visits should use ophthalmologyExam field instead
+  // TODO: Remove this field after confirming no data references it
   consultationSession: {
+    type: mongoose.Schema.Types.ObjectId
+    // Note: ref removed as ConsultationSession model no longer exists
+  },
+
+  // Primary link to ophthalmology exam data
+  // Replaces both consultationSession and examinations.refraction
+  // OphthalmologyExam is the SINGLE SOURCE OF TRUTH for clinical data
+  ophthalmologyExam: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'ConsultationSession'
+    ref: 'OphthalmologyExam',
+    index: true
   },
 
   // Link to surgery case if this visit involves surgery
@@ -196,7 +209,9 @@ const visitSchema = new mongoose.Schema({
   },
 
   // Link to specialized examinations
+  // NOTE: examinations.refraction is DEPRECATED - use Visit.ophthalmologyExam instead
   examinations: {
+    // DEPRECATED: Use Visit.ophthalmologyExam field directly
     refraction: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'OphthalmologyExam'
@@ -590,7 +605,7 @@ const visitSchema = new mongoose.Schema({
       // Dispatch status
       status: {
         type: String,
-        enum: ['pending', 'dispatched', 'acknowledged', 'in_progress', 'completed', 'cancelled', 'failed'],
+        enum: ['pending', 'dispatched', 'acknowledged', 'in-progress', 'completed', 'cancelled', 'failed'],
         default: 'pending'
       },
 
@@ -776,6 +791,13 @@ const visitSchema = new mongoose.Schema({
   deletedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'
+  },
+
+  // Sync metadata - prevents re-syncing data received from central server
+  _syncedFromCentral: {
+    type: Boolean,
+    default: false,
+    select: false  // Don't include in normal queries
   }
 }, {
   timestamps: true,
@@ -852,15 +874,17 @@ visitSchema.pre('save', function(next) {
   }
 
   // Check-in time should not be in the future
-  if (this.checkIn?.checkInTime && new Date(this.checkIn.checkInTime) > now) {
+  // NOTE: Schema defines flat checkInTime field, not nested checkIn.checkInTime
+  if (this.checkInTime && new Date(this.checkInTime) > now) {
     const error = new Error('Check-in time cannot be in the future');
     error.name = 'ValidationError';
     error.statusCode = 400;
     return next(error);
   }
 
-  // Check-out time should not be in the future
-  if (this.checkOut?.checkOutTime && new Date(this.checkOut.checkOutTime) > now) {
+  // Check-out/end time should not be in the future
+  // NOTE: Schema defines flat endTime field, not nested checkOut.checkOutTime
+  if (this.endTime && new Date(this.endTime) > now) {
     const error = new Error('Check-out time cannot be in the future');
     error.name = 'ValidationError';
     error.statusCode = 400;
@@ -1334,7 +1358,14 @@ visitSchema.methods.completeVisit = async function(userId) {
       }
     }
 
-    // 4. Complete the visit
+    // 4. Complete the visit - Track previous state for rollback
+    const previousVisitState = {
+      status: this.status,
+      completedAt: this.completedAt,
+      completedBy: this.completedBy,
+      endTime: this.endTime
+    };
+
     this.status = 'completed';
     this.completedAt = new Date();
     this.completedBy = userId;
@@ -1342,10 +1373,31 @@ visitSchema.methods.completeVisit = async function(userId) {
 
     await this.save(useTransaction ? { session } : {});
 
+    // Track visit status change for rollback (push for LIFO order with pop)
+    rollbackStack.push({
+      type: 'visit_status_update',
+      previousStatus: previousVisitState.status,
+      previousCompletedAt: previousVisitState.completedAt,
+      previousCompletedBy: previousVisitState.completedBy,
+      previousEndTime: previousVisitState.endTime
+    });
+
     // 5. CRITICAL: Update Patient.lastVisit for accurate patient history tracking
     if (this.patient) {
       try {
         const Patient = require('./Patient');
+
+        // Get current patient state for rollback
+        const currentPatient = await Patient.findById(this.patient)
+          .select('lastVisit lastVisitDate lastConsultationDate')
+          .lean();
+
+        const previousPatientState = {
+          lastVisit: currentPatient?.lastVisit,
+          lastVisitDate: currentPatient?.lastVisitDate,
+          lastConsultationDate: currentPatient?.lastConsultationDate
+        };
+
         const updateOptions = useTransaction ? { session } : {};
         await Patient.findByIdAndUpdate(
           this.patient,
@@ -1356,6 +1408,15 @@ visitSchema.methods.completeVisit = async function(userId) {
           },
           updateOptions
         );
+
+        // Track patient update for rollback (push for LIFO order with pop)
+        rollbackStack.push({
+          type: 'patient_lastvisit_update',
+          patientId: this.patient,
+          previousLastVisit: previousPatientState.lastVisit,
+          previousLastVisitDate: previousPatientState.lastVisitDate,
+          previousLastConsultationDate: previousPatientState.lastConsultationDate
+        });
       } catch (patientErr) {
         log.error('Error updating patient lastVisit:', patientErr);
         // Continue - don't fail visit completion if patient update fails
@@ -1400,14 +1461,21 @@ visitSchema.methods.completeVisit = async function(userId) {
 };
 
 // Helper method for compensating transactions (when MongoDB transactions unavailable)
+// CRITICAL: This method MUST execute ALL compensations even if some fail
+// Each compensation is independent - failure of one should not stop others
 visitSchema.methods._executeCompensatingRollback = async function(rollbackStack) {
   const Prescription = require('./Prescription');
   const Invoice = require('./Invoice');
   const Appointment = require('./Appointment');
+  const Patient = require('./Patient');
 
-  log.info(`[COMPENSATING ROLLBACK] Rolling back ${rollbackStack.length} operations for visit ${this.visitId}`);
+  const totalOperations = rollbackStack.length;
+  const compensationErrors = [];
+  let successCount = 0;
 
-  // Reverse order (LIFO - Last In First Out)
+  log.info(`[COMPENSATING ROLLBACK] Starting rollback of ${totalOperations} operations for visit ${this.visitId}`);
+
+  // Reverse order (LIFO - Last In First Out) - process ALL operations
   while (rollbackStack.length > 0) {
     const operation = rollbackStack.pop();
 
@@ -1422,7 +1490,12 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
               cancellationReason: 'Visit completion failed - compensating rollback'
             }
           });
+          // Also remove from visit's prescriptions array
+          this.prescriptions = this.prescriptions.filter(
+            p => p.toString() !== operation.prescriptionId.toString()
+          );
           log.info(`[COMPENSATING ROLLBACK] Cancelled prescription: ${operation.prescriptionId}`);
+          successCount++;
           break;
 
         case 'inventory_reservation':
@@ -1430,8 +1503,14 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
           const prescription = await Prescription.findById(operation.prescriptionId);
           if (prescription) {
             await prescription.releaseInventoryReservations();
+            // Reset prescription inventory status
+            prescription.inventoryReserved = false;
+            prescription.inventoryReservedAt = null;
+            prescription.inventoryReservedBy = null;
+            await prescription.save();
             log.info(`[COMPENSATING ROLLBACK] Released inventory for prescription: ${operation.prescriptionId}`);
           }
+          successCount++;
           break;
 
         case 'invoice_create':
@@ -1443,7 +1522,10 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
               cancellationReason: 'Visit completion failed - compensating rollback'
             }
           });
+          // Clear invoice reference from visit billing
+          this.billing.invoice = null;
           log.info(`[COMPENSATING ROLLBACK] Cancelled invoice: ${operation.invoiceId}`);
+          successCount++;
           break;
 
         case 'appointment_update':
@@ -1455,16 +1537,58 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
             }
           });
           log.info(`[COMPENSATING ROLLBACK] Reverted appointment: ${operation.appointmentId} to ${operation.previousStatus}`);
+          successCount++;
+          break;
+
+        case 'visit_status_update':
+          // Revert visit status to previous state
+          this.status = operation.previousStatus;
+          this.completedAt = operation.previousCompletedAt || null;
+          this.completedBy = operation.previousCompletedBy || null;
+          this.endTime = operation.previousEndTime || null;
+          log.info(`[COMPENSATING ROLLBACK] Reverted visit status: ${this.visitId} to ${operation.previousStatus}`);
+          successCount++;
+          break;
+
+        case 'patient_lastvisit_update':
+          // Revert patient lastVisit to previous state
+          if (operation.previousLastVisit) {
+            await Patient.findByIdAndUpdate(operation.patientId, {
+              $set: {
+                lastVisit: operation.previousLastVisit,
+                lastVisitDate: operation.previousLastVisitDate,
+                lastConsultationDate: operation.previousLastConsultationDate
+              }
+            });
+          } else {
+            await Patient.findByIdAndUpdate(operation.patientId, {
+              $unset: { lastVisit: 1, lastVisitDate: 1, lastConsultationDate: 1 }
+            });
+          }
+          log.info(`[COMPENSATING ROLLBACK] Reverted patient lastVisit: ${operation.patientId}`);
+          successCount++;
           break;
 
         default:
           log.warn(`[COMPENSATING ROLLBACK] Unknown operation type: ${operation.type}`);
       }
     } catch (rollbackError) {
-      log.error(`[COMPENSATING ROLLBACK] Failed to rollback ${operation.type}:`, rollbackError);
+      // Log the error but CONTINUE with remaining compensations
+      log.error(`[COMPENSATING ROLLBACK] Failed to rollback ${operation.type}:`, {
+        error: rollbackError.message,
+        operation: operation.type,
+        operationDetails: operation
+      });
 
-      // Create critical alert for failed rollback
-      await this._createCriticalAlert(
+      compensationErrors.push({
+        type: operation.type,
+        operation,
+        error: rollbackError.message,
+        stack: rollbackError.stack
+      });
+
+      // Create critical alert for failed rollback (don't await to avoid blocking)
+      this._createCriticalAlert(
         `Rollback failed for visit ${this.visitId}`,
         {
           operationType: operation.type,
@@ -1474,11 +1598,62 @@ visitSchema.methods._executeCompensatingRollback = async function(rollbackStack)
           visitObjectId: this._id,
           patientId: this.patient
         }
-      );
+      ).catch(alertErr => {
+        log.error('[COMPENSATING ROLLBACK] Failed to create alert:', alertErr.message);
+      });
     }
   }
 
-  log.info(`[COMPENSATING ROLLBACK] Rollback complete for visit ${this.visitId}`);
+  // Save any local changes to the visit document (from clearing references)
+  try {
+    await this.save();
+  } catch (saveError) {
+    log.error('[COMPENSATING ROLLBACK] Failed to save visit after rollback:', saveError.message);
+    compensationErrors.push({
+      type: 'visit_save',
+      error: saveError.message
+    });
+  }
+
+  // Log comprehensive summary
+  const failedCount = compensationErrors.length;
+  if (failedCount > 0) {
+    log.error(`[COMPENSATING ROLLBACK] Rollback completed with errors for visit ${this.visitId}`, {
+      totalOperations,
+      successCount,
+      failedCount,
+      failedOperations: compensationErrors.map(e => ({ type: e.type, error: e.error }))
+    });
+
+    // Create summary alert for partial rollback failure
+    await this._createCriticalAlert(
+      `Partial rollback failure for visit ${this.visitId}`,
+      {
+        totalOperations,
+        successCount,
+        failedCount,
+        failedOperations: compensationErrors,
+        visitId: this.visitId,
+        visitObjectId: this._id,
+        patientId: this.patient,
+        requiresManualIntervention: true
+      }
+    ).catch(err => {
+      log.error('[COMPENSATING ROLLBACK] Failed to create summary alert:', err.message);
+    });
+  } else {
+    log.info(`[COMPENSATING ROLLBACK] Rollback completed successfully for visit ${this.visitId}`, {
+      totalOperations,
+      successCount
+    });
+  }
+
+  return {
+    totalOperations,
+    successCount,
+    failedCount,
+    errors: compensationErrors
+  };
 };
 
 // Helper method to create critical alerts for system issues

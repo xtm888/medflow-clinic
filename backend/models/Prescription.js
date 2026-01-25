@@ -25,10 +25,12 @@ const prescriptionSchema = new mongoose.Schema({
     ref: 'Visit'
     // Not required - prescriptions can be created without a visit
   },
+  // DEPRECATED: ConsultationSession model has been removed
+  // This field is kept for backwards compatibility with existing data
+  // New prescriptions should link via visit.ophthalmologyExam
   consultationSession: {
-    type: mongoose.Schema.ObjectId,
-    ref: 'ConsultationSession'
-    // Links prescription to the specific consultation session for full traceability
+    type: mongoose.Schema.ObjectId
+    // Note: ref removed as ConsultationSession model no longer exists
   },
   appointment: {
     type: mongoose.Schema.ObjectId,
@@ -440,7 +442,7 @@ const prescriptionSchema = new mongoose.Schema({
     },
     status: {
       type: String,
-      enum: ['pending', 'submitted', 'in_review', 'approved', 'denied', 'appeal_pending', 'expired'],
+      enum: ['pending', 'submitted', 'in-review', 'approved', 'denied', 'appeal-pending', 'expired'],
       default: 'pending'
     },
     referenceNumber: String,
@@ -1106,7 +1108,8 @@ prescriptionSchema.methods.checkInteractions = async function(patientId) {
   // This would integrate with a drug interaction API
   // Placeholder for actual implementation
   const Patient = mongoose.model('Patient');
-  const patient = await Patient.findById(patientId).populate('medications');
+  // NOTE: medications is an embedded array, not a ref. Populate the nested prescribedBy field instead.
+  const patient = await Patient.findById(patientId).populate('medications.prescribedBy');
 
   const interactions = [];
   // Check logic would go here

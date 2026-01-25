@@ -30,9 +30,11 @@ const SurgeryCaseSchema = new Schema({
   },
 
   // Link to consultation that recommended surgery
+  // DEPRECATED: ConsultationSession model has been removed
+  // Use visit.ophthalmologyExam for consultation data
   consultation: {
-    type: Schema.Types.ObjectId,
-    ref: 'ConsultationSession'
+    type: Schema.Types.ObjectId
+    // Note: ref removed as ConsultationSession model no longer exists
   },
 
   // Link to the Visit that contains this surgery
@@ -459,8 +461,167 @@ const SurgeryCaseSchema = new Schema({
     default: false
   },
 
-  paymentIssueNotes: String
-,
+  paymentIssueNotes: String,
+
+  // === POST-OP CASCADE TRACKING (Ultrathink) ===
+  // Tracks automated actions triggered on surgery completion
+  // Implements saga pattern with rollback capability
+
+  postOpCascade: {
+    // When cascade was executed
+    executedAt: Date,
+
+    // Who triggered the cascade
+    executedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+
+    // Cascade execution status
+    status: {
+      type: String,
+      enum: ['pending', 'in_progress', 'completed', 'partial', 'failed', 'rolled_back'],
+      default: 'pending'
+    },
+
+    // Executed steps with results (saga pattern tracking)
+    steps: [{
+      step: {
+        type: String,
+        enum: ['schedule_followups', 'generate_documents', 'alert_pharmacy', 'notify_nursing', 'notify_family']
+      },
+      result: Schema.Types.Mixed,
+      timestamp: Date,
+      // Track created resources for rollback
+      createdResources: [{
+        resourceType: String,  // 'Appointment', 'Document', 'Alert'
+        resourceId: Schema.Types.ObjectId
+      }]
+    }],
+
+    // Failed steps with error details
+    failures: [{
+      step: String,
+      error: String,
+      timestamp: Date,
+      isCritical: {
+        type: Boolean,
+        default: false
+      }
+    }],
+
+    // Rollback tracking
+    rollbackPerformed: {
+      type: Boolean,
+      default: false
+    },
+
+    rollbackAt: Date,
+
+    rollbackBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    },
+
+    rollbackResults: [{
+      step: String,
+      status: {
+        type: String,
+        enum: ['success', 'failed', 'skipped']
+      },
+      error: String,
+      timestamp: Date
+    }],
+
+    // Manual intervention queue reference (if rollback fails)
+    manualInterventionRequired: {
+      type: Boolean,
+      default: false
+    },
+
+    manualInterventionDetails: {
+      queuedAt: Date,
+      reason: String,
+      steps: [String],
+      resolvedAt: Date,
+      resolvedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User'
+      }
+    },
+
+    // Legacy support: Individual action results
+    actions: {
+      protocol: {
+        status: String,
+        protocolId: Schema.Types.ObjectId,
+        protocolCode: String
+      },
+      followUpScheduling: {
+        status: String,
+        appointments: [{
+          sequence: Number,
+          appointmentId: Schema.Types.ObjectId,
+          scheduledDate: Date
+        }]
+      },
+      dischargeDocument: {
+        status: String,
+        documentId: Schema.Types.ObjectId
+      },
+      pharmacyAlert: {
+        status: String,
+        alertId: Schema.Types.ObjectId
+      },
+      notifications: {
+        status: String,
+        nursing: String,
+        family: String
+      }
+    },
+
+    // Whether triggered from offline sync
+    fromSync: {
+      type: Boolean,
+      default: false
+    },
+
+    // Errors encountered (legacy field, kept for backwards compatibility)
+    errors: [String],
+
+    // Execution duration in milliseconds
+    durationMs: Number,
+
+    // Cascade start time for rollback window calculations
+    cascadeStartTime: Date
+  },
+
+  // === OFFLINE SYNC TRACKING ===
+  // For conflict resolution in offline-first architecture
+
+  syncVersion: {
+    type: Number,
+    default: 0
+  },
+
+  lastSyncedAt: Date,
+
+  lastSyncedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+
+  lastSyncDevice: String,
+
+  // Field-level modification tracking for conflict resolution
+  fieldModificationHistory: {
+    type: Map,
+    of: {
+      modifiedAt: Date,
+      modifiedBy: Schema.Types.ObjectId,
+      deviceId: String
+    }
+  },
 
   // Soft delete support
   isDeleted: {
@@ -640,6 +801,44 @@ SurgeryCaseSchema.post('save', async (doc) => {
     }
   } catch (error) {
     log.error('Error syncing visit link', { error: error.message, surgeryCaseId: doc._id });
+  }
+});
+
+// POST-SAVE HOOK: Trigger Ultrathink cascade on surgery completion
+SurgeryCaseSchema.post('save', async function(doc) {
+  try {
+    // Only trigger cascade when status becomes 'completed' and cascade hasn't run yet
+    if (doc.status === 'completed' && !doc.postOpCascade?.executedAt) {
+      log.info('Surgery completed, triggering post-op cascade', {
+        surgeryCaseId: doc._id,
+        patientId: doc.patient
+      });
+
+      // Import cascade service (lazy load to avoid circular deps)
+      const { onSurgeryComplete } = require('../services/postOpCascadeService');
+
+      // Execute cascade asynchronously (don't block the save)
+      setImmediate(async () => {
+        try {
+          const result = await onSurgeryComplete(doc._id.toString(), {
+            userId: doc.updatedBy || doc.createdBy,
+            fromSync: doc.lastSyncedAt ? true : false
+          });
+          log.info('Post-op cascade completed', {
+            surgeryCaseId: doc._id,
+            status: result.status,
+            durationMs: result.durationMs
+          });
+        } catch (cascadeError) {
+          log.error('Post-op cascade failed', {
+            surgeryCaseId: doc._id,
+            error: cascadeError.message
+          });
+        }
+      });
+    }
+  } catch (error) {
+    log.error('Error checking cascade trigger', { error: error.message, surgeryCaseId: doc._id });
   }
 });
 

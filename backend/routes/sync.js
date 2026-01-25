@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { protect } = require('../middleware/auth');
+const logger = require('../config/logger');
 
 // Models
 const Patient = require('../models/Patient');
@@ -9,26 +10,69 @@ const Prescription = require('../models/Prescription');
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 const User = require('../models/User');
 const SyncQueue = require('../models/SyncQueue');
-// NEW: Clinical workflow models for sync
+const Visit = require('../models/Visit');
+const Invoice = require('../models/Invoice');
+const Document = require('../models/Document');
+const Inventory = require('../models/Inventory');
+// Clinical workflow models for sync
 const SurgeryCase = require('../models/SurgeryCase');
 const SurgeryReport = require('../models/SurgeryReport');
 const GlassesOrder = require('../models/GlassesOrder');
 const LabOrder = require('../models/LabOrder');
 const IVTInjection = require('../models/IVTInjection');
+const LabResult = require('../models/LabResult');
+const DeviceImage = require('../models/DeviceImage');
+// Additional models for frontend sync compatibility
+const OrthopticExam = require('../models/OrthopticExam');
+const Clinic = require('../models/Clinic');
+const Approval = require('../models/Approval');
+const StockReconciliation = require('../models/StockReconciliation');
+const TreatmentProtocol = require('../models/TreatmentProtocol');
+const IVTVial = require('../models/IVTVial');
+const Device = require('../models/Device');
 
-// Sync models mapping
+// Sync models mapping - matches SyncQueue.collection enum
 const modelMap = {
   patients: Patient,
   appointments: Appointment,
   prescriptions: Prescription,
   ophthalmologyExams: OphthalmologyExam,
   users: User,
-  // NEW: Clinical workflow entities
+  visits: Visit,
+  invoices: Invoice,
+  documents: Document,
+  inventories: Inventory,
+  // Clinical workflow entities
   surgeryCases: SurgeryCase,
   surgeryReports: SurgeryReport,
   glassesOrders: GlassesOrder,
   labOrders: LabOrder,
-  ivtInjections: IVTInjection
+  ivtInjections: IVTInjection,
+  laboratoryResults: LabResult,
+  imagingStudies: DeviceImage,
+  // Additional entities for frontend sync compatibility
+  labResults: LabResult, // Alias for laboratoryResults
+  orthopticExams: OrthopticExam,
+  clinics: Clinic,
+  approvals: Approval,
+  stockReconciliations: StockReconciliation,
+  treatmentProtocols: TreatmentProtocol,
+  ivtVials: IVTVial,
+  devices: Device,
+  // Inventory subtypes - filtered queries (use inventories model with type filter)
+  pharmacyInventory: Inventory,
+  frameInventory: Inventory,
+  contactLensInventory: Inventory
+};
+
+// Entities that should be silently skipped (virtual/calculated, not real models)
+const skippedEntities = new Set(['queue']);
+
+// Inventory type mapping for subtype filtering
+const inventoryTypeMap = {
+  pharmacyInventory: ['medication', 'drug', 'pharmaceutical'],
+  frameInventory: ['frame', 'eyewear'],
+  contactLensInventory: ['contact_lens', 'lens']
 };
 
 // Clinic ID from environment
@@ -53,17 +97,28 @@ router.post('/pull', protect, async (req, res) => {
 
     // Get changes for each requested entity
     for (const entity of entities) {
-      const Model = modelMap[entity];
-
-      if (!Model) {
-        console.warn(`Unknown entity: ${entity}`);
+      // Skip known virtual entities silently
+      if (skippedEntities.has(entity)) {
         continue;
       }
 
+      const Model = modelMap[entity];
+
+      if (!Model) {
+        // Log at debug level to reduce noise - this is expected for deprecated entities
+        logger.debug(`[Sync] Unknown entity requested: ${entity} - skipping`);
+        continue;
+      }
+
+      // Build query with optional inventory type filter
+      const query = { updatedAt: { $gt: syncDate } };
+
+      if (inventoryTypeMap[entity]) {
+        query.type = { $in: inventoryTypeMap[entity] };
+      }
+
       // Get records modified since last sync
-      const records = await Model.find({
-        updatedAt: { $gt: syncDate }
-      }).lean();
+      const records = await Model.find(query).lean();
 
       if (records.length > 0) {
         changes[entity] = records.map(record => ({

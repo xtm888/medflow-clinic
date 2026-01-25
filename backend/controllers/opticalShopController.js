@@ -2,7 +2,6 @@ const GlassesOrder = require('../models/GlassesOrder');
 const Patient = require('../models/Patient');
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Prescription = require('../models/Prescription');
-const ConsultationSession = require('../models/ConsultationSession');
 const { Inventory, FrameInventory, OpticalLensInventory, ContactLensInventory } = require('../models/Inventory');
 const User = require('../models/User');
 const Company = require('../models/Company');
@@ -345,49 +344,12 @@ exports.getPatientPrescription = async (req, res) => {
       .populate('examiner', 'firstName lastName')
       .select('examId examDate refraction examiner createdAt');
 
-    // Also check ConsultationSession for refraction data (new consultation workflow stores data here)
-    const latestSession = await ConsultationSession.findOne({
-      patient: patientId,
-      status: 'completed',
-      $or: [
-        { 'stepData.refraction.subjective.OD': { $exists: true } },
-        { 'stepData.refraction.subjective.OS': { $exists: true } },
-        { 'stepData.refraction.finalPrescription.OD': { $exists: true } },
-        { 'stepData.refraction.finalPrescription.OS': { $exists: true } }
-      ]
-    })
-      .sort({ createdAt: -1 })
-      .populate('doctor', 'firstName lastName')
-      .select('sessionId stepData doctor createdAt completedAt');
-
-    // Determine which source has the most recent refraction data
+    // OphthalmologyExam is now the single source of truth for all refraction data
+    // (ConsultationSession has been deprecated and removed)
     let examData = null;
     let examSource = null;
 
-    const examDate = latestExam?.createdAt ? new Date(latestExam.createdAt) : null;
-    const sessionDate = latestSession?.completedAt || latestSession?.createdAt ?
-      new Date(latestSession.completedAt || latestSession.createdAt) : null;
-
-    // Use the most recent data source
-    if (examDate && sessionDate) {
-      if (examDate >= sessionDate && latestExam?.refraction) {
-        examData = {
-          examId: latestExam.examId,
-          examDate: latestExam.examDate || latestExam.createdAt,
-          refraction: latestExam.refraction,
-          performedBy: latestExam.examiner
-        };
-        examSource = 'ophthalmologyExam';
-      } else if (latestSession?.stepData?.refraction) {
-        examData = {
-          examId: latestSession.sessionId,
-          examDate: latestSession.completedAt || latestSession.createdAt,
-          refraction: latestSession.stepData.refraction,
-          performedBy: latestSession.doctor
-        };
-        examSource = 'consultationSession';
-      }
-    } else if (latestExam?.refraction) {
+    if (latestExam?.refraction) {
       examData = {
         examId: latestExam.examId,
         examDate: latestExam.examDate || latestExam.createdAt,
@@ -395,14 +357,6 @@ exports.getPatientPrescription = async (req, res) => {
         performedBy: latestExam.examiner
       };
       examSource = 'ophthalmologyExam';
-    } else if (latestSession?.stepData?.refraction) {
-      examData = {
-        examId: latestSession.sessionId,
-        examDate: latestSession.completedAt || latestSession.createdAt,
-        refraction: latestSession.stepData.refraction,
-        performedBy: latestSession.doctor
-      };
-      examSource = 'consultationSession';
     }
 
     // Get latest glasses prescription

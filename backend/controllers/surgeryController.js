@@ -3,7 +3,6 @@ const SurgeryCase = require('../models/SurgeryCase');
 const SurgeryReport = require('../models/SurgeryReport');
 const Patient = require('../models/Patient');
 const ClinicalAct = require('../models/ClinicalAct');
-const ConsultationSession = require('../models/ConsultationSession');
 const OphthalmologyExam = require('../models/OphthalmologyExam');
 const Prescription = require('../models/Prescription');
 const Document = require('../models/Document');
@@ -398,23 +397,18 @@ exports.getClinicalBackground = async (req, res) => {
     const patientId = surgeryCase.patient._id;
 
     // Fetch all clinical data in parallel
+    // OphthalmologyExam is the single source of truth for consultation/exam data
     const [
-      recentConsultations,
       ophthalmologyExams,
       activePrescriptions,
       documents,
       previousSurgeries
     ] = await Promise.all([
-      // Recent consultations
-      ConsultationSession.find({ patient: patientId })
-        .sort({ createdAt: -1 })
-        .limit(5)
-        .populate('provider', 'firstName lastName title'),
-
-      // Ophthalmology exams
+      // Ophthalmology exams (includes recent consultations - OphthalmologyExam is now the single source)
       OphthalmologyExam.find({ patient: patientId })
+        .populate('examiner', 'firstName lastName title')
         .sort({ createdAt: -1 })
-        .limit(3),
+        .limit(5),
 
       // Active prescriptions
       Prescription.find({
@@ -445,7 +439,8 @@ exports.getClinicalBackground = async (req, res) => {
       surgeryCase,
       patient: surgeryCase.patient,
       clinicalData: {
-        recentConsultations,
+        // Map ophthalmologyExams to recentConsultations for backwards compatibility
+        recentConsultations: ophthalmologyExams,
         ophthalmologyExams,
         activePrescriptions,
         documents,
@@ -512,13 +507,13 @@ exports.startSurgery = async (req, res) => {
     // SECURITY: Validate pre-op checklist completion before surgery start
     const checklist = surgeryCase.preOpChecklist || {};
     const requiredChecks = [
-      { key: 'identityVerified', label: "Identité vérifiée" },
-      { key: 'siteMarked', label: "Site opératoire marqué" },
-      { key: 'allergiesReviewed', label: "Allergies vérifiées" },
-      { key: 'fastingConfirmed', label: "Jeûne confirmé" },
-      { key: 'eyeDropsAdministered', label: "Collyres administrés" },
-      { key: 'pupilDilated', label: "Pupille dilatée" },
-      { key: 'vitalsSigned', label: "Signes vitaux contrôlés" }
+      { key: 'identityVerified', label: 'Identité vérifiée' },
+      { key: 'siteMarked', label: 'Site opératoire marqué' },
+      { key: 'allergiesReviewed', label: 'Allergies vérifiées' },
+      { key: 'fastingConfirmed', label: 'Jeûne confirmé' },
+      { key: 'eyeDropsAdministered', label: 'Collyres administrés' },
+      { key: 'pupilDilated', label: 'Pupille dilatée' },
+      { key: 'vitalsSigned', label: 'Signes vitaux contrôlés' }
     ];
 
     const incompleteChecks = requiredChecks.filter(check => !checklist[check.key]);
