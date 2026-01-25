@@ -5,10 +5,12 @@ const Appointment = require('../models/Appointment');
 const Invoice = require('../models/Invoice');
 const FeeSchedule = require('../models/FeeSchedule');
 const { Inventory, PharmacyInventory } = require('../models/Inventory');
-const { logAction, logCriticalOperation } = require('../middleware/auditLogger');
+const { logActionDirect: logAction, logCriticalOperationDirect: logCriticalOperation } = require('../middleware/auditLogger');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { createContextLogger } = require('../utils/structuredLogger');
 const { withTransactionRetry } = require('../utils/transactions');
+const { withLock } = require('../services/distributedLock');
+const { serverError } = require('../utils/apiResponse');
 const log = createContextLogger('IVTController');
 
 // @desc    Validate IVT injection before creation
@@ -37,11 +39,7 @@ exports.validateIVTInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error validating IVT injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error validating IVT injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la validation de l\'injection IVT');
   }
 };
 
@@ -52,25 +50,18 @@ exports.createIVTInjection = async (req, res) => {
   try {
     const { patientId, forceCreate, autoGenerateInvoice = true, ...injectionData } = req.body;
 
-    // ========================================================================
-    // VALIDATION PHASE (before transaction)
-    // All read-only validation happens outside the transaction
-    // ========================================================================
-
-    // Validate patient exists (with convention for billing)
     const patient = await Patient.findById(patientId).populate('convention');
     if (!patient) {
       return res.status(404).json({ message: 'Patient not found' });
     }
 
-    // Get previous injection for this eye to establish series
     const previousInjection = await IVTInjection.findOne({
       patient: patientId,
       eye: injectionData.eye,
-      status: 'completed'
+      status: 'completed',
+      isDeleted: { $ne: true }
     }).sort({ injectionDate: -1 });
 
-    // Calculate series information
     const seriesInfo = {
       injectionNumber: injectionData.series?.injectionNumber || 1,
       protocol: injectionData.series?.protocol || 'loading',
@@ -79,13 +70,11 @@ exports.createIVTInjection = async (req, res) => {
       totalInjectionsThisEye: previousInjection ? (previousInjection.series.totalInjectionsThisEye || 0) + 1 : 1
     };
 
-    // Calculate interval from last injection
     if (previousInjection) {
       const daysDiff = Math.floor((new Date() - previousInjection.injectionDate) / (1000 * 60 * 60 * 24));
-      seriesInfo.intervalFromLast = Math.round(daysDiff / 7); // weeks
+      seriesInfo.intervalFromLast = Math.round(daysDiff / 7);
     }
 
-    // Pre-fetch fee schedules for invoice creation (read-only, before transaction)
     let procedureFeeSchedule = null;
     let medicationFeeSchedule = null;
     const medicationName = injectionData.medication?.name || 'Anti-VEGF';
@@ -109,7 +98,6 @@ exports.createIVTInjection = async (req, res) => {
       });
     }
 
-    // Pre-locate inventory item for medication consumption (read-only, before transaction)
     let inventoryItemId = null;
     if (injectionData.medication?.inventoryItem || injectionData.medication?.name) {
       if (injectionData.medication.inventoryItem) {
@@ -128,76 +116,81 @@ exports.createIVTInjection = async (req, res) => {
       }
     }
 
-    // ========================================================================
-    // TRANSACTION PHASE
-    // All database write operations are wrapped in a transaction for atomicity
-    // ========================================================================
-
     const transactionResult = await withTransactionRetry(async (session) => {
-      // 1. Create and save IVT injection record
-      const ivtInjection = new IVTInjection({
+      const ivtInjectionData = {
         patient: patientId,
+        clinic: req.user.currentClinicId || injectionData.clinic,
         ...injectionData,
         series: {
           ...injectionData.series,
           ...seriesInfo
         },
         performedBy: req.user._id,
+        createdBy: req.user._id,
         status: 'scheduled'
-      });
+      };
 
-      // Set force flag if bypassing validation
-      if (forceCreate) {
-        ivtInjection._forceCreate = true;
-      }
+      const ivtInjection = await IVTInjection.createWithIntervalCheck(
+        ivtInjectionData,
+        { session, forceCreate: !!forceCreate }
+      );
 
-      await ivtInjection.save({ session });
-
-      // 2. Consume medication from inventory (within transaction)
+      // 2. Consume medication from inventory (within transaction with distributed lock)
       let inventoryConsumption = null;
       if (inventoryItemId) {
-        // Re-fetch inventory item within session for transaction isolation
-        const inventoryItem = await PharmacyInventory.findById(inventoryItemId).session(session);
+        // Use distributed lock to prevent race conditions across server instances
+        const lockResult = await withLock(`vial:${inventoryItemId}`, async () => {
+          // Re-fetch inventory item within session for transaction isolation
+          const inventoryItem = await PharmacyInventory.findById(inventoryItemId).session(session || null);
 
-        if (inventoryItem && inventoryItem.inventory.currentStock > 0) {
-          // Use adjustStock method which supports session via save()
-          const previousQuantity = inventoryItem.inventory.currentStock;
-          inventoryItem.inventory.currentStock = Math.max(0, previousQuantity - 1);
-          inventoryItem.inventory.available = Math.max(0, inventoryItem.inventory.currentStock - (inventoryItem.inventory.reserved || 0));
+          if (inventoryItem && inventoryItem.inventory.currentStock > 0) {
+            // Use adjustStock method which supports session via save()
+            const previousQuantity = inventoryItem.inventory.currentStock;
+            inventoryItem.inventory.currentStock = Math.max(0, previousQuantity - 1);
+            inventoryItem.inventory.available = Math.max(0, inventoryItem.inventory.currentStock - (inventoryItem.inventory.reserved || 0));
 
-          // Update status based on new stock level
-          inventoryItem.updateInventoryStatus();
+            // Update status based on new stock level
+            inventoryItem.updateInventoryStatus();
 
-          // Add transaction record
-          inventoryItem.transactions.push({
-            type: 'dispensed',
-            quantity: -1,
-            previousQuantity,
-            newQuantity: inventoryItem.inventory.currentStock,
-            reason: 'IVT injection consumption',
-            reference: ivtInjection._id.toString(),
-            referenceType: 'ivt_injection',
-            performedBy: req.user._id,
-            notes: `IVT ${ivtInjection.eye} - ${injectionData.medication?.name || 'medication'}`
-          });
+            // Add transaction record
+            inventoryItem.transactions.push({
+              type: 'dispensed',
+              quantity: -1,
+              previousQuantity,
+              newQuantity: inventoryItem.inventory.currentStock,
+              reason: 'IVT injection consumption',
+              reference: ivtInjection._id.toString(),
+              referenceType: 'ivt_injection',
+              performedBy: req.user._id,
+              notes: `IVT ${ivtInjection.eye} - ${injectionData.medication?.name || 'medication'}`
+            });
 
-          // Update usage stats
-          inventoryItem.usage.totalDispensed = (inventoryItem.usage.totalDispensed || 0) + 1;
-          inventoryItem.usage.lastUsedDate = new Date();
-          inventoryItem.updatedBy = req.user._id;
-          inventoryItem.version += 1;
+            // Update usage stats
+            inventoryItem.usage.totalDispensed = (inventoryItem.usage.totalDispensed || 0) + 1;
+            inventoryItem.usage.lastUsedDate = new Date();
+            inventoryItem.updatedBy = req.user._id;
+            inventoryItem.version += 1;
 
-          await inventoryItem.save({ session });
+            await inventoryItem.save(session ? { session } : {});
 
-          inventoryConsumption = {
-            item: inventoryItem.medication?.genericName || inventoryItem.medication?.brandName || inventoryItem.name,
-            quantity: 1,
-            lotNumber: injectionData.medication?.lotNumber
-          };
+            return {
+              item: inventoryItem.medication?.genericName || inventoryItem.medication?.brandName || inventoryItem.name,
+              quantity: 1,
+              lotNumber: injectionData.medication?.lotNumber
+            };
+          } else {
+            log.warn('Medication not found in inventory or out of stock', { medication: injectionData.medication?.name });
+            return null;
+          }
+        }, { ttl: 30, maxRetries: 5, retryDelay: 200 });
 
-          log.info('Consumed medication from inventory', { medication: inventoryConsumption.item, ivtId: ivtInjection._id });
+        if (lockResult === null) {
+          log.warn('Could not acquire lock for vial dispensing, operation may be in progress', { vialId: inventoryItemId });
         } else {
-          log.warn('Medication not found in inventory or out of stock', { medication: injectionData.medication?.name });
+          inventoryConsumption = lockResult;
+          if (inventoryConsumption) {
+            log.info('Consumed medication from inventory', { medication: inventoryConsumption.item, ivtId: ivtInjection._id });
+          }
         }
       }
 
@@ -255,7 +248,7 @@ exports.createIVTInjection = async (req, res) => {
             createdBy: req.user._id
           });
 
-          await invoiceDoc.save({ session });
+          await invoiceDoc.save(session ? { session } : {});
           invoice = invoiceDoc;
 
           // Apply convention billing if patient has company/convention
@@ -276,9 +269,8 @@ exports.createIVTInjection = async (req, res) => {
             }
           }
 
-          // Update IVT with invoice reference
           ivtInjection.invoice = invoice._id;
-          await ivtInjection.save({ session });
+          await ivtInjection.save(session ? { session } : {});
 
           log.info('Auto-created invoice for IVT', { invoiceNumber: invoice.invoiceNumber || invoice._id, injectionId: ivtInjection.injectionId });
         }
@@ -333,7 +325,6 @@ exports.createIVTInjection = async (req, res) => {
   } catch (error) {
     log.error('Error creating IVT injection', { error: error.message, stack: error.stack });
 
-    // Handle IVT validation errors specially
     if (error.name === 'IVTValidationError') {
       return res.status(400).json({
         success: false,
@@ -341,15 +332,30 @@ exports.createIVTInjection = async (req, res) => {
         code: error.code,
         validationErrors: error.validationErrors,
         validationWarnings: error.validationWarnings,
-        canForce: true // Indicate that forceCreate can bypass this
+        canForce: true
       });
     }
 
-    res.status(500).json({
-      success: false,
-      message: 'Server error creating IVT injection',
-      error: error.message
-    });
+    if (error.name === 'IVTIntervalViolationError') {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        canForce: true
+      });
+    }
+
+    if (error.name === 'IVTDuplicateError') {
+      return res.status(409).json({
+        success: false,
+        message: error.message,
+        code: error.code,
+        existingInjectionId: error.existingInjection?.injectionId
+      });
+    }
+
+    return serverError(res, 'Erreur lors de la création de l\'injection IVT');
   }
 };
 
@@ -411,11 +417,7 @@ exports.getIVTInjections = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching IVT injections', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching IVT injections',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération des injections IVT');
   }
 };
 
@@ -447,11 +449,7 @@ exports.getIVTInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching IVT injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching IVT injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération de l\'injection IVT');
   }
 };
 
@@ -490,11 +488,7 @@ exports.updateIVTInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error updating IVT injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error updating IVT injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la mise à jour de l\'injection IVT');
   }
 };
 
@@ -660,11 +654,7 @@ exports.completeIVTInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error completing IVT injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error completing IVT injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la finalisation de l\'injection IVT');
   }
 };
 
@@ -699,11 +689,7 @@ exports.cancelIVTInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error cancelling IVT injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error cancelling IVT injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'annulation de l\'injection IVT');
   }
 };
 
@@ -735,11 +721,7 @@ exports.recordFollowUp = async (req, res) => {
     });
   } catch (error) {
     log.error('Error recording follow-up', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error recording follow-up',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de l\'enregistrement du suivi');
   }
 };
 
@@ -772,11 +754,7 @@ exports.planNextInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error planning next injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error planning next injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la planification de l\'injection suivante');
   }
 };
 
@@ -805,11 +783,7 @@ exports.getPatientIVTHistory = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching patient IVT history', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching patient IVT history',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération de l\'historique IVT');
   }
 };
 
@@ -844,11 +818,7 @@ exports.getTreatmentHistory = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching treatment history', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching treatment history',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération de l\'historique de traitement');
   }
 };
 
@@ -868,11 +838,7 @@ exports.getUpcomingInjections = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching upcoming injections', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching upcoming injections',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération des injections à venir');
   }
 };
 
@@ -890,11 +856,7 @@ exports.getPatientsDue = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching patients due', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching patients due for injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération des patients en attente');
   }
 };
 
@@ -962,11 +924,7 @@ exports.getIVTStats = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching IVT stats', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error fetching statistics',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la récupération des statistiques');
   }
 };
 
@@ -992,7 +950,11 @@ exports.deleteIVTInjection = async (req, res) => {
       });
     }
 
-    await injection.deleteOne();
+    // Soft delete instead of hard delete for audit trail
+    injection.isDeleted = true;
+    injection.deletedAt = new Date();
+    injection.deletedBy = req.user._id;
+    await injection.save();
 
     // Log the action
     await logCriticalOperation(req, 'DELETE_IVT_INJECTION', {
@@ -1006,10 +968,6 @@ exports.deleteIVTInjection = async (req, res) => {
     });
   } catch (error) {
     log.error('Error deleting IVT injection', { error: error.message, stack: error.stack });
-    res.status(500).json({
-      success: false,
-      message: 'Server error deleting IVT injection',
-      error: error.message
-    });
+    return serverError(res, 'Erreur lors de la suppression de l\'injection IVT');
   }
 };

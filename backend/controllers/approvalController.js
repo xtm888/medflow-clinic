@@ -5,6 +5,7 @@ const FeeSchedule = require('../models/FeeSchedule');
 const Invoice = require('../models/Invoice');
 const currencyService = require('../services/currencyService');
 const { createContextLogger } = require('../utils/structuredLogger');
+const { serverError } = require('../utils/apiResponse');
 const log = createContextLogger('ApprovalController');
 
 /**
@@ -142,7 +143,7 @@ exports.getApprovals = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching approvals', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la récupération des approbations');
   }
 };
 
@@ -168,7 +169,7 @@ exports.getApproval = async (req, res) => {
     res.json({ success: true, data: approval });
   } catch (error) {
     log.error('Error fetching approval', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la récupération de l\'approbation');
   }
 };
 
@@ -272,7 +273,7 @@ exports.createApproval = async (req, res) => {
     res.status(201).json({ success: true, data: approval });
   } catch (error) {
     log.error('Error creating approval', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la création de l\'approbation');
   }
 };
 
@@ -333,7 +334,7 @@ exports.approveRequest = async (req, res) => {
     });
   } catch (error) {
     log.error('Error approving request', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de l\'approbation de la demande');
   }
 };
 
@@ -389,7 +390,7 @@ exports.rejectRequest = async (req, res) => {
     });
   } catch (error) {
     log.error('Error rejecting request', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors du rejet de la demande');
   }
 };
 
@@ -430,7 +431,7 @@ exports.useApproval = async (req, res) => {
     });
   } catch (error) {
     log.error('Error using approval', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de l\'utilisation de l\'approbation');
   }
 };
 
@@ -465,7 +466,7 @@ exports.cancelApproval = async (req, res) => {
     });
   } catch (error) {
     log.error('Error cancelling approval', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de l\'annulation de l\'approbation');
   }
 };
 
@@ -491,7 +492,7 @@ exports.checkApproval = async (req, res) => {
     });
   } catch (error) {
     log.error('Error checking approval', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la vérification de l\'approbation');
   }
 };
 
@@ -509,7 +510,7 @@ exports.getPendingForCompany = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching pending approvals', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la récupération des approbations en attente');
   }
 };
 
@@ -531,7 +532,7 @@ exports.getPatientApprovals = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching patient approvals', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la récupération des approbations du patient');
   }
 };
 
@@ -742,7 +743,7 @@ exports.checkApprovalRequirements = async (req, res) => {
     });
   } catch (error) {
     log.error('Error checking approval requirements', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la vérification des exigences d\'approbation');
   }
 };
 
@@ -761,7 +762,7 @@ exports.getExpiringApprovals = async (req, res) => {
     });
   } catch (error) {
     log.error('Error fetching expiring approvals', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de la récupération des approbations expirantes');
   }
 };
 
@@ -797,6 +798,6 @@ exports.attachDocument = async (req, res) => {
     });
   } catch (error) {
     log.error('Error attaching document', { error: error.message, stack: error.stack });
-    res.status(500).json({ success: false, message: error.message });
+    return serverError(res, 'Erreur lors de l\'ajout du document');
   }
 };
