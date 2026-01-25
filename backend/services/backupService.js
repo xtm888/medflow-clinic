@@ -278,10 +278,18 @@ class BackupService {
    * Calculate SHA-256 checksum
    */
   async calculateChecksum(filePath) {
-    const fileBuffer = await fs.readFile(filePath);
-    const hashSum = crypto.createHash('sha256');
-    hashSum.update(fileBuffer);
-    return hashSum.digest('hex');
+    try {
+      const fileBuffer = await fs.readFile(filePath);
+      const hashSum = crypto.createHash('sha256');
+      hashSum.update(fileBuffer);
+      return hashSum.digest('hex');
+    } catch (error) {
+      log.error('Failed to calculate checksum:', {
+        error: error.message,
+        filePath
+      });
+      throw new Error(`Checksum calculation failed: ${error.message}`);
+    }
   }
 
   /**
@@ -313,7 +321,7 @@ class BackupService {
 
       if (backupFiles.length > retention) {
         // Sort by filename (which includes timestamp)
-        const sortedFiles = backupFiles.sort().reverse();
+        const sortedFiles = backupFiles.sort((a, b) => a.localeCompare(b)).reverse();
         const filesToDelete = sortedFiles.slice(retention);
 
         for (const file of filesToDelete) {
@@ -325,8 +333,8 @@ class BackupService {
           try {
             await fs.unlink(`${filePath}.checksum`);
           } catch (error) {
-      log.debug('Suppressed error', { error: error.message });
-    }
+            log.debug('Suppressed error', { error: error.message });
+          }
         }
 
         log.info(`Cleaned ${filesToDelete.length} old ${type} backup(s)`);
@@ -485,49 +493,72 @@ class BackupService {
   async listBackups() {
     const backups = { daily: [], monthly: [], yearly: [] };
 
-    for (const type of ['daily', 'monthly', 'yearly']) {
-      const typeDir = path.join(this.backupDir, type);
+    try {
+      for (const type of ['daily', 'monthly', 'yearly']) {
+        const typeDir = path.join(this.backupDir, type);
 
-      try {
-        const files = await fs.readdir(typeDir);
+        try {
+          const files = await fs.readdir(typeDir);
 
-        for (const file of files) {
-          if (file.endsWith('.tar.gz') || file.endsWith('.tar.gz.enc')) {
-            const filePath = path.join(typeDir, file);
-            const stats = await fs.stat(filePath);
+          for (const file of files) {
+            if (file.endsWith('.tar.gz') || file.endsWith('.tar.gz.enc')) {
+              const filePath = path.join(typeDir, file);
+              try {
+                const stats = await fs.stat(filePath);
 
-            backups[type].push({
-              name: file,
-              size: stats.size,
-              sizeMB: (stats.size / (1024 * 1024)).toFixed(2),
-              created: stats.birthtime,
-              encrypted: file.endsWith('.enc')
-            });
+                backups[type].push({
+                  name: file,
+                  size: stats.size,
+                  sizeMB: (stats.size / (1024 * 1024)).toFixed(2),
+                  created: stats.birthtime,
+                  encrypted: file.endsWith('.enc')
+                });
+              } catch (statError) {
+                log.warn('Could not stat backup file:', {
+                  error: statError.message,
+                  file: filePath
+                });
+              }
+            }
           }
+
+          // Sort by creation date (newest first)
+          backups[type].sort((a, b) => b.created - a.created);
+
+        } catch (dirError) {
+          // Directory might not exist yet
+          log.warn(`Could not list ${type} backups:`, {
+            error: dirError.message,
+            typeDir
+          });
         }
-
-        // Sort by creation date (newest first)
-        backups[type].sort((a, b) => b.created - a.created);
-
-      } catch (error) {
-        // Directory might not exist yet
-        log.warn(`Could not list ${type} backups:`, error.message);
       }
-    }
 
-    return backups;
+      return backups;
+    } catch (error) {
+      log.error('Failed to list backups:', { error: error.message });
+      return { success: false, error: 'Erreur lors de la liste des sauvegardes', backups };
+    }
   }
 
   /**
    * Get backup statistics
    */
   getStats() {
-    return {
-      ...this.stats,
-      retentionPolicy: this.retentionPolicy,
-      encryptionEnabled: !!this.encryptionKey,
-      cloudUploadEnabled: process.env.BACKUP_CLOUD_ENABLED === 'true'
-    };
+    try {
+      return {
+        ...this.stats,
+        retentionPolicy: this.retentionPolicy,
+        encryptionEnabled: !!this.encryptionKey,
+        cloudUploadEnabled: process.env.BACKUP_CLOUD_ENABLED === 'true'
+      };
+    } catch (error) {
+      log.error('Failed to get backup stats:', { error: error.message });
+      return {
+        success: false,
+        error: 'Erreur lors de la récupération des statistiques'
+      };
+    }
   }
 
   /**

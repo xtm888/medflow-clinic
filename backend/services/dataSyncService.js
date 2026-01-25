@@ -12,6 +12,17 @@ const { createContextLogger } = require('../utils/structuredLogger');
 const log = createContextLogger('DataSync');
 
 // Models that need syncing
+const {
+  Inventory,
+  PharmacyInventory,
+  FrameInventory,
+  ContactLensInventory,
+  OpticalLensInventory,
+  ReagentInventory,
+  LabConsumableInventory,
+  SurgicalSupplyInventory
+} = require('../models/Inventory');
+
 const SYNCABLE_MODELS = {
   patients: require('../models/Patient'),
   visits: require('../models/Visit'),
@@ -19,8 +30,29 @@ const SYNCABLE_MODELS = {
   invoices: require('../models/Invoice'),
   prescriptions: require('../models/Prescription'),
   ophthalmologyExams: require('../models/OphthalmologyExam'),
-  imagingStudies: require('../models/ImagingStudy'),
-  users: require('../models/User')
+  // Note: users and imagingStudies are NOT synced between clinics:
+  // - users: Contains sensitive data (passwords, sessions, tokens) - each clinic manages its own users
+  // - imagingStudies: Large binary data - not practical for cross-clinic sync
+  // Inventory models - base and discriminators
+  inventories: Inventory,
+  pharmacyInventory: PharmacyInventory,
+  frameInventory: FrameInventory,
+  contactLensInventory: ContactLensInventory,
+  opticalLensInventory: OpticalLensInventory,
+  reagentInventory: ReagentInventory,
+  labConsumableInventory: LabConsumableInventory,
+  surgicalSupplyInventory: SurgicalSupplyInventory
+};
+
+// Map inventoryType to central server collection name
+const INVENTORY_TYPE_MAP = {
+  pharmacy: 'pharmacyInventory',
+  frame: 'frameInventory',
+  contact_lens: 'contactLensInventory',
+  optical_lens: 'opticalLensInventory',
+  reagent: 'reagentInventory',
+  lab_consumable: 'labConsumableInventory',
+  surgical_supply: 'surgicalSupplyInventory'
 };
 
 // Sync configuration
@@ -42,27 +74,36 @@ let isSyncing = false;
  * Initialize sync service
  */
 async function initialize() {
-  if (!SYNC_CONFIG.enabled) {
-    log.info('Central sync is disabled. Set CENTRAL_SYNC_ENABLED=true to enable.');
-    return;
+  try {
+    if (!SYNC_CONFIG.enabled) {
+      log.info('Central sync is disabled. Set CENTRAL_SYNC_ENABLED=true to enable.');
+      return { success: true, enabled: false };
+    }
+
+    if (!SYNC_CONFIG.syncToken) {
+      log.info('Warning: No SYNC_TOKEN configured. Sync will fail authentication.');
+    }
+
+    log.info(`Initializing sync service for clinic: ${SYNC_CONFIG.clinicId}`);
+    log.info(`Central server: ${SYNC_CONFIG.centralServerUrl}`);
+
+    // Set up change stream listeners for each model
+    for (const [name, Model] of Object.entries(SYNCABLE_MODELS)) {
+      setupChangeStream(name, Model);
+    }
+
+    // Start periodic sync
+    startPeriodicSync();
+
+    log.info('Service initialized');
+    return { success: true, enabled: true };
+  } catch (error) {
+    log.error('Failed to initialize sync service:', {
+      error: error.message,
+      clinicId: SYNC_CONFIG.clinicId
+    });
+    return { success: false, error: 'Erreur lors de l\'initialisation de la synchronisation' };
   }
-
-  if (!SYNC_CONFIG.syncToken) {
-    log.info('Warning: No SYNC_TOKEN configured. Sync will fail authentication.');
-  }
-
-  log.info(`Initializing sync service for clinic: ${SYNC_CONFIG.clinicId}`);
-  log.info(`Central server: ${SYNC_CONFIG.centralServerUrl}`);
-
-  // Set up change stream listeners for each model
-  for (const [name, Model] of Object.entries(SYNCABLE_MODELS)) {
-    setupChangeStream(name, Model);
-  }
-
-  // Start periodic sync
-  startPeriodicSync();
-
-  log.info('Service initialized');
 }
 
 /**
@@ -123,20 +164,27 @@ async function queueChange(collection, change) {
         return; // Ignore other operations
     }
 
+    // For inventory items, map to specific collection based on inventoryType
+    let syncCollection = collection;
+    if (collection === 'inventories' && data?.inventoryType) {
+      syncCollection = INVENTORY_TYPE_MAP[data.inventoryType] || collection;
+      log.info(`Mapping inventory type ${data.inventoryType} to collection ${syncCollection}`);
+    }
+
     // Determine priority based on collection
     const priority = getPriority(collection, operation);
 
     await SyncQueue.create({
       clinicId: SYNC_CONFIG.clinicId,
       operation,
-      collection,
+      collectionName: syncCollection,
       documentId,
       data,
       changedFields,
       priority
     });
 
-    log.info(`Queued ${operation} for ${collection}/${documentId}`);
+    log.info(`Queued ${operation} for ${syncCollection}/${documentId}`);
   } catch (err) {
     log.error('[SYNC] Failed to queue change:', err.message);
   }
@@ -267,7 +315,7 @@ async function syncSingleItem(item) {
         change: {
           syncId: item.syncId,
           operation: item.operation,
-          collection: item.collection,
+          collection: item.collectionName,
           documentId: item.documentId,
           data: item.data,
           changedFields: item.changedFields,
@@ -334,7 +382,7 @@ async function pushChangesToCentral() {
             syncId: item.syncId,
             localVersion: item.data,
             centralVersion: result.conflict.centralVersion,
-            collection: item.collection,
+            collection: item.collectionName,
             documentId: item.documentId
           }]);
           results.conflicts++;
@@ -474,12 +522,16 @@ async function applyRemoteChange(change) {
         // Check if document already exists
         const existing = await Model.findById(documentId);
         if (!existing) {
-          await Model.create({ ...data, _id: documentId });
+          // Remove central-server-specific fields before creating
+          const { _id: _skipId, _originalId: _skipOriginalId, _sourceClinic: _skipSourceClinic, _syncedAt: _skipSyncedAt, _version: _skipVersion, _deletedAt: _skipDeletedAt, __v: _skipV, ...createData } = data;
+          await Model.create({ ...createData, _id: documentId });
         }
         break;
 
       case 'update':
-        await Model.findByIdAndUpdate(documentId, data, { upsert: true });
+        // Remove immutable and central-server-specific fields before updating
+        const { _id, _originalId, _sourceClinic, _syncedAt, _version, _deletedAt, __v, ...updateData } = data;
+        await Model.findByIdAndUpdate(documentId, updateData, { upsert: true });
         break;
 
       case 'delete':
@@ -512,7 +564,7 @@ async function handleConflicts(conflicts) {
         } else {
           // Central wins - apply central version locally
           await applyRemoteChange({
-            collection: conflict.collection,
+            collection: conflict.collectionName,
             operation: 'update',
             documentId: conflict.documentId,
             data: centralVersion
@@ -527,7 +579,7 @@ async function handleConflicts(conflicts) {
       case 'central_wins':
         // Always use central version
         await applyRemoteChange({
-          collection: conflict.collection,
+          collection: conflict.collectionName,
           operation: 'update',
           documentId: conflict.documentId,
           data: centralVersion
@@ -568,50 +620,84 @@ async function handleConflicts(conflicts) {
  * Get last pull timestamp from local storage
  */
 async function getLastPullTimestamp() {
-  // Use a simple key-value collection for sync metadata
-  const SyncMeta = mongoose.connection.collection('sync_metadata');
-  const meta = await SyncMeta.findOne({ key: 'lastPullTimestamp' });
-  return meta?.value || new Date(0).toISOString();
+  try {
+    // Use a simple key-value collection for sync metadata
+    const SyncMeta = mongoose.connection.collection('sync_metadata');
+    const meta = await SyncMeta.findOne({ key: 'lastPullTimestamp' });
+    return meta?.value || new Date(0).toISOString();
+  } catch (error) {
+    log.error('Failed to get last pull timestamp:', { error: error.message });
+    // Return epoch date as fallback - will trigger full sync
+    return new Date(0).toISOString();
+  }
 }
 
 /**
  * Set last pull timestamp
  */
 async function setLastPullTimestamp(timestamp) {
-  const SyncMeta = mongoose.connection.collection('sync_metadata');
-  await SyncMeta.updateOne(
-    { key: 'lastPullTimestamp' },
-    { $set: { value: timestamp, updatedAt: new Date() } },
-    { upsert: true }
-  );
+  try {
+    const SyncMeta = mongoose.connection.collection('sync_metadata');
+    await SyncMeta.updateOne(
+      { key: 'lastPullTimestamp' },
+      { $set: { value: timestamp, updatedAt: new Date() } },
+      { upsert: true }
+    );
+  } catch (error) {
+    log.error('Failed to set last pull timestamp:', {
+      error: error.message,
+      timestamp
+    });
+    // Non-fatal - next sync will re-pull some data
+  }
 }
 
 /**
  * Force immediate sync
  */
 async function forceSync() {
-  log.info('Force sync requested');
-  await performSync();
+  try {
+    log.info('Force sync requested');
+    await performSync();
+    return { success: true };
+  } catch (error) {
+    log.error('Force sync failed:', { error: error.message });
+    return { success: false, error: 'Erreur lors de la synchronisation forcée' };
+  }
 }
 
 /**
  * Get sync status
  */
 async function getStatus() {
-  const stats = await SyncQueue.getStats(SYNC_CONFIG.clinicId);
-  const lastPull = await getLastPullTimestamp();
+  try {
+    const stats = await SyncQueue.getStats(SYNC_CONFIG.clinicId);
+    const lastPull = await getLastPullTimestamp();
 
-  return {
-    clinicId: SYNC_CONFIG.clinicId,
-    isOnline: await checkCentralConnection(),
-    isSyncing,
-    lastPullTimestamp: lastPull,
-    queue: stats,
-    config: {
-      syncInterval: SYNC_CONFIG.syncInterval,
-      batchSize: SYNC_CONFIG.batchSize
-    }
-  };
+    return {
+      success: true,
+      clinicId: SYNC_CONFIG.clinicId,
+      isOnline: await checkCentralConnection(),
+      isSyncing,
+      lastPullTimestamp: lastPull,
+      queue: stats,
+      config: {
+        syncInterval: SYNC_CONFIG.syncInterval,
+        batchSize: SYNC_CONFIG.batchSize
+      }
+    };
+  } catch (error) {
+    log.error('Failed to get sync status:', {
+      error: error.message,
+      clinicId: SYNC_CONFIG.clinicId
+    });
+    return {
+      success: false,
+      error: 'Erreur lors de la récupération du statut de synchronisation',
+      clinicId: SYNC_CONFIG.clinicId,
+      isSyncing
+    };
+  }
 }
 
 /**
@@ -632,19 +718,38 @@ async function checkCentralConnection() {
  * Manually queue a document for sync
  */
 async function queueForSync(collection, documentId, operation = 'update') {
-  const Model = SYNCABLE_MODELS[collection];
-  if (!Model) throw new Error(`Unknown collection: ${collection}`);
+  try {
+    const Model = SYNCABLE_MODELS[collection];
+    if (!Model) {
+      log.error('Unknown collection for sync:', { collection, documentId });
+      return { success: false, error: `Collection inconnue: ${collection}` };
+    }
 
-  const doc = await Model.findById(documentId).lean();
+    const doc = await Model.findById(documentId).lean();
+    if (!doc) {
+      log.warn('Document not found for sync:', { collection, documentId });
+      return { success: false, error: 'Document non trouvé' };
+    }
 
-  await SyncQueue.create({
-    clinicId: SYNC_CONFIG.clinicId,
-    operation,
-    collection,
-    documentId,
-    data: doc,
-    priority: getPriority(collection, operation)
-  });
+    await SyncQueue.create({
+      clinicId: SYNC_CONFIG.clinicId,
+      operation,
+      collectionName: collection, // Uses collectionName field in schema
+      documentId,
+      data: doc,
+      priority: getPriority(collection, operation)
+    });
+
+    log.info('Document queued for sync:', { collection, documentId, operation });
+    return { success: true, queued: true };
+  } catch (error) {
+    log.error('Failed to queue document for sync:', {
+      error: error.message,
+      collection,
+      documentId: String(documentId) // Avoid logging full ID object
+    });
+    return { success: false, error: 'Erreur lors de la mise en file d\'attente' };
+  }
 }
 
 // ============================================
@@ -655,59 +760,104 @@ async function queueForSync(collection, documentId, operation = 'update') {
  * Get items that have permanently failed (dead letter queue)
  */
 async function getDeadLetterQueue(limit = 100) {
-  return SyncQueue.getDeadLetterItems(SYNC_CONFIG.clinicId, limit);
+  try {
+    const items = await SyncQueue.getDeadLetterItems(SYNC_CONFIG.clinicId, limit);
+    return { success: true, items };
+  } catch (error) {
+    log.error('Failed to get dead letter queue:', {
+      error: error.message,
+      clinicId: SYNC_CONFIG.clinicId
+    });
+    return { success: false, error: 'Erreur lors de la récupération des éléments en erreur', items: [] };
+  }
 }
 
 /**
  * Retry a specific dead letter item
  */
 async function retryDeadLetterItem(syncId) {
-  const item = await SyncQueue.retryDeadLetter(syncId);
-  if (!item) {
-    throw new Error(`Item ${syncId} not found in dead letter queue`);
+  try {
+    const item = await SyncQueue.retryDeadLetter(syncId);
+    if (!item) {
+      log.warn('Dead letter item not found:', { syncId });
+      return { success: false, error: 'Elément non trouvé dans la file d\'erreurs' };
+    }
+    log.info(`Dead letter item ${syncId} moved back to pending queue`);
+    return { success: true, item };
+  } catch (error) {
+    log.error('Failed to retry dead letter item:', {
+      error: error.message,
+      syncId
+    });
+    return { success: false, error: 'Erreur lors de la relance de l\'élément' };
   }
-  log.info(`Dead letter item ${syncId} moved back to pending queue`);
-  return item;
 }
 
 /**
  * Retry all items in dead letter queue
  */
 async function retryAllDeadLetter() {
-  const deadItems = await SyncQueue.find({
-    clinicId: SYNC_CONFIG.clinicId,
-    status: 'dead_letter'
-  });
-
-  let retried = 0;
-  for (const item of deadItems) {
-    item.status = 'pending';
-    item.attempts = 0;
-    item.nextAttempt = new Date();
-    item.errorHistory.push({
-      error: 'Bulk retry from dead letter queue',
-      timestamp: new Date(),
-      attempt: 0
+  try {
+    const deadItems = await SyncQueue.find({
+      clinicId: SYNC_CONFIG.clinicId,
+      status: 'dead_letter'
     });
-    await item.save();
-    retried++;
-  }
 
-  log.info(`Retried ${retried} items from dead letter queue`);
-  return { retried };
+    let retried = 0;
+    const errors = [];
+
+    for (const item of deadItems) {
+      try {
+        item.status = 'pending';
+        item.attempts = 0;
+        item.nextAttempt = new Date();
+        item.errorHistory.push({
+          error: 'Bulk retry from dead letter queue',
+          timestamp: new Date(),
+          attempt: 0
+        });
+        await item.save();
+        retried++;
+      } catch (itemError) {
+        log.warn('Failed to retry dead letter item:', {
+          error: itemError.message,
+          syncId: item.syncId
+        });
+        errors.push({ syncId: item.syncId, error: itemError.message });
+      }
+    }
+
+    log.info(`Retried ${retried} items from dead letter queue`);
+    return { success: true, retried, failed: errors.length, errors };
+  } catch (error) {
+    log.error('Failed to retry all dead letter items:', {
+      error: error.message,
+      clinicId: SYNC_CONFIG.clinicId
+    });
+    return { success: false, error: 'Erreur lors de la relance des éléments', retried: 0 };
+  }
 }
 
 /**
  * Delete items from dead letter queue (after review)
  */
 async function clearDeadLetterItems(syncIds) {
-  const result = await SyncQueue.deleteMany({
-    clinicId: SYNC_CONFIG.clinicId,
-    syncId: { $in: syncIds },
-    status: 'dead_letter'
-  });
-  log.info(`Cleared ${result.deletedCount} items from dead letter queue`);
-  return { deleted: result.deletedCount };
+  try {
+    const result = await SyncQueue.deleteMany({
+      clinicId: SYNC_CONFIG.clinicId,
+      syncId: { $in: syncIds },
+      status: 'dead_letter'
+    });
+    log.info(`Cleared ${result.deletedCount} items from dead letter queue`);
+    return { success: true, deleted: result.deletedCount };
+  } catch (error) {
+    log.error('Failed to clear dead letter items:', {
+      error: error.message,
+      syncIdsCount: syncIds?.length,
+      clinicId: SYNC_CONFIG.clinicId
+    });
+    return { success: false, error: 'Erreur lors de la suppression des éléments', deleted: 0 };
+  }
 }
 
 module.exports = {

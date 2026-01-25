@@ -1,212 +1,281 @@
 # Architecture
 
-**Analysis Date:** 2026-01-13
+**Analysis Date:** 2026-01-25
 
 ## Pattern Overview
 
-**Overall:** Full-Stack Monolith with Microservices
+**Overall:** Layered MVC architecture with domain-driven services and microservices for specialized tasks
 
 **Key Characteristics:**
-- Multi-tenant with clinic context isolation
-- RESTful API backend with WebSocket real-time updates
-- React SPA frontend with offline-first capabilities
-- Python microservices for AI/ML features (face recognition, OCR)
-- Central aggregation server for multi-clinic coordination
+- Three-tier vertical layering: HTTP routes → controllers → services → data models
+- Modular controllers grouped by domain (patients, ophthalmology, invoices, etc)
+- Centralized business logic in specialized service classes
+- Multi-clinic context isolation enforced at middleware level
+- Horizontal separation by responsibility: clinics, inventory, billing, clinical domains
+- Microservices for AI/ML: Python-based face recognition and OCR services
+- Centralized server for multi-clinic data synchronization
 
 ## Layers
 
-**Layer 1: Frontend (React SPA)**
-- Purpose: User interface and client-side state management
-- Contains: Pages, components, hooks, contexts, Redux slices, API services
-- Location: `frontend/src/`
-- Depends on: Backend REST API, WebSocket server
-- Technologies: React 19, Redux Toolkit, React Query, Tailwind CSS, Socket.io-client
+**HTTP & Routing Layer:**
+- Purpose: Parse requests, apply middleware, route to controllers
+- Location: `backend/routes/` (88 route files)
+- Contains: Express Router definitions with security middleware (auth, clinic validation, CSRF, rate limiting)
+- Depends on: Middleware stack, controllers
+- Used by: Frontend client, third-party integrations
 
-**Layer 2: Backend API (Express)**
-- Purpose: Business logic, data access, authentication, API endpoints
-- Contains: Route handlers, controllers, services, middleware
-- Location: `backend/`
-- Depends on: MongoDB, Redis, microservices
-- Technologies: Express.js, Mongoose, Socket.io, JWT, Winston
+**Middleware Layer:**
+- Purpose: Cross-cutting concerns (auth, validation, logging, rate limiting, security)
+- Location: `backend/middleware/` (18 files)
+- Contains: Authentication (JWT with refresh tokens), clinic context verification, audit logging, error handling, rate limiting by endpoint type
+- Key middleware:
+  - `auth.js`: JWT validation with token revocation checking via Redis
+  - `clinicAuth.js`: Multi-clinic context enforcement
+  - `auditLogger.js`: Sensitive operation logging
+  - `rateLimiter.js`: Tiered rate limiting (auth, sensitive, reports, search)
+  - `csrf.js`: CSRF token validation
+  - `errorHandler.js`: Unified error response formatting
+- Depends on: Redis, User models, config
+- Used by: All routes
 
-**Layer 3: Data Layer (MongoDB)**
-- Purpose: Persistent data storage with schema validation
-- Contains: 79+ Mongoose models with hooks, indexes, virtuals
-- Location: `backend/models/`
-- Depends on: MongoDB server
-- Features: Soft deletes, clinic scoping, PHI encryption, audit trails
+**Controller Layer:**
+- Purpose: Handle request/response, orchestrate business logic, validate inputs
+- Location: `backend/controllers/` (59 controller files, many organized in subdirectories)
+- Contains: Request parsing, response building, delegation to services
+- Structure: Controllers often split by responsibility (e.g., `patients/coreController.js`, `patients/advancedController.js`)
+- Key controllers:
+  - `patients/coreController.js`: CRUD, search, basic operations
+  - `patients/advancedController.js`: Complex queries, analytics
+  - `invoices/billingController.js`: Payment processing
+  - `invoices/paymentController.js`: Payment lifecycle
+  - `ophthalmology/coreController.js`: Exam CRUD
+  - `ophthalmology/clinicalTestsController.js`: Specialized tests
+- Depends on: Services, middleware helpers, request validation
+- Used by: Routes
 
-**Layer 4: Caching & Sessions (Redis)**
-- Purpose: Session storage, rate limiting, caching, pub/sub
-- Contains: Session store, rate limiter store, 2FA codes
-- Location: `backend/config/redis.js`
-- Depends on: Redis server
+**Service Layer:**
+- Purpose: Encapsulate business logic, state management, orchestration
+- Location: `backend/services/` (97+ service files in flat and nested structure)
+- Contains: Domain-specific logic, integrations, state machines, calculations
+- Key service categories:
+  - **Data Services** (>60): Inventory, patient, appointment, lab, pharmacy, billing operations
+  - **Domain Services** (`domain/`): Cross-domain orchestration (BillingService, SurgeryService)
+  - **Integration Services**: Device sync, PACS, CareVision bridge, DMI client, SMS/email
+  - **Device Parsers** (`deviceParsers/`): Parse device output (OCT, visual field, tonometry)
+  - **Adapters** (`adapters/`): Standardize device data (VisualFieldAdapter)
+  - **Schedulers**: Background jobs (alerts, device sync, backup, calendar, payment plans)
+  - **Real-time**: WebSocket service for live updates (queue, alerts, device data)
+- Depends on: Models, config, utilities, external APIs
+- Used by: Controllers, other services, scheduled jobs
 
-**Layer 5: Microservices (Python)**
-- Purpose: AI/ML operations isolated from main application
-- Contains: Face recognition service, OCR service
-- Location: `face-service/`, `ocr-service/`
-- Depends on: Backend API calls
-- Technologies: Flask, FastAPI, Celery, DeepFace, PaddleOCR
+**Data Model Layer:**
+- Purpose: Define schema, validation, relationships, persistence
+- Location: `backend/models/` (90+ Mongoose schemas)
+- Contains: Schema definitions with validation, indexes, hooks, instance/static methods
+- Key models:
+  - **Clinical**: Patient, OphthalmologyExam, Prescription, Surgery, IVTInjection
+  - **Operational**: Appointment, Clinic, Room, Queue, Device
+  - **Inventory**: Inventory, InventoryTransaction, InventoryTransfer, GlassesOrder
+  - **Financial**: Invoice, Payment, ConventionFeeSchedule, InsuranceClaim
+  - **Infrastructure**: User, AuditLog, Device, ConsultationSession, Alert
+- Features: Soft delete pattern (isDeleted, deletedAt), clinic context on all, timestamps
+- Depends on: Mongoose, validation utils, encryption utilities
+- Used by: Services, controllers, migrations
 
-**Layer 6: Central Server**
-- Purpose: Multi-clinic aggregation and data synchronization
-- Contains: Consolidated reporting, sync coordination, clinic registry
-- Location: `central-server/`
-- Depends on: Individual clinic backends
+**Utility Layer:**
+- Purpose: Reusable helpers and common functionality
+- Location: `backend/utils/` (24 files)
+- Contains: Financial validation, PHI encryption, token handling, transactions, pagination, loggers
+- Key utilities:
+  - `phiEncryption.js`: Encrypt/decrypt sensitive patient data
+  - `financialValidation.js`: Multi-currency validation, fraud detection
+  - `tokenUtils.js`: JWT generation and refresh logic
+  - `migrationTransaction.js`: MongoDB session handling for ACID-like transactions
+  - `structuredLogger.js`: Context-aware logging for debugging
+  - `apiResponse.js`: Standardized response formatting
+  - `mongoConnection.js`: Database connection management
+- Depends on: Config, models (for logging)
+- Used by: Services, controllers, models
 
 ## Data Flow
 
-**HTTP Request Lifecycle:**
+**User Request Flow:**
 
-1. Browser → React Component (user action)
-2. React dispatches Redux action or calls API service
-3. API Service (`frontend/src/services/*.js`) constructs axios request with auth headers
-4. Express Server (`backend/server.js`) receives request
-5. Security middleware: helmet, CORS, rate limiting, NoSQL injection protection
-6. Auth middleware: JWT verification, clinic context (`backend/middleware/auth.js`, `clinicAuth.js`)
-7. Validation middleware: express-validator rules
-8. Route handler → Controller method
-9. Controller calls service layer for business logic
-10. Service interacts with Mongoose models
-11. Response returns through layers → React updates UI/state
+1. **Client Request** → Browser/API client sends HTTP request
+2. **Middleware Chain** → Auth (verify JWT) → Clinic context (scope to clinic) → Validation (body/query)
+3. **Route Handler** → Express router matches path, calls controller
+4. **Controller** → Validates input, calls appropriate service method(s), formats response
+5. **Service** → Executes business logic, may call multiple services, models, utilities
+6. **Data Layer** → Mongoose queries MongoDB, applies hooks (pre/post), returns document
+7. **Response** → Service returns result to controller → Controller formats as JSON → Middleware (audit log if needed) → HTTP response
+8. **WebSocket Notification** (optional) → Service emits via websocketService if real-time update needed
 
-**WebSocket Flow:**
+**Example: Create Invoice Payment**
 
-1. Frontend connects via Socket.io-client
-2. Backend WebSocket server (`backend/services/websocketService.js`) handles connection
-3. Client subscribes to events (queue updates, notifications)
-4. Server broadcasts events via Redis pub/sub
-5. Frontend socket listener updates Redux state
-6. React re-renders affected components
+1. POST `/api/invoices/:id/payments`
+2. Middleware validates JWT, checks clinic ownership of invoice
+3. `invoices/paymentController.invoicePayment()` extracts amount, method, date
+4. Calls `BillingService.processPayment(invoiceId, paymentData, userId)`
+5. BillingService:
+   - Loads Invoice via Mongoose
+   - Validates amount (CDF/USD/EUR)
+   - Calls `invoice.addPayment()` instance method
+   - Invoice model increments `payments` array, updates `summary.amountDue`
+   - If 100% paid on an item, triggers `SurgeryService` to create surgery case
+   - Calls `websocketService.emit('payment:recorded')` for real-time UI update
+   - Returns updated invoice
+6. Controller returns payment details
+7. Audit logger records transaction (user, clinic, amount, timestamp)
 
-**Offline Sync Flow:**
+**State Management (Frontend):**
 
-1. App detects offline state
-2. Dexie (IndexedDB) provides cached data
-3. User actions create SyncQueue entries
-4. App reconnects → syncService processes queue
-5. Backend merges with server state
-6. Conflicts resolved via UI prompts
-
-**State Management:**
-- Redux Toolkit for global UI state (auth, clinic, appointments)
-- React Query for server state caching
-- Context providers for scoped state (patient, consultation)
-- Dexie for offline data persistence
+1. React component uses Redux for auth/clinic context
+2. API service calls backend endpoint
+3. Response cached via React Query (server state)
+4. Component local state (useState) for form/UI state
+5. WebSocket listener updates UI when backend events fire (via useWebSocketEvent hook)
+6. Dexie IndexedDB stores offline data for sync later
 
 ## Key Abstractions
 
-**Controller:**
-- Purpose: Parse requests, validate input, call services, format responses
-- Examples: `backend/controllers/patients/coreController.js`, `backend/controllers/appointmentController.js`
-- Pattern: Express async handlers with standardized error handling
+**Clinic Context:**
+- Purpose: Enforce data isolation across multi-clinic deployments
+- Examples: `backend/middleware/clinicAuth.js`, `backend/utils/clinicFilter.js`
+- Pattern: Every query decorated with `{ clinic: req.user.currentClinicId }` or equivalent
+- Enforced at: Middleware level via `clinicVerification.verifyClinicOwnership()`
 
-**Service:**
-- Purpose: Encapsulate business logic, database operations, external integrations
-- Examples: `backend/services/ivtComplianceService.js`, `backend/services/pdfGenerator.js`
-- Pattern: Stateless modules with async functions
+**Service Orchestration:**
+- Purpose: Handle complex workflows involving multiple models/services
+- Examples: `backend/services/domain/BillingService.js`, `backend/services/domain/SurgeryService.js`
+- Pattern: Class with async methods that coordinate lower-level services
+- Usage: Controllers call domain service, domain service calls multiple utility services, updates multiple models
 
-**Model (Mongoose):**
-- Purpose: Schema definition, validation, data access methods
-- Examples: `backend/models/Patient.js`, `backend/models/Invoice.js`
-- Pattern: Schema with hooks, statics, methods, virtuals, indexes
+**Device Integration Adapter:**
+- Purpose: Standardize different device outputs (OCT, tonometer, refractor, visual field)
+- Examples: `backend/services/adapters/VisualFieldAdapter.js`, parser files in `backend/services/deviceParsers/`
+- Pattern: Adapter reads device-specific format → normalizes to exam measurement object
+- Flow: Device exports file → Sync service detects → Parser reads format → Adapter normalizes → Updates OphthalmologyExam
 
-**Middleware:**
-- Purpose: Request processing pipeline (auth, validation, logging)
-- Examples: `backend/middleware/auth.js`, `backend/middleware/auditLogger.js`
-- Pattern: Express middleware functions
+**Soft Delete Pattern:**
+- Purpose: Preserve audit trail, allow restoration, prevent cascade issues
+- Pattern: Model has `isDeleted: Boolean`, `deletedAt: Date` fields
+- Queries automatically filter: `{ isDeleted: { $ne: true } }` via Mongoose middleware
+- Explicit restore via `restorePatient()` or service method
 
-**API Service (Frontend):**
-- Purpose: Encapsulate backend API calls with error handling
-- Examples: `frontend/src/services/ophthalmologyService.js`, `frontend/src/services/patientService.js`
-- Pattern: Async functions returning promises
+**Pagination Service:**
+- Purpose: Standardize list endpoint pagination
+- Example: `backend/services/paginationService.js`
+- Pattern: Extract `page`, `limit`, `sort` from query → Calculate offset → Apply to Mongoose → Return with total count
+- Used in: All list endpoints (getPatients, getInvoices, getAppointments, etc)
 
-**Context Provider (Frontend):**
-- Purpose: Scoped state management for component trees
-- Examples: `frontend/src/contexts/ClinicContext.jsx`, `frontend/src/contexts/PatientContext.jsx`
-- Pattern: React Context with useReducer
+**WebSocket Event Broadcast:**
+- Purpose: Push updates to connected clients in real-time
+- Examples: `backend/services/websocketService.js`
+- Pattern: Service emits event on state change → WebSocket broadcasts to room (clinic, queue, patient) → Frontend listeners update UI
+- Events: `payment:recorded`, `queue:updated`, `device:data_ready`, `consultation:completed`
 
 ## Entry Points
 
 **Backend Server:**
 - Location: `backend/server.js`
-- Triggers: `npm start` or `npm run dev`
-- Responsibilities: Initialize Express, load middleware, mount routes, connect MongoDB/Redis, start WebSocket server, initialize schedulers
+- Triggers: Node process start
+- Responsibilities:
+  - Load environment, validate secrets
+  - Initialize database connection (MongoDB)
+  - Initialize Redis (sessions, caching, token revocation)
+  - Spin up Express app
+  - Register all 88 route modules
+  - Start background schedulers (alerts, device sync, backups)
+  - Create HTTP/WebSocket server
+  - Bind to port (default 5000)
 
 **Frontend App:**
-- Location: `frontend/src/main.jsx` → `frontend/src/App.jsx`
-- Triggers: Vite dev server or production build
-- Responsibilities: Render React app, setup providers (Redux, Router, Contexts), configure Sentry, lazy-load routes
+- Location: `frontend/src/main.jsx`
+- Entry: Renders App.jsx root component
+- Responsibilities:
+  - Initialize Sentry error tracking
+  - Create React root
+  - Wrap with Redux provider and persistence
+  - Wrap with auth/clinic/patient context providers
+  - Initialize React Router with lazy-loaded pages
+
+**Frontend Router:**
+- Location: `frontend/src/App.jsx`
+- Responsibilities:
+  - Define all routes and their components
+  - Apply route guards (ProtectedRoute, RoleGuard)
+  - Lazy load 80+ pages for code splitting
+  - Handle authentication redirect
+  - Show loading spinner while code splitting
+  - Global error boundary wrapping
 
 **Central Server:**
 - Location: `central-server/server.js`
-- Triggers: `npm start` in central-server directory
-- Responsibilities: Multi-clinic aggregation, sync coordination, consolidated reporting
+- Triggers: Separate Node process on coordinator machine
+- Responsibilities:
+  - Sync inventory data across clinics
+  - Aggregate financial reports
+  - Consolidate patient data
+  - Coordinate multi-clinic operations
 
-**Face Recognition Service:**
-- Location: `face-service/app.py`
-- Triggers: Flask server startup
-- Responsibilities: Face detection, encoding, verification for patient identification
-
-**OCR Service:**
-- Location: `ocr-service/app/main.py`
-- Triggers: FastAPI + Celery workers
-- Responsibilities: Document OCR, legacy record import, async processing
+**Microservices:**
+- **Face Service**: `face-service/app.py` (FastAPI) - Face recognition, duplicate detection
+- **OCR Service**: `ocr-service/app/main.py` (FastAPI + Celery) - Document text extraction, form field detection
 
 ## Error Handling
 
-**Strategy:** Exceptions bubble up through layers; caught at controller/middleware level
+**Strategy:** Centralized error handler with structured logging and user-friendly messages
 
-**Backend Patterns:**
-- Try/catch in controllers with `asyncHandler` wrapper
-- Centralized error handler middleware (`backend/middleware/errorHandler.js`)
-- Standardized API response format via `backend/utils/apiResponse.js`
-- Winston logger for error recording
+**Patterns:**
+- Backend: Controllers wrap in `asyncHandler()` → Errors thrown → Caught by global error handler → Formatted response
+- Frontend: Try/catch in API services → Toast notifications (react-toastify) → Retry logic in some services
+- Logging: Context-aware logger (structuredLogger.js) includes user, clinic, resource IDs
+- Audit: Sensitive errors logged to AuditLog for compliance
 
-**Frontend Patterns:**
-- Error boundaries for component-level failures
-- Toast notifications for user-facing errors (react-toastify)
-- Redux middleware for auth error handling
-- Sentry for error tracking and reporting
+**Error Response Format:**
+```javascript
+{
+  success: false,
+  error: 'User-friendly message',
+  code: 'ERROR_CODE', // Machine-readable
+  details: { ...context }, // Only in dev/non-production
+  timestamp: '2026-01-25T12:00:00Z'
+}
+```
 
 ## Cross-Cutting Concerns
 
-**Authentication:**
-- JWT access tokens + refresh tokens
-- Optional 2FA via speakeasy TOTP
-- Session management via Redis
-- Clinic context embedded in JWT claims
-
-**Authorization:**
-- RBAC with roles: doctor, nurse, optician, pharmacist, cashier, admin
-- Middleware checks: `protect`, `authorize(['role1', 'role2'])`
-- Clinic-scoped data access via `req.user.currentClinicId`
-
 **Logging:**
-- Winston structured logging (`backend/config/logger.js`)
-- Morgan HTTP request logging
-- Audit logging for sensitive operations (`backend/middleware/auditLogger.js`)
-- Prometheus metrics (`backend/middleware/metrics.js`)
+- Implementation: `backend/config/logger.js`, `backend/utils/structuredLogger.js`
+- Approach: Winston logger with context (user, clinic, resource IDs)
+- Usage: Services call `log.info()`, `log.error()` with structured data
 
 **Validation:**
-- express-validator for request validation
-- Joi for complex schema validation
-- Mongoose schema validation
-- Yup for frontend form validation
+- Implementation: Express-validator at route level, Mongoose schema validation
+- Approach: Request body validated before reaching controller, Yup on frontend
+- Pattern: Validation middleware applies sanitization and type checking
 
-**Clinic Context:**
-- All queries scoped by clinic ID
-- Middleware enforces clinic context (`backend/middleware/clinicAuth.js`)
-- Multi-clinic users can switch context
-- Data isolation prevents cross-clinic access
+**Authentication:**
+- Implementation: JWT (access + refresh token), Redis session store, 2FA support (speakeasy)
+- Approach: Middleware verifies token, checks revocation list, validates session
+- Flow: Login → Issue access token (15 min) + refresh token (30 days) → Refresh on expiry → Logout revokes tokens
+
+**Multi-Clinic Isolation:**
+- Implementation: Middleware decorates query with clinic context
+- Approach: Verify user.currentClinicId, scope all queries to clinic
+- Enforcement: Pre-save hooks, query filters, controller checks
+- Fallback: Users can see cross-clinic data if explicitly allowed (e.g., reports)
 
 **Audit Logging:**
-- Sensitive operations logged (patient access, financial changes, config updates)
-- Includes user, action, resource, changes, timestamp
-- Stored in AuditLog collection
+- Implementation: AuditLog model + middleware + service calls
+- Approach: Auto-log via middleware for sensitive routes, manual for custom operations
+- Tracked: Patient access, financial transactions, configuration changes, user actions
+
+**Rate Limiting:**
+- Implementation: Redis-backed rate limiter with tiered configs
+- Approach: Different limits per endpoint type (auth stricter, search more lenient)
+- Enforcement: Middleware rejects with 429 if limit exceeded
 
 ---
 
-*Architecture analysis: 2026-01-13*
-*Update when major patterns change*
+*Architecture analysis: 2026-01-25*
