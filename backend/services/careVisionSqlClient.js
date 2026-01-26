@@ -453,6 +453,350 @@ function transformAppointment(row) {
 }
 
 // ============================================================
+// Invoices (Facture table)
+// ============================================================
+
+/**
+ * Get invoices from CareVision Facture table
+ *
+ * Table: Facture (Invoices)
+ * ~94,000+ records in production
+ *
+ * @param {Object} options - Query options
+ * @param {Date|string} [options.startDate] - Filter by date >= startDate
+ * @param {Date|string} [options.endDate] - Filter by date <= endDate
+ * @param {string|number} [options.patientId] - Filter by CareVision patient ID
+ * @param {string} [options.status] - Filter by invoice status
+ * @param {number} [options.limit=1000] - Maximum records to return
+ * @param {number} [options.offset=0] - Skip first N records (pagination)
+ * @returns {Promise<{records: Array, total: number}>}
+ */
+async function getInvoices(options = {}) {
+  const {
+    startDate,
+    endDate,
+    patientId,
+    status,
+    limit = 1000,
+    offset = 0
+  } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    // Build WHERE conditions
+    const conditions = [];
+
+    if (startDate) {
+      request.input('startDate', sql.DateTime, new Date(startDate));
+      conditions.push('datefacture >= @startDate');
+    }
+
+    if (endDate) {
+      request.input('endDate', sql.DateTime, new Date(endDate));
+      conditions.push('datefacture <= @endDate');
+    }
+
+    if (patientId) {
+      request.input('patientId', sql.VarChar, String(patientId));
+      conditions.push('numclient = @patientId');
+    }
+
+    if (status) {
+      request.input('status', sql.VarChar, String(status));
+      conditions.push('etat = @status');
+    }
+
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(' AND ')}`
+      : '';
+
+    // Get total count first
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM Facture
+      ${whereClause}
+    `;
+
+    const countResult = await request.query(countQuery);
+    const total = countResult.recordset[0].total;
+
+    // Get paginated records
+    // Create new request for data query (can't reuse request with inputs)
+    const dataRequest = connPool.request();
+
+    if (startDate) {
+      dataRequest.input('startDate', sql.DateTime, new Date(startDate));
+    }
+    if (endDate) {
+      dataRequest.input('endDate', sql.DateTime, new Date(endDate));
+    }
+    if (patientId) {
+      dataRequest.input('patientId', sql.VarChar, String(patientId));
+    }
+    if (status) {
+      dataRequest.input('status', sql.VarChar, String(status));
+    }
+
+    dataRequest.input('offset', sql.Int, offset);
+    dataRequest.input('limit', sql.Int, limit);
+
+    const dataQuery = `
+      SELECT
+        numfacture,
+        numclient,
+        datefacture,
+        montant,
+        montantpaye,
+        resteapayer,
+        etat,
+        observations,
+        modepaiement,
+        numconsultation,
+        numcommande,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM Facture
+      ${whereClause}
+      ORDER BY datefacture DESC
+      OFFSET @offset ROWS
+      FETCH NEXT @limit ROWS ONLY
+    `;
+
+    const dataResult = await dataRequest.query(dataQuery);
+
+    // Transform records to MedFlow format
+    const records = dataResult.recordset.map(row => transformInvoice(row));
+
+    log.info('[CareVisionSQL] getInvoices completed', {
+      total,
+      returned: records.length,
+      offset,
+      limit
+    });
+
+    return { records, total };
+  } catch (err) {
+    log.error('[CareVisionSQL] getInvoices failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Get a single invoice by CareVision invoice number
+ *
+ * @param {string|number} invoiceId - CareVision invoice ID (numfacture)
+ * @returns {Promise<Object|null>} Invoice record or null
+ */
+async function getInvoiceById(invoiceId) {
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('numfacture', sql.VarChar, String(invoiceId));
+
+    const result = await request.query(`
+      SELECT
+        numfacture,
+        numclient,
+        datefacture,
+        montant,
+        montantpaye,
+        resteapayer,
+        etat,
+        observations,
+        modepaiement,
+        numconsultation,
+        numcommande,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM Facture
+      WHERE numfacture = @numfacture
+    `);
+
+    if (result.recordset.length === 0) {
+      return null;
+    }
+
+    return transformInvoice(result.recordset[0]);
+  } catch (err) {
+    log.error('[CareVisionSQL] getInvoiceById failed:', {
+      invoiceId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get all invoices for a specific patient
+ *
+ * @param {string|number} careVisionPatientId - CareVision patient ID (numclient)
+ * @param {Object} options - Query options
+ * @param {number} [options.limit=100] - Maximum records
+ * @returns {Promise<Array>} Array of invoices
+ */
+async function getPatientInvoices(careVisionPatientId, options = {}) {
+  const { limit = 100 } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('patientId', sql.VarChar, String(careVisionPatientId));
+    request.input('limit', sql.Int, limit);
+
+    const result = await request.query(`
+      SELECT TOP (@limit)
+        numfacture,
+        numclient,
+        datefacture,
+        montant,
+        montantpaye,
+        resteapayer,
+        etat,
+        observations,
+        modepaiement,
+        numconsultation,
+        numcommande,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM Facture
+      WHERE numclient = @patientId
+      ORDER BY datefacture DESC
+    `);
+
+    return result.recordset.map(row => transformInvoice(row));
+  } catch (err) {
+    log.error('[CareVisionSQL] getPatientInvoices failed:', {
+      careVisionPatientId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get invoice count from Facture table
+ *
+ * @returns {Promise<number>} Total count
+ */
+async function getInvoiceCount() {
+  try {
+    const connPool = await getPool();
+    const result = await connPool.request().query('SELECT COUNT(*) as count FROM Facture');
+    return result.recordset[0].count;
+  } catch (err) {
+    log.error('[CareVisionSQL] getInvoiceCount failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Transform CareVision Facture record to MedFlow invoice format
+ *
+ * @param {Object} row - Raw SQL Server row
+ * @returns {Object} Transformed invoice object
+ */
+function transformInvoice(row) {
+  // Map CareVision status to MedFlow status
+  const statusMap = {
+    'PAYE': 'paid',
+    'PAYEE': 'paid',
+    'PARTIEL': 'partial',
+    'IMPAYE': 'unpaid',
+    'IMPAYEE': 'unpaid',
+    'ANNULE': 'cancelled',
+    'ANNULEE': 'cancelled',
+    'EN_ATTENTE': 'pending',
+    'ATTENTE': 'pending'
+  };
+
+  const rawStatus = (row.etat || '').toUpperCase().trim();
+  const mappedStatus = statusMap[rawStatus] || 'pending';
+
+  // Map payment method to MedFlow payment method
+  const paymentMethodMap = {
+    'ESPECES': 'cash',
+    'ESPECE': 'cash',
+    'CASH': 'cash',
+    'CARTE': 'card',
+    'CB': 'card',
+    'CHEQUE': 'check',
+    'VIREMENT': 'bank-transfer',
+    'ASSURANCE': 'insurance',
+    'CONVENTION': 'insurance',
+    'MOBILE': 'mobile-payment',
+    'ORANGE': 'orange-money',
+    'MTN': 'mtn-money',
+    'WAVE': 'wave'
+  };
+
+  const rawPaymentMethod = (row.modepaiement || '').toUpperCase().trim();
+  const mappedPaymentMethod = paymentMethodMap[rawPaymentMethod] || 'other';
+
+  // Parse amounts - CareVision uses CDF as integers
+  const amount = parseFloat(row.montant) || 0;
+  const amountPaid = parseFloat(row.montantpaye) || 0;
+  const amountDue = parseFloat(row.resteapayer) || (amount - amountPaid);
+
+  return {
+    // CareVision identifiers
+    legacyId: row.numfacture,
+    legacySource: 'carevision_facture',
+
+    // Patient link (will need to be mapped to MedFlow patient ID)
+    careVisionPatientId: row.numclient,
+
+    // Invoice details
+    invoiceNumber: row.numfacture,
+    invoiceDate: row.datefacture ? new Date(row.datefacture) : null,
+
+    // Financial data - CareVision uses CDF
+    currency: 'CDF',
+    total: amount,
+    amountPaid: amountPaid,
+    amountDue: amountDue,
+
+    // Status
+    status: mappedStatus,
+    originalStatus: row.etat,
+
+    // Payment
+    paymentMethod: mappedPaymentMethod,
+    originalPaymentMethod: row.modepaiement,
+
+    // Related records
+    careVisionConsultationId: row.numconsultation || null,
+    careVisionOrderId: row.numcommande || null,
+
+    // Notes
+    notes: row.observations || null,
+
+    // Audit fields
+    createdAt: row.datecreation || null,
+    updatedAt: row.datemodification || null,
+    createdBy: row.createdby || null,
+    modifiedBy: row.modifiedby || null,
+
+    // Raw data for debugging/validation
+    _raw: {
+      numfacture: row.numfacture,
+      datefacture: row.datefacture,
+      montant: row.montant,
+      etat: row.etat
+    }
+  };
+}
+
+// ============================================================
 // Utility Functions
 // ============================================================
 
@@ -532,10 +876,17 @@ module.exports = {
   getPatientAppointments,
   getAppointmentCount,
 
+  // Invoices (Facture)
+  getInvoices,
+  getInvoiceById,
+  getPatientInvoices,
+  getInvoiceCount,
+
   // Utilities
   executeQuery,
   getTableCount,
 
   // Internal (for testing)
-  _transformAppointment: transformAppointment
+  _transformAppointment: transformAppointment,
+  _transformInvoice: transformInvoice
 };
