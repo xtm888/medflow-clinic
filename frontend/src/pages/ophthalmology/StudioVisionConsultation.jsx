@@ -299,27 +299,196 @@ export default function StudioVisionConsultation() {
     setHasChanges(prev => ({ ...prev, [section]: true }));
   }, []);
 
-  // Save consultation
-  const handleSave = async () => {
+  // ==========================================
+  // GRANULAR SAVE METHODS (CareVision Pattern)
+  // ==========================================
+  // These methods save each section independently to prevent cascading failures.
+  // Mirrors CareVision's ModifierConsultationRefrac/Pathologie/Traite pattern.
+
+  /**
+   * Save refraction data only - mirrors CareVision's ModifierConsultationRefrac
+   * Saves: visual acuity, objective refraction, subjective refraction, keratometry
+   */
+  const saveRefractionData = useCallback(async () => {
+    if (!currentVisitId) {
+      logger.warn('Cannot save refraction: no visit ID');
+      return false;
+    }
     try {
-      setSaving(true);
-
-      await ophthalmologyService.saveExam({
-        patientId,
-        visitId: currentVisitId, // Use currentVisitId (may be auto-created)
-        data: {
-          ...data,
-          savedAt: new Date().toISOString()
-        }
+      await visitService.saveRefraction(currentVisitId, {
+        visualAcuity: data.refraction.visualAcuity,
+        objective: data.refraction.objective,
+        subjective: data.refraction.subjective,
+        keratometry: data.refraction.keratometry
       });
-
+      setHasChanges(prev => ({ ...prev, refraction: false }));
       setLastSaved(new Date());
-      setHasChanges({});
-      setSaving(false);
-
+      logger.debug('Refraction saved independently');
       return true;
     } catch (err) {
-      logger.error('Failed to save:', err);
+      logger.error('Failed to save refraction:', err);
+      return false;
+    }
+  }, [currentVisitId, data.refraction]);
+
+  /**
+   * Save diagnosis data only - mirrors CareVision's ModifierConsultationPathologie
+   * Saves: diagnoses array (ICD-10 codes with laterality)
+   */
+  const saveDiagnosisData = useCallback(async () => {
+    if (!currentVisitId) {
+      logger.warn('Cannot save diagnosis: no visit ID');
+      return false;
+    }
+    try {
+      await visitService.saveDiagnosis(currentVisitId, {
+        diagnoses: data.diagnostic.diagnoses,
+        procedures: data.diagnostic.procedures,
+        laboratory: data.diagnostic.laboratory,
+        surgery: data.diagnostic.surgery
+      });
+      setHasChanges(prev => ({ ...prev, diagnostic: false }));
+      setLastSaved(new Date());
+      logger.debug('Diagnosis saved independently');
+      return true;
+    } catch (err) {
+      logger.error('Failed to save diagnosis:', err);
+      return false;
+    }
+  }, [currentVisitId, data.diagnostic]);
+
+  /**
+   * Save treatment data only - mirrors CareVision's ModifierConsultationTraite
+   * Saves: prescriptions, medications, ordonnances
+   */
+  const saveTreatmentData = useCallback(async () => {
+    if (!currentVisitId) {
+      logger.warn('Cannot save treatment: no visit ID');
+      return false;
+    }
+    try {
+      await visitService.saveTreatment(currentVisitId, {
+        glasses: data.prescription.glasses,
+        medications: data.prescription.medications,
+        ordonnances: data.prescription.ordonnances
+      });
+      setHasChanges(prev => ({ ...prev, prescription: false }));
+      setLastSaved(new Date());
+      logger.debug('Treatment saved independently');
+      return true;
+    } catch (err) {
+      logger.error('Failed to save treatment:', err);
+      return false;
+    }
+  }, [currentVisitId, data.prescription]);
+
+  /**
+   * Save IOP data only - mirrors CareVision's ModifierConsultationRefra (TOD/TOG)
+   * Saves: intraocular pressure for OD/OS
+   */
+  const saveIOPData = useCallback(async () => {
+    if (!currentVisitId) {
+      logger.warn('Cannot save IOP: no visit ID');
+      return false;
+    }
+    try {
+      await visitService.saveIOP(currentVisitId, {
+        OD: data.examination.iop?.OD || data.vitals.iop?.OD,
+        OS: data.examination.iop?.OS || data.vitals.iop?.OS
+      });
+      setHasChanges(prev => ({ ...prev, examination: false }));
+      setLastSaved(new Date());
+      logger.debug('IOP saved independently');
+      return true;
+    } catch (err) {
+      logger.error('Failed to save IOP:', err);
+      return false;
+    }
+  }, [currentVisitId, data.examination.iop, data.vitals.iop]);
+
+  /**
+   * Save all sections that have changes using granular methods
+   * Each section is saved independently - if one fails, others still succeed
+   */
+  const handleSave = async () => {
+    if (!currentVisitId) {
+      logger.warn('Cannot save: no visit ID');
+      setError('Impossible de sauvegarder: aucune visite associée');
+      return false;
+    }
+
+    try {
+      setSaving(true);
+      const saveResults = [];
+
+      // Save each changed section independently (CareVision pattern)
+      // This prevents cascading failures - if one section fails, others still save
+
+      if (hasChanges.refraction) {
+        saveResults.push({ section: 'refraction', success: await saveRefractionData() });
+      }
+
+      if (hasChanges.diagnostic) {
+        saveResults.push({ section: 'diagnostic', success: await saveDiagnosisData() });
+      }
+
+      if (hasChanges.prescription) {
+        saveResults.push({ section: 'prescription', success: await saveTreatmentData() });
+      }
+
+      if (hasChanges.examination) {
+        saveResults.push({ section: 'examination', success: await saveIOPData() });
+      }
+
+      // For sections without granular endpoints, use the full exam save
+      const otherSections = ['chiefComplaint', 'vitals', 'contactLens', 'orthoptie', 'billing', 'healthcareOptions'];
+      const hasOtherChanges = otherSections.some(s => hasChanges[s]);
+
+      if (hasOtherChanges) {
+        try {
+          await ophthalmologyService.saveExam({
+            patientId,
+            visitId: currentVisitId,
+            data: {
+              chiefComplaint: data.chiefComplaint,
+              vitals: data.vitals,
+              contactLens: data.contactLens,
+              orthoptie: data.orthoptie,
+              billing: data.billing,
+              healthcareOptions: data.healthcareOptions,
+              consultationDuration: data.consultationDuration,
+              savedAt: new Date().toISOString()
+            }
+          });
+          saveResults.push({ section: 'other', success: true });
+          setHasChanges(prev => ({
+            ...prev,
+            chiefComplaint: false,
+            vitals: false,
+            contactLens: false,
+            orthoptie: false,
+            billing: false,
+            healthcareOptions: false
+          }));
+        } catch (err) {
+          logger.error('Failed to save other sections:', err);
+          saveResults.push({ section: 'other', success: false });
+        }
+      }
+
+      // Report results
+      const failures = saveResults.filter(r => !r.success);
+      if (failures.length > 0) {
+        logger.warn('Some sections failed to save:', failures.map(f => f.section));
+        // Don't set error - partial save is still useful
+      }
+
+      setLastSaved(new Date());
+      setSaving(false);
+
+      return failures.length === 0;
+    } catch (err) {
+      logger.error('Failed to save consultation:', err);
       setSaving(false);
       return false;
     }
@@ -638,18 +807,41 @@ export default function StudioVisionConsultation() {
     navigate(`/orthoptic/new?patientId=${patientId}&visitId=${currentVisitId || ''}`);
   }, [navigate, patientId, currentVisitId]);
 
-  // Tab change handler
-  const handleTabChange = (tabId) => {
+  // Tab change handler with auto-save for the current section (CareVision pattern)
+  const handleTabChange = useCallback(async (tabId) => {
+    // Auto-save the current tab's data before switching (granular save)
+    // This mirrors CareVision's behavior of saving each section independently
+    if (currentVisitId) {
+      const tabSaveMap = {
+        refraction: { check: hasChanges.refraction, save: saveRefractionData },
+        pathologies: { check: hasChanges.diagnostic, save: saveDiagnosisData },
+        traitement: { check: hasChanges.prescription, save: saveTreatmentData },
+        examen: { check: hasChanges.examination, save: saveIOPData }
+      };
+
+      const currentTabSave = tabSaveMap[activeTab];
+      if (currentTabSave?.check) {
+        logger.debug(`Auto-saving ${activeTab} before tab change`);
+        await currentTabSave.save();
+      }
+    }
+
     setActiveTab(tabId);
-  };
+  }, [activeTab, currentVisitId, hasChanges, saveRefractionData, saveDiagnosisData, saveTreatmentData, saveIOPData]);
+
+  // Memoize handleSave for use in keyboard shortcuts
+  const memoizedHandleSave = useCallback(handleSave, [
+    currentVisitId, hasChanges, patientId, data,
+    saveRefractionData, saveDiagnosisData, saveTreatmentData, saveIOPData
+  ]);
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Ctrl+S: Save
+      // Ctrl+S: Save (granular save for changed sections)
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
-        handleSave();
+        memoizedHandleSave();
       }
 
       // Escape: Cancel/Go back
@@ -660,7 +852,7 @@ export default function StudioVisionConsultation() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleSave, navigate]);
+  }, [memoizedHandleSave, navigate]);
 
   // Check if any tab has unsaved changes
   const tabChanges = useMemo(() => ({
@@ -975,9 +1167,10 @@ export default function StudioVisionConsultation() {
 
               {/* Action Buttons */}
               <button
-                onClick={handleSave}
+                onClick={memoizedHandleSave}
                 disabled={saving}
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition"
+                title="Sauvegarde granulaire (Ctrl+S) - Chaque section est sauvegardée indépendamment"
               >
                 {saving ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
