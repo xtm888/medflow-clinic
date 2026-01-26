@@ -77,6 +77,86 @@ function validateVisualAcuityValue(value) {
          /^\d{1,2}\/\d{1,2}$/.test(value); // Allow fraction format
 }
 
+/**
+ * Validate refraction sphere value (diopters)
+ * @param {number} value - Sphere value in diopters
+ * @returns {boolean} True if valid
+ */
+function validateSphereValue(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== 'number') return false;
+  // Clinical range: -25.00 to +25.00 diopters
+  return value >= -25 && value <= 25;
+}
+
+/**
+ * Validate refraction cylinder value (diopters)
+ * @param {number} value - Cylinder value in diopters
+ * @returns {boolean} True if valid
+ */
+function validateCylinderValue(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== 'number') return false;
+  // Clinical range: -10.00 to +10.00 diopters
+  return value >= -10 && value <= 10;
+}
+
+/**
+ * Validate refraction axis value (degrees)
+ * @param {number} value - Axis value in degrees
+ * @returns {boolean} True if valid
+ */
+function validateAxisValue(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== 'number') return false;
+  // Valid range: 0 to 180 degrees
+  return value >= 0 && value <= 180;
+}
+
+/**
+ * Validate addition value for presbyopia (diopters)
+ * @param {number} value - Addition value in diopters
+ * @returns {boolean} True if valid
+ */
+function validateAdditionValue(value) {
+  if (value === undefined || value === null) return true;
+  if (typeof value !== 'number') return false;
+  // Clinical range: +0.25 to +4.00 diopters
+  return value >= 0.25 && value <= 4;
+}
+
+/**
+ * Validate a complete refraction eye object
+ * @param {Object} eyeData - Eye refraction data (sphere, cylinder, axis, add)
+ * @param {string} eye - Eye identifier (OD/OS) for error messages
+ * @returns {Object} Validation result { valid: boolean, errors: string[] }
+ */
+function validateRefractionEye(eyeData, eye) {
+  const errors = [];
+
+  if (!eyeData || typeof eyeData !== 'object') {
+    return { valid: true, errors: [] }; // Empty data is valid (optional)
+  }
+
+  if (!validateSphereValue(eyeData.sphere)) {
+    errors.push(`${eye}: La sphère doit être entre -25.00 et +25.00 dioptries`);
+  }
+
+  if (!validateCylinderValue(eyeData.cylinder)) {
+    errors.push(`${eye}: Le cylindre doit être entre -10.00 et +10.00 dioptries`);
+  }
+
+  if (!validateAxisValue(eyeData.axis)) {
+    errors.push(`${eye}: L'axe doit être entre 0 et 180 degrés`);
+  }
+
+  if (!validateAdditionValue(eyeData.add || eyeData.addition)) {
+    errors.push(`${eye}: L'addition doit être entre +0.25 et +4.00 dioptries`);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
 // ============================================
 // CORE GRANULAR UPDATE METHODS
 // ============================================
@@ -88,10 +168,24 @@ function validateVisualAcuityValue(value) {
  * Updates REFRACTION and LUNETTES fields independently without triggering
  * other pre-save hooks (FeeSchedule lookup, ID generation, etc.)
  *
+ * Supports three modes:
+ * 1. Link to existing OphthalmologyExam: { ophthalmologyExamId: ObjectId }
+ * 2. Update linked OphthalmologyExam's refraction: { refraction: {...} }
+ * 3. Update both Visit's ophthalmologyExam link AND the exam's refraction data
+ *
+ * CareVision Field Mapping:
+ * - REFRACTION → OphthalmologyExam.refraction (objective/subjective/finalPrescription)
+ * - LUNETTES → OphthalmologyExam.refraction.finalPrescription (glasses prescription)
+ *
  * @param {string} visitId - Visit MongoDB ID
  * @param {Object} refractionData - Refraction examination data
+ * @param {Object} refractionData.ophthalmologyExamId - Link to existing OphthalmologyExam (optional)
+ * @param {Object} refractionData.refraction - Refraction data to update on linked exam (optional)
+ * @param {Object} refractionData.objective - Objective refraction (autorefractor, retinoscopy)
+ * @param {Object} refractionData.subjective - Subjective refraction (OD, OS, add)
+ * @param {Object} refractionData.finalPrescription - Final glasses prescription
  * @param {string} userId - User performing the update
- * @returns {Promise<Visit>} Updated visit document
+ * @returns {Promise<Object>} Updated visit and optionally updated exam
  */
 async function updateVisitRefraction(visitId, refractionData, userId) {
   validateObjectId(visitId, 'Visit ID');
@@ -103,17 +197,97 @@ async function updateVisitRefraction(visitId, refractionData, userId) {
     throw error;
   }
 
-  const update = {
-    $set: {
-      'examinations.refraction': refractionData,
-      updatedBy: userId,
-      updatedAt: new Date()
-    }
+  // First, get the current visit to check for linked ophthalmologyExam
+  const existingVisit = await Visit.findById(visitId).lean();
+  if (!existingVisit) {
+    const error = new Error('Visite non trouvée');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  let updatedExam = null;
+  const updateFields = {
+    updatedBy: userId,
+    updatedAt: new Date()
   };
 
+  // Mode 1: Link to an existing OphthalmologyExam
+  if (refractionData.ophthalmologyExamId) {
+    validateObjectId(refractionData.ophthalmologyExamId, 'OphthalmologyExam ID');
+    updateFields.ophthalmologyExam = refractionData.ophthalmologyExamId;
+    // Also set the deprecated field for backward compatibility
+    updateFields['examinations.refraction'] = refractionData.ophthalmologyExamId;
+  }
+
+  // Mode 2 & 3: Update refraction data on linked OphthalmologyExam
+  // Check if refraction data is provided (either wrapped in 'refraction' key or directly)
+  const hasRefractionData = refractionData.refraction ||
+    refractionData.objective ||
+    refractionData.subjective ||
+    refractionData.finalPrescription;
+
+  if (hasRefractionData) {
+    // Determine the exam to update
+    const examId = refractionData.ophthalmologyExamId ||
+      existingVisit.ophthalmologyExam ||
+      existingVisit.examinations?.refraction;
+
+    if (examId && mongoose.Types.ObjectId.isValid(examId)) {
+      // Build the refraction update object
+      const refractionUpdate = {};
+      const refData = refractionData.refraction || refractionData;
+
+      // Objective refraction (autorefractor, retinoscopy)
+      if (refData.objective) {
+        if (refData.objective.autorefractor) {
+          refractionUpdate['refraction.objective.autorefractor'] = refData.objective.autorefractor;
+        }
+        if (refData.objective.retinoscopy) {
+          refractionUpdate['refraction.objective.retinoscopy'] = refData.objective.retinoscopy;
+        }
+      }
+
+      // Subjective refraction
+      if (refData.subjective) {
+        refractionUpdate['refraction.subjective'] = refData.subjective;
+      }
+
+      // Final prescription (LUNETTES in CareVision)
+      if (refData.finalPrescription) {
+        refractionUpdate['refraction.finalPrescription'] = refData.finalPrescription;
+      }
+
+      // Add audit fields to exam
+      refractionUpdate.updatedBy = userId;
+      refractionUpdate.updatedAt = new Date();
+
+      // Update the OphthalmologyExam atomically
+      if (Object.keys(refractionUpdate).length > 2) { // More than just audit fields
+        const OphthalmologyExam = require('../models/OphthalmologyExam');
+        updatedExam = await OphthalmologyExam.findByIdAndUpdate(
+          examId,
+          { $set: refractionUpdate },
+          {
+            new: true,
+            runValidators: false // CRITICAL: Skip heavy pre-save hooks
+          }
+        );
+
+        if (!updatedExam) {
+          log.warn('Linked OphthalmologyExam not found', { examId, visitId });
+        }
+      }
+    } else {
+      // No linked exam - store refraction data reference for later linking
+      // This maintains backward compatibility with systems that may set this field
+      log.warn('No linked OphthalmologyExam found for refraction update', { visitId });
+    }
+  }
+
+  // Update the Visit document
   const visit = await Visit.findByIdAndUpdate(
     visitId,
-    update,
+    { $set: updateFields },
     {
       new: true,
       runValidators: false // CRITICAL: Skip heavy pre-save hooks
@@ -126,14 +300,24 @@ async function updateVisitRefraction(visitId, refractionData, userId) {
     throw error;
   }
 
+  // Determine what was updated for logging
+  const refData = refractionData.refraction || refractionData;
   log.info('Refraction updated', {
     visitId: visit.visitId || visit._id,
     userId,
-    hasOD: !!refractionData.OD || !!refractionData.subjective?.OD,
-    hasOS: !!refractionData.OS || !!refractionData.subjective?.OS
+    examLinked: !!refractionData.ophthalmologyExamId,
+    examUpdated: !!updatedExam,
+    hasObjective: !!refData.objective,
+    hasSubjective: !!refData.subjective,
+    hasFinalPrescription: !!refData.finalPrescription,
+    hasOD: !!refData.subjective?.OD || !!refData.finalPrescription?.OD,
+    hasOS: !!refData.subjective?.OS || !!refData.finalPrescription?.OS
   });
 
-  return visit;
+  return {
+    visit,
+    exam: updatedExam
+  };
 }
 
 /**
@@ -822,5 +1006,10 @@ module.exports = {
   // Validation helpers (exported for testing)
   validateObjectId,
   validateIOPValue,
-  validateVisualAcuityValue
+  validateVisualAcuityValue,
+  validateSphereValue,
+  validateCylinderValue,
+  validateAxisValue,
+  validateAdditionValue,
+  validateRefractionEye
 };
