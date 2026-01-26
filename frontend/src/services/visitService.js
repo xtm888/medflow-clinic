@@ -834,6 +834,98 @@ const visitService = {
   },
 
   // ==========================================
+  // GRANULAR CLINICAL DATA UPDATE METHODS
+  // ==========================================
+
+  /**
+   * Save refraction data for visit - WORKS OFFLINE
+   * Updates refraction (sphere, cylinder, axis, addition) for OD/OS/OU
+   * @param {string} visitId - Visit ID
+   * @param {Object} refractionData - Refraction data
+   * @returns {Promise} Updated visit
+   */
+  async saveRefraction(visitId, refractionData) {
+    const updateData = {
+      refraction: refractionData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/refraction`, refractionData),
+      'UPDATE',
+      'visits',
+      updateData,
+      visitId
+    );
+  },
+
+  /**
+   * Save diagnosis data for visit - WORKS OFFLINE
+   * Updates diagnoses with ICD-10 codes and laterality
+   * @param {string} visitId - Visit ID
+   * @param {Object} diagnosisData - Diagnosis data
+   * @returns {Promise} Updated visit
+   */
+  async saveDiagnosis(visitId, diagnosisData) {
+    const updateData = {
+      diagnosis: diagnosisData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/diagnosis`, diagnosisData),
+      'UPDATE',
+      'visits',
+      updateData,
+      visitId
+    );
+  },
+
+  /**
+   * Save treatment data for visit - WORKS OFFLINE
+   * Updates treatment plan and prescriptions
+   * @param {string} visitId - Visit ID
+   * @param {Object} treatmentData - Treatment data
+   * @returns {Promise} Updated visit
+   */
+  async saveTreatment(visitId, treatmentData) {
+    const updateData = {
+      treatment: treatmentData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/treatment`, treatmentData),
+      'UPDATE',
+      'visits',
+      updateData,
+      visitId
+    );
+  },
+
+  /**
+   * Save IOP (intraocular pressure) data for visit - WORKS OFFLINE
+   * Updates IOP measurements for OD/OS with method and device info
+   * @param {string} visitId - Visit ID
+   * @param {Object} iopData - IOP data (typically includes OD, OS values, method, device)
+   * @returns {Promise} Updated visit
+   */
+  async saveIOP(visitId, iopData) {
+    const updateData = {
+      iop: iopData,
+      updatedAt: new Date().toISOString()
+    };
+
+    return offlineWrapper.mutate(
+      () => api.put(`/visits/${visitId}/iop`, iopData),
+      'UPDATE',
+      'visits',
+      updateData,
+      visitId
+    );
+  },
+
+  // ==========================================
   // OFFLINE HELPER METHODS
   // ==========================================
 
