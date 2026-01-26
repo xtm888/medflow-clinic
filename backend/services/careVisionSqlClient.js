@@ -1382,6 +1382,348 @@ function transformOrderDetail(row) {
 }
 
 // ============================================================
+// Correspondence (TCorespon / COURRIER tables)
+// ============================================================
+
+/**
+ * Get correspondence/letters from CareVision TCorespon table
+ *
+ * Table: TCorespon (Correspondence/Letters)
+ * Related: COURRIER (Letter content), TKorespondant (Correspondents)
+ *
+ * @param {Object} options - Query options
+ * @param {Date|string} [options.startDate] - Filter by date >= startDate
+ * @param {Date|string} [options.endDate] - Filter by date <= endDate
+ * @param {string|number} [options.patientId] - Filter by CareVision patient ID
+ * @param {string} [options.type] - Filter by correspondence type
+ * @param {number} [options.limit=1000] - Maximum records to return
+ * @param {number} [options.offset=0] - Skip first N records (pagination)
+ * @returns {Promise<{records: Array, total: number}>}
+ */
+async function getCorrespondence(options = {}) {
+  const {
+    startDate,
+    endDate,
+    patientId,
+    type,
+    limit = 1000,
+    offset = 0
+  } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    // Build WHERE conditions
+    const conditions = [];
+
+    if (startDate) {
+      request.input('startDate', sql.DateTime, new Date(startDate));
+      conditions.push('datecourrier >= @startDate');
+    }
+
+    if (endDate) {
+      request.input('endDate', sql.DateTime, new Date(endDate));
+      conditions.push('datecourrier <= @endDate');
+    }
+
+    if (patientId) {
+      request.input('patientId', sql.VarChar, String(patientId));
+      conditions.push('numclient = @patientId');
+    }
+
+    if (type) {
+      request.input('type', sql.VarChar, String(type));
+      conditions.push('typecourrier = @type');
+    }
+
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(' AND ')}`
+      : '';
+
+    // Get total count first
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM TCorespon
+      ${whereClause}
+    `;
+
+    const countResult = await request.query(countQuery);
+    const total = countResult.recordset[0].total;
+
+    // Get paginated records
+    // Create new request for data query (can't reuse request with inputs)
+    const dataRequest = connPool.request();
+
+    if (startDate) {
+      dataRequest.input('startDate', sql.DateTime, new Date(startDate));
+    }
+    if (endDate) {
+      dataRequest.input('endDate', sql.DateTime, new Date(endDate));
+    }
+    if (patientId) {
+      dataRequest.input('patientId', sql.VarChar, String(patientId));
+    }
+    if (type) {
+      dataRequest.input('type', sql.VarChar, String(type));
+    }
+
+    dataRequest.input('offset', sql.Int, offset);
+    dataRequest.input('limit', sql.Int, limit);
+
+    const dataQuery = `
+      SELECT
+        id,
+        numclient,
+        datecourrier,
+        typecourrier,
+        destinataire,
+        expediteur,
+        objet,
+        contenu,
+        medecin,
+        numconsultation,
+        numcorrespondant,
+        etat,
+        observations,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM TCorespon
+      ${whereClause}
+      ORDER BY datecourrier DESC
+      OFFSET @offset ROWS
+      FETCH NEXT @limit ROWS ONLY
+    `;
+
+    const dataResult = await dataRequest.query(dataQuery);
+
+    // Transform records to MedFlow format
+    const records = dataResult.recordset.map(row => transformCorrespondence(row));
+
+    log.info('[CareVisionSQL] getCorrespondence completed', {
+      total,
+      returned: records.length,
+      offset,
+      limit
+    });
+
+    return { records, total };
+  } catch (err) {
+    log.error('[CareVisionSQL] getCorrespondence failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Get a single correspondence record by CareVision ID
+ *
+ * @param {number|string} correspondenceId - CareVision correspondence ID
+ * @returns {Promise<Object|null>} Correspondence record or null
+ */
+async function getCorrespondenceById(correspondenceId) {
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('id', sql.Int, parseInt(correspondenceId));
+
+    const result = await request.query(`
+      SELECT
+        id,
+        numclient,
+        datecourrier,
+        typecourrier,
+        destinataire,
+        expediteur,
+        objet,
+        contenu,
+        medecin,
+        numconsultation,
+        numcorrespondant,
+        etat,
+        observations,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM TCorespon
+      WHERE id = @id
+    `);
+
+    if (result.recordset.length === 0) {
+      return null;
+    }
+
+    return transformCorrespondence(result.recordset[0]);
+  } catch (err) {
+    log.error('[CareVisionSQL] getCorrespondenceById failed:', {
+      correspondenceId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get all correspondence for a specific patient
+ *
+ * @param {string|number} careVisionPatientId - CareVision patient ID (numclient)
+ * @param {Object} options - Query options
+ * @param {number} [options.limit=100] - Maximum records
+ * @returns {Promise<Array>} Array of correspondence records
+ */
+async function getPatientCorrespondence(careVisionPatientId, options = {}) {
+  const { limit = 100 } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('patientId', sql.VarChar, String(careVisionPatientId));
+    request.input('limit', sql.Int, limit);
+
+    const result = await request.query(`
+      SELECT TOP (@limit)
+        id,
+        numclient,
+        datecourrier,
+        typecourrier,
+        destinataire,
+        expediteur,
+        objet,
+        contenu,
+        medecin,
+        numconsultation,
+        numcorrespondant,
+        etat,
+        observations,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM TCorespon
+      WHERE numclient = @patientId
+      ORDER BY datecourrier DESC
+    `);
+
+    return result.recordset.map(row => transformCorrespondence(row));
+  } catch (err) {
+    log.error('[CareVisionSQL] getPatientCorrespondence failed:', {
+      careVisionPatientId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get correspondence count from TCorespon table
+ *
+ * @returns {Promise<number>} Total count
+ */
+async function getCorrespondenceCount() {
+  try {
+    const connPool = await getPool();
+    const result = await connPool.request().query('SELECT COUNT(*) as count FROM TCorespon');
+    return result.recordset[0].count;
+  } catch (err) {
+    log.error('[CareVisionSQL] getCorrespondenceCount failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Transform CareVision TCorespon record to MedFlow correspondence format
+ *
+ * @param {Object} row - Raw SQL Server row
+ * @returns {Object} Transformed correspondence object
+ */
+function transformCorrespondence(row) {
+  // Map CareVision correspondence type to MedFlow type
+  const typeMap = {
+    'LETTRE': 'letter',
+    'COURRIER': 'letter',
+    'RAPPORT': 'report',
+    'COMPTE_RENDU': 'report',
+    'ORDONNANCE': 'prescription',
+    'CERTIFICAT': 'certificate',
+    'ATTESTATION': 'certificate',
+    'CONVOCATION': 'convocation',
+    'RAPPEL': 'reminder',
+    'AUTRE': 'other'
+  };
+
+  const rawType = (row.typecourrier || '').toUpperCase().trim();
+  const mappedType = typeMap[rawType] || 'letter';
+
+  // Map status
+  const statusMap = {
+    'BROUILLON': 'draft',
+    'ENVOYE': 'sent',
+    'ENVOYEE': 'sent',
+    'RECU': 'received',
+    'RECUE': 'received',
+    'ARCHIVE': 'archived',
+    'ARCHIVEE': 'archived',
+    'ANNULE': 'cancelled',
+    'ANNULEE': 'cancelled'
+  };
+
+  const rawStatus = (row.etat || '').toUpperCase().trim();
+  const mappedStatus = statusMap[rawStatus] || 'draft';
+
+  return {
+    // CareVision identifiers
+    legacyId: row.id,
+    legacySource: 'carevision_tcorespon',
+
+    // Patient link (will need to be mapped to MedFlow patient ID)
+    careVisionPatientId: row.numclient,
+
+    // Correspondence details
+    date: row.datecourrier ? new Date(row.datecourrier) : null,
+    type: mappedType,
+    originalType: row.typecourrier,
+
+    // Parties
+    recipient: row.destinataire || null,
+    sender: row.expediteur || null,
+
+    // Content
+    subject: row.objet || null,
+    content: row.contenu || null,
+
+    // Provider and related records
+    provider: row.medecin || null,
+    careVisionConsultationId: row.numconsultation || null,
+    careVisionCorrespondentId: row.numcorrespondant || null,
+
+    // Status
+    status: mappedStatus,
+    originalStatus: row.etat,
+
+    // Notes
+    notes: row.observations || null,
+
+    // Audit fields
+    createdAt: row.datecreation || null,
+    updatedAt: row.datemodification || null,
+    createdBy: row.createdby || null,
+    modifiedBy: row.modifiedby || null,
+
+    // Raw data for debugging/validation
+    _raw: {
+      id: row.id,
+      datecourrier: row.datecourrier,
+      typecourrier: row.typecourrier,
+      etat: row.etat
+    }
+  };
+}
+
+// ============================================================
 // Utility Functions
 // ============================================================
 
@@ -1475,6 +1817,12 @@ module.exports = {
   getOrderDetailsForOrders,
   getOrderCount,
 
+  // Correspondence (TCorespon / COURRIER)
+  getCorrespondence,
+  getCorrespondenceById,
+  getPatientCorrespondence,
+  getCorrespondenceCount,
+
   // Utilities
   executeQuery,
   getTableCount,
@@ -1483,5 +1831,6 @@ module.exports = {
   _transformAppointment: transformAppointment,
   _transformInvoice: transformInvoice,
   _transformOrder: transformOrder,
-  _transformOrderDetail: transformOrderDetail
+  _transformOrderDetail: transformOrderDetail,
+  _transformCorrespondence: transformCorrespondence
 };
