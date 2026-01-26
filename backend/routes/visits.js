@@ -6,7 +6,7 @@ const { optionalClinic } = require('../middleware/clinicAuth');
 const Visit = require('../models/Visit');
 const Patient = require('../models/Patient');
 const Appointment = require('../models/Appointment');
-const { updateVisitRefraction, updateVisitDiagnosis, updateVisitTreatment } = require('../services/visitGranularService');
+const { updateVisitRefraction, updateVisitDiagnosis, updateVisitTreatment, updateVisitIOP } = require('../services/visitGranularService');
 // Required for populate to work - must register model before populating
 require('../models/IVTInjection');
 
@@ -639,6 +639,28 @@ router.put('/:id/treatment', protect, authorize('admin', 'doctor', 'ophthalmolog
   try {
     const userId = req.user._id || req.user.id;
     const result = await updateVisitTreatment(req.params.id, req.body, userId);
+
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    // Handle service-level validation errors
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// @desc    Update visit IOP (intraocular pressure) data (granular update)
+// @route   PUT /api/visits/:id/iop
+// @access  Private
+router.put('/:id/iop', protect, authorize('admin', 'doctor', 'ophthalmologist', 'nurse'), logCriticalOperation('VISIT_IOP_UPDATE'), async (req, res) => {
+  try {
+    const userId = req.user._id || req.user.id;
+    const result = await updateVisitIOP(req.params.id, req.body, userId);
 
     res.json({
       success: true,
