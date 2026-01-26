@@ -1,0 +1,39 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true
+  },
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read(./**)",
+      "Write(./**)",
+      "Edit(./**)",
+      "Glob(./**)",
+      "Grep(./**)",
+      "Read(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/**)",
+      "Write(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/**)",
+      "Edit(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/**)",
+      "Glob(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/**)",
+      "Grep(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/**)",
+      "Read(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/.auto-claude/specs/001-complete-the-project/**)",
+      "Write(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/.auto-claude/specs/001-complete-the-project/**)",
+      "Edit(/Users/xtm888/magloire/.auto-claude/worktrees/tasks/001-complete-the-project/.auto-claude/specs/001-complete-the-project/**)",
+      "Read(/Users/xtm888/magloire/.auto-claude/**)",
+      "Write(/Users/xtm888/magloire/.auto-claude/**)",
+      "Edit(/Users/xtm888/magloire/.auto-claude/**)",
+      "Glob(/Users/xtm888/magloire/.auto-claude/**)",
+      "Grep(/Users/xtm888/magloire/.auto-claude/**)",
+      "Bash(*)",
+      "WebFetch(*)",
+      "WebSearch(*)",
+      "mcp__context7__resolve-library-id(*)",
+      "mcp__context7__get-library-docs(*)",
+      "mcp__graphiti-memory__search_nodes(*)",
+      "mcp__graphiti-memory__search_facts(*)",
+      "mcp__graphiti-memory__add_episode(*)",
+      "mcp__graphiti-memory__get_episodes(*)",
+      "mcp__graphiti-memory__get_entity_edge(*)"
+    ]
+  }
+}

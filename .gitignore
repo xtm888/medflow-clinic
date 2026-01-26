@@ -108,3 +108,6 @@ CREDENTIALS*.md
 *_CREDENTIALS.md
 *.credentials
 
+
+# Auto Claude data directory
+.auto-claude/

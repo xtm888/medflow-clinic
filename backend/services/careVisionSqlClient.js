@@ -797,6 +797,591 @@ function transformInvoice(row) {
 }
 
 // ============================================================
+// Orders (Commande / DetailCommande tables)
+// ============================================================
+
+/**
+ * Get orders from CareVision Commande table
+ *
+ * Table: Commande (Orders - optical, pharmacy, etc.)
+ * Related: DetailCommande (Order line items)
+ *
+ * @param {Object} options - Query options
+ * @param {Date|string} [options.startDate] - Filter by date >= startDate
+ * @param {Date|string} [options.endDate] - Filter by date <= endDate
+ * @param {string|number} [options.patientId] - Filter by CareVision patient ID
+ * @param {string} [options.status] - Filter by order status
+ * @param {string} [options.type] - Filter by order type (optique, pharmacie, etc.)
+ * @param {boolean} [options.includeDetails=false] - Include order line items
+ * @param {number} [options.limit=1000] - Maximum records to return
+ * @param {number} [options.offset=0] - Skip first N records (pagination)
+ * @returns {Promise<{records: Array, total: number}>}
+ */
+async function getOrders(options = {}) {
+  const {
+    startDate,
+    endDate,
+    patientId,
+    status,
+    type,
+    includeDetails = false,
+    limit = 1000,
+    offset = 0
+  } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    // Build WHERE conditions
+    const conditions = [];
+
+    if (startDate) {
+      request.input('startDate', sql.DateTime, new Date(startDate));
+      conditions.push('datecommande >= @startDate');
+    }
+
+    if (endDate) {
+      request.input('endDate', sql.DateTime, new Date(endDate));
+      conditions.push('datecommande <= @endDate');
+    }
+
+    if (patientId) {
+      request.input('patientId', sql.VarChar, String(patientId));
+      conditions.push('numclient = @patientId');
+    }
+
+    if (status) {
+      request.input('status', sql.VarChar, String(status));
+      conditions.push('etat = @status');
+    }
+
+    if (type) {
+      request.input('type', sql.VarChar, String(type));
+      conditions.push('typecommande = @type');
+    }
+
+    const whereClause = conditions.length > 0
+      ? `WHERE ${conditions.join(' AND ')}`
+      : '';
+
+    // Get total count first
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM Commande
+      ${whereClause}
+    `;
+
+    const countResult = await request.query(countQuery);
+    const total = countResult.recordset[0].total;
+
+    // Get paginated records
+    // Create new request for data query (can't reuse request with inputs)
+    const dataRequest = connPool.request();
+
+    if (startDate) {
+      dataRequest.input('startDate', sql.DateTime, new Date(startDate));
+    }
+    if (endDate) {
+      dataRequest.input('endDate', sql.DateTime, new Date(endDate));
+    }
+    if (patientId) {
+      dataRequest.input('patientId', sql.VarChar, String(patientId));
+    }
+    if (status) {
+      dataRequest.input('status', sql.VarChar, String(status));
+    }
+    if (type) {
+      dataRequest.input('type', sql.VarChar, String(type));
+    }
+
+    dataRequest.input('offset', sql.Int, offset);
+    dataRequest.input('limit', sql.Int, limit);
+
+    const dataQuery = `
+      SELECT
+        numcommande,
+        numclient,
+        datecommande,
+        datelivraison,
+        typecommande,
+        montant,
+        montantpaye,
+        resteapayer,
+        etat,
+        observations,
+        medecin,
+        ordonnance,
+        numfacture,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM Commande
+      ${whereClause}
+      ORDER BY datecommande DESC
+      OFFSET @offset ROWS
+      FETCH NEXT @limit ROWS ONLY
+    `;
+
+    const dataResult = await dataRequest.query(dataQuery);
+
+    // Transform records to MedFlow format
+    let records = dataResult.recordset.map(row => transformOrder(row));
+
+    // Optionally include order details
+    if (includeDetails && records.length > 0) {
+      const orderIds = records.map(r => r.legacyId);
+      const detailsMap = await getOrderDetailsForOrders(orderIds);
+
+      records = records.map(order => ({
+        ...order,
+        lineItems: detailsMap[order.legacyId] || []
+      }));
+    }
+
+    log.info('[CareVisionSQL] getOrders completed', {
+      total,
+      returned: records.length,
+      offset,
+      limit,
+      includeDetails
+    });
+
+    return { records, total };
+  } catch (err) {
+    log.error('[CareVisionSQL] getOrders failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Get a single order by CareVision order number
+ *
+ * @param {string|number} orderId - CareVision order ID (numcommande)
+ * @param {Object} options - Query options
+ * @param {boolean} [options.includeDetails=true] - Include order line items
+ * @returns {Promise<Object|null>} Order record or null
+ */
+async function getOrderById(orderId, options = {}) {
+  const { includeDetails = true } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('numcommande', sql.VarChar, String(orderId));
+
+    const result = await request.query(`
+      SELECT
+        numcommande,
+        numclient,
+        datecommande,
+        datelivraison,
+        typecommande,
+        montant,
+        montantpaye,
+        resteapayer,
+        etat,
+        observations,
+        medecin,
+        ordonnance,
+        numfacture,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM Commande
+      WHERE numcommande = @numcommande
+    `);
+
+    if (result.recordset.length === 0) {
+      return null;
+    }
+
+    const order = transformOrder(result.recordset[0]);
+
+    // Include order details if requested
+    if (includeDetails) {
+      order.lineItems = await getOrderDetails(orderId);
+    }
+
+    return order;
+  } catch (err) {
+    log.error('[CareVisionSQL] getOrderById failed:', {
+      orderId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get all orders for a specific patient
+ *
+ * @param {string|number} careVisionPatientId - CareVision patient ID (numclient)
+ * @param {Object} options - Query options
+ * @param {boolean} [options.includeDetails=false] - Include order line items
+ * @param {number} [options.limit=100] - Maximum records
+ * @returns {Promise<Array>} Array of orders
+ */
+async function getPatientOrders(careVisionPatientId, options = {}) {
+  const { includeDetails = false, limit = 100 } = options;
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('patientId', sql.VarChar, String(careVisionPatientId));
+    request.input('limit', sql.Int, limit);
+
+    const result = await request.query(`
+      SELECT TOP (@limit)
+        numcommande,
+        numclient,
+        datecommande,
+        datelivraison,
+        typecommande,
+        montant,
+        montantpaye,
+        resteapayer,
+        etat,
+        observations,
+        medecin,
+        ordonnance,
+        numfacture,
+        datecreation,
+        datemodification,
+        createdby,
+        modifiedby
+      FROM Commande
+      WHERE numclient = @patientId
+      ORDER BY datecommande DESC
+    `);
+
+    let records = result.recordset.map(row => transformOrder(row));
+
+    // Optionally include order details
+    if (includeDetails && records.length > 0) {
+      const orderIds = records.map(r => r.legacyId);
+      const detailsMap = await getOrderDetailsForOrders(orderIds);
+
+      records = records.map(order => ({
+        ...order,
+        lineItems: detailsMap[order.legacyId] || []
+      }));
+    }
+
+    return records;
+  } catch (err) {
+    log.error('[CareVisionSQL] getPatientOrders failed:', {
+      careVisionPatientId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get order details (line items) from DetailCommande table
+ *
+ * @param {string|number} orderId - CareVision order ID (numcommande)
+ * @returns {Promise<Array>} Array of order line items
+ */
+async function getOrderDetails(orderId) {
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    request.input('numcommande', sql.VarChar, String(orderId));
+
+    const result = await request.query(`
+      SELECT
+        id,
+        numcommande,
+        numlignecommande,
+        codeproduit,
+        designation,
+        quantite,
+        prixunitaire,
+        montant,
+        remise,
+        oeil,
+        sphere,
+        cylindre,
+        axe,
+        addition,
+        observations,
+        datecreation,
+        datemodification
+      FROM DetailCommande
+      WHERE numcommande = @numcommande
+      ORDER BY numlignecommande
+    `);
+
+    return result.recordset.map(row => transformOrderDetail(row));
+  } catch (err) {
+    log.error('[CareVisionSQL] getOrderDetails failed:', {
+      orderId,
+      error: err.message
+    });
+    throw err;
+  }
+}
+
+/**
+ * Get order details for multiple orders in a single query
+ * More efficient than calling getOrderDetails for each order
+ *
+ * @param {Array<string|number>} orderIds - Array of CareVision order IDs
+ * @returns {Promise<Object>} Map of orderId -> array of line items
+ */
+async function getOrderDetailsForOrders(orderIds) {
+  if (!orderIds || orderIds.length === 0) {
+    return {};
+  }
+
+  try {
+    const connPool = await getPool();
+    const request = connPool.request();
+
+    // Build parameterized IN clause
+    const placeholders = orderIds.map((_, i) => `@orderId${i}`).join(', ');
+    orderIds.forEach((id, i) => {
+      request.input(`orderId${i}`, sql.VarChar, String(id));
+    });
+
+    const result = await request.query(`
+      SELECT
+        id,
+        numcommande,
+        numlignecommande,
+        codeproduit,
+        designation,
+        quantite,
+        prixunitaire,
+        montant,
+        remise,
+        oeil,
+        sphere,
+        cylindre,
+        axe,
+        addition,
+        observations,
+        datecreation,
+        datemodification
+      FROM DetailCommande
+      WHERE numcommande IN (${placeholders})
+      ORDER BY numcommande, numlignecommande
+    `);
+
+    // Group by order ID
+    const detailsMap = {};
+    for (const row of result.recordset) {
+      const orderId = row.numcommande;
+      if (!detailsMap[orderId]) {
+        detailsMap[orderId] = [];
+      }
+      detailsMap[orderId].push(transformOrderDetail(row));
+    }
+
+    return detailsMap;
+  } catch (err) {
+    log.error('[CareVisionSQL] getOrderDetailsForOrders failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Get order count from Commande table
+ *
+ * @returns {Promise<number>} Total count
+ */
+async function getOrderCount() {
+  try {
+    const connPool = await getPool();
+    const result = await connPool.request().query('SELECT COUNT(*) as count FROM Commande');
+    return result.recordset[0].count;
+  } catch (err) {
+    log.error('[CareVisionSQL] getOrderCount failed:', { error: err.message });
+    throw err;
+  }
+}
+
+/**
+ * Transform CareVision Commande record to MedFlow order format
+ *
+ * @param {Object} row - Raw SQL Server row
+ * @returns {Object} Transformed order object
+ */
+function transformOrder(row) {
+  // Map CareVision status to MedFlow status
+  const statusMap = {
+    'EN_COURS': 'processing',
+    'ENCOURS': 'processing',
+    'ATTENTE': 'pending',
+    'EN_ATTENTE': 'pending',
+    'PRETE': 'ready',
+    'PRET': 'ready',
+    'LIVREE': 'delivered',
+    'LIVRE': 'delivered',
+    'ANNULEE': 'cancelled',
+    'ANNULE': 'cancelled',
+    'TERMINEE': 'completed',
+    'TERMINE': 'completed'
+  };
+
+  const rawStatus = (row.etat || '').toUpperCase().trim();
+  const mappedStatus = statusMap[rawStatus] || 'pending';
+
+  // Map order type
+  const typeMap = {
+    'OPTIQUE': 'optical',
+    'LUNETTES': 'optical',
+    'LENTILLES': 'contact-lenses',
+    'PHARMACIE': 'pharmacy',
+    'LABORATOIRE': 'laboratory',
+    'AUTRE': 'other'
+  };
+
+  const rawType = (row.typecommande || '').toUpperCase().trim();
+  const mappedType = typeMap[rawType] || 'other';
+
+  // Parse amounts - CareVision uses CDF as integers
+  const amount = parseFloat(row.montant) || 0;
+  const amountPaid = parseFloat(row.montantpaye) || 0;
+  const amountDue = parseFloat(row.resteapayer) || (amount - amountPaid);
+
+  return {
+    // CareVision identifiers
+    legacyId: row.numcommande,
+    legacySource: 'carevision_commande',
+
+    // Patient link (will need to be mapped to MedFlow patient ID)
+    careVisionPatientId: row.numclient,
+
+    // Order details
+    orderNumber: row.numcommande,
+    orderDate: row.datecommande ? new Date(row.datecommande) : null,
+    deliveryDate: row.datelivraison ? new Date(row.datelivraison) : null,
+
+    // Order type
+    orderType: mappedType,
+    originalType: row.typecommande,
+
+    // Financial data - CareVision uses CDF
+    currency: 'CDF',
+    total: amount,
+    amountPaid: amountPaid,
+    amountDue: amountDue,
+
+    // Status
+    status: mappedStatus,
+    originalStatus: row.etat,
+
+    // Related records
+    provider: row.medecin || null,
+    prescriptionRef: row.ordonnance || null,
+    careVisionInvoiceId: row.numfacture || null,
+
+    // Notes
+    notes: row.observations || null,
+
+    // Audit fields
+    createdAt: row.datecreation || null,
+    updatedAt: row.datemodification || null,
+    createdBy: row.createdby || null,
+    modifiedBy: row.modifiedby || null,
+
+    // Raw data for debugging/validation
+    _raw: {
+      numcommande: row.numcommande,
+      datecommande: row.datecommande,
+      montant: row.montant,
+      etat: row.etat,
+      typecommande: row.typecommande
+    }
+  };
+}
+
+/**
+ * Transform CareVision DetailCommande record to MedFlow order line item format
+ *
+ * @param {Object} row - Raw SQL Server row
+ * @returns {Object} Transformed order line item
+ */
+function transformOrderDetail(row) {
+  // Map eye laterality
+  const eyeMap = {
+    'OD': 'OD',
+    'D': 'OD',
+    'DROIT': 'OD',
+    'OS': 'OS',
+    'G': 'OS',
+    'GAUCHE': 'OS',
+    'OU': 'OU',
+    'LES_DEUX': 'OU'
+  };
+
+  const rawEye = (row.oeil || '').toUpperCase().trim();
+  const mappedEye = eyeMap[rawEye] || null;
+
+  // Parse numerical values
+  const quantity = parseInt(row.quantite) || 1;
+  const unitPrice = parseFloat(row.prixunitaire) || 0;
+  const lineTotal = parseFloat(row.montant) || (quantity * unitPrice);
+  const discount = parseFloat(row.remise) || 0;
+
+  // Parse optical prescription values if present
+  const sphere = row.sphere !== null ? parseFloat(row.sphere) : null;
+  const cylinder = row.cylindre !== null ? parseFloat(row.cylindre) : null;
+  const axis = row.axe !== null ? parseInt(row.axe) : null;
+  const addition = row.addition !== null ? parseFloat(row.addition) : null;
+
+  return {
+    // CareVision identifiers
+    legacyId: row.id,
+    legacyOrderId: row.numcommande,
+    lineNumber: row.numlignecommande,
+
+    // Product info
+    productCode: row.codeproduit || null,
+    description: row.designation || null,
+
+    // Quantity and pricing
+    quantity: quantity,
+    unitPrice: unitPrice,
+    discount: discount,
+    lineTotal: lineTotal,
+
+    // Eye laterality (for optical items)
+    eye: mappedEye,
+
+    // Optical prescription (for lenses)
+    prescription: (sphere !== null || cylinder !== null) ? {
+      sphere: sphere,
+      cylinder: cylinder,
+      axis: axis,
+      addition: addition
+    } : null,
+
+    // Notes
+    notes: row.observations || null,
+
+    // Audit fields
+    createdAt: row.datecreation || null,
+    updatedAt: row.datemodification || null,
+
+    // Raw data for debugging/validation
+    _raw: {
+      id: row.id,
+      numcommande: row.numcommande,
+      codeproduit: row.codeproduit
+    }
+  };
+}
+
+// ============================================================
 // Utility Functions
 // ============================================================
 
@@ -882,11 +1467,21 @@ module.exports = {
   getPatientInvoices,
   getInvoiceCount,
 
+  // Orders (Commande / DetailCommande)
+  getOrders,
+  getOrderById,
+  getPatientOrders,
+  getOrderDetails,
+  getOrderDetailsForOrders,
+  getOrderCount,
+
   // Utilities
   executeQuery,
   getTableCount,
 
   // Internal (for testing)
   _transformAppointment: transformAppointment,
-  _transformInvoice: transformInvoice
+  _transformInvoice: transformInvoice,
+  _transformOrder: transformOrder,
+  _transformOrderDetail: transformOrderDetail
 };
